@@ -90,13 +90,16 @@ export function GlobeView({
     const map = L.map(containerRef.current, {
       center: vp.center,
       zoom: vp.zoom,
+      minZoom: 2,
+      maxBounds: L.latLngBounds([-85, -180], [85, 180]),
+      maxBoundsViscosity: 1.0,
       zoomControl: false,
       attributionControl: false,
     });
 
     L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      { maxZoom: 18, subdomains: "abcd" },
+      { maxZoom: 18, subdomains: "abcd", noWrap: true },
     ).addTo(map);
 
     L.control.zoom({ position: "bottomright" }).addTo(map);
