@@ -97,12 +97,14 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		fmt.Fprintf(r.stderr, "WARN category dictionary load failed (falling back to legacy filters): %v\n", err)
 	}
 
+	cursors := state.ReadCursors(cfg.CursorsPath)
+
 	alerts := []model.Alert{normalize.StaticInterpolEntry(now)}
 	sourceHealth := make([]model.SourceHealthEntry, 0, len(sources))
 	for _, source := range sources {
 		startedAt := time.Now().UTC()
 		fetcher := fetch.FetcherFor(source.FetchMode, client, browser)
-		batch, err := r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary)
+		batch, err := r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary, cursors)
 
 		// Retry once for transient errors (timeout, EOF) after a short backoff.
 		if err != nil {
@@ -115,7 +117,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 				case <-ctx.Done():
 				}
 				if ctx.Err() == nil {
-					batch, err = r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary)
+					batch, err = r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary, cursors)
 				}
 			}
 		}
@@ -142,6 +144,10 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		alerts = append(alerts, batch...)
 	}
 
+	if err := state.WriteCursors(cfg.CursorsPath, cursors); err != nil {
+		fmt.Fprintf(r.stderr, "WARN failed to save cursors: %v\n", err)
+	}
+
 	deduped, duplicateAudit := normalize.Deduplicate(alerts)
 	active, filtered := normalize.FilterActive(cfg, deduped)
 	populateSourceHealth(sourceHealth, active, filtered)
@@ -153,7 +159,13 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	currentActive, currentFiltered, fullState := state.Reconcile(cfg, active, filtered, previous, now)
+	accumulateSources := map[string]bool{}
+	for _, s := range sources {
+		if s.Accumulate {
+			accumulateSources[s.Source.SourceID] = true
+		}
+	}
+	currentActive, currentFiltered, fullState := state.Reconcile(cfg, active, filtered, previous, now, accumulateSources)
 	replacementQueue := buildReplacementQueue(sourceHealth, sources)
 	if err := deactivateReplacementSources(ctx, cfg.RegistryPath, replacementQueue); err != nil {
 		return err
@@ -168,7 +180,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	return err
 }
 
-func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store) ([]model.Alert, error) {
+func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store, cursors state.Cursors) ([]model.Alert, error) {
 	switch source.Type {
 	case "rss":
 		return r.fetchRSS(ctx, fetcher, nctx, source)
@@ -177,7 +189,7 @@ func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser 
 	case "kev-json":
 		return r.fetchKEV(ctx, fetcher, nctx, source)
 	case "interpol-red-json", "interpol-yellow-json":
-		return r.fetchInterpol(ctx, fetcher, browser, nctx, source)
+		return r.fetchInterpol(ctx, fetcher, browser, nctx, source, cursors)
 	case "fbi-wanted-json":
 		return r.fetchFBIWanted(ctx, fetcher, nctx, source)
 	case "travelwarning-json":
@@ -309,10 +321,11 @@ func (r Runner) fetchKEV(ctx context.Context, fetcher fetch.Fetcher, nctx normal
 	return out, nil
 }
 
-func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource, cursors state.Cursors) ([]model.Alert, error) {
 	limit := perSourceLimit(nctx.Config, source)
-	pageSize := 20
+	pageSize := 160
 	var allNotices []model.Alert
+	sid := source.Source.SourceID
 
 	// Interpol's API sits behind Akamai WAF and requires XHR-style headers
 	// with Referer/Origin pointing to the Interpol website.
@@ -325,10 +338,9 @@ func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, browse
 		"X-Requested-With": "XMLHttpRequest",
 	}
 
-	// Use TextWithHeaders if the fetcher is a *Client (stealth HTTP).
 	clientFetcher, isClient := fetcher.(*fetch.Client)
 
-	for page := 1; len(allNotices) < limit; page++ {
+	fetchPage := func(page int) ([]model.Alert, error) {
 		pageURL := buildInterpolPageURL(source.FeedURL, page, pageSize)
 		var body []byte
 		var err error
@@ -338,31 +350,54 @@ func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, browse
 			body, err = fetcher.Text(ctx, pageURL, source.FollowRedirects, "application/json")
 		}
 		if err != nil {
-			// If first page fails, try browser fallback for the whole batch.
-			if page == 1 && browser != nil {
-				fmt.Fprintf(r.stderr, "WARN %s: stealth fetch failed, trying browser fallback: %v\n", source.Source.AuthorityName, err)
-				bBody, bErr := fetchInterpolViaBrowser(ctx, browser, source)
-				if bErr == nil && len(bBody) > 0 {
-					return parseInterpolNotices(nctx, source, bBody)
-				}
-			}
-			break
+			return nil, err
 		}
-		batch, err := parseInterpolNotices(nctx, source, body)
+		return parseInterpolNotices(nctx, source, body)
+	}
+
+	// Always fetch page 1 first to pick up new notices.
+	batch, err := fetchPage(1)
+	if err != nil {
+		if browser != nil {
+			fmt.Fprintf(r.stderr, "WARN %s: stealth fetch failed, trying browser fallback: %v\n", source.Source.AuthorityName, err)
+			bBody, bErr := fetchInterpolViaBrowser(ctx, browser, source)
+			if bErr == nil && len(bBody) > 0 {
+				return parseInterpolNotices(nctx, source, bBody)
+			}
+		}
+		return nil, err
+	}
+	allNotices = append(allNotices, batch...)
+	lastPageFetched := 1
+
+	// Resume from cursor to backfill older pages.
+	resumePage := cursors[sid]
+	if resumePage < 2 {
+		resumePage = 2
+	}
+	for page := resumePage; len(allNotices) < limit; page++ {
+		select {
+		case <-time.After(1 * time.Second):
+		case <-ctx.Done():
+			cursors[sid] = page
+			return allNotices, nil
+		}
+		batch, err := fetchPage(page)
 		if err != nil {
 			break
 		}
 		allNotices = append(allNotices, batch...)
+		lastPageFetched = page
 		if len(batch) < pageSize {
-			break // last page
-		}
-		// Polite delay between page requests.
-		select {
-		case <-time.After(2 * time.Second):
-		case <-ctx.Done():
-			return allNotices, nil
+			// Reached the end — wrap cursor back to 2 for next run.
+			lastPageFetched = 1
+			break
 		}
 	}
+
+	// Advance cursor for next run.
+	cursors[sid] = lastPageFetched + 1
+
 	if len(allNotices) > limit {
 		allNotices = allNotices[:limit]
 	}
