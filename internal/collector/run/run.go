@@ -178,6 +178,8 @@ func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser 
 		return r.fetchKEV(ctx, fetcher, nctx, source)
 	case "interpol-red-json", "interpol-yellow-json":
 		return r.fetchInterpol(ctx, fetcher, browser, nctx, source)
+	case "fbi-wanted-json":
+		return r.fetchFBIWanted(ctx, fetcher, nctx, source)
 	case "travelwarning-json":
 		return r.fetchTravelWarningJSON(ctx, fetcher, nctx, source)
 	case "travelwarning-atom":
@@ -481,6 +483,56 @@ func extractInterpolNoticeID(entityID string, link string) string {
 	}
 	parts := strings.Split(path, "/")
 	return strings.TrimSpace(parts[len(parts)-1])
+}
+
+func (r Runner) fetchFBIWanted(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	limit := perSourceLimit(nctx.Config, source)
+	pageSize := 40
+	var allAlerts []model.Alert
+
+	for page := 1; len(allAlerts) < limit; page++ {
+		pageURL := fmt.Sprintf("%s&page=%d&pageSize=%d", source.FeedURL, page, pageSize)
+		body, err := fetcher.Text(ctx, pageURL, source.FollowRedirects, "application/json")
+		if err != nil {
+			if page == 1 {
+				return nil, err
+			}
+			break
+		}
+		items, total, err := parse.ParseFBIWanted(body)
+		if err != nil {
+			if page == 1 {
+				return nil, err
+			}
+			break
+		}
+		for _, item := range items {
+			if len(allAlerts) >= limit {
+				break
+			}
+			if strings.TrimSpace(item.Title) == "" {
+				continue
+			}
+			alert := normalize.FBIWantedAlert(nctx, source, item)
+			if alert != nil {
+				allAlerts = append(allAlerts, *alert)
+			}
+		}
+		// Stop if we've fetched all available or last page was partial.
+		if total > 0 && page*pageSize >= total {
+			break
+		}
+		if len(items) < pageSize {
+			break
+		}
+		// Polite delay between pages.
+		select {
+		case <-time.After(1 * time.Second):
+		case <-ctx.Done():
+			return allAlerts, nil
+		}
+	}
+	return allAlerts, nil
 }
 
 func (r Runner) fetchTravelWarningJSON(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
