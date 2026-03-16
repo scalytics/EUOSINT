@@ -78,6 +78,9 @@ func normalizeAll(raw []model.RegistrySource) []model.RegistrySource {
 	seen := make(map[string]struct{}, len(raw))
 	out := make([]model.RegistrySource, 0, len(raw))
 	for _, entry := range raw {
+		if strings.ToLower(strings.TrimSpace(entry.PromotionStatus)) == "rejected" {
+			continue
+		}
 		normalized, ok := normalize(entry)
 		if !ok {
 			continue
