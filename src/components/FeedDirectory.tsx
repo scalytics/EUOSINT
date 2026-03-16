@@ -113,12 +113,18 @@ export function FeedDirectory({
   const zoneSummary = useMemo(() => {
     const uniqueCountries = new Set(filteredAlerts.map((a) => a.source.country_code));
     const uniqueFeeds = new Set(filteredAlerts.map((a) => a.source_id));
+    // For global view, use the health document's total which includes sources
+    // that returned 0 alerts (errors, empty feeds, etc.).
+    const feedCount =
+      regionFilter === "all" && !severityFilter && sources.length > 0
+        ? sources.length
+        : uniqueFeeds.size;
     return {
       alerts: filteredAlerts.length,
       countries: uniqueCountries.size,
-      feeds: uniqueFeeds.size,
+      feeds: feedCount,
     };
-  }, [filteredAlerts]);
+  }, [filteredAlerts, regionFilter, severityFilter, sources]);
 
   const toggleSource = (sourceId: string) => {
     if (selectedSourceIds.includes(sourceId)) {

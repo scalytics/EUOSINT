@@ -3472,6 +3472,8 @@
   },
   {
     "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "FBI removed RSS feeds; news/press releases not available via API (API only serves wanted persons). Covered by fbi-wanted, fbi-mostwanted, fbi-seeking, fbi-kidnappings.",
     "source": {
       "source_id": "fbi-news",
       "authority_name": "FBI News",
