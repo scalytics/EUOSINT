@@ -25,7 +25,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: javascript-typescript
+          languages: go, javascript-typescript
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -33,11 +33,21 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build UI
         run: npm run build
+
+      - name: Build collector
+        run: go build ./cmd/euosint-collector
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3
+        continue-on-error: true

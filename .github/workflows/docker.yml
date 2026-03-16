@@ -4,8 +4,13 @@ on:
   pull_request:
     paths:
       - "Dockerfile"
+      - "Dockerfile.collector"
       - "docker-compose.yml"
       - "docker/**"
+      - "cmd/**"
+      - "internal/**"
+      - "registry/**"
+      - "go.mod"
       - "package.json"
       - "package-lock.json"
       - "src/**"
@@ -15,8 +20,13 @@ on:
     branches: [main]
     paths:
       - "Dockerfile"
+      - "Dockerfile.collector"
       - "docker-compose.yml"
       - "docker/**"
+      - "cmd/**"
+      - "internal/**"
+      - "registry/**"
+      - "go.mod"
       - "package.json"
       - "package-lock.json"
       - "src/**"
@@ -29,8 +39,16 @@ permissions:
 
 jobs:
   build:
-    name: build
+    name: build-${{ matrix.image.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: web
+            dockerfile: Dockerfile
+          - name: collector
+            dockerfile: Dockerfile.collector
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,7 +60,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
+          file: ./${{ matrix.image.dockerfile }}
           push: false
           load: false
           provenance: false

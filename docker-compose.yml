@@ -1,8 +1,48 @@
 services:
+  collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.collector
+    command:
+      - --watch
+      - --registry
+      - /app/registry/source_registry.json
+      - --output
+      - /data/alerts.json
+      - --filtered-output
+      - /data/alerts-filtered.json
+      - --state-output
+      - /data/alerts-state.json
+      - --source-health-output
+      - /data/source-health.json
+    environment:
+      INTERVAL_MS: "900000"
+      MAX_PER_SOURCE: "20"
+      MISSING_PERSON_RELEVANCE_THRESHOLD: "0"
+      FAIL_ON_CRITICAL_SOURCE_GAP: "0"
+      CRITICAL_SOURCE_PREFIXES: "interpol-red,interpol-yellow"
+    volumes:
+      - feed-data:/data
+    restart: unless-stopped
+
   euosint:
     build:
       context: .
       dockerfile: Dockerfile
+    depends_on:
+      - collector
+    environment:
+      EUOSINT_SITE_ADDRESS: "${EUOSINT_SITE_ADDRESS:-:80}"
     ports:
-      - "8080:8080"
+      - "${EUOSINT_HTTP_PORT:-8080}:80"
+      - "${EUOSINT_HTTPS_PORT:-8443}:443"
+    volumes:
+      - feed-data:/var/lib/euosint:ro
+      - caddy-data:/data
+      - caddy-config:/config
     restart: unless-stopped
+
+volumes:
+  feed-data:
+  caddy-data:
+  caddy-config:

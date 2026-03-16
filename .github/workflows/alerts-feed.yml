@@ -22,17 +22,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          node-version-file: .nvmrc
-          cache: npm
+          go-version-file: go.mod
+          cache: true
 
-      - name: Install deps
-        run: npm ci
-
-      - name: Fetch alerts
-        run: node scripts/fetch-alerts.mjs
+      - name: Fetch alerts with Go collector
+        run: go run ./cmd/euosint-collector
         env:
           MAX_PER_SOURCE: "20"
           OUTPUT_PATH: "public/alerts.json"
@@ -54,47 +51,3 @@ jobs:
           git add public/alerts.json public/alerts-filtered.json public/alerts-state.json public/source-health.json
           git commit -m "chore: update alerts feed"
           git push
-*** Add File: /Users/alo/Development/scalytics/EUOSINT/.github/workflows/ci.yml
-name: CI
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-  workflow_dispatch: {}
-
-permissions:
-  contents: read
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  quality:
-    name: quality
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Toolchain check
-        run: make check
-
-      - name: Lint
-        run: make lint
-
-      - name: Typecheck
-        run: make test
-
-      - name: Build
-        run: make build
