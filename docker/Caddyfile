@@ -16,6 +16,10 @@
 		X-Frame-Options "DENY"
 	}
 
+	handle /api/* {
+		reverse_proxy collector:3001
+	}
+
 	handle /alerts.json {
 		root * /var/lib/euosint
 		file_server

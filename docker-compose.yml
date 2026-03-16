@@ -7,6 +7,9 @@ services:
       - .env
     command:
       - --watch
+      - --api
+      - --api-addr
+      - ":3001"
       - --registry
       - /data/sources.db
       - --output
