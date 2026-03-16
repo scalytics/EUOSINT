@@ -17,16 +17,13 @@
     "fetch:alerts": "go run ./cmd/euosint-collector",
     "fetch:alerts:watch": "go run ./cmd/euosint-collector --watch",
     "collector:run": "go run ./cmd/euosint-collector --watch",
-    "fetch:alerts:legacy": "node scripts/fetch-alerts.mjs",
-    "fetch:alerts:watch:legacy": "node scripts/fetch-alerts.mjs --watch",
-    "collector:run:legacy": "node scripts/continuous-collector.mjs",
     "typecheck": "tsc -b --pretty false",
     "test": "npm run typecheck",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "ci": "npm run lint && npm run test && npm run build",
-    "docker:run": "docker-compose up --build"
+    "docker:run": "sh -c 'if command -v docker-compose >/dev/null 2>&1; then docker-compose up --build; else docker compose up --build; fi'"
   },
   "dependencies": {
     "@types/three": "^0.182.0",

@@ -27,6 +27,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	fs.Float64Var(&cfg.IncidentRelevanceThreshold, "incident-threshold", cfg.IncidentRelevanceThreshold, "Default relevance threshold for active alerts")
 	fs.Float64Var(&cfg.MissingPersonRelevanceThreshold, "missing-person-threshold", cfg.MissingPersonRelevanceThreshold, "Relevance threshold for missing person alerts")
 	fs.BoolVar(&cfg.FailOnCriticalSourceGap, "fail-on-critical-source-gap", cfg.FailOnCriticalSourceGap, "Fail the run when critical sources fetch zero records")
+	fs.BoolVar(&cfg.TranslateEnabled, "translate", cfg.TranslateEnabled, "Translate non-Latin RSS titles and summaries to English")
 
 	if err := fs.Parse(args); err != nil {
 		return err

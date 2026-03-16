@@ -12,13 +12,28 @@ This project is based on the work of `cyberdude88/osint-siem` and the downstream
 ## Run With Docker
 
 ```bash
-docker-compose up --build
+if command -v docker-compose >/dev/null 2>&1; then
+  docker-compose up --build
+else
+  docker compose up --build
+fi
 ```
 
 The application will be available at `http://localhost:8080`.
 
+You can also use the Make targets for local HTTP development:
+
+```bash
+make dev-start
+make dev-stop
+make dev-restart
+make dev-logs
+```
+
 - The release pipeline now builds two images: a web image and a Go collector image.
-- The scheduled feed refresh workflow still uses the legacy Node collector until the Go collector reaches parity with the reference implementation.
+- The scheduled feed refresh workflow now runs the Go collector.
+- The web image now uses Caddy instead of nginx, with the collector output mounted into the web container at runtime.
+- In Docker dev mode, the collector seeds the shared feed volume with the repository snapshots first, then replaces them with live output on the first successful run.
 
 ## Run Locally Without Docker
 
@@ -41,14 +56,6 @@ Tuning examples:
 INTERVAL_MS=120000 MAX_PER_SOURCE=80 npm run collector:run
 ```
 
-Legacy reference collector commands remain available during parity work:
-
-```bash
-npm run fetch:alerts:legacy
-npm run fetch:alerts:watch:legacy
-npm run collector:run:legacy
-```
-
 ## Operations
 
 ```bash
@@ -61,10 +68,12 @@ make docker-build
 - `.github/workflows/branch-protection.yml` applies protection to `main` using the `ADMIN_GITHUB_TOKEN` repository secret.
 - Docker validation runs through `buildx`, and release images publish to GHCR on semver tags.
 - Release images are published as `ghcr.io/<owner>/<repo>-web` and `ghcr.io/<owner>/<repo>-collector`.
+- `docker-compose up --build` or `docker compose up --build` now runs the Go collector as a background refresh service and serves the generated JSON through the Caddy web container.
+- VM/domain deployment instructions live in [docs/operations.md](/Users/alo/Development/scalytics/EUOSINT/docs/operations.md).
 
 ## Notes
 
 - Local toolchain is pinned to Node `25.8.1` and npm `11.11.0` via `package.json`, `.nvmrc`, and `.node-version`.
-- The Go collector is the target backend, but `scripts/fetch-alerts.mjs` remains the operational parity reference until the Go output is validated against it.
+- The Go collector is now the operational backend for scheduled feed refreshes, Docker runtime, and local commands.
 - The imported application still reflects upstream geographic coverage and source selection; EU-specific source tuning is a follow-up change.
 - The root `LICENSE` applies to repository-local materials and modifications added here. Upstream repository metadata should be reviewed separately for inherited code provenance.

@@ -38,6 +38,7 @@ type Config struct {
 	HTTPTimeoutMS                   int
 	MaxResponseBodyBytes            int64
 	UserAgent                       string
+	TranslateEnabled                bool
 }
 
 func Default() Config {
@@ -59,6 +60,7 @@ func Default() Config {
 		HTTPTimeoutMS:                   defaultTimeoutMS,
 		MaxResponseBodyBytes:            defaultMaxBodyBytes,
 		UserAgent:                       "euosint-bot/1.0",
+		TranslateEnabled:                true,
 	}
 }
 
@@ -81,6 +83,7 @@ func FromEnv() Config {
 	cfg.HTTPTimeoutMS = envInt("HTTP_TIMEOUT_MS", cfg.HTTPTimeoutMS)
 	cfg.MaxResponseBodyBytes = int64(envInt("MAX_RESPONSE_BODY_BYTES", int(cfg.MaxResponseBodyBytes)))
 	cfg.UserAgent = envString("USER_AGENT", cfg.UserAgent)
+	cfg.TranslateEnabled = envBool("TRANSLATE_ENABLED", cfg.TranslateEnabled)
 	return cfg
 }
 

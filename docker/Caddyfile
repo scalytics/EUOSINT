@@ -1,0 +1,40 @@
+{
+	admin off
+}
+
+{$EUOSINT_SITE_ADDRESS::80} {
+	root * /srv
+	encode zstd gzip
+
+	header {
+		Permissions-Policy "camera=(), geolocation=(), microphone=()"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+
+	handle /alerts.json {
+		root * /var/lib/euosint
+		file_server
+	}
+
+	handle /alerts-filtered.json {
+		root * /var/lib/euosint
+		file_server
+	}
+
+	handle /alerts-state.json {
+		root * /var/lib/euosint
+		file_server
+	}
+
+	handle /source-health.json {
+		root * /var/lib/euosint
+		file_server
+	}
+
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}

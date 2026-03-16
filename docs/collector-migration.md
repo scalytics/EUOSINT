@@ -1,8 +1,6 @@
 # Collector Migration
 
-The existing Node collector in `scripts/fetch-alerts.mjs` remains the reference implementation until the Go collector reaches output parity.
-
-Operational rule: scheduled feed generation must stay on the legacy Node collector until parity is explicitly verified. The Go collector can ship in images and local tooling before it becomes the production feed generator.
+The collector runtime is now fully Go-based. The Node collector has been retired from operational paths, and scheduled feed generation, Docker runtime, and local commands all run through `cmd/euosint-collector`.
 
 ## Goals
 
@@ -26,6 +24,8 @@ Operational rule: scheduled feed generation must stay on the legacy Node collect
 5. Output writers for alerts, state, filtered alerts, and source health
 6. Watch mode and retry orchestration
 
-## Coexistence Rule
+## Outcome
 
-Until the Go collector can reproduce the Node collector outputs for a representative fixture set, production collection stays on Node.
+- Source registry remains external in `registry/source_registry.json`
+- Scheduled feed generation runs through the Go collector
+- Docker runtime runs the Go collector sidecar plus the Caddy-served UI

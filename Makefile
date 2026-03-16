@@ -22,8 +22,9 @@ BRANCH ?= main
 RELEASE_LEVEL ?= patch
 
 .PHONY: help check check-commit install clean lint typecheck test build ci \
-	go-fmt go-test go-race go-cover go-vet go-codeql commit-check \
+	go-fmt go-test go-race go-cover go-vet go-codeql collector-parity commit-check \
 	docker-build docker-up docker-down docker-logs docker-shell \
+	dev-start dev-stop dev-restart dev-logs \
 	code-ql code-ql-summary \
 	release-patch release-minor release-major \
 	branch-protection
@@ -112,6 +113,23 @@ docker-logs: ## Tail Docker logs
 
 docker-shell: ## Open a shell in the running container
 	$(DOCKER_COMPOSE) exec euosint sh
+
+dev-start: ## Start the local HTTP dev stack on localhost
+	$(DOCKER_COMPOSE) up --build -d
+	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
+	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
+
+dev-stop: ## Stop the local dev stack
+	$(DOCKER_COMPOSE) down --remove-orphans
+
+dev-restart: ## Restart the local dev stack
+	$(DOCKER_COMPOSE) down --remove-orphans
+	$(DOCKER_COMPOSE) up --build -d
+	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
+	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
+
+dev-logs: ## Tail local dev stack logs
+	$(DOCKER_COMPOSE) logs -f --tail=200
 
 code-ql: ## Run CodeQL CLI locally for JavaScript/TypeScript
 	@command -v codeql >/dev/null 2>&1 || { echo "codeql CLI is required"; exit 1; }
