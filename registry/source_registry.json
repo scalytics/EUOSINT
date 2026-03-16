@@ -5422,6 +5422,25 @@
   },
   {
     "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "Educational network for schools, not an intelligence source",
+    "source": {
+      "source_id": "european-schoolnet",
+      "authority_name": "European Schoolnet",
+      "country": "Belgium",
+      "country_code": "BE",
+      "region": "Europe",
+      "authority_type": "educational",
+      "base_url": "https://www.eun.org"
+    },
+    "feed_url": "https://www.eun.org/rss",
+    "category": "informational",
+    "region_tag": "EU",
+    "lat": 50.85,
+    "lng": 4.35
+  },
+  {
+    "type": "rss",
     "source": {
       "source_id": "occrp-investigations",
       "authority_name": "OCCRP Investigations",
