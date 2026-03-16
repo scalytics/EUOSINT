@@ -44,6 +44,8 @@
   --color-cat-health: #4ca38c;
   --color-cat-intel: #7a6eab;
   --color-cat-emergency: #b85c4a;
+  --color-cat-environment: #4a8b6e;
+  --color-cat-disease: #c45e8a;
 }
 
 * {
