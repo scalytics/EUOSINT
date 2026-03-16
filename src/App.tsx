@@ -11,6 +11,7 @@ import { AlertFeed } from "@/components/AlertFeed";
 import { AlertDetail } from "@/components/AlertDetail";
 import { FeedDirectory } from "@/components/FeedDirectory";
 import { useAlerts } from "@/hooks/useAlerts";
+import { useSearch } from "@/hooks/useSearch";
 import { useSourceHealth } from "@/hooks/useSourceHealth";
 import { alertMatchesRegionFilter } from "@/lib/regions";
 import type { AlertCategory } from "@/types/alert";
@@ -48,7 +49,7 @@ export default function App() {
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<AlertCategory | "all">("all");
   const [regionFilter, setRegionFilter] = useState<string>("Europe");
-  const [searchQuery, setSearchQuery] = useState("");
+  const { query: searchQuery, setQuery: setSearchQuery, results: searchResults, isApiAvailable } = useSearch();
   const [visibleAlertIds, setVisibleAlertIds] = useState<string[]>([]);
   const [mobilePane, setMobilePane] = useState<"intel" | "map" | "alerts">("map");
   const panelRef = useRef<HTMLDivElement>(null);
@@ -79,11 +80,22 @@ export default function App() {
   }, []);
 
   const regionScopedAlerts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    // When API search returned results, use those (already ranked by BM25).
+    if (query && isApiAvailable && searchResults.length > 0) {
+      let filtered = searchResults;
+      if (regionFilter !== "all") {
+        filtered = filtered.filter((alert) => alertMatchesRegionFilter(alert, regionFilter));
+      }
+      return filtered;
+    }
+
+    // Fallback: client-side filter.
     let filtered = alerts;
     if (regionFilter !== "all") {
       filtered = filtered.filter((alert) => alertMatchesRegionFilter(alert, regionFilter));
     }
-    const query = searchQuery.trim().toLowerCase();
     if (query) {
       filtered = filtered.filter((alert) => {
         const haystack = [
@@ -101,7 +113,7 @@ export default function App() {
       });
     }
     return filtered;
-  }, [alerts, regionFilter, searchQuery]);
+  }, [alerts, regionFilter, searchQuery, searchResults, isApiAvailable]);
 
   const scopedAlerts = useMemo(() => {
     let filtered = regionScopedAlerts;
