@@ -22,10 +22,15 @@ seed_if_missing /app/public-defaults/source-health.json /data/source-health.json
 seed_if_missing /app/registry/source_candidates.json /data/source_candidates.json
 
 if [ ! -f /data/sources.db ]; then
-  euosint-collector --source-db /data/sources.db --source-db-init
-  euosint-collector --source-db /data/sources.db --registry /app/registry/source_registry.json --source-db-import-registry
-  if [ -f /app/registry/curated_agencies.seed.json ]; then
-    euosint-collector --source-db /data/sources.db --curated-seed /app/registry/curated_agencies.seed.json --source-db-merge-registry
+  if [ -f /app/registry/sources.seed.db ]; then
+    cp /app/registry/sources.seed.db /data/sources.db
+    echo "Seeded sources.db from pre-built snapshot"
+  else
+    euosint-collector --source-db /data/sources.db --source-db-init
+    euosint-collector --source-db /data/sources.db --registry /app/registry/source_registry.json --source-db-import-registry
+    if [ -f /app/registry/curated_agencies.seed.json ]; then
+      euosint-collector --source-db /data/sources.db --curated-seed /app/registry/curated_agencies.seed.json --source-db-merge-registry
+    fi
   fi
 fi
 

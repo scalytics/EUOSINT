@@ -143,6 +143,12 @@ dev-restart: ## Restart the local dev stack (removes volumes, rebuilds from scra
 dev-sync-registry: ## Merge source_registry.json into the running DB (adds new feeds)
 	$(DOCKER_COMPOSE) exec collector euosint-collector --source-db /data/sources.db --curated-seed /app/registry/source_registry.json --source-db-merge-registry
 
+dev-export-db: ## Export seeded sources.db from running container for distribution
+	@mkdir -p registry
+	@docker cp euosint-collector-1:/data/sources.db registry/sources.seed.db 2>/dev/null && \
+	echo "Exported registry/sources.seed.db ($$(wc -c < registry/sources.seed.db | tr -d ' ') bytes)" || \
+	echo "Container not running or no DB found"
+
 dev-sync-dlq: ## Copy the dead-letter queue from the running container to update the local JSON registry
 	@docker cp euosint-collector-1:/data/source_dead_letter.json .tmp/dlq.json 2>/dev/null && \
 	python3 scripts/apply-dlq.py registry/source_registry.json .tmp/dlq.json && \
