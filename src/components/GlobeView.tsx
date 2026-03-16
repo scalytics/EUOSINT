@@ -25,8 +25,8 @@ const REGION_VIEWPORTS: Record<string, MapViewport> = {
   Asia: { center: [34, 100], zoom: 3 },
   Oceania: { center: [-28, 140], zoom: 4 },
   Caribbean: { center: [18, -75], zoom: 5 },
-  International: { center: [20, 0], zoom: 2 },
-  all: { center: [20, 0], zoom: 2 },
+  International: { center: [20, 0], zoom: 3 },
+  all: { center: [20, 0], zoom: 3 },
 };
 
 /* ── Props ────────────────────────────────────────────────────────── */
@@ -90,7 +90,7 @@ export function GlobeView({
     const map = L.map(containerRef.current, {
       center: vp.center,
       zoom: vp.zoom,
-      minZoom: 2,
+      minZoom: 3,
       maxBounds: L.latLngBounds([-85, -180], [85, 180]),
       maxBoundsViscosity: 1.0,
       zoomControl: false,
