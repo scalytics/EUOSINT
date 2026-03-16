@@ -575,10 +575,129 @@ ON CONFLICT(alert_id) DO UPDATE SET
 			return fmt.Errorf("upsert alert %s: %w", alert.AlertID, err)
 		}
 	}
+	// Rebuild FTS index.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM alerts_fts`); err != nil {
+		return fmt.Errorf("clear alerts_fts: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO alerts_fts (alert_id, title, canonical_url, category, severity, region_tag,
+  source_authority, source_country, source_country_code)
+SELECT a.alert_id, a.title, a.canonical_url, a.category, a.severity, a.region_tag,
+  json_extract(a.source_json, '$.authority_name'),
+  json_extract(a.source_json, '$.country'),
+  json_extract(a.source_json, '$.country_code')
+FROM alerts a
+`); err != nil {
+		return fmt.Errorf("rebuild alerts_fts: %w", err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit alert save tx: %w", err)
 	}
 	return nil
+}
+
+// SearchAlerts performs full-text search against the alerts FTS index.
+// The query supports FTS5 syntax: bare words, "quoted phrases", prefix*, AND/OR/NOT.
+// Results are ordered by BM25 relevance. Limit 0 means default (100).
+func (db *DB) SearchAlerts(ctx context.Context, query string, category string, region string, status string, limit int) ([]model.Alert, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+
+	query = strings.TrimSpace(query)
+	if query == "" && category == "" && region == "" {
+		return nil, nil
+	}
+
+	var (
+		rows *sql.Rows
+		err  error
+	)
+	if query != "" {
+		// FTS5 match with optional filters on the joined alerts table.
+		where := `WHERE alerts_fts MATCH ?`
+		args := []any{query}
+		if category != "" {
+			where += ` AND a.category = ?`
+			args = append(args, category)
+		}
+		if region != "" {
+			where += ` AND a.region_tag = ?`
+			args = append(args, region)
+		}
+		if status != "" {
+			where += ` AND a.status = ?`
+			args = append(args, status)
+		}
+		args = append(args, limit)
+		rows, err = db.sql.QueryContext(ctx, `
+SELECT a.alert_id, a.source_id, a.status, a.first_seen, a.last_seen, a.title,
+  a.canonical_url, a.category, a.severity, a.region_tag, a.lat, a.lng,
+  a.freshness_hours, a.source_json, a.reporting_json, a.triage_json,
+  bm25(alerts_fts, 0, 10.0, 0, 3.0, 0, 2.0, 2.0, 2.0, 1.0) AS rank
+FROM alerts_fts
+JOIN alerts a ON a.alert_id = alerts_fts.alert_id
+`+where+`
+ORDER BY rank
+LIMIT ?`, args...)
+	} else {
+		// No text query, just filter.
+		where := `WHERE 1=1`
+		args := []any{}
+		if category != "" {
+			where += ` AND a.category = ?`
+			args = append(args, category)
+		}
+		if region != "" {
+			where += ` AND a.region_tag = ?`
+			args = append(args, region)
+		}
+		if status != "" {
+			where += ` AND a.status = ?`
+			args = append(args, status)
+		}
+		args = append(args, limit)
+		rows, err = db.sql.QueryContext(ctx, `
+SELECT a.alert_id, a.source_id, a.status, a.first_seen, a.last_seen, a.title,
+  a.canonical_url, a.category, a.severity, a.region_tag, a.lat, a.lng,
+  a.freshness_hours, a.source_json, a.reporting_json, a.triage_json,
+  0 AS rank
+FROM alerts a
+`+where+`
+ORDER BY a.last_seen DESC
+LIMIT ?`, args...)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("search alerts: %w", err)
+	}
+	defer rows.Close()
+
+	var results []model.Alert
+	for rows.Next() {
+		var (
+			a           model.Alert
+			sourceJSON  string
+			reportJSON  string
+			triageJSON  string
+			rank        float64
+		)
+		if err := rows.Scan(&a.AlertID, &a.SourceID, &a.Status, &a.FirstSeen, &a.LastSeen,
+			&a.Title, &a.CanonicalURL, &a.Category, &a.Severity, &a.RegionTag,
+			&a.Lat, &a.Lng, &a.FreshnessHours, &sourceJSON, &reportJSON, &triageJSON, &rank); err != nil {
+			return nil, fmt.Errorf("scan search result: %w", err)
+		}
+		_ = json.Unmarshal([]byte(sourceJSON), &a.Source)
+		_ = json.Unmarshal([]byte(reportJSON), &a.Reporting)
+		if triageJSON != "null" && triageJSON != "" {
+			var t model.Triage
+			if json.Unmarshal([]byte(triageJSON), &t) == nil {
+				a.Triage = &t
+			}
+		}
+		results = append(results, a)
+	}
+	return results, rows.Err()
 }
 
 func (db *DB) DeactivateSources(ctx context.Context, reasons map[string]string) error {
