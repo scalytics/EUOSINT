@@ -38,4 +38,6 @@ docker-compose.override.yml
 .npm/
 .pnpm-store/
 .yarn/
+__pycache__/
+*.py[cod]
 *.tsbuildinfo
