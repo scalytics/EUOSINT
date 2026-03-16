@@ -26,6 +26,7 @@ interface Props {
   onCategoryChange: (category: AlertCategory | "all") => void;
   regionFilter: string;
   onRegionChange: (region: string) => void;
+  onNavigatorSelect?: (region: string, category: AlertCategory) => void;
   onVisibleAlertIdsChange: (ids: string[]) => void;
 }
 
@@ -37,6 +38,7 @@ export function AlertFeed({
   onCategoryChange,
   regionFilter,
   onRegionChange,
+  onNavigatorSelect,
   onVisibleAlertIdsChange,
 }: Props) {
   const [viewMode, setViewMode] = useState<"navigator" | "timeline">("navigator");
@@ -168,6 +170,15 @@ export function AlertFeed({
 
   const activeNavigatorGroup =
     navigatorGroups.find((group) => group.key === activeNavigatorGroupKey) ?? null;
+
+  const handleNavigatorGroupSelect = (groupKey: string) => {
+    setActiveNavigatorGroupKey(groupKey);
+    const group = navigatorGroups.find((entry) => entry.key === groupKey);
+    if (!group) {
+      return;
+    }
+    onNavigatorSelect?.(group.region, group.category);
+  };
 
   // Keep globe visibility aligned with current filters, not only the active navigator bucket.
   const visibleAlertIds = useMemo(
@@ -311,7 +322,7 @@ export function AlertFeed({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="px-3 py-3 border-b border-siem-border bg-siem-panel/95 space-y-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-siem-muted">
@@ -407,11 +418,7 @@ export function AlertFeed({
           </div>
         </div>
       </div>
-      <div
-        className={`flex-1 overflow-y-auto px-3 py-3 space-y-3 ${
-          isRefreshingList ? "animate-alert-list-refresh" : ""
-        }`}
-      >
+      <div className="border-b border-siem-border bg-siem-panel/95 px-3 py-3 space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -436,7 +443,7 @@ export function AlertFeed({
             Queue
           </button>
         </div>
-        {viewMode === "navigator" ? (
+        {viewMode === "navigator" && (
           <>
             <div className="grid grid-cols-3 gap-2 text-[10px] font-mono uppercase tracking-wide">
               <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
@@ -461,12 +468,12 @@ export function AlertFeed({
                 <div className="px-3 py-2 border-b border-siem-border bg-siem-panel/70 text-[10px] font-mono uppercase tracking-wider text-siem-muted">
                   Region + category navigation
                 </div>
-                <div className="p-2 space-y-1.5 max-h-[200px] overflow-y-auto">
+                <div className="max-h-44 overflow-y-auto p-2 space-y-1.5">
                   {navigatorGroups.map((group) => (
                     <button
                       key={group.key}
                       type="button"
-                      onClick={() => setActiveNavigatorGroupKey(group.key)}
+                      onClick={() => handleNavigatorGroupSelect(group.key)}
                       className={`w-full text-left rounded border px-2 py-1.5 transition-colors ${
                         activeNavigatorGroupKey === group.key
                           ? "bg-siem-accent/12 border-siem-accent/35"
@@ -496,8 +503,18 @@ export function AlertFeed({
                 </div>
               </section>
             )}
+          </>
+        )}
+      </div>
+      <div
+        className={`min-h-0 flex-1 px-3 py-3 ${
+          isRefreshingList ? "animate-alert-list-refresh" : ""
+        }`}
+      >
+        {viewMode === "navigator" ? (
+          <div className="flex h-full min-h-0 flex-col">
             {activeNavigatorGroup && (
-              <section className="rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
+              <section className="flex min-h-0 flex-1 flex-col rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
                 <div className="px-3 py-2 border-b border-siem-border bg-siem-panel/70 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-siem-muted">Case Queue</p>
@@ -510,16 +527,23 @@ export function AlertFeed({
                     {activeNavigatorGroup.total}
                   </span>
                 </div>
-                <div className="p-2 space-y-2">
+                <div className="min-h-0 flex-1 overflow-y-auto p-2 space-y-2">
                   {activeNavigatorGroup.alerts.map((alert, idx) =>
                     renderAlertCard(alert, "Case", idx)
                   )}
                 </div>
               </section>
             )}
-          </>
+            {!activeNavigatorGroup && (
+              <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
+                <p className="text-xs text-siem-muted uppercase tracking-wider">
+                  Select a region/category bucket to inspect its case queue
+                </p>
+              </div>
+            )}
+          </div>
         ) : (
-          <>
+          <div className="h-full overflow-y-auto space-y-3">
             {grouped.map((group) => (
               <section
                 key={group.category}
@@ -581,7 +605,7 @@ export function AlertFeed({
                 )}
               </section>
             )}
-          </>
+          </div>
         )}
         {facetFiltered.length === 0 && (
           <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">

@@ -128,6 +128,13 @@ export default function App() {
     setSelectedId(null);
   }, []);
 
+  const handleNavigatorSelect = useCallback((nextRegion: string, nextCategory: AlertCategory) => {
+    setRegionFilter(nextRegion);
+    setCategoryFilter(nextCategory);
+    setSelectedSourceIds([]);
+    setSelectedId(null);
+  }, []);
+
   const selectedAlert = selectedId
     ? scopedAlerts.find((a) => a.alert_id === selectedId) ?? alerts.find((a) => a.alert_id === selectedId) ?? null
     : null;
@@ -221,6 +228,7 @@ export default function App() {
                 onCategoryChange={setCategoryFilter}
                 regionFilter={regionFilter}
                 onRegionChange={handleRegionChange}
+                onNavigatorSelect={handleNavigatorSelect}
                 onVisibleAlertIdsChange={setVisibleAlertIds}
               />
             )}
