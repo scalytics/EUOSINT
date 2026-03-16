@@ -2848,12 +2848,13 @@
       "authority_type": "police",
       "base_url": "https://ws-public.interpol.int"
     },
-    "feed_url": "https://ws-public.interpol.int/notices/v1/red?resultPerPage=20&page=1",
+    "feed_url": "https://ws-public.interpol.int/notices/v1/red?resultPerPage=160&page=1",
+    "accumulate": true,
     "category": "wanted_suspect",
     "region_tag": "INT",
     "lat": 48.86,
     "lng": 2.35,
-    "max_items": 200
+    "max_items": 320
   },
   {
     "type": "interpol-yellow-json",
@@ -2866,12 +2867,13 @@
       "authority_type": "police",
       "base_url": "https://ws-public.interpol.int"
     },
-    "feed_url": "https://ws-public.interpol.int/notices/v1/yellow?resultPerPage=20&page=1",
+    "feed_url": "https://ws-public.interpol.int/notices/v1/yellow?resultPerPage=160&page=1",
+    "accumulate": true,
     "category": "missing_person",
     "region_tag": "INT",
     "lat": 48.86,
     "lng": 2.35,
-    "max_items": 200
+    "max_items": 320
   },
   {
     "type": "rss",

@@ -16,6 +16,7 @@ type RegistrySource struct {
 	Lat             float64           `json:"lat"`
 	Lng             float64           `json:"lng"`
 	MaxItems        int               `json:"max_items"`
+	Accumulate      bool              `json:"accumulate,omitempty"`
 	IncludeKeywords []string          `json:"include_keywords,omitempty"`
 	ExcludeKeywords []string          `json:"exclude_keywords,omitempty"`
 	SourceQuality   float64           `json:"source_quality,omitempty"`
