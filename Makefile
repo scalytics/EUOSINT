@@ -22,7 +22,7 @@ BRANCH ?= main
 RELEASE_LEVEL ?= patch
 
 .PHONY: help check check-commit install clean lint typecheck test build ci \
-	go-fmt go-test go-race go-cover go-vet go-codeql collector-parity commit-check \
+	go-fmt go-fmt-check go-test go-race go-cover go-vet go-codeql commit-check \
 	docker-build docker-up docker-down docker-logs docker-shell \
 	dev-start dev-stop dev-restart dev-logs \
 	code-ql code-ql-summary \
@@ -79,6 +79,14 @@ ci: check lint test build ## Run the full local CI suite
 go-fmt: ## Auto-format Go code
 	@mkdir -p $(GOCACHE_DIR) $(GOMODCACHE_DIR)
 	GOCACHE=$(GOCACHE_DIR) GOMODCACHE=$(GOMODCACHE_DIR) gofmt -w $$(find cmd internal -name '*.go' -type f | sort)
+
+go-fmt-check: ## Fail if Go files are not formatted
+	@unformatted=$$(gofmt -l $$(find cmd internal -name '*.go' -type f | sort)); \
+	if [ -n "$$unformatted" ]; then \
+		echo "gofmt needs to be run for:"; \
+		echo "$$unformatted"; \
+		exit 1; \
+	fi
 
 go-test: ## Run Go tests
 	@mkdir -p $(GOCACHE_DIR) $(GOMODCACHE_DIR)
