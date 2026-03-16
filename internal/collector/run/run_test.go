@@ -147,6 +147,18 @@ func TestBuildReplacementQueueFromPermanentFailures(t *testing.T) {
 	}
 }
 
+func TestExtractInterpolNoticeID(t *testing.T) {
+	if got := extractInterpolNoticeID("2026-17351", ""); got != "2026-17351" {
+		t.Fatalf("expected entity id to win, got %q", got)
+	}
+	if got := extractInterpolNoticeID("", "https://www.interpol.int/How-we-work/Notices/Yellow-Notices/View-Yellow-Notices#2026-17351"); got != "2026-17351" {
+		t.Fatalf("expected fragment id, got %q", got)
+	}
+	if got := extractInterpolNoticeID("", "https://ws-public.interpol.int/notices/v1/red/123"); got != "123" {
+		t.Fatalf("expected path id, got %q", got)
+	}
+}
+
 func TestFilterCategoryItemsDropsUnrelatedMissingPersonHTML(t *testing.T) {
 	dict, err := dictionary.Load(filepath.Join("..", "..", "..", "registry", "category_dictionary.json"))
 	if err != nil {

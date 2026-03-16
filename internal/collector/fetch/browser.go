@@ -6,8 +6,11 @@ package fetch
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sync"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 )
 
@@ -59,6 +62,87 @@ func (b *BrowserClient) Text(ctx context.Context, url string, followRedirects bo
 		return nil, fmt.Errorf("browser fetch %s: %w", url, err)
 	}
 	return []byte(html), nil
+}
+
+// CaptureJSONResponses opens a page in headless Chrome and collects JSON
+// XHR/fetch responses whose URL contains the given substring.
+func (b *BrowserClient) CaptureJSONResponses(ctx context.Context, pageURL string, urlContains string) ([][]byte, error) {
+	timeout := time.Duration(b.timeoutMS) * time.Millisecond
+	taskCtx, cancel := chromedp.NewContext(b.allocCtx)
+	defer cancel()
+
+	taskCtx, cancelTimeout := context.WithTimeout(taskCtx, timeout)
+	defer cancelTimeout()
+
+	var (
+		mu         sync.Mutex
+		seen       = map[network.RequestID]string{}
+		bodies     [][]byte
+		captureErr error
+	)
+
+	chromedp.ListenTarget(taskCtx, func(ev any) {
+		switch e := ev.(type) {
+		case *network.EventResponseReceived:
+			if !strings.Contains(e.Response.URL, urlContains) {
+				return
+			}
+			if e.Type != network.ResourceTypeXHR && e.Type != network.ResourceTypeFetch {
+				return
+			}
+			mu.Lock()
+			seen[e.RequestID] = e.Response.URL
+			mu.Unlock()
+		case *network.EventLoadingFinished:
+			mu.Lock()
+			_, ok := seen[e.RequestID]
+			mu.Unlock()
+			if !ok {
+				return
+			}
+			go func(requestID network.RequestID) {
+				var body []byte
+				err := chromedp.Run(taskCtx, chromedp.ActionFunc(func(ctx context.Context) error {
+					data, err := network.GetResponseBody(requestID).Do(ctx)
+					if err != nil {
+						return err
+					}
+					body = data
+					return nil
+				}))
+				mu.Lock()
+				defer mu.Unlock()
+				if err != nil {
+					if captureErr == nil {
+						captureErr = err
+					}
+					return
+				}
+				if len(body) > 0 {
+					bodies = append(bodies, body)
+				}
+			}(e.RequestID)
+		}
+	})
+
+	if err := chromedp.Run(taskCtx,
+		network.Enable(),
+		chromedp.Navigate(pageURL),
+		chromedp.WaitReady("body"),
+		chromedp.Sleep(5*time.Second),
+	); err != nil {
+		return nil, fmt.Errorf("browser capture %s: %w", pageURL, err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(bodies) == 0 && captureErr != nil {
+		return nil, fmt.Errorf("browser capture %s: %w", pageURL, captureErr)
+	}
+	if len(bodies) == 0 {
+		return nil, fmt.Errorf("browser capture %s: no matching JSON responses", pageURL)
+	}
+	return bodies, nil
 }
 
 // Close shuts down the browser allocator and releases Chrome processes.

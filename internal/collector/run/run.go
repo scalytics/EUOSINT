@@ -102,7 +102,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	for _, source := range sources {
 		startedAt := time.Now().UTC()
 		fetcher := fetch.FetcherFor(source.FetchMode, client, browser)
-		batch, err := r.fetchSource(ctx, fetcher, nctx, source, categoryDictionary)
+		batch, err := r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary)
 		entry := model.SourceHealthEntry{
 			SourceID:      source.Source.SourceID,
 			AuthorityName: source.Source.AuthorityName,
@@ -151,7 +151,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	return err
 }
 
-func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store) ([]model.Alert, error) {
+func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store) ([]model.Alert, error) {
 	switch source.Type {
 	case "rss":
 		return r.fetchRSS(ctx, fetcher, nctx, source)
@@ -160,7 +160,7 @@ func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, nctx nor
 	case "kev-json":
 		return r.fetchKEV(ctx, fetcher, nctx, source)
 	case "interpol-red-json", "interpol-yellow-json":
-		return r.fetchInterpol(ctx, fetcher, nctx, source)
+		return r.fetchInterpol(ctx, fetcher, browser, nctx, source)
 	case "travelwarning-json":
 		return r.fetchTravelWarningJSON(ctx, fetcher, nctx, source)
 	case "travelwarning-atom":
@@ -186,37 +186,10 @@ func (r Runner) fetchRSS(ctx context.Context, fetcher fetch.Fetcher, nctx normal
 		}
 	}
 	limit := perSourceLimit(nctx.Config, source)
-	out := make([]model.Alert, 0, limit)
-	if nctx.Config.AlertLLMEnabled {
-		alertLLM := vet.NewClient(config.Config{
-			HTTPTimeoutMS:      nctx.Config.HTTPTimeoutMS,
-			VettingBaseURL:     nctx.Config.VettingBaseURL,
-			VettingAPIKey:      nctx.Config.VettingAPIKey,
-			VettingProvider:    nctx.Config.VettingProvider,
-			VettingModel:       nctx.Config.AlertLLMModel,
-			VettingTemperature: 0,
-		})
-		classified, err := translate.BatchLLM(ctx, nctx.Config, alertLLM, source.Category, items)
-		if err != nil {
-			fmt.Fprintf(r.stderr, "WARN %s: alert llm failed: %v\n", source.Source.AuthorityName, err)
-		} else {
-			for _, classifiedItem := range classified {
-				if len(out) == limit {
-					break
-				}
-				if strings.TrimSpace(classifiedItem.Item.Title) == "" || strings.TrimSpace(classifiedItem.Item.Link) == "" {
-					continue
-				}
-				meta := source
-				meta.Category = firstNonEmpty(classifiedItem.Category, source.Category)
-				alert := normalize.RSSItem(nctx, meta, classifiedItem.Item)
-				if alert != nil {
-					out = append(out, *alert)
-				}
-			}
-			return out, nil
-		}
+	if len(items) > limit {
+		items = items[:limit]
 	}
+	out := make([]model.Alert, 0, limit)
 	for _, item := range items {
 		if len(out) == limit {
 			break
@@ -241,6 +214,11 @@ func (r Runner) fetchHTML(ctx context.Context, fetcher fetch.Fetcher, nctx norma
 	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords)
 	items = filterCategoryItems(items, source, categoryDictionary)
 	limit := perSourceLimit(nctx.Config, source)
+	if nctx.Config.AlertLLMEnabled {
+		if llmLimit := nctx.Config.AlertLLMMaxItemsPerSource; llmLimit > 0 && llmLimit < limit {
+			limit = llmLimit
+		}
+	}
 	if len(items) > limit {
 		items = items[:limit]
 	}
@@ -312,14 +290,31 @@ func (r Runner) fetchKEV(ctx context.Context, fetcher fetch.Fetcher, nctx normal
 	return out, nil
 }
 
-func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
-	body, err := fetcher.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
+func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	var (
+		body []byte
+		err  error
+	)
+	if browser != nil {
+		body, err = fetchInterpolViaBrowser(ctx, browser, source)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN %s: browser notice capture failed, falling back to direct fetch: %v\n", source.Source.AuthorityName, err)
+		}
+	}
+	if len(body) == 0 {
+		body, err = fetcher.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
+	}
 	if err != nil {
 		return nil, err
 	}
+	return parseInterpolNotices(nctx, source, body)
+}
+
+func parseInterpolNotices(nctx normalize.Context, source model.RegistrySource, body []byte) ([]model.Alert, error) {
 	var doc struct {
 		Embedded struct {
 			Notices []struct {
+				EntityID               string   `json:"entity_id"`
 				Forename               string   `json:"forename"`
 				Name                   string   `json:"name"`
 				PlaceOfBirth           string   `json:"place_of_birth"`
@@ -359,20 +354,68 @@ func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, nctx n
 			}
 		}
 		countryCode := ""
-		if len(notice.CountriesLikelyToVisit) > 0 {
-			countryCode = notice.CountriesLikelyToVisit[0]
-		} else if len(notice.Nationalities) > 0 {
+		if len(notice.Nationalities) > 0 {
 			countryCode = notice.Nationalities[0]
+		} else if len(notice.CountriesLikelyToVisit) > 0 {
+			countryCode = notice.CountriesLikelyToVisit[0]
 		}
+		noticeID := extractInterpolNoticeID(notice.EntityID, link)
 		summary := strings.TrimSpace(notice.IssuingEntity + " " + notice.PlaceOfBirth)
 		tags := append([]string{}, notice.Nationalities...)
 		tags = append(tags, notice.CountriesLikelyToVisit...)
-		alert := normalize.InterpolAlert(nctx, source, title, link, countryCode, summary, tags)
+		alert := normalize.InterpolAlert(nctx, source, noticeID, title, link, countryCode, summary, tags)
 		if alert != nil {
 			out = append(out, *alert)
 		}
 	}
 	return out, nil
+}
+
+func fetchInterpolViaBrowser(ctx context.Context, browser *fetch.BrowserClient, source model.RegistrySource) ([]byte, error) {
+	pageURL, matchURL := interpolBrowserURLs(source.Type)
+	if pageURL == "" || matchURL == "" {
+		return nil, fmt.Errorf("no browser fallback for %s", source.Type)
+	}
+	bodies, err := browser.CaptureJSONResponses(ctx, pageURL, matchURL)
+	if err != nil {
+		return nil, err
+	}
+	for _, body := range bodies {
+		if len(body) > 0 {
+			return body, nil
+		}
+	}
+	return nil, fmt.Errorf("no interpol browser JSON bodies captured")
+}
+
+func interpolBrowserURLs(sourceType string) (pageURL string, matchURL string) {
+	switch sourceType {
+	case "interpol-red-json":
+		return "https://www.interpol.int/How-we-work/Notices/Red-Notices/View-Red-Notices", "/notices/v1/red"
+	case "interpol-yellow-json":
+		return "https://www.interpol.int/How-we-work/Notices/Yellow-Notices/View-Yellow-Notices", "/notices/v1/yellow"
+	default:
+		return "", ""
+	}
+}
+
+func extractInterpolNoticeID(entityID string, link string) string {
+	if id := strings.TrimSpace(entityID); id != "" {
+		return id
+	}
+	parsed, err := url.Parse(strings.TrimSpace(link))
+	if err != nil {
+		return ""
+	}
+	if fragment := strings.TrimSpace(parsed.Fragment); fragment != "" {
+		return fragment
+	}
+	path := strings.Trim(parsed.Path, "/")
+	if path == "" {
+		return ""
+	}
+	parts := strings.Split(path, "/")
+	return strings.TrimSpace(parts[len(parts)-1])
 }
 
 func (r Runner) fetchTravelWarningJSON(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {

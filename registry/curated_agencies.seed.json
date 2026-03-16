@@ -1,6 +1,7 @@
 [
   {
-    "type": "rss",
+    "type": "interpol-red-json",
+    "fetch_mode": "browser",
     "source": {
       "source_id": "interpol-notices",
       "authority_name": "INTERPOL Notices",
@@ -14,7 +15,7 @@
       "is_high_value": true,
       "language_code": "en"
     },
-    "feed_url": "https://www.interpol.int/How-we-work/Notices/View-Red-Notices",
+    "feed_url": "https://ws-public.interpol.int/notices/v1/red?page=1&resultPerPage=160",
     "category": "wanted_suspect",
     "region_tag": "INT",
     "lat": 45.764,
@@ -25,7 +26,8 @@
     }
   },
   {
-    "type": "rss",
+    "type": "interpol-yellow-json",
+    "fetch_mode": "browser",
     "source": {
       "source_id": "interpol-missing",
       "authority_name": "INTERPOL Missing Persons",
@@ -41,7 +43,7 @@
       "is_high_value": true,
       "language_code": "en"
     },
-    "feed_url": "https://www.interpol.int/How-we-work/Notices/View-Yellow-Notices",
+    "feed_url": "https://ws-public.interpol.int/notices/v1/yellow?page=1&resultPerPage=160",
     "category": "missing_person",
     "region_tag": "INT",
     "lat": 45.764,
