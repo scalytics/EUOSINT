@@ -1,0 +1,1028 @@
+[
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "kenya-dci-wanted",
+      "authority_name": "Kenya DCI Wanted",
+      "country": "Kenya",
+      "country_code": "KE",
+      "region": "Africa",
+      "authority_type": "police",
+      "base_url": "https://www.dci.go.ke"
+    },
+    "feed_url": "https://www.dci.go.ke/wanted/",
+    "category": "wanted_suspect",
+    "region_tag": "KE",
+    "lat": -1.286389,
+    "lng": 36.817223,
+    "max_items": 80,
+    "include_keywords": ["wanted", "suspect", "fugitive", "appeal", "missing"],
+    "reporting": {
+      "label": "Report to Kenya DCI",
+      "url": "https://www.dci.go.ke/contact-us/",
+      "phone": "+254 20 2710000"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "eoco-gh-wanted",
+      "authority_name": "EOCO Ghana Wanted Persons",
+      "country": "Ghana",
+      "country_code": "GH",
+      "region": "Africa",
+      "authority_type": "police",
+      "base_url": "https://www.eoco.gov.gh"
+    },
+    "feed_url": "https://www.eoco.gov.gh/wanted-persons/",
+    "category": "wanted_suspect",
+    "region_tag": "GH",
+    "lat": 5.603717,
+    "lng": -0.186964,
+    "max_items": 80,
+    "include_keywords": ["wanted", "suspect", "fraud", "crime", "appeal"],
+    "reporting": {
+      "label": "Report to EOCO Ghana",
+      "url": "https://www.eoco.gov.gh/contact-us/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "osp-gh-wanted",
+      "authority_name": "Ghana OSP Wanted Cases",
+      "country": "Ghana",
+      "country_code": "GH",
+      "region": "Africa",
+      "authority_type": "regulatory",
+      "base_url": "https://osp.gov.gh"
+    },
+    "feed_url": "https://osp.gov.gh/case_files/wanted/",
+    "category": "wanted_suspect",
+    "region_tag": "GH",
+    "lat": 5.603717,
+    "lng": -0.186964,
+    "max_items": 80,
+    "include_keywords": ["wanted", "case", "appeal", "fugitive"],
+    "reporting": {
+      "label": "Report to Ghana OSP",
+      "url": "https://osp.gov.gh/contact/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "efcc-ng-wanted",
+      "authority_name": "EFCC Nigeria Wanted",
+      "country": "Nigeria",
+      "country_code": "NG",
+      "region": "Africa",
+      "authority_type": "police",
+      "base_url": "https://www.efcc.gov.ng"
+    },
+    "feed_url": "https://www.efcc.gov.ng/efcc/wanted",
+    "category": "wanted_suspect",
+    "region_tag": "NG",
+    "lat": 9.082,
+    "lng": 8.6753,
+    "max_items": 80,
+    "include_keywords": ["wanted", "suspect", "fraud", "money laundering", "appeal"],
+    "reporting": {
+      "label": "Report to EFCC",
+      "url": "https://www.efcc.gov.ng/efcc/records/red-alert"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "icpc-ng-wanted",
+      "authority_name": "ICPC Nigeria Wanted",
+      "country": "Nigeria",
+      "country_code": "NG",
+      "region": "Africa",
+      "authority_type": "police",
+      "base_url": "https://icpc.gov.ng"
+    },
+    "feed_url": "https://icpc.gov.ng/wanted-persons/",
+    "category": "wanted_suspect",
+    "region_tag": "NG",
+    "lat": 9.082,
+    "lng": 8.6753,
+    "max_items": 80,
+    "include_keywords": ["wanted", "persons", "suspect", "fugitive"],
+    "reporting": {
+      "label": "Report to ICPC",
+      "url": "https://icpc.gov.ng/report-corruption/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "saps-newsroom-html",
+      "authority_name": "SAPS Newsroom",
+      "country": "South Africa",
+      "country_code": "ZA",
+      "region": "Africa",
+      "authority_type": "police",
+      "base_url": "https://www.saps.gov.za"
+    },
+    "feed_url": "https://www.saps.gov.za/newsroom/newsroom.php",
+    "category": "public_appeal",
+    "region_tag": "ZA",
+    "lat": -25.747868,
+    "lng": 28.229271,
+    "max_items": 120,
+    "include_keywords": ["wanted", "missing", "suspect", "appeal", "crime", "investigation", "tip-off"],
+    "reporting": {
+      "label": "Report to SAPS Crime Stop",
+      "url": "https://www.saps.gov.za/crimestop/",
+      "phone": "08600 10111"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "missingchildren-za-html",
+      "authority_name": "Missing Children South Africa Cases",
+      "country": "South Africa",
+      "country_code": "ZA",
+      "region": "Africa",
+      "authority_type": "public_safety_program",
+      "base_url": "https://missingchildren.org.za"
+    },
+    "feed_url": "https://missingchildren.org.za/category/cases/",
+    "feed_urls": [
+      "https://missingchildren.org.za/category/cases/",
+      "https://missingchildren.org.za/category/missing-children/"
+    ],
+    "category": "missing_person",
+    "region_tag": "ZA",
+    "lat": -29.0,
+    "lng": 24.0,
+    "max_items": 120,
+    "include_keywords": ["missing", "child", "teen", "appeal", "case"],
+    "exclude_keywords": ["donate", "event", "newsletter"],
+    "reporting": {
+      "label": "Report Missing Person to MCSA",
+      "url": "https://missingchildren.org.za/report/"
+    }
+  },
+  {
+    "type": "rss",
+    "followRedirects": true,
+    "source": {
+      "source_id": "ke-cirt-cc",
+      "authority_name": "KE-CIRT/CC",
+      "country": "Kenya",
+      "country_code": "KE",
+      "region": "Africa",
+      "authority_type": "cert",
+      "base_url": "https://ke-cirt.go.ke"
+    },
+    "feed_url": "https://ke-cirt.go.ke/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "KE",
+    "lat": -1.286389,
+    "lng": 36.817223,
+    "max_items": 100,
+    "reporting": {
+      "label": "Report Incident to KE-CIRT/CC",
+      "url": "https://ke-cirt.go.ke/incident-reporting/"
+    }
+  },
+  {
+    "type": "rss",
+    "followRedirects": true,
+    "source": {
+      "source_id": "cert-mu",
+      "authority_name": "CERT-MU Mauritius",
+      "country": "Mauritius",
+      "country_code": "MU",
+      "region": "Africa",
+      "authority_type": "cert",
+      "base_url": "https://cert-mu.govmu.org"
+    },
+    "feed_url": "https://cert-mu.govmu.org/rss",
+    "feed_urls": [
+      "https://cert-mu.govmu.org/rss",
+      "https://cert-mu.govmu.org/English/Pages/rss.aspx"
+    ],
+    "category": "cyber_advisory",
+    "region_tag": "MU",
+    "lat": -20.160891,
+    "lng": 57.501222,
+    "max_items": 100,
+    "reporting": {
+      "label": "Report Incident to CERT-MU",
+      "url": "https://cert-mu.govmu.org/Pages/incident-reporting.aspx"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "ngcert-ng-bulletins",
+      "authority_name": "ngCERT Nigeria Bulletins",
+      "country": "Nigeria",
+      "country_code": "NG",
+      "region": "Africa",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.gov.ng"
+    },
+    "feed_url": "https://www.cert.gov.ng/",
+    "category": "cyber_advisory",
+    "region_tag": "NG",
+    "lat": 9.082,
+    "lng": 8.6753,
+    "max_items": 100,
+    "include_keywords": ["advisory", "alert", "threat", "vulnerability", "incident"],
+    "reporting": {
+      "label": "Report Incident to ngCERT",
+      "url": "https://www.cert.gov.ng/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "cert-tn-bulletins",
+      "authority_name": "Tunisia CERT Bulletins",
+      "country": "Tunisia",
+      "country_code": "TN",
+      "region": "Africa",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.tn"
+    },
+    "feed_url": "https://www.cert.tn/",
+    "category": "cyber_advisory",
+    "region_tag": "TN",
+    "lat": 33.886917,
+    "lng": 9.537499,
+    "max_items": 100,
+    "include_keywords": ["alerte", "advisory", "vuln", "threat", "incident", "cyber"],
+    "reporting": {
+      "label": "Report Incident to CERT-TN",
+      "url": "https://www.cert.tn/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "mp-gt-casos",
+      "authority_name": "Ministerio Publico Guatemala Casos",
+      "country": "Guatemala",
+      "country_code": "GT",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.mp.gob.gt"
+    },
+    "feed_url": "https://www.mp.gob.gt/noticias/",
+    "feed_urls": [
+      "https://www.mp.gob.gt/noticias/",
+      "https://www.mp.gob.gt/category/noticias/",
+      "https://www.mp.gob.gt"
+    ],
+    "category": "public_appeal",
+    "region_tag": "GT",
+    "lat": 14.634915,
+    "lng": -90.506882,
+    "max_items": 120,
+    "include_keywords": ["desaparec", "secuestro", "se busca", "captura", "investigacion", "denuncia", "fiscalia", "homicidio"],
+    "exclude_keywords": ["evento", "licitacion", "boletin", "agenda"],
+    "reporting": {
+      "label": "Report to MP Guatemala",
+      "url": "https://www.mp.gob.gt"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "mp-hn-casos",
+      "authority_name": "Ministerio Publico Honduras Casos",
+      "country": "Honduras",
+      "country_code": "HN",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.mp.hn"
+    },
+    "feed_url": "https://www.mp.hn/category/noticias/",
+    "feed_urls": [
+      "https://www.mp.hn/category/noticias/",
+      "https://www.mp.hn/noticias/",
+      "https://www.mp.hn"
+    ],
+    "category": "public_appeal",
+    "region_tag": "HN",
+    "lat": 14.0818,
+    "lng": -87.2068,
+    "max_items": 120,
+    "include_keywords": ["desaparec", "secuestro", "captura", "investigacion", "denuncia", "homicidio", "fiscalia"],
+    "exclude_keywords": ["evento", "agenda", "licitacion"],
+    "reporting": {
+      "label": "Report to MP Honduras",
+      "url": "https://www.mp.hn"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "fgr-sv-casos",
+      "authority_name": "Fiscalia El Salvador Casos",
+      "country": "El Salvador",
+      "country_code": "SV",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.fiscalia.gob.sv"
+    },
+    "feed_url": "https://www.fiscalia.gob.sv/category/noticias/",
+    "feed_urls": [
+      "https://www.fiscalia.gob.sv/category/noticias/",
+      "https://www.fiscalia.gob.sv/noticias/",
+      "https://www.fiscalia.gob.sv"
+    ],
+    "category": "public_appeal",
+    "region_tag": "SV",
+    "lat": 13.6929,
+    "lng": -89.2182,
+    "max_items": 120,
+    "include_keywords": ["desaparec", "secuestro", "se busca", "captura", "informacion", "denuncia", "fiscalia", "homicidio"],
+    "exclude_keywords": ["evento", "agenda", "acto protocolario"],
+    "reporting": {
+      "label": "Report to FGR El Salvador",
+      "url": "https://www.fiscalia.gob.sv"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "oij-cr-casos",
+      "authority_name": "OIJ Costa Rica Casos",
+      "country": "Costa Rica",
+      "country_code": "CR",
+      "region": "North America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://sitiooij.poder-judicial.go.cr"
+    },
+    "feed_url": "https://sitiooij.poder-judicial.go.cr/index.php/oficinas-y-departamentos/desaparecidos",
+    "feed_urls": [
+      "https://sitiooij.poder-judicial.go.cr/index.php/oficinas-y-departamentos/desaparecidos",
+      "https://sitiooij.poder-judicial.go.cr/index.php/noticias",
+      "https://sitiooij.poder-judicial.go.cr"
+    ],
+    "category": "missing_person",
+    "region_tag": "CR",
+    "lat": 9.9325,
+    "lng": -84.0833,
+    "max_items": 120,
+    "include_keywords": ["desaparec", "persona", "se busca", "informacion", "auxilio", "oij"],
+    "exclude_keywords": ["licitacion", "convocatoria", "boletin"],
+    "reporting": {
+      "label": "Report to OIJ Costa Rica",
+      "url": "https://sitiooij.poder-judicial.go.cr"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "mp-pa-casos",
+      "authority_name": "Ministerio Publico Panama Casos",
+      "country": "Panama",
+      "country_code": "PA",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://ministeriopublico.gob.pa"
+    },
+    "feed_url": "https://ministeriopublico.gob.pa/categoria/noticias/",
+    "feed_urls": [
+      "https://ministeriopublico.gob.pa/categoria/noticias/",
+      "https://ministeriopublico.gob.pa/noticias/",
+      "https://ministeriopublico.gob.pa"
+    ],
+    "category": "public_appeal",
+    "region_tag": "PA",
+    "lat": 8.9824,
+    "lng": -79.5199,
+    "max_items": 120,
+    "include_keywords": ["desaparec", "secuestro", "se busca", "captura", "informacion", "denuncia", "investigacion"],
+    "exclude_keywords": ["evento", "agenda", "licitacion"],
+    "reporting": {
+      "label": "Report to MP Panama",
+      "url": "https://ministeriopublico.gob.pa"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "mp-ni-casos",
+      "authority_name": "Ministerio Publico Nicaragua Casos",
+      "country": "Nicaragua",
+      "country_code": "NI",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.ministeriopublico.gob.ni"
+    },
+    "feed_url": "https://www.ministeriopublico.gob.ni/noticias/",
+    "feed_urls": [
+      "https://www.ministeriopublico.gob.ni/noticias/",
+      "https://www.ministeriopublico.gob.ni"
+    ],
+    "category": "public_appeal",
+    "region_tag": "NI",
+    "lat": 12.1364,
+    "lng": -86.2514,
+    "max_items": 120,
+    "include_keywords": ["desaparec", "secuestro", "captura", "investigacion", "denuncia", "fiscalia", "homicidio"],
+    "exclude_keywords": ["agenda", "evento", "boletin"],
+    "reporting": {
+      "label": "Report to MP Nicaragua",
+      "url": "https://www.ministeriopublico.gob.ni"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "acled-conflict-monitor",
+      "authority_name": "ACLED Conflict Monitor",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://acleddata.com"
+    },
+    "feed_url": "https://acleddata.com/",
+    "feed_urls": [
+      "https://acleddata.com/",
+      "https://acleddata.com/dashboard/"
+    ],
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 20.0,
+    "lng": 0.0,
+    "max_items": 100,
+    "include_keywords": ["conflict", "violence", "protest", "incident", "dashboard", "data"],
+    "exclude_keywords": ["careers", "donate", "newsletter"],
+    "reporting": {
+      "label": "ACLED Data Access",
+      "url": "https://acleddata.com/data-export-tool/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "hot-tasking",
+      "authority_name": "Humanitarian OpenStreetMap Team",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.hotosm.org"
+    },
+    "feed_url": "https://www.hotosm.org/projects/",
+    "feed_urls": [
+      "https://www.hotosm.org/projects/",
+      "https://tasks.hotosm.org/explore"
+    ],
+    "category": "humanitarian_tasking",
+    "region_tag": "INT",
+    "lat": 20.0,
+    "lng": 0.0,
+    "max_items": 100,
+    "include_keywords": ["mapping", "task", "response", "disaster", "humanitarian", "project"],
+    "exclude_keywords": ["careers", "donate"],
+    "reporting": {
+      "label": "Join HOT Mapping Tasks",
+      "url": "https://tasks.hotosm.org/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "missing-maps-tasking",
+      "authority_name": "Missing Maps",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.missingmaps.org"
+    },
+    "feed_url": "https://www.missingmaps.org/",
+    "feed_urls": [
+      "https://www.missingmaps.org/",
+      "https://www.missingmaps.org/blog/"
+    ],
+    "category": "humanitarian_tasking",
+    "region_tag": "INT",
+    "lat": 20.0,
+    "lng": 0.0,
+    "max_items": 80,
+    "include_keywords": ["mapathon", "mapping", "task", "response", "field", "vulnerable"],
+    "exclude_keywords": ["donate", "shop"],
+    "reporting": {
+      "label": "Join Missing Maps",
+      "url": "https://www.missingmaps.org/get-involved/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "icrc-family-links",
+      "authority_name": "ICRC Family Links",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://familylinks.icrc.org"
+    },
+    "feed_url": "https://familylinks.icrc.org/",
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 20.0,
+    "lng": 0.0,
+    "max_items": 80,
+    "include_keywords": ["missing", "family", "search", "crisis", "restore", "trace"],
+    "exclude_keywords": ["privacy", "policy", "terms"],
+    "reporting": {
+      "label": "ICRC Family Links",
+      "url": "https://familylinks.icrc.org/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "iom-missing-migrants",
+      "authority_name": "IOM Missing Migrants",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://missingmigrants.iom.int"
+    },
+    "feed_url": "https://missingmigrants.iom.int/",
+    "feed_urls": [
+      "https://missingmigrants.iom.int/",
+      "https://missingmigrants.iom.int/latest-data"
+    ],
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 20.0,
+    "lng": 0.0,
+    "max_items": 100,
+    "include_keywords": ["missing migrants", "incident", "data", "route", "deaths", "disappearances"],
+    "exclude_keywords": ["publication", "about us"],
+    "reporting": {
+      "label": "IOM Missing Migrants Data",
+      "url": "https://missingmigrants.iom.int/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "ict4peace-briefings",
+      "authority_name": "ICT4Peace",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://ict4peace.org"
+    },
+    "feed_url": "https://ict4peace.org/",
+    "feed_urls": [
+      "https://ict4peace.org/",
+      "https://ict4peace.org/category/publications/"
+    ],
+    "category": "humanitarian_tasking",
+    "region_tag": "INT",
+    "lat": 20.0,
+    "lng": 0.0,
+    "max_items": 80,
+    "include_keywords": ["crisis", "humanitarian", "technology", "coordination", "response"],
+    "exclude_keywords": ["about", "board", "contact"],
+    "reporting": {
+      "label": "ICT4Peace Publications",
+      "url": "https://ict4peace.org/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "cida-africa-updates",
+      "authority_name": "CIDA Africa",
+      "country": "South Africa",
+      "country_code": "ZA",
+      "region": "Africa",
+      "authority_type": "public_safety_program",
+      "base_url": "https://cida-africa.org"
+    },
+    "feed_url": "https://cida-africa.org/",
+    "feed_urls": [
+      "https://cida-africa.org/",
+      "https://cida-africa.org/news/"
+    ],
+    "category": "cyber_advisory",
+    "region_tag": "ZA",
+    "lat": -26.2041,
+    "lng": 28.0473,
+    "max_items": 80,
+    "include_keywords": ["cyber", "security", "incident", "resilience", "capacity", "training", "civil society"],
+    "exclude_keywords": ["privacy policy", "terms", "donate"],
+    "reporting": {
+      "label": "Contact CIDA Africa",
+      "url": "https://cida-africa.org/contact/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "digital-society-africa",
+      "authority_name": "Digital Society of Africa",
+      "country": "Kenya",
+      "country_code": "KE",
+      "region": "Africa",
+      "authority_type": "public_safety_program",
+      "base_url": "https://digitalsociety.africa"
+    },
+    "feed_url": "https://digitalsociety.africa/",
+    "feed_urls": [
+      "https://digitalsociety.africa/",
+      "https://digitalsociety.africa/blog/"
+    ],
+    "category": "cyber_advisory",
+    "region_tag": "KE",
+    "lat": -1.2864,
+    "lng": 36.8172,
+    "max_items": 80,
+    "include_keywords": ["digital security", "cyber", "safety", "threat", "awareness", "training", "response"],
+    "exclude_keywords": ["about us", "privacy policy", "terms"],
+    "reporting": {
+      "label": "Contact Digital Society Africa",
+      "url": "https://digitalsociety.africa/contact/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "resilio-africa",
+      "authority_name": "Resilio Africa",
+      "country": "Nigeria",
+      "country_code": "NG",
+      "region": "Africa",
+      "authority_type": "public_safety_program",
+      "base_url": "https://resilio.cybersafefoundation.org"
+    },
+    "feed_url": "https://resilio.cybersafefoundation.org/",
+    "category": "cyber_advisory",
+    "region_tag": "NG",
+    "lat": 9.082,
+    "lng": 8.6753,
+    "max_items": 80,
+    "include_keywords": ["cyber", "resilience", "program", "community", "security", "incident", "capacity"],
+    "exclude_keywords": ["privacy", "terms"],
+    "reporting": {
+      "label": "Contact Resilio Africa",
+      "url": "https://resilio.cybersafefoundation.org/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "derechos-digitales-latam",
+      "authority_name": "Derechos Digitales",
+      "country": "Chile",
+      "country_code": "CL",
+      "region": "South America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.derechosdigitales.org"
+    },
+    "feed_url": "https://www.derechosdigitales.org/noticias/",
+    "feed_urls": [
+      "https://www.derechosdigitales.org/noticias/",
+      "https://www.derechosdigitales.org/categoria/seguridad-digital/"
+    ],
+    "category": "cyber_advisory",
+    "region_tag": "CL",
+    "lat": -33.4489,
+    "lng": -70.6693,
+    "max_items": 100,
+    "include_keywords": ["seguridad digital", "resiliencia", "proteccion", "ciber", "sociedad civil", "amenaza"],
+    "exclude_keywords": ["donar", "newsletter", "equipo"],
+    "reporting": {
+      "label": "Contact Derechos Digitales",
+      "url": "https://www.derechosdigitales.org/contacto/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "tedic-paraguay",
+      "authority_name": "TEDIC Paraguay",
+      "country": "Paraguay",
+      "country_code": "PY",
+      "region": "South America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.tedic.org"
+    },
+    "feed_url": "https://www.tedic.org/noticias/",
+    "feed_urls": [
+      "https://www.tedic.org/noticias/",
+      "https://www.tedic.org/tag/seguridad-digital/"
+    ],
+    "category": "cyber_advisory",
+    "region_tag": "PY",
+    "lat": -25.2637,
+    "lng": -57.5759,
+    "max_items": 100,
+    "include_keywords": ["seguridad digital", "ciber", "proteccion", "sociedad civil", "capacitacion", "riesgo"],
+    "exclude_keywords": ["donar", "equipo", "convocatoria laboral"],
+    "reporting": {
+      "label": "Contact TEDIC",
+      "url": "https://www.tedic.org/contacto/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "karisma-colombia",
+      "authority_name": "Fundacion Karisma",
+      "country": "Colombia",
+      "country_code": "CO",
+      "region": "South America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://web.karisma.org.co"
+    },
+    "feed_url": "https://web.karisma.org.co/blog/",
+    "feed_urls": [
+      "https://web.karisma.org.co/blog/",
+      "https://web.karisma.org.co/tag/seguridad-digital/"
+    ],
+    "category": "cyber_advisory",
+    "region_tag": "CO",
+    "lat": 4.711,
+    "lng": -74.0721,
+    "max_items": 100,
+    "include_keywords": ["seguridad digital", "ciberseguridad", "proteccion", "organizaciones", "amenaza", "riesgo"],
+    "exclude_keywords": ["donaciones", "equipo", "vacante"],
+    "reporting": {
+      "label": "Contact Fundacion Karisma",
+      "url": "https://web.karisma.org.co/contacto/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "unicef-giga",
+      "authority_name": "UNICEF Giga",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://giga.global"
+    },
+    "feed_url": "https://giga.global/",
+    "feed_urls": [
+      "https://giga.global/",
+      "https://giga.global/insights/",
+      "https://giga.global/projects/"
+    ],
+    "category": "education_digital_capacity",
+    "region_tag": "INT",
+    "lat": 20.0,
+    "lng": 0.0,
+    "max_items": 100,
+    "include_keywords": ["school connectivity", "internet", "digital divide", "schools", "education", "mapping"],
+    "exclude_keywords": ["privacy policy", "terms", "careers"],
+    "reporting": {
+      "label": "UNICEF Giga Opportunities",
+      "url": "https://giga.global/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "itu-digital-capacity",
+      "authority_name": "ITU Digital Development",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.itu.int"
+    },
+    "feed_url": "https://www.itu.int/en/ITU-D/Pages/default.aspx",
+    "feed_urls": [
+      "https://www.itu.int/en/ITU-D/Pages/default.aspx",
+      "https://www.itu.int/hub/category/bridging-the-digital-divide/",
+      "https://www.itu.int/hub/category/cybersecurity/"
+    ],
+    "category": "education_digital_capacity",
+    "region_tag": "INT",
+    "lat": 20.0,
+    "lng": 0.0,
+    "max_items": 120,
+    "include_keywords": ["digital skills", "capacity", "connectivity", "cyber capacity", "education", "training"],
+    "exclude_keywords": ["meeting calendar", "press release"],
+    "reporting": {
+      "label": "ITU Development Programs",
+      "url": "https://www.itu.int/en/ITU-D/Pages/default.aspx"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "worldbank-education-digital",
+      "authority_name": "World Bank Education Digital",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.worldbank.org"
+    },
+    "feed_url": "https://www.worldbank.org/en/topic/education",
+    "feed_urls": [
+      "https://www.worldbank.org/en/topic/education",
+      "https://www.worldbank.org/en/topic/digitaldevelopment"
+    ],
+    "category": "education_digital_capacity",
+    "region_tag": "INT",
+    "lat": 20.0,
+    "lng": 0.0,
+    "max_items": 120,
+    "include_keywords": ["education", "digital", "school", "ICT", "skills", "capacity building"],
+    "exclude_keywords": ["annual report", "procurement policy"],
+    "reporting": {
+      "label": "World Bank Education Programs",
+      "url": "https://www.worldbank.org/en/topic/education"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "africa-code-week",
+      "authority_name": "Africa Code Week",
+      "country": "Africa",
+      "country_code": "AFR",
+      "region": "Africa",
+      "authority_type": "public_safety_program",
+      "base_url": "https://africacodeweek.org"
+    },
+    "feed_url": "https://africacodeweek.org/",
+    "feed_urls": [
+      "https://africacodeweek.org/",
+      "https://africacodeweek.org/news/"
+    ],
+    "category": "education_digital_capacity",
+    "region_tag": "AFR",
+    "lat": 1.65,
+    "lng": 17.0,
+    "max_items": 100,
+    "include_keywords": ["mentor", "teacher", "volunteer", "digital literacy", "coding", "training"],
+    "exclude_keywords": ["privacy", "terms", "sponsor package"],
+    "reporting": {
+      "label": "Join Africa Code Week",
+      "url": "https://africacodeweek.org/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "dot-digital-opportunity-trust",
+      "authority_name": "Digital Opportunity Trust",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.dotrust.org"
+    },
+    "feed_url": "https://www.dotrust.org/",
+    "feed_urls": [
+      "https://www.dotrust.org/",
+      "https://www.dotrust.org/news/"
+    ],
+    "category": "education_digital_capacity",
+    "region_tag": "INT",
+    "lat": 20.0,
+    "lng": 0.0,
+    "max_items": 100,
+    "include_keywords": ["digital skills", "training", "youth", "employment", "mentor", "capacity"],
+    "exclude_keywords": ["donate", "annual report"],
+    "reporting": {
+      "label": "DOT Programs and Partnerships",
+      "url": "https://www.dotrust.org/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "european-schoolnet",
+      "authority_name": "European Schoolnet",
+      "country": "Europe",
+      "country_code": "EU",
+      "region": "Europe",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.eun.org"
+    },
+    "feed_url": "https://www.eun.org/",
+    "feed_urls": [
+      "https://www.eun.org/",
+      "https://www.eun.org/news"
+    ],
+    "category": "education_digital_capacity",
+    "region_tag": "EU",
+    "lat": 50.85,
+    "lng": 4.35,
+    "max_items": 100,
+    "include_keywords": ["digital education", "teacher training", "skills", "school", "capacity"],
+    "exclude_keywords": ["privacy policy", "cookie policy"],
+    "reporting": {
+      "label": "European Schoolnet Initiatives",
+      "url": "https://www.eun.org/"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "erasmus-plus-digital",
+      "authority_name": "Erasmus+ Digital Education",
+      "country": "Europe",
+      "country_code": "EU",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://erasmus-plus.ec.europa.eu"
+    },
+    "feed_url": "https://erasmus-plus.ec.europa.eu/",
+    "feed_urls": [
+      "https://erasmus-plus.ec.europa.eu/",
+      "https://erasmus-plus.ec.europa.eu/opportunities"
+    ],
+    "category": "education_digital_capacity",
+    "region_tag": "EU",
+    "lat": 50.85,
+    "lng": 4.35,
+    "max_items": 120,
+    "include_keywords": ["digital", "education", "training", "call", "project", "skills"],
+    "exclude_keywords": ["about", "legal notice"],
+    "reporting": {
+      "label": "Erasmus+ Opportunities",
+      "url": "https://erasmus-plus.ec.europa.eu/opportunities"
+    }
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "coe-education-digital",
+      "authority_name": "Council of Europe Education",
+      "country": "Europe",
+      "country_code": "EU",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.coe.int"
+    },
+    "feed_url": "https://www.coe.int/en/web/education",
+    "feed_urls": [
+      "https://www.coe.int/en/web/education",
+      "https://www.coe.int/en/web/digital-citizenship-education"
+    ],
+    "category": "education_digital_capacity",
+    "region_tag": "EU",
+    "lat": 48.58,
+    "lng": 7.75,
+    "max_items": 100,
+    "include_keywords": ["digital citizenship", "education", "training", "school", "online safety"],
+    "exclude_keywords": ["press room", "vacancy"],
+    "reporting": {
+      "label": "Council of Europe Education Programs",
+      "url": "https://www.coe.int/en/web/education"
+    }
+  }
+]

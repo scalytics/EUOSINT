@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="OSINT SIEM globe favicon">
+  <defs>
+    <radialGradient id="ocean" cx="36%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#2d5f78"/>
+      <stop offset="100%" stop-color="#0a1b2a"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8ec5da"/>
+      <stop offset="100%" stop-color="#4d90a8"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#07111a"/>
+  <circle cx="32" cy="32" r="21" fill="url(#ocean)" stroke="url(#ring)" stroke-width="2"/>
+  <path d="M14 32h36" stroke="#9fc3d2" stroke-opacity="0.75" stroke-width="1.4"/>
+  <path d="M17 24c8 3 22 3 30 0" stroke="#9fc3d2" stroke-opacity="0.68" stroke-width="1.2" fill="none"/>
+  <path d="M17 40c8-3 22-3 30 0" stroke="#9fc3d2" stroke-opacity="0.68" stroke-width="1.2" fill="none"/>
+  <ellipse cx="32" cy="32" rx="9" ry="21" fill="none" stroke="#9fc3d2" stroke-opacity="0.7" stroke-width="1.2"/>
+  <ellipse cx="32" cy="32" rx="16" ry="21" fill="none" stroke="#9fc3d2" stroke-opacity="0.45" stroke-width="1"/>
+  <path d="M26 20l7 3l6-2l3 6l-2 6l-8 2l-5-3l-3-7z" fill="#89b7c8" fill-opacity="0.28"/>
+  <circle cx="49.5" cy="15" r="2.2" fill="#88c9e2"/>
+</svg>
