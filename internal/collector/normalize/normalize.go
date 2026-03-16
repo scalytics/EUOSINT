@@ -530,13 +530,13 @@ func defaultSeverity(category string) string {
 func inferSeverity(title string, fallback string) string {
 	t := strings.ToLower(title)
 	switch {
-	case containsAny(t, "critical", "emergency", "zero-day", "0-day", "ransomware", "actively exploited", "exploitation", "breach", "data leak", "crypto heist", "million stolen", "wanted", "fugitive", "murder", "homicide", "missing", "amber alert", "kidnap", "do not travel"):
+	case containsAny(t, "critical", "kritische", "emergency", "zero-day", "0-day", "ransomware", "actively exploited", "exploitation", "breach", "data leak", "crypto heist", "million stolen", "wanted", "fugitive", "murder", "homicide", "missing", "amber alert", "kidnap", "do not travel", "notfall"):
 		return "critical"
-	case containsAny(t, "hack", "compromise", "vulnerability", "high", "severe", "urgent", "fatal", "death", "shooting", "fraud", "scam", "phishing", "reconsider travel", "avoid non-essential travel"):
+	case containsAny(t, "hack", "compromise", "vulnerability", "schwachstelle", "sicherheitslücke", "high", "severe", "urgent", "dringend", "fatal", "death", "shooting", "fraud", "scam", "phishing", "reconsider travel", "avoid non-essential travel", "warnung", "gefährlich"):
 		return "high"
-	case containsAny(t, "arrested", "charged", "sentenced", "medium", "moderate"):
+	case containsAny(t, "arrested", "charged", "sentenced", "medium", "moderate", "festgenommen", "verurteilt"):
 		return "medium"
-	case containsAny(t, "low", "informational"):
+	case containsAny(t, "low", "informational", "infopaket", "infoblatt", "handreichung", "leitfaden", "newsletter"):
 		return "info"
 	default:
 		return fallback
