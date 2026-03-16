@@ -52,6 +52,9 @@ export function latLngToRegion(lat: number, lng: number): string | null {
 
 export function alertMatchesRegionFilter(alert: Alert, regionFilter: string): boolean {
   if (regionFilter === "all") return true;
+  if (regionFilter.startsWith("country:")) {
+    return alert.source.country_code === regionFilter.slice(8);
+  }
   if (regionFilter === "Caribbean") {
     return (
       alert.source.region === "Caribbean" ||

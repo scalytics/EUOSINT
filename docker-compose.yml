@@ -3,10 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.collector
+    env_file:
+      - .env
     command:
       - --watch
       - --registry
-      - /app/registry/source_registry.json
+      - /data/sources.db
       - --output
       - /data/alerts.json
       - --filtered-output
@@ -15,6 +17,10 @@ services:
       - /data/alerts-state.json
       - --source-health-output
       - /data/source-health.json
+      - --candidate-queue
+      - /data/source_candidates.json
+      - --replacement-queue
+      - /data/source_dead_letter.json
     environment:
       INTERVAL_MS: "900000"
       MAX_PER_SOURCE: "20"
@@ -31,6 +37,8 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - collector
+    env_file:
+      - .env
     environment:
       EUOSINT_SITE_ADDRESS: "${EUOSINT_SITE_ADDRESS:-:80}"
     ports:

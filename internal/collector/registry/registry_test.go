@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
 func TestLoadRegistryDeduplicatesAndNormalizes(t *testing.T) {
@@ -29,6 +31,37 @@ func TestLoadRegistryDeduplicatesAndNormalizes(t *testing.T) {
 	}
 	if sources[0].Source.SourceID != "dup" {
 		t.Fatalf("unexpected source ordering %#v", sources)
+	}
+	if sources[0].Source.CountryCode != "FR" {
+		t.Fatalf("expected normalized country code, got %q", sources[0].Source.CountryCode)
+	}
+}
+
+func TestLoadRegistryFromSQLite(t *testing.T) {
+	dir := t.TempDir()
+	jsonPath := filepath.Join(dir, "registry.json")
+	dbPath := filepath.Join(dir, "sources.db")
+	content := `[
+	  {"type":"rss","feed_url":"https://one.example/feed","category":"cyber_advisory","source":{"source_id":"one-feed","authority_name":"Agency One","country":"France","country_code":"fr","region":"Europe","authority_type":"cert","base_url":"https://one.example"}}
+	]`
+	if err := os.WriteFile(jsonPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	db, err := sourcedb.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := db.ImportRegistry(t.Context(), jsonPath); err != nil {
+		t.Fatal(err)
+	}
+
+	sources, err := Load(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) != 1 {
+		t.Fatalf("expected 1 source from sqlite registry, got %d", len(sources))
 	}
 	if sources[0].Source.CountryCode != "FR" {
 		t.Fatalf("expected normalized country code, got %q", sources[0].Source.CountryCode)

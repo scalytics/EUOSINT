@@ -4,16 +4,32 @@
 package registry
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
 func Load(path string) ([]model.RegistrySource, error) {
+	if isSQLitePath(path) {
+		db, err := sourcedb.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		defer db.Close()
+		raw, err := db.LoadActiveSources(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("load registry from source DB %s: %w", path, err)
+		}
+		return normalizeAll(raw), nil
+	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read registry %s: %w", path, err)
@@ -24,24 +40,7 @@ func Load(path string) ([]model.RegistrySource, error) {
 		return nil, fmt.Errorf("decode registry %s: %w", path, err)
 	}
 
-	seen := make(map[string]struct{}, len(raw))
-	out := make([]model.RegistrySource, 0, len(raw))
-	for _, entry := range raw {
-		normalized, ok := normalize(entry)
-		if !ok {
-			continue
-		}
-		if _, exists := seen[normalized.Source.SourceID]; exists {
-			continue
-		}
-		seen[normalized.Source.SourceID] = struct{}{}
-		out = append(out, normalized)
-	}
-
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].Source.SourceID < out[j].Source.SourceID
-	})
-	return out, nil
+	return normalizeAll(raw), nil
 }
 
 func normalize(entry model.RegistrySource) (model.RegistrySource, bool) {
@@ -73,4 +72,33 @@ func fallback(value, fallback string) string {
 		return fallback
 	}
 	return strings.TrimSpace(value)
+}
+
+func normalizeAll(raw []model.RegistrySource) []model.RegistrySource {
+	seen := make(map[string]struct{}, len(raw))
+	out := make([]model.RegistrySource, 0, len(raw))
+	for _, entry := range raw {
+		normalized, ok := normalize(entry)
+		if !ok {
+			continue
+		}
+		if _, exists := seen[normalized.Source.SourceID]; exists {
+			continue
+		}
+		seen[normalized.Source.SourceID] = struct{}{}
+		out = append(out, normalized)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Source.SourceID < out[j].Source.SourceID
+	})
+	return out
+}
+
+func isSQLitePath(path string) bool {
+	switch strings.ToLower(filepath.Ext(strings.TrimSpace(path))) {
+	case ".db", ".sqlite", ".sqlite3":
+		return true
+	default:
+		return false
+	}
 }

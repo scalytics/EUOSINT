@@ -5,21 +5,26 @@
  */
 
 import type { Severity, AlertCategory } from "@/types/alert";
+import { severityHex } from "@/lib/theme";
 
-export const severityColors: Record<Severity, string> = {
-  critical: "#d96464",
-  high: "#d98958",
-  medium: "#d1b35a",
-  low: "#4eaf82",
-  info: "#4fa0b1",
-};
+/**
+ * Get the resolved hex colour for a severity level.
+ * Reads from CSS custom properties at runtime — never hardcoded.
+ */
+export function severityColor(s: Severity): string {
+  return severityHex(s);
+}
 
+/**
+ * Tailwind class set for severity badge backgrounds.
+ * References @theme tokens so colours update from a single source.
+ */
 export const severityBg: Record<Severity, string> = {
-  critical: "bg-[#d96464]/15 text-[#d96464] border-[#d96464]/35",
-  high: "bg-[#d98958]/15 text-[#d98958] border-[#d98958]/35",
-  medium: "bg-[#d1b35a]/15 text-[#d1b35a] border-[#d1b35a]/35",
-  low: "bg-[#4eaf82]/15 text-[#4eaf82] border-[#4eaf82]/35",
-  info: "bg-[#4fa0b1]/15 text-[#4fa0b1] border-[#4fa0b1]/35",
+  critical: "bg-siem-critical/15 text-siem-critical border-siem-critical/35",
+  high: "bg-siem-high/15 text-siem-high border-siem-high/35",
+  medium: "bg-siem-medium/15 text-siem-medium border-siem-medium/35",
+  low: "bg-siem-low/15 text-siem-low border-siem-low/35",
+  info: "bg-siem-info/15 text-siem-info border-siem-info/35",
 };
 
 export const severityLabel: Record<Severity, string> = {
@@ -44,6 +49,7 @@ export const categoryLabels: Record<AlertCategory, string> = {
   fraud_alert: "Fraud Alert",
   public_safety: "Public Safety",
   private_sector: "Private Sector",
+  travel_warning: "Travel Warning",
 };
 
 export const categoryOrder: AlertCategory[] = [
@@ -60,22 +66,28 @@ export const categoryOrder: AlertCategory[] = [
   "private_sector",
   "public_safety",
   "terrorism_tip",
+  "travel_warning",
 ];
 
+/**
+ * Tailwind class set for category badge backgrounds.
+ * References --color-cat-* tokens defined in @theme.
+ */
 export const categoryBadge: Record<AlertCategory, string> = {
-  informational: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
-  cyber_advisory: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-  education_digital_capacity: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
-  humanitarian_tasking: "bg-teal-500/15 text-teal-300 border-teal-500/30",
-  conflict_monitoring: "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30",
-  humanitarian_security: "bg-blue-500/15 text-blue-300 border-blue-500/30",
-  wanted_suspect: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  missing_person: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  public_appeal: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
-  fraud_alert: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  public_safety: "bg-violet-500/15 text-violet-300 border-violet-500/30",
-  terrorism_tip: "bg-red-500/15 text-red-300 border-red-500/30",
-  private_sector: "bg-orange-500/15 text-orange-300 border-orange-500/30",
+  informational: "bg-cat-informational/15 text-cat-informational border-cat-informational/30",
+  cyber_advisory: "bg-cat-cyber/15 text-cat-cyber border-cat-cyber/30",
+  education_digital_capacity: "bg-cat-education/15 text-cat-education border-cat-education/30",
+  humanitarian_tasking: "bg-cat-humanitarian/15 text-cat-humanitarian border-cat-humanitarian/30",
+  conflict_monitoring: "bg-cat-conflict/15 text-cat-conflict border-cat-conflict/30",
+  humanitarian_security: "bg-cat-humsec/15 text-cat-humsec border-cat-humsec/30",
+  wanted_suspect: "bg-cat-wanted/15 text-cat-wanted border-cat-wanted/30",
+  missing_person: "bg-cat-missing/15 text-cat-missing border-cat-missing/30",
+  public_appeal: "bg-cat-appeal/15 text-cat-appeal border-cat-appeal/30",
+  fraud_alert: "bg-cat-fraud/15 text-cat-fraud border-cat-fraud/30",
+  public_safety: "bg-cat-safety/15 text-cat-safety border-cat-safety/30",
+  terrorism_tip: "bg-cat-terrorism/15 text-cat-terrorism border-cat-terrorism/30",
+  private_sector: "bg-cat-private/15 text-cat-private border-cat-private/30",
+  travel_warning: "bg-cat-travel/15 text-cat-travel border-cat-travel/30",
 };
 
 export const categoryIcons: Record<AlertCategory, string> = {
@@ -92,6 +104,7 @@ export const categoryIcons: Record<AlertCategory, string> = {
   fraud_alert: "BadgeDollarSign",
   public_safety: "Siren",
   private_sector: "Building",
+  travel_warning: "Plane",
 };
 
 export function freshnessLabel(hours: number): string {

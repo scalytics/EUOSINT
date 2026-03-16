@@ -9,10 +9,13 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/scalytics/euosint/internal/collector/config"
+	"github.com/scalytics/euosint/internal/collector/dictionary"
+	"github.com/scalytics/euosint/internal/collector/discover"
 	"github.com/scalytics/euosint/internal/collector/fetch"
 	"github.com/scalytics/euosint/internal/collector/model"
 	"github.com/scalytics/euosint/internal/collector/normalize"
@@ -21,12 +24,15 @@ import (
 	"github.com/scalytics/euosint/internal/collector/registry"
 	"github.com/scalytics/euosint/internal/collector/state"
 	"github.com/scalytics/euosint/internal/collector/translate"
+	"github.com/scalytics/euosint/internal/collector/vet"
+	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
 type Runner struct {
-	stdout        io.Writer
-	stderr        io.Writer
-	clientFactory func(config.Config) *fetch.Client
+	stdout         io.Writer
+	stderr         io.Writer
+	clientFactory  func(config.Config) *fetch.Client
+	browserFactory func(config.Config) (*fetch.BrowserClient, error)
 }
 
 func New(stdout io.Writer, stderr io.Writer) Runner {
@@ -34,10 +40,16 @@ func New(stdout io.Writer, stderr io.Writer) Runner {
 		stdout:        stdout,
 		stderr:        stderr,
 		clientFactory: fetch.New,
+		browserFactory: func(cfg config.Config) (*fetch.BrowserClient, error) {
+			return fetch.NewBrowser(cfg.BrowserTimeoutMS)
+		},
 	}
 }
 
 func (r Runner) Run(ctx context.Context, cfg config.Config) error {
+	if cfg.Watch && cfg.DiscoverBackground {
+		go r.runDiscoveryLoop(ctx, cfg)
+	}
 	if cfg.Watch {
 		return r.watch(ctx, cfg)
 	}
@@ -66,14 +78,31 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 	client := r.clientFactory(cfg)
+
+	var browser *fetch.BrowserClient
+	if cfg.BrowserEnabled && r.browserFactory != nil {
+		b, err := r.browserFactory(cfg)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN browser init failed (falling back to stealth): %v\n", err)
+		} else {
+			browser = b
+			defer browser.Close()
+		}
+	}
+
 	now := time.Now().UTC()
 	nctx := normalize.Context{Config: cfg, Now: now}
+	categoryDictionary, err := dictionary.Load(cfg.CategoryDictionaryPath)
+	if err != nil {
+		fmt.Fprintf(r.stderr, "WARN category dictionary load failed (falling back to legacy filters): %v\n", err)
+	}
 
 	alerts := []model.Alert{normalize.StaticInterpolEntry(now)}
 	sourceHealth := make([]model.SourceHealthEntry, 0, len(sources))
 	for _, source := range sources {
 		startedAt := time.Now().UTC()
-		batch, err := r.fetchSource(ctx, client, nctx, source)
+		fetcher := fetch.FetcherFor(source.FetchMode, client, browser)
+		batch, err := r.fetchSource(ctx, fetcher, nctx, source, categoryDictionary)
 		entry := model.SourceHealthEntry{
 			SourceID:      source.Source.SourceID,
 			AuthorityName: source.Source.AuthorityName,
@@ -85,6 +114,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		if err != nil {
 			entry.Status = "error"
 			entry.Error = err.Error()
+			entry.ErrorClass, entry.NeedsReplacement, entry.DiscoveryAction = classifySourceError(err)
 			sourceHealth = append(sourceHealth, entry)
 			fmt.Fprintf(r.stderr, "WARN %s: %v\n", source.Source.AuthorityName, err)
 			continue
@@ -102,41 +132,54 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
-	previous := state.Read(cfg.StateOutputPath)
-	if len(previous) == 0 {
-		previous = state.Read(cfg.OutputPath)
+	previous, err := loadPreviousAlerts(ctx, cfg)
+	if err != nil {
+		return err
 	}
 	currentActive, currentFiltered, fullState := state.Reconcile(cfg, active, filtered, previous, now)
-	if err := output.Write(cfg, currentActive, currentFiltered, fullState, sourceHealth, duplicateAudit); err != nil {
+	replacementQueue := buildReplacementQueue(sourceHealth, sources)
+	if err := deactivateReplacementSources(ctx, cfg.RegistryPath, replacementQueue); err != nil {
+		return err
+	}
+	if err := saveAlertState(ctx, cfg, fullState); err != nil {
+		return err
+	}
+	if err := output.Write(cfg, currentActive, currentFiltered, fullState, sourceHealth, duplicateAudit, replacementQueue); err != nil {
 		return err
 	}
 	_, err = fmt.Fprintf(r.stdout, "Wrote %d active alerts -> %s (%d filtered in %s)\n", len(currentActive), cfg.OutputPath, len(currentFiltered), cfg.FilteredOutputPath)
 	return err
 }
 
-func (r Runner) fetchSource(ctx context.Context, client *fetch.Client, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store) ([]model.Alert, error) {
 	switch source.Type {
 	case "rss":
-		return r.fetchRSS(ctx, client, nctx, source)
+		return r.fetchRSS(ctx, fetcher, nctx, source)
 	case "html-list":
-		return r.fetchHTML(ctx, client, nctx, source)
+		return r.fetchHTML(ctx, fetcher, nctx, source, categoryDictionary)
 	case "kev-json":
-		return r.fetchKEV(ctx, client, nctx, source)
+		return r.fetchKEV(ctx, fetcher, nctx, source)
 	case "interpol-red-json", "interpol-yellow-json":
-		return r.fetchInterpol(ctx, client, nctx, source)
+		return r.fetchInterpol(ctx, fetcher, nctx, source)
+	case "travelwarning-json":
+		return r.fetchTravelWarningJSON(ctx, fetcher, nctx, source)
+	case "travelwarning-atom":
+		return r.fetchTravelWarningAtom(ctx, fetcher, nctx, source)
 	default:
 		return nil, fmt.Errorf("unsupported source type %s", source.Type)
 	}
 }
 
-func (r Runner) fetchRSS(ctx context.Context, client *fetch.Client, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
-	body, err := fetchWithFallback(ctx, client, source, "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8")
+func (r Runner) fetchRSS(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	body, err := fetchWithFallback(ctx, fetcher, source, "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8")
 	if err != nil {
 		return nil, err
 	}
 	items := parse.ParseFeed(string(body))
 	if nctx.Config.TranslateEnabled {
-		if translated, err := translate.Batch(ctx, client, items); err == nil {
+		// translate.Batch requires the stealth HTTP client (not a browser).
+		translateClient := r.clientFactory(nctx.Config)
+		if translated, err := translate.Batch(ctx, translateClient, items); err == nil {
 			items = translated
 		} else {
 			fmt.Fprintf(r.stderr, "WARN %s: translate batch failed: %v\n", source.Source.AuthorityName, err)
@@ -144,6 +187,36 @@ func (r Runner) fetchRSS(ctx context.Context, client *fetch.Client, nctx normali
 	}
 	limit := perSourceLimit(nctx.Config, source)
 	out := make([]model.Alert, 0, limit)
+	if nctx.Config.AlertLLMEnabled {
+		alertLLM := vet.NewClient(config.Config{
+			HTTPTimeoutMS:      nctx.Config.HTTPTimeoutMS,
+			VettingBaseURL:     nctx.Config.VettingBaseURL,
+			VettingAPIKey:      nctx.Config.VettingAPIKey,
+			VettingProvider:    nctx.Config.VettingProvider,
+			VettingModel:       nctx.Config.AlertLLMModel,
+			VettingTemperature: 0,
+		})
+		classified, err := translate.BatchLLM(ctx, nctx.Config, alertLLM, source.Category, items)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN %s: alert llm failed: %v\n", source.Source.AuthorityName, err)
+		} else {
+			for _, classifiedItem := range classified {
+				if len(out) == limit {
+					break
+				}
+				if strings.TrimSpace(classifiedItem.Item.Title) == "" || strings.TrimSpace(classifiedItem.Item.Link) == "" {
+					continue
+				}
+				meta := source
+				meta.Category = firstNonEmpty(classifiedItem.Category, source.Category)
+				alert := normalize.RSSItem(nctx, meta, classifiedItem.Item)
+				if alert != nil {
+					out = append(out, *alert)
+				}
+			}
+			return out, nil
+		}
+	}
 	for _, item := range items {
 		if len(out) == limit {
 			break
@@ -159,18 +232,43 @@ func (r Runner) fetchRSS(ctx context.Context, client *fetch.Client, nctx normali
 	return out, nil
 }
 
-func (r Runner) fetchHTML(ctx context.Context, client *fetch.Client, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
-	body, finalURL, err := fetchWithFallbackURL(ctx, client, source, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+func (r Runner) fetchHTML(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store) ([]model.Alert, error) {
+	body, finalURL, err := fetchWithFallbackURL(ctx, fetcher, source, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	if err != nil {
 		return nil, err
 	}
 	items := parse.ParseHTMLAnchors(string(body), finalURL)
 	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords)
+	items = filterCategoryItems(items, source, categoryDictionary)
 	limit := perSourceLimit(nctx.Config, source)
 	if len(items) > limit {
 		items = items[:limit]
 	}
 	out := make([]model.Alert, 0, len(items))
+	if nctx.Config.AlertLLMEnabled {
+		alertLLM := vet.NewClient(config.Config{
+			HTTPTimeoutMS:      nctx.Config.HTTPTimeoutMS,
+			VettingBaseURL:     nctx.Config.VettingBaseURL,
+			VettingAPIKey:      nctx.Config.VettingAPIKey,
+			VettingProvider:    nctx.Config.VettingProvider,
+			VettingModel:       nctx.Config.AlertLLMModel,
+			VettingTemperature: 0,
+		})
+		classified, err := translate.BatchLLM(ctx, nctx.Config, alertLLM, source.Category, items)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN %s: alert llm failed: %v\n", source.Source.AuthorityName, err)
+		} else {
+			for _, classifiedItem := range classified {
+				meta := source
+				meta.Category = firstNonEmpty(classifiedItem.Category, source.Category)
+				alert := normalize.HTMLItem(nctx, meta, classifiedItem.Item)
+				if alert != nil {
+					out = append(out, *alert)
+				}
+			}
+			return out, nil
+		}
+	}
 	for _, item := range items {
 		alert := normalize.HTMLItem(nctx, source, item)
 		if alert != nil {
@@ -180,8 +278,8 @@ func (r Runner) fetchHTML(ctx context.Context, client *fetch.Client, nctx normal
 	return out, nil
 }
 
-func (r Runner) fetchKEV(ctx context.Context, client *fetch.Client, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
-	body, err := client.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
+func (r Runner) fetchKEV(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	body, err := fetcher.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
 	if err != nil {
 		return nil, err
 	}
@@ -214,8 +312,8 @@ func (r Runner) fetchKEV(ctx context.Context, client *fetch.Client, nctx normali
 	return out, nil
 }
 
-func (r Runner) fetchInterpol(ctx context.Context, client *fetch.Client, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
-	body, err := client.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
+func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	body, err := fetcher.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
 	if err != nil {
 		return nil, err
 	}
@@ -277,12 +375,64 @@ func (r Runner) fetchInterpol(ctx context.Context, client *fetch.Client, nctx no
 	return out, nil
 }
 
-func fetchWithFallback(ctx context.Context, client *fetch.Client, source model.RegistrySource, accept string) ([]byte, error) {
-	body, _, err := fetchWithFallbackURL(ctx, client, source, accept)
+func (r Runner) fetchTravelWarningJSON(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	body, err := fetcher.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
+	if err != nil {
+		return nil, err
+	}
+	items, err := parse.ParseGermanAATravelWarnings(body)
+	if err != nil {
+		return nil, err
+	}
+	limit := perSourceLimit(nctx.Config, source)
+	out := make([]model.Alert, 0, limit)
+	for _, item := range items {
+		if len(out) == limit {
+			break
+		}
+		if strings.TrimSpace(item.Title) == "" {
+			continue
+		}
+		alert := normalize.TravelWarningAlert(nctx, source, item)
+		if alert != nil {
+			out = append(out, *alert)
+		}
+	}
+	return out, nil
+}
+
+func (r Runner) fetchTravelWarningAtom(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	body, err := fetchWithFallback(ctx, fetcher, source, "application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8")
+	if err != nil {
+		return nil, err
+	}
+	items, err := parse.ParseFCDOAtom(body)
+	if err != nil {
+		return nil, err
+	}
+	limit := perSourceLimit(nctx.Config, source)
+	out := make([]model.Alert, 0, limit)
+	for _, item := range items {
+		if len(out) == limit {
+			break
+		}
+		if strings.TrimSpace(item.Title) == "" || strings.TrimSpace(item.Link) == "" {
+			continue
+		}
+		alert := normalize.TravelWarningAlert(nctx, source, item)
+		if alert != nil {
+			out = append(out, *alert)
+		}
+	}
+	return out, nil
+}
+
+func fetchWithFallback(ctx context.Context, fetcher fetch.Fetcher, source model.RegistrySource, accept string) ([]byte, error) {
+	body, _, err := fetchWithFallbackURL(ctx, fetcher, source, accept)
 	return body, err
 }
 
-func fetchWithFallbackURL(ctx context.Context, client *fetch.Client, source model.RegistrySource, accept string) ([]byte, string, error) {
+func fetchWithFallbackURL(ctx context.Context, fetcher fetch.Fetcher, source model.RegistrySource, accept string) ([]byte, string, error) {
 	candidates := []string{}
 	if strings.TrimSpace(source.FeedURL) != "" {
 		candidates = append(candidates, source.FeedURL)
@@ -290,7 +440,7 @@ func fetchWithFallbackURL(ctx context.Context, client *fetch.Client, source mode
 	candidates = append(candidates, source.FeedURLs...)
 	var lastErr error
 	for _, candidate := range candidates {
-		body, err := client.Text(ctx, candidate, source.FollowRedirects, accept)
+		body, err := fetcher.Text(ctx, candidate, source.FollowRedirects, accept)
 		if err == nil {
 			return body, candidate, nil
 		}
@@ -337,6 +487,19 @@ func containsKeyword(hay string, needles []string) bool {
 		}
 	}
 	return false
+}
+
+func filterCategoryItems(items []parse.FeedItem, source model.RegistrySource, categoryDictionary *dictionary.Store) []parse.FeedItem {
+	if categoryDictionary == nil {
+		return items
+	}
+	out := make([]parse.FeedItem, 0, len(items))
+	for _, item := range items {
+		if categoryDictionary.Match(source.Category, source, item.Title, item.Link) {
+			out = append(out, item)
+		}
+	}
+	return out
 }
 
 func populateSourceHealth(entries []model.SourceHealthEntry, active []model.Alert, filtered []model.Alert) {
@@ -391,4 +554,157 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func (r Runner) runDiscoveryLoop(ctx context.Context, cfg config.Config) {
+	runOnce := func() {
+		if err := discover.Run(ctx, cfg, r.stdout, r.stderr); err != nil && ctx.Err() == nil {
+			fmt.Fprintf(r.stderr, "WARN background discovery failed: %v\n", err)
+		}
+	}
+
+	runOnce()
+
+	interval := time.Duration(cfg.DiscoverIntervalMS) * time.Millisecond
+	if interval <= 0 {
+		interval = 15 * time.Minute
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			runOnce()
+		}
+	}
+}
+
+func classifySourceError(err error) (string, bool, string) {
+	if err == nil {
+		return "", false, ""
+	}
+	msg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(msg, "status 404"), strings.Contains(msg, "status 410"):
+		return "not_found", true, "dead_letter"
+	case strings.Contains(msg, "status 301"), strings.Contains(msg, "status 302"), strings.Contains(msg, "status 307"), strings.Contains(msg, "status 308"):
+		return "redirect", true, "dead_letter"
+	case strings.Contains(msg, "status 403"):
+		return "blocked", true, "dead_letter"
+	case strings.Contains(msg, "response too large"):
+		return "oversized", true, "dead_letter"
+	case strings.Contains(msg, "certificate signed by unknown authority"):
+		return "tls_invalid", true, "dead_letter"
+	case strings.Contains(msg, "no such host"):
+		return "dns_error", true, "dead_letter"
+	case strings.Contains(msg, "client.timeout exceeded"), strings.Contains(msg, "request canceled"), strings.Contains(msg, "timeout"):
+		return "timeout", false, "retry"
+	case strings.Contains(msg, ": eof"), strings.HasSuffix(msg, " eof"):
+		return "eof", false, "retry"
+	default:
+		return "transient", false, "retry"
+	}
+}
+
+func buildReplacementQueue(entries []model.SourceHealthEntry, sources []model.RegistrySource) []model.SourceReplacementCandidate {
+	byID := make(map[string]model.RegistrySource, len(sources))
+	for _, source := range sources {
+		byID[source.Source.SourceID] = source
+	}
+
+	queue := make([]model.SourceReplacementCandidate, 0)
+	for _, entry := range entries {
+		if !entry.NeedsReplacement {
+			continue
+		}
+		source, ok := byID[entry.SourceID]
+		if !ok {
+			continue
+		}
+		queue = append(queue, model.SourceReplacementCandidate{
+			SourceID:        entry.SourceID,
+			AuthorityName:   entry.AuthorityName,
+			Type:            entry.Type,
+			FeedURL:         entry.FeedURL,
+			BaseURL:         source.Source.BaseURL,
+			Country:         source.Source.Country,
+			CountryCode:     source.Source.CountryCode,
+			Region:          source.Source.Region,
+			AuthorityType:   source.Source.AuthorityType,
+			Category:        source.Category,
+			Error:           entry.Error,
+			ErrorClass:      entry.ErrorClass,
+			DiscoveryAction: entry.DiscoveryAction,
+			LastAttemptAt:   entry.FinishedAt,
+		})
+	}
+	return queue
+}
+
+func deactivateReplacementSources(ctx context.Context, registryPath string, queue []model.SourceReplacementCandidate) error {
+	if !isSQLiteRegistryPath(registryPath) || len(queue) == 0 {
+		return nil
+	}
+	db, err := sourcedb.Open(registryPath)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	reasons := make(map[string]string, len(queue))
+	for _, candidate := range queue {
+		reasons[candidate.SourceID] = candidate.Error
+	}
+	return db.DeactivateSources(ctx, reasons)
+}
+
+func loadPreviousAlerts(ctx context.Context, cfg config.Config) ([]model.Alert, error) {
+	if !isSQLiteRegistryPath(cfg.RegistryPath) {
+		previous := state.Read(cfg.StateOutputPath)
+		if len(previous) == 0 {
+			previous = state.Read(cfg.OutputPath)
+		}
+		return previous, nil
+	}
+
+	db, err := sourcedb.Open(cfg.RegistryPath)
+	if err != nil {
+		return nil, fmt.Errorf("open source DB for alert state: %w", err)
+	}
+	defer db.Close()
+
+	alerts, err := db.LoadAlerts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load alert state from source DB: %w", err)
+	}
+	return alerts, nil
+}
+
+func saveAlertState(ctx context.Context, cfg config.Config, alerts []model.Alert) error {
+	if !isSQLiteRegistryPath(cfg.RegistryPath) {
+		return nil
+	}
+
+	db, err := sourcedb.Open(cfg.RegistryPath)
+	if err != nil {
+		return fmt.Errorf("open source DB for alert save: %w", err)
+	}
+	defer db.Close()
+
+	if err := db.SaveAlerts(ctx, alerts); err != nil {
+		return fmt.Errorf("save alert state to source DB: %w", err)
+	}
+	return nil
+}
+
+func isSQLiteRegistryPath(path string) bool {
+	switch strings.ToLower(filepath.Ext(strings.TrimSpace(path))) {
+	case ".db", ".sqlite", ".sqlite3":
+		return true
+	default:
+		return false
+	}
 }
