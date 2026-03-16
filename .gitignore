@@ -6,6 +6,7 @@ dist/
 dist-ssr/
 coverage/
 .tmp/
+euosint-collector
 
 # Runtime logs
 logs/
