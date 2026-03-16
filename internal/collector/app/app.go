@@ -65,6 +65,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	fs.BoolVar(&cfg.SourceDBMergeRegistry, "source-db-merge-registry", cfg.SourceDBMergeRegistry, "Merge a JSON registry or curated seed into the SQLite source database")
 	fs.BoolVar(&cfg.SourceDBExportRegistry, "source-db-export-registry", cfg.SourceDBExportRegistry, "Export the SQLite source database back into the JSON registry")
 	fs.StringVar(&cfg.CuratedSeedPath, "curated-seed", cfg.CuratedSeedPath, "Path to the curated agency seed JSON file")
+	fs.StringVar(&cfg.RegistrySeedPath, "registry-seed", cfg.RegistrySeedPath, "Path to the baked-in JSON registry for live merge on each cycle")
 	fs.BoolVar(&cfg.APIEnabled, "api", cfg.APIEnabled, "Start the search API server alongside the collector")
 	fs.StringVar(&cfg.APIAddr, "api-addr", cfg.APIAddr, "Listen address for the search API server")
 

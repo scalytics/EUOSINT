@@ -36,6 +36,7 @@ type Input struct {
 type Verdict struct {
 	Approve              bool     `json:"approve"`
 	PromotionStatus      string   `json:"promotion_status"`
+	Category             string   `json:"category,omitempty"`
 	Level                string   `json:"level"`
 	MissionTags          []string `json:"mission_tags"`
 	SourceQuality        float64  `json:"source_quality"`
@@ -72,12 +73,38 @@ func (v *Vetter) Evaluate(ctx context.Context, input Input) (Verdict, error) {
 
 	content, err := v.client.Complete(ctx, []Message{
 		{
-			Role:    "system",
-			Content: "You vet intelligence source candidates. Approve only operationally relevant sources: supranational, federal, or national level sources that publish actionable intelligence, wanted/missing/public appeals, cyber advisories, humanitarian security, crisis, war, organized crime, fraud, terrorism, or public-safety intelligence. Reject generic PR, speeches, institutional updates, local police, municipal news, or low-signal information. Return strict JSON only.",
+			Role: "system",
+			Content: `You vet intelligence source candidates for an OSINT dashboard.
+
+Approve only operationally relevant sources: supranational, federal, or national level sources that publish actionable intelligence — wanted/missing persons, public appeals, cyber advisories, vulnerability disclosures, humanitarian security, conflict monitoring, disease outbreaks, environmental disasters, fraud alerts, terrorism, travel warnings, emergency management, or public-safety intelligence.
+
+Reject: generic PR, speeches, institutional updates, local police, municipal news, marketing, newsletters, or low-signal content.
+
+Valid categories (pick the best match):
+- cyber_advisory: vulnerability disclosures, patch advisories, threat intel from CERTs
+- wanted_suspect: arrest warrants, wanted person notices
+- missing_person: missing persons, AMBER alerts
+- public_appeal: police witness calls, identification requests, crime tips
+- fraud_alert: financial crime, scam warnings, sanctions, AML
+- intelligence_report: strategic assessments, geopolitical analysis
+- travel_warning: government travel advisories, consular warnings
+- conflict_monitoring: armed conflict tracking, ceasefire violations, peace processes
+- humanitarian_security: aid worker safety, access restrictions, crisis zones
+- humanitarian_tasking: humanitarian missions, disaster response deployments
+- health_emergency: disease outbreaks, pandemic updates, biosecurity
+- disease_outbreak: epidemics, zoonotic diseases, outbreak surveillance
+- environmental_disaster: earthquakes, oil spills, floods, wildfires, nuclear incidents, volcanic activity
+- public_safety: civil protection, natural disaster warnings, emergency notifications
+- emergency_management: disaster declarations, evacuation orders, crisis coordination
+- terrorism_tip: counter-terrorism alerts, extremism threat assessments
+- private_sector: corporate security, supply chain disruptions
+- informational: general information, educational content
+
+Return strict JSON only with keys: approve, promotion_status, category, level, mission_tags, source_quality, operational_relevance, reason.`,
 		},
 		{
 			Role:    "user",
-			Content: "Evaluate this discovered source and return JSON with keys approve, promotion_status, level, mission_tags, source_quality, operational_relevance, reason.\n\n" + string(payload),
+			Content: "Evaluate this discovered source and return JSON with keys approve, promotion_status, category, level, mission_tags, source_quality, operational_relevance, reason.\n\n" + string(payload),
 		},
 	})
 	if err != nil {
@@ -122,6 +149,15 @@ func decodeVerdict(content string) (Verdict, error) {
 	return verdict, nil
 }
 
+var validCategories = map[string]bool{
+	"cyber_advisory": true, "wanted_suspect": true, "missing_person": true,
+	"public_appeal": true, "fraud_alert": true, "intelligence_report": true,
+	"travel_warning": true, "conflict_monitoring": true, "humanitarian_security": true,
+	"humanitarian_tasking": true, "health_emergency": true, "disease_outbreak": true,
+	"environmental_disaster": true, "public_safety": true, "emergency_management": true,
+	"terrorism_tip": true, "private_sector": true, "informational": true,
+}
+
 func (v *Verdict) normalize() {
 	v.PromotionStatus = strings.ToLower(strings.TrimSpace(v.PromotionStatus))
 	switch v.PromotionStatus {
@@ -132,6 +168,10 @@ func (v *Verdict) normalize() {
 		} else {
 			v.PromotionStatus = "rejected"
 		}
+	}
+	v.Category = strings.ToLower(strings.TrimSpace(v.Category))
+	if !validCategories[v.Category] {
+		v.Category = ""
 	}
 	v.Level = strings.ToLower(strings.TrimSpace(v.Level))
 	switch v.Level {

@@ -718,9 +718,11 @@ func (db *DB) DeactivateSources(ctx context.Context, reasons map[string]string) 
 		if _, err := tx.ExecContext(ctx, `
 UPDATE sources
 SET status = 'needs_replacement',
+    promotion_status = 'rejected',
+    rejection_reason = ?,
     last_error = ?,
     updated_at = CURRENT_TIMESTAMP
-WHERE id = ?`, strings.TrimSpace(reason), sourceID); err != nil {
+WHERE id = ?`, "Dead source: "+strings.TrimSpace(reason), strings.TrimSpace(reason), sourceID); err != nil {
 			return fmt.Errorf("deactivate source %s: %w", sourceID, err)
 		}
 	}
@@ -976,15 +978,26 @@ ON CONFLICT(id) DO UPDATE SET
   include_keywords_json = excluded.include_keywords_json,
   exclude_keywords_json = excluded.exclude_keywords_json,
   source_quality = excluded.source_quality,
-  promotion_status = excluded.promotion_status,
-  rejection_reason = excluded.rejection_reason,
+  promotion_status = CASE
+    WHEN excluded.promotion_status = 'rejected' THEN 'rejected'
+    WHEN sources.promotion_status = 'rejected' AND excluded.promotion_status IN ('active', '') THEN 'rejected'
+    ELSE excluded.promotion_status
+  END,
+  rejection_reason = CASE
+    WHEN excluded.promotion_status = 'rejected' THEN excluded.rejection_reason
+    WHEN sources.promotion_status = 'rejected' AND excluded.promotion_status IN ('active', '') THEN sources.rejection_reason
+    ELSE excluded.rejection_reason
+  END,
   is_mirror = excluded.is_mirror,
   preferred_source_rank = excluded.preferred_source_rank,
   reporting_label = excluded.reporting_label,
   reporting_url = excluded.reporting_url,
   reporting_phone = excluded.reporting_phone,
   reporting_notes = excluded.reporting_notes,
-  status = 'active',
+  status = CASE
+    WHEN sources.promotion_status = 'rejected' AND excluded.promotion_status IN ('active', '') THEN sources.status
+    ELSE 'active'
+  END,
   updated_at = CURRENT_TIMESTAMP
 `,
 		src.Source.SourceID,
