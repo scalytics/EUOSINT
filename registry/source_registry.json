@@ -19,7 +19,8 @@
       "label": "Report to CISA",
       "url": "https://www.cisa.gov/report",
       "notes": "Use 911 for emergencies."
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -79,7 +80,7 @@
       "authority_type": "police",
       "base_url": "https://www.europol.europa.eu"
     },
-    "feed_url": "https://www.europol.europa.eu/rss.xml",
+    "feed_url": "https://www.europol.europa.eu/cms/api/rss/news",
     "category": "public_appeal",
     "region_tag": "EU",
     "lat": 52.09,
@@ -108,7 +109,8 @@
     "reporting": {
       "label": "Report to NCSC",
       "url": "https://www.ncsc.gov.uk/section/about-this-website/report-scam-website"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -129,7 +131,8 @@
     "reporting": {
       "label": "Report to NCSC",
       "url": "https://www.ncsc.gov.uk/section/about-this-website/report-scam-website"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -220,7 +223,8 @@
       "phone": "1-866-787-4722",
       "email": "soc@cisecurity.org",
       "notes": "24/7 Security Operations Center for state, local, tribal, and territorial governments."
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -264,7 +268,8 @@
       "label": "Report to CERT-FR",
       "url": "https://www.cert.ssi.gouv.fr/contact/",
       "email": "cert-fr@ssi.gouv.fr"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -286,7 +291,8 @@
       "label": "Report to NCSC-NL",
       "url": "https://www.ncsc.nl/contact/kwetsbaarheid-melden",
       "email": "cert@ncsc.nl"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -308,7 +314,8 @@
       "label": "Report to JPCERT/CC",
       "url": "https://www.jpcert.or.jp/english/ir/form.html",
       "email": "info@jpcert.or.jp"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -355,7 +362,8 @@
       "phone": "1-888-282-0870",
       "email": "central@cisa.dhs.gov",
       "notes": "Use 911 for emergencies."
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "html-list",
@@ -634,7 +642,8 @@
       "label": "Report to ACSC",
       "url": "https://www.cyber.gov.au/report-and-recover/report",
       "phone": "1300 292 371"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -789,7 +798,8 @@
       "url": "https://www.cert-in.org.in/",
       "email": "incident@cert-in.org.in",
       "phone": "+91-11-24368572"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -818,7 +828,8 @@
       "url": "https://www.csa.gov.sg/singcert/reporting",
       "email": "singcert@csa.gov.sg",
       "phone": "+65 6323 5052"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -870,7 +881,8 @@
       "url": "https://www.hkcert.org/report-incident",
       "email": "hkcert@hkcert.org",
       "phone": "+852 8105 6060"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -1131,7 +1143,8 @@
       "label": "Report Cybercrime to PDI",
       "url": "https://www.pdichile.cl/",
       "phone": "134 (PDI Emergency)"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -1435,7 +1448,8 @@
       "label": "Report to ThaiCERT",
       "url": "https://www.thaicert.or.th/",
       "email": "op@thaicert.or.th"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -1462,7 +1476,8 @@
       "label": "Report to MyCERT",
       "url": "https://www.mycert.org.my/portal/report-incident",
       "email": "mycert@cybersecurity.my"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -1489,7 +1504,8 @@
       "label": "Report to BSSN",
       "url": "https://bssn.go.id/",
       "notes": "Use official BSSN contact channels for incident reporting."
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -1560,7 +1576,8 @@
       "label": "Report a Cyber Incident",
       "url": "https://www.cyber.gc.ca/en/incident-management",
       "phone": "1-833-CYBER-88"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -1582,7 +1599,8 @@
     "reporting": {
       "label": "Report Cyber Incident to USOM",
       "url": "https://www.usom.gov.tr/bildirim"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "html-list",
@@ -2160,7 +2178,8 @@
     "reporting": {
       "label": "Report to BSI",
       "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2181,7 +2200,8 @@
     "reporting": {
       "label": "Report to BSI",
       "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2202,7 +2222,8 @@
     "reporting": {
       "label": "Report to BSI",
       "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2223,7 +2244,8 @@
     "reporting": {
       "label": "Report to BSI",
       "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2244,7 +2266,8 @@
     "reporting": {
       "label": "Report to BSI",
       "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2265,7 +2288,8 @@
     "reporting": {
       "label": "Report to SANS ISC",
       "url": "https://isc.sans.edu/contact.html"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2286,7 +2310,8 @@
     "reporting": {
       "label": "Report to CERT.at",
       "url": "https://cert.at/de/melden"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2307,7 +2332,8 @@
     "reporting": {
       "label": "Report to CCN-CERT",
       "url": "https://www.ccn-cert.cni.es/es/comunicacion-eventos/contacto.html"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2328,7 +2354,8 @@
     "reporting": {
       "label": "Report to CERT-SE",
       "url": "https://www.cert.se/om-cert-se/rapportera-en-incident/"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2349,7 +2376,8 @@
     "reporting": {
       "label": "Report to CERT.PL",
       "url": "https://incydent.cert.pl/"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2370,7 +2398,8 @@
     "reporting": {
       "label": "Report to CERT.LV",
       "url": "https://www.cert.lv/en/report"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2391,7 +2420,8 @@
     "reporting": {
       "label": "Report to CERT.hr",
       "url": "https://www.cert.hr/prijava-incidenta/"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2412,7 +2442,8 @@
     "reporting": {
       "label": "Report to SI-CERT",
       "url": "https://www.cert.si/en/report/"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2433,7 +2464,8 @@
     "reporting": {
       "label": "Report to DNSC",
       "url": "https://dnsc.ro/sesizare"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "html-list",
@@ -2454,7 +2486,8 @@
     "reporting": {
       "label": "Report to NCSC",
       "url": "https://www.ncsc.admin.ch/ncsc/en/home/infos-fuer/infos-it-spezialisten/themen/schwachstelle-melden.html"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "rss",
@@ -2597,7 +2630,8 @@
     "reporting": {
       "label": "Report to CERT-EE",
       "url": "https://www.ria.ee/en/cyber-security/cert-ee/reporting-incident"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "html-list",
@@ -2618,7 +2652,8 @@
     "reporting": {
       "label": "Report to NKSC",
       "url": "https://www.nksc.lt/en/report.html"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "html-list",
@@ -2639,7 +2674,8 @@
     "reporting": {
       "label": "Report to NCSA Greece",
       "url": "https://www.nis.gr/el/contact/"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "html-list",
@@ -2660,7 +2696,8 @@
     "reporting": {
       "label": "Report to GovCERT.bg",
       "url": "https://www.govcert.bg/"
-    }
+    },
+    "max_items": 15
   },
   {
     "type": "travelwarning-json",
@@ -2735,5 +2772,2659 @@
       "url": "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html",
       "notes": "Travel advisories for US citizens abroad."
     }
+  },
+  {
+    "type": "interpol-red-json",
+    "source": {
+      "source_id": "interpol-red",
+      "authority_name": "INTERPOL Red Notices",
+      "country": "France",
+      "country_code": "FR",
+      "region": "International",
+      "authority_type": "police",
+      "base_url": "https://ws-public.interpol.int"
+    },
+    "feed_url": "https://ws-public.interpol.int/notices/v1/red?resultPerPage=20&page=1",
+    "category": "wanted_suspect",
+    "region_tag": "INT",
+    "lat": 48.86,
+    "lng": 2.35,
+    "max_items": 200
+  },
+  {
+    "type": "interpol-yellow-json",
+    "source": {
+      "source_id": "interpol-yellow",
+      "authority_name": "INTERPOL Yellow Notices",
+      "country": "France",
+      "country_code": "FR",
+      "region": "International",
+      "authority_type": "police",
+      "base_url": "https://ws-public.interpol.int"
+    },
+    "feed_url": "https://ws-public.interpol.int/notices/v1/yellow?resultPerPage=20&page=1",
+    "category": "missing_person",
+    "region_tag": "INT",
+    "lat": 48.86,
+    "lng": 2.35,
+    "max_items": 200
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "icrc-news",
+      "authority_name": "ICRC News",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.icrc.org"
+    },
+    "feed_url": "https://www.icrc.org/en/rss",
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 46.22,
+    "lng": 6.14
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "unhcr-news",
+      "authority_name": "UNHCR News",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.unhcr.org"
+    },
+    "feed_url": "https://www.unhcr.org/rss/news.xml",
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 46.22,
+    "lng": 6.14
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "who-disease-outbreak",
+      "authority_name": "WHO Disease Outbreak News",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.who.int"
+    },
+    "feed_url": "https://www.who.int/feeds/entity/don/en/rss.xml",
+    "category": "health_emergency",
+    "region_tag": "INT",
+    "lat": 46.22,
+    "lng": 6.14
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "who-emergencies",
+      "authority_name": "WHO Health Emergencies",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.who.int"
+    },
+    "feed_url": "https://www.who.int/feeds/entity/hac/en/rss.xml",
+    "category": "health_emergency",
+    "region_tag": "INT",
+    "lat": 46.22,
+    "lng": 6.14
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "reliefweb-updates",
+      "authority_name": "ReliefWeb Updates",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://reliefweb.int"
+    },
+    "feed_url": "https://reliefweb.int/updates/rss.xml",
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "wfp-news",
+      "authority_name": "World Food Programme News",
+      "country": "Italy",
+      "country_code": "IT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.wfp.org"
+    },
+    "feed_url": "https://www.wfp.org/rss.xml",
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 41.88,
+    "lng": 12.56
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "msf-news",
+      "authority_name": "Médecins Sans Frontières",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.msf.org"
+    },
+    "feed_url": "https://www.msf.org/rss/all",
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 46.22,
+    "lng": 6.14
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "icg-crisiswatch",
+      "authority_name": "International Crisis Group",
+      "country": "Belgium",
+      "country_code": "BE",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.crisisgroup.org"
+    },
+    "feed_url": "https://www.crisisgroup.org/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 50.85,
+    "lng": 4.35
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "sipri-news",
+      "authority_name": "SIPRI News",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.sipri.org"
+    },
+    "feed_url": "https://www.sipri.org/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 59.35,
+    "lng": 17.95
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "gdacs-alerts",
+      "authority_name": "GDACS Natural Disaster Alerts",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.gdacs.org"
+    },
+    "feed_url": "https://www.gdacs.org/xml/rss.xml",
+    "category": "emergency_management",
+    "region_tag": "INT",
+    "lat": 45.77,
+    "lng": 4.83
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cia-newsroom",
+      "authority_name": "CIA Newsroom",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "intelligence",
+      "base_url": "https://www.cia.gov"
+    },
+    "feed_url": "https://www.cia.gov/rss/press-releases.xml",
+    "category": "intelligence_report",
+    "region_tag": "US",
+    "lat": 38.95,
+    "lng": -77.15,
+    "fetch_mode": "browser"
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "nsa-advisories",
+      "authority_name": "NSA Cybersecurity Advisories",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "intelligence",
+      "base_url": "https://www.nsa.gov"
+    },
+    "feed_url": "https://www.nsa.gov/Press-Room/Press-Releases-Statements/RSS-Feed/",
+    "category": "cyber_advisory",
+    "region_tag": "US",
+    "lat": 39.11,
+    "lng": -76.77,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "mi5-news",
+      "authority_name": "MI5 News",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.mi5.gov.uk"
+    },
+    "feed_url": "https://www.mi5.gov.uk/UKSecurityNews.xml",
+    "category": "intelligence_report",
+    "region_tag": "GB",
+    "lat": 51.5,
+    "lng": -0.13
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "gchq-news",
+      "authority_name": "GCHQ News",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.gchq.gov.uk"
+    },
+    "feed_url": "https://www.gchq.gov.uk/feeds/news.xml",
+    "category": "intelligence_report",
+    "region_tag": "GB",
+    "lat": 51.9,
+    "lng": -2.12
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bfv-news",
+      "authority_name": "BfV (Bundesamt für Verfassungsschutz)",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.verfassungsschutz.de"
+    },
+    "feed_url": "https://www.verfassungsschutz.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed.xml",
+    "category": "intelligence_report",
+    "region_tag": "DE",
+    "lat": 50.73,
+    "lng": 7.1
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bnd-news",
+      "authority_name": "BND (Bundesnachrichtendienst)",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.bnd.bund.de"
+    },
+    "feed_url": "https://www.bnd.bund.de/SiteGlobals/Functions/RSSFeed/DE/RSSNewsfeed/RSSNewsfeed.xml",
+    "category": "intelligence_report",
+    "region_tag": "DE",
+    "lat": 52.52,
+    "lng": 13.38
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dgsi-news",
+      "authority_name": "DGSI (French Internal Intelligence)",
+      "country": "France",
+      "country_code": "FR",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.dgsi.interieur.gouv.fr"
+    },
+    "feed_url": "https://www.dgsi.interieur.gouv.fr/rss.xml",
+    "category": "intelligence_report",
+    "region_tag": "FR",
+    "lat": 48.86,
+    "lng": 2.33
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "aivd-news",
+      "authority_name": "AIVD (Dutch Intelligence)",
+      "country": "Netherlands",
+      "country_code": "NL",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.aivd.nl"
+    },
+    "feed_url": "https://www.aivd.nl/rss/nieuws",
+    "category": "intelligence_report",
+    "region_tag": "NL",
+    "lat": 52.08,
+    "lng": 4.31
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "sapo-news",
+      "authority_name": "SÄPO (Swedish Security Service)",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.sakerhetspolisen.se"
+    },
+    "feed_url": "https://www.sakerhetspolisen.se/rss/nyheter.xml",
+    "category": "intelligence_report",
+    "region_tag": "SE",
+    "lat": 59.33,
+    "lng": 18.07
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "asio-news",
+      "authority_name": "ASIO (Australian Security Intelligence)",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "intelligence",
+      "base_url": "https://www.asio.gov.au"
+    },
+    "feed_url": "https://www.asio.gov.au/rss.xml",
+    "category": "intelligence_report",
+    "region_tag": "AU",
+    "lat": -35.28,
+    "lng": 149.13
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "csis-canada",
+      "authority_name": "CSIS (Canadian Intelligence)",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "intelligence",
+      "base_url": "https://www.canada.ca/en/security-intelligence-service"
+    },
+    "feed_url": "https://www.canada.ca/en/security-intelligence-service.atom.xml",
+    "category": "intelligence_report",
+    "region_tag": "CA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ecdc-news",
+      "authority_name": "ECDC Disease Threats",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.ecdc.europa.eu"
+    },
+    "feed_url": "https://www.ecdc.europa.eu/en/taxonomy/term/1/feed",
+    "category": "health_emergency",
+    "region_tag": "EU",
+    "lat": 59.35,
+    "lng": 17.94
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cdc-emergency",
+      "authority_name": "CDC Emergency Preparedness",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.cdc.gov"
+    },
+    "feed_url": "https://tools.cdc.gov/api/v2/resources/media/403420.rss",
+    "category": "health_emergency",
+    "region_tag": "US",
+    "lat": 33.8,
+    "lng": -84.32
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "promed-alerts",
+      "authority_name": "ProMED Alerts",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://promedmail.org"
+    },
+    "feed_url": "https://promedmail.org/feed/",
+    "category": "health_emergency",
+    "region_tag": "INT",
+    "lat": 42.36,
+    "lng": -71.06
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fema-alerts",
+      "authority_name": "FEMA Disaster Declarations",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.fema.gov"
+    },
+    "feed_url": "https://www.fema.gov/feeds/disasters",
+    "category": "emergency_management",
+    "region_tag": "US",
+    "lat": 38.88,
+    "lng": -77.02
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eu-ercc",
+      "authority_name": "EU Emergency Response (ERCC)",
+      "country": "Belgium",
+      "country_code": "BE",
+      "region": "Europe",
+      "authority_type": "public_safety_program",
+      "base_url": "https://ercc.dgecho.eu"
+    },
+    "feed_url": "https://erccportal.jrc.ec.europa.eu/ECHO-Flash/RSS-Feeds/RSS-Latest-Emergencies",
+    "category": "emergency_management",
+    "region_tag": "EU",
+    "lat": 50.85,
+    "lng": 4.38
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "usgs-earthquake",
+      "authority_name": "USGS Earthquake Alerts",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://earthquake.usgs.gov"
+    },
+    "feed_url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_week.atom",
+    "category": "emergency_management",
+    "region_tag": "INT",
+    "lat": 37.77,
+    "lng": -122.42
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-travel-advisories",
+      "authority_name": "Canada Travel Advisories",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://travel.gc.ca"
+    },
+    "feed_url": "https://travel.gc.ca/travelling/advisories.atom",
+    "category": "travel_warning",
+    "region_tag": "CA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-smartraveller",
+      "authority_name": "Australia Smartraveller",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "national_security",
+      "base_url": "https://www.smartraveller.gov.au"
+    },
+    "feed_url": "https://www.smartraveller.gov.au/rss/countries",
+    "category": "travel_warning",
+    "region_tag": "AU",
+    "lat": -35.28,
+    "lng": 149.13
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "nz-safetravel",
+      "authority_name": "NZ SafeTravel Advisories",
+      "country": "New Zealand",
+      "country_code": "NZ",
+      "region": "Asia-Pacific",
+      "authority_type": "national_security",
+      "base_url": "https://safetravel.govt.nz"
+    },
+    "feed_url": "https://safetravel.govt.nz/rss.xml",
+    "category": "travel_warning",
+    "region_tag": "NZ",
+    "lat": -41.29,
+    "lng": 174.78
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fr-diplomatie-travel",
+      "authority_name": "France Diplomatie Travel Advice",
+      "country": "France",
+      "country_code": "FR",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.diplomatie.gouv.fr"
+    },
+    "feed_url": "https://www.diplomatie.gouv.fr/spip.php?page=backend-fd&lang=fr",
+    "category": "travel_warning",
+    "region_tag": "FR",
+    "lat": 48.86,
+    "lng": 2.35
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eurojust-news",
+      "authority_name": "Eurojust Press Releases",
+      "country": "Netherlands",
+      "country_code": "NL",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.eurojust.europa.eu"
+    },
+    "feed_url": "https://www.eurojust.europa.eu/rss.xml",
+    "category": "public_appeal",
+    "region_tag": "EU",
+    "lat": 52.09,
+    "lng": 4.27
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "frontex-news",
+      "authority_name": "Frontex News",
+      "country": "Poland",
+      "country_code": "PL",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.frontex.europa.eu"
+    },
+    "feed_url": "https://www.frontex.europa.eu/rss/",
+    "category": "public_safety",
+    "region_tag": "EU",
+    "lat": 52.23,
+    "lng": 21.01
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dhs-news",
+      "authority_name": "DHS Press Releases",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.dhs.gov"
+    },
+    "feed_url": "https://www.dhs.gov/news-releases/press-releases/rss.xml",
+    "category": "public_safety",
+    "region_tag": "US",
+    "lat": 38.88,
+    "lng": -77.02,
+    "fetch_mode": "browser"
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "doj-press",
+      "authority_name": "US DOJ Press Releases",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.justice.gov"
+    },
+    "feed_url": "https://www.justice.gov/feeds/opa/justice-news.xml",
+    "category": "public_appeal",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.02
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fbi-news",
+      "authority_name": "FBI News",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.fbi.gov"
+    },
+    "feed_url": "https://www.fbi.gov/feeds/fbi-news-feed/rss.xml",
+    "category": "public_appeal",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.02
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "nato-news",
+      "authority_name": "NATO News",
+      "country": "Belgium",
+      "country_code": "BE",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.nato.int"
+    },
+    "feed_url": "https://www.nato.int/cps/en/natolive/news.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 50.88,
+    "lng": 4.43
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-sc-press",
+      "authority_name": "UN Security Council Press",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "national_security",
+      "base_url": "https://www.un.org"
+    },
+    "feed_url": "https://press.un.org/en/un-press-releases/security-council/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "osce-news",
+      "authority_name": "OSCE Press Releases",
+      "country": "Austria",
+      "country_code": "AT",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.osce.org"
+    },
+    "feed_url": "https://www.osce.org/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "EU",
+    "lat": 48.21,
+    "lng": 16.37
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ct-europol",
+      "authority_name": "Europol Counter-Terrorism",
+      "country": "Netherlands",
+      "country_code": "NL",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.europol.europa.eu"
+    },
+    "feed_url": "https://www.europol.europa.eu/taxonomy/term/69/feed",
+    "category": "terrorism_tip",
+    "region_tag": "EU",
+    "lat": 52.09,
+    "lng": 4.27
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "mi5-threats",
+      "authority_name": "MI5 Threat Assessment",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.mi5.gov.uk"
+    },
+    "feed_url": "https://www.mi5.gov.uk/threat-levels.xml",
+    "category": "terrorism_tip",
+    "region_tag": "GB",
+    "lat": 51.5,
+    "lng": -0.13
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cert-ua",
+      "authority_name": "CERT-UA",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://cert.gov.ua"
+    },
+    "feed_url": "https://cert.gov.ua/api/articles/rss",
+    "category": "cyber_advisory",
+    "region_tag": "UA",
+    "lat": 50.45,
+    "lng": 30.52,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ua-nsdc",
+      "authority_name": "NSDC Ukraine",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.rnbo.gov.ua"
+    },
+    "feed_url": "https://www.rnbo.gov.ua/en/rss.xml",
+    "category": "public_safety",
+    "region_tag": "UA",
+    "lat": 50.45,
+    "lng": 30.52
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ua-ssu",
+      "authority_name": "SBU (Security Service of Ukraine)",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://ssu.gov.ua"
+    },
+    "feed_url": "https://ssu.gov.ua/en/rss",
+    "category": "intelligence_report",
+    "region_tag": "UA",
+    "lat": 50.45,
+    "lng": 30.52
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ua-npu",
+      "authority_name": "National Police of Ukraine",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.npu.gov.ua"
+    },
+    "feed_url": "https://www.npu.gov.ua/rss",
+    "category": "public_appeal",
+    "region_tag": "UA",
+    "lat": 50.45,
+    "lng": 30.52
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ru-gov-cert",
+      "authority_name": "GOV-CERT Russia",
+      "country": "Russia",
+      "country_code": "RU",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.gov-cert.ru"
+    },
+    "feed_url": "https://www.gov-cert.ru/rss",
+    "category": "cyber_advisory",
+    "region_tag": "RU",
+    "lat": 55.75,
+    "lng": 37.62,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ru-mvd",
+      "authority_name": "MVD Russia (Interior Ministry)",
+      "country": "Russia",
+      "country_code": "RU",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://мвд.рф"
+    },
+    "feed_url": "https://мвд.рф/news/feed",
+    "category": "public_appeal",
+    "region_tag": "RU",
+    "lat": 55.75,
+    "lng": 37.62
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "no-pst",
+      "authority_name": "PST (Norwegian Police Security)",
+      "country": "Norway",
+      "country_code": "NO",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.pst.no"
+    },
+    "feed_url": "https://www.pst.no/rss/",
+    "category": "intelligence_report",
+    "region_tag": "NO",
+    "lat": 59.91,
+    "lng": 10.75
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "no-nsm",
+      "authority_name": "NSM NorCERT",
+      "country": "Norway",
+      "country_code": "NO",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://nsm.no"
+    },
+    "feed_url": "https://nsm.no/aktuelt/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "NO",
+    "lat": 59.91,
+    "lng": 10.75,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "no-politiet",
+      "authority_name": "Norwegian Police",
+      "country": "Norway",
+      "country_code": "NO",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.politiet.no"
+    },
+    "feed_url": "https://www.politiet.no/rss/",
+    "category": "public_appeal",
+    "region_tag": "NO",
+    "lat": 59.91,
+    "lng": 10.75
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dk-pet",
+      "authority_name": "PET (Danish Security Intelligence)",
+      "country": "Denmark",
+      "country_code": "DK",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://pet.dk"
+    },
+    "feed_url": "https://pet.dk/rss",
+    "category": "intelligence_report",
+    "region_tag": "DK",
+    "lat": 55.68,
+    "lng": 12.57
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dk-cfcs",
+      "authority_name": "CFCS (Danish Centre for Cyber Security)",
+      "country": "Denmark",
+      "country_code": "DK",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.cfcs.dk"
+    },
+    "feed_url": "https://www.cfcs.dk/da/nyheder/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "DK",
+    "lat": 55.68,
+    "lng": 12.57,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dk-politi",
+      "authority_name": "Danish Police",
+      "country": "Denmark",
+      "country_code": "DK",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://politi.dk"
+    },
+    "feed_url": "https://politi.dk/rss",
+    "category": "public_appeal",
+    "region_tag": "DK",
+    "lat": 55.68,
+    "lng": 12.57
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fi-supo",
+      "authority_name": "SUPO (Finnish Security Intelligence)",
+      "country": "Finland",
+      "country_code": "FI",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://supo.fi"
+    },
+    "feed_url": "https://supo.fi/en/rss/news",
+    "category": "intelligence_report",
+    "region_tag": "FI",
+    "lat": 60.17,
+    "lng": 24.94
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fi-ncsc",
+      "authority_name": "NCSC-FI (Traficom)",
+      "country": "Finland",
+      "country_code": "FI",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.kyberturvallisuuskeskus.fi"
+    },
+    "feed_url": "https://www.kyberturvallisuuskeskus.fi/en/rss/news",
+    "category": "cyber_advisory",
+    "region_tag": "FI",
+    "lat": 60.17,
+    "lng": 24.94,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fi-poliisi",
+      "authority_name": "Finnish Police",
+      "country": "Finland",
+      "country_code": "FI",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://poliisi.fi"
+    },
+    "feed_url": "https://poliisi.fi/en/rss/news",
+    "category": "public_appeal",
+    "region_tag": "FI",
+    "lat": 60.17,
+    "lng": 24.94
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "is-logreglan",
+      "authority_name": "Icelandic Police",
+      "country": "Iceland",
+      "country_code": "IS",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.logreglan.is"
+    },
+    "feed_url": "https://www.logreglan.is/feed/",
+    "category": "public_appeal",
+    "region_tag": "IS",
+    "lat": 64.15,
+    "lng": -21.94
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "pl-abw",
+      "authority_name": "ABW (Polish Internal Security Agency)",
+      "country": "Poland",
+      "country_code": "PL",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.abw.gov.pl"
+    },
+    "feed_url": "https://www.abw.gov.pl/en/rss",
+    "category": "intelligence_report",
+    "region_tag": "PL",
+    "lat": 52.23,
+    "lng": 21.01
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "pl-policja",
+      "authority_name": "Polish Police",
+      "country": "Poland",
+      "country_code": "PL",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.policja.pl"
+    },
+    "feed_url": "https://www.policja.pl/pol/rss/1,RSS.html",
+    "category": "public_appeal",
+    "region_tag": "PL",
+    "lat": 52.23,
+    "lng": 21.01
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cz-nukib",
+      "authority_name": "NUKIB (Czech Cyber Security)",
+      "country": "Czech Republic",
+      "country_code": "CZ",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://nukib.gov.cz"
+    },
+    "feed_url": "https://nukib.gov.cz/en/rss/",
+    "category": "cyber_advisory",
+    "region_tag": "CZ",
+    "lat": 50.08,
+    "lng": 14.42,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cz-policie",
+      "authority_name": "Czech Police",
+      "country": "Czech Republic",
+      "country_code": "CZ",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.policie.cz"
+    },
+    "feed_url": "https://www.policie.cz/rss/aktuality.aspx",
+    "category": "public_appeal",
+    "region_tag": "CZ",
+    "lat": 50.08,
+    "lng": 14.42
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "hu-police",
+      "authority_name": "Hungarian Police",
+      "country": "Hungary",
+      "country_code": "HU",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.police.hu"
+    },
+    "feed_url": "https://www.police.hu/rss",
+    "category": "public_appeal",
+    "region_tag": "HU",
+    "lat": 47.5,
+    "lng": 19.04
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ro-politia",
+      "authority_name": "Romanian Police",
+      "country": "Romania",
+      "country_code": "RO",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.politiaromana.ro"
+    },
+    "feed_url": "https://www.politiaromana.ro/ro/rss",
+    "category": "public_appeal",
+    "region_tag": "RO",
+    "lat": 44.43,
+    "lng": 26.1
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "sk-police",
+      "authority_name": "Slovak Police",
+      "country": "Slovakia",
+      "country_code": "SK",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.minv.sk"
+    },
+    "feed_url": "https://www.minv.sk/?rss",
+    "category": "public_appeal",
+    "region_tag": "SK",
+    "lat": 48.15,
+    "lng": 17.11
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bg-mvr",
+      "authority_name": "Bulgarian Interior Ministry",
+      "country": "Bulgaria",
+      "country_code": "BG",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.mvr.bg"
+    },
+    "feed_url": "https://www.mvr.bg/rss",
+    "category": "public_appeal",
+    "region_tag": "BG",
+    "lat": 42.7,
+    "lng": 23.32
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "rs-mup",
+      "authority_name": "Serbian Interior Ministry",
+      "country": "Serbia",
+      "country_code": "RS",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.mup.gov.rs"
+    },
+    "feed_url": "https://www.mup.gov.rs/wps/rss",
+    "category": "public_appeal",
+    "region_tag": "RS",
+    "lat": 44.79,
+    "lng": 20.46
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ee-kapo",
+      "authority_name": "KAPO (Estonian Internal Security)",
+      "country": "Estonia",
+      "country_code": "EE",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://kapo.ee"
+    },
+    "feed_url": "https://kapo.ee/en/feed",
+    "category": "intelligence_report",
+    "region_tag": "EE",
+    "lat": 59.44,
+    "lng": 24.75
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "lt-vsd",
+      "authority_name": "VSD (Lithuanian State Security)",
+      "country": "Lithuania",
+      "country_code": "LT",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.vsd.lt"
+    },
+    "feed_url": "https://www.vsd.lt/en/feed/",
+    "category": "intelligence_report",
+    "region_tag": "LT",
+    "lat": 54.69,
+    "lng": 25.28
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "lv-dp",
+      "authority_name": "Latvian State Police",
+      "country": "Latvia",
+      "country_code": "LV",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.vp.gov.lv"
+    },
+    "feed_url": "https://www.vp.gov.lv/lv/rss",
+    "category": "public_appeal",
+    "region_tag": "LV",
+    "lat": 56.95,
+    "lng": 24.11
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ee-politsei",
+      "authority_name": "Estonian Police",
+      "country": "Estonia",
+      "country_code": "EE",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.politsei.ee"
+    },
+    "feed_url": "https://www.politsei.ee/en/rss",
+    "category": "public_appeal",
+    "region_tag": "EE",
+    "lat": 59.44,
+    "lng": 24.75
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "it-csirt",
+      "authority_name": "CSIRT Italia",
+      "country": "Italy",
+      "country_code": "IT",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.csirt.gov.it"
+    },
+    "feed_url": "https://www.csirt.gov.it/feed/rss",
+    "category": "cyber_advisory",
+    "region_tag": "IT",
+    "lat": 41.9,
+    "lng": 12.5,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "it-carabinieri",
+      "authority_name": "Italian Carabinieri",
+      "country": "Italy",
+      "country_code": "IT",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.carabinieri.it"
+    },
+    "feed_url": "https://www.carabinieri.it/rss",
+    "category": "public_appeal",
+    "region_tag": "IT",
+    "lat": 41.9,
+    "lng": 12.5
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "gr-police",
+      "authority_name": "Hellenic Police",
+      "country": "Greece",
+      "country_code": "GR",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.astynomia.gr"
+    },
+    "feed_url": "https://www.astynomia.gr/rss",
+    "category": "public_appeal",
+    "region_tag": "GR",
+    "lat": 37.98,
+    "lng": 23.73
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "pt-cncs",
+      "authority_name": "CNCS (CERT Portugal)",
+      "country": "Portugal",
+      "country_code": "PT",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.cncs.gov.pt"
+    },
+    "feed_url": "https://www.cncs.gov.pt/pt/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "PT",
+    "lat": 38.72,
+    "lng": -9.14,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ch-ncsc",
+      "authority_name": "Swiss NCSC",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.ncsc.admin.ch"
+    },
+    "feed_url": "https://www.ncsc.admin.ch/ncsc/en/home.rss",
+    "category": "cyber_advisory",
+    "region_tag": "CH",
+    "lat": 46.95,
+    "lng": 7.45,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ch-fedpol",
+      "authority_name": "Swiss Federal Police (fedpol)",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.fedpol.admin.ch"
+    },
+    "feed_url": "https://www.fedpol.admin.ch/fedpol/en/home.rss",
+    "category": "public_appeal",
+    "region_tag": "CH",
+    "lat": 46.95,
+    "lng": 7.45
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "at-bmi",
+      "authority_name": "Austrian Interior Ministry",
+      "country": "Austria",
+      "country_code": "AT",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.bmi.gv.at"
+    },
+    "feed_url": "https://www.bmi.gv.at/rss",
+    "category": "public_appeal",
+    "region_tag": "AT",
+    "lat": 48.21,
+    "lng": 16.37
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ie-ncsc",
+      "authority_name": "NCSC Ireland",
+      "country": "Ireland",
+      "country_code": "IE",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.ncsc.gov.ie"
+    },
+    "feed_url": "https://www.ncsc.gov.ie/news/rss.php",
+    "category": "cyber_advisory",
+    "region_tag": "IE",
+    "lat": 53.35,
+    "lng": -6.26,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "no-ud-travel",
+      "authority_name": "Norway MFA Travel Advice",
+      "country": "Norway",
+      "country_code": "NO",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.regjeringen.no"
+    },
+    "feed_url": "https://www.regjeringen.no/en/topics/foreign-affairs/rss/",
+    "category": "travel_warning",
+    "region_tag": "NO",
+    "lat": 59.91,
+    "lng": 10.75
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dk-um-travel",
+      "authority_name": "Denmark MFA Travel Advice",
+      "country": "Denmark",
+      "country_code": "DK",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://um.dk"
+    },
+    "feed_url": "https://um.dk/en/rss",
+    "category": "travel_warning",
+    "region_tag": "DK",
+    "lat": 55.68,
+    "lng": 12.57
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fi-um-travel",
+      "authority_name": "Finland MFA Travel Advice",
+      "country": "Finland",
+      "country_code": "FI",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://um.fi"
+    },
+    "feed_url": "https://um.fi/rss/en/travel-advisories",
+    "category": "travel_warning",
+    "region_tag": "FI",
+    "lat": 60.17,
+    "lng": 24.94
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "se-ud-travel",
+      "authority_name": "Sweden MFA Travel Advice",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.government.se"
+    },
+    "feed_url": "https://www.government.se/rss/travel-advisories/",
+    "category": "travel_warning",
+    "region_tag": "SE",
+    "lat": 59.33,
+    "lng": 18.07
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "nl-bz-travel",
+      "authority_name": "Netherlands MFA Travel Advice",
+      "country": "Netherlands",
+      "country_code": "NL",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.netherlandsworldwide.nl"
+    },
+    "feed_url": "https://www.netherlandsworldwide.nl/rss/travel-advisories",
+    "category": "travel_warning",
+    "region_tag": "NL",
+    "lat": 52.08,
+    "lng": 4.31
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ie-dfa-travel",
+      "authority_name": "Ireland DFA Travel Advice",
+      "country": "Ireland",
+      "country_code": "IE",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.ireland.ie"
+    },
+    "feed_url": "https://www.ireland.ie/en/dfa/overseas-travel/rss/",
+    "category": "travel_warning",
+    "region_tag": "IE",
+    "lat": 53.35,
+    "lng": -6.26
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "at-bmeia-travel",
+      "authority_name": "Austria MFA Travel Advice",
+      "country": "Austria",
+      "country_code": "AT",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.bmeia.gv.at"
+    },
+    "feed_url": "https://www.bmeia.gv.at/reise-services/reiseinformation/rss/",
+    "category": "travel_warning",
+    "region_tag": "AT",
+    "lat": 48.21,
+    "lng": 16.37
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ch-eda-travel",
+      "authority_name": "Switzerland FDFA Travel Advice",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.eda.admin.ch"
+    },
+    "feed_url": "https://www.eda.admin.ch/eda/en/fdfa/representations-and-travel-advice.rss",
+    "category": "travel_warning",
+    "region_tag": "CH",
+    "lat": 46.95,
+    "lng": 7.45
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "it-farnesina-travel",
+      "authority_name": "Italy Farnesina Travel Advice",
+      "country": "Italy",
+      "country_code": "IT",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.viaggiaresicuri.it"
+    },
+    "feed_url": "https://www.viaggiaresicuri.it/rss",
+    "category": "travel_warning",
+    "region_tag": "IT",
+    "lat": 41.9,
+    "lng": 12.5
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "jp-mofa-travel",
+      "authority_name": "Japan MOFA Travel Safety",
+      "country": "Japan",
+      "country_code": "JP",
+      "region": "Asia-Pacific",
+      "authority_type": "national_security",
+      "base_url": "https://www.anzen.mofa.go.jp"
+    },
+    "feed_url": "https://www.anzen.mofa.go.jp/rss/rss.xml",
+    "category": "travel_warning",
+    "region_tag": "JP",
+    "lat": 35.68,
+    "lng": 139.77
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ge-ssg",
+      "authority_name": "Georgian State Security Service",
+      "country": "Georgia",
+      "country_code": "GE",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://ssg.gov.ge"
+    },
+    "feed_url": "https://ssg.gov.ge/en/feed",
+    "category": "intelligence_report",
+    "region_tag": "GE",
+    "lat": 41.69,
+    "lng": 44.8
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "md-sis",
+      "authority_name": "Moldova SIS (Intelligence & Security)",
+      "country": "Moldova",
+      "country_code": "MD",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.sis.md"
+    },
+    "feed_url": "https://www.sis.md/en/rss",
+    "category": "intelligence_report",
+    "region_tag": "MD",
+    "lat": 47.01,
+    "lng": 28.86
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "mt-police",
+      "authority_name": "Malta Police Force",
+      "country": "Malta",
+      "country_code": "MT",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://pulizija.gov.mt"
+    },
+    "feed_url": "https://pulizija.gov.mt/en/feed/",
+    "category": "public_appeal",
+    "region_tag": "MT",
+    "lat": 35.9,
+    "lng": 14.51
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "mt-mfsa",
+      "authority_name": "Malta Financial Services Authority",
+      "country": "Malta",
+      "country_code": "MT",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.mfsa.mt"
+    },
+    "feed_url": "https://www.mfsa.mt/feed/",
+    "category": "fraud_alert",
+    "region_tag": "MT",
+    "lat": 35.9,
+    "lng": 14.51
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cy-police",
+      "authority_name": "Cyprus Police",
+      "country": "Cyprus",
+      "country_code": "CY",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.police.gov.cy"
+    },
+    "feed_url": "https://www.police.gov.cy/police/police.nsf/rss.xml",
+    "category": "public_appeal",
+    "region_tag": "CY",
+    "lat": 35.17,
+    "lng": 33.36
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cy-csirt",
+      "authority_name": "CSIRT Cyprus",
+      "country": "Cyprus",
+      "country_code": "CY",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://csirt.cy"
+    },
+    "feed_url": "https://csirt.cy/en/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "CY",
+    "lat": 35.17,
+    "lng": 33.36,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "si-police",
+      "authority_name": "Slovenian Police",
+      "country": "Slovenia",
+      "country_code": "SI",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.policija.si"
+    },
+    "feed_url": "https://www.policija.si/eng/rss",
+    "category": "public_appeal",
+    "region_tag": "SI",
+    "lat": 46.06,
+    "lng": 14.51
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "il-shin-bet",
+      "authority_name": "Israel Security Agency (Shin Bet)",
+      "country": "Israel",
+      "country_code": "IL",
+      "region": "Middle East",
+      "authority_type": "intelligence",
+      "base_url": "https://www.shabak.gov.il"
+    },
+    "feed_url": "https://www.shabak.gov.il/en/rss",
+    "category": "intelligence_report",
+    "region_tag": "IL",
+    "lat": 31.77,
+    "lng": 35.22
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "il-cert",
+      "authority_name": "Israel CERT (INCD)",
+      "country": "Israel",
+      "country_code": "IL",
+      "region": "Middle East",
+      "authority_type": "cert",
+      "base_url": "https://www.gov.il/en/departments/israel_national_cyber_directorate"
+    },
+    "feed_url": "https://www.gov.il/he/api/DataGovProxy/GetDGResults?CatalogId=cybernews&Limit=20&Offset=0",
+    "category": "cyber_advisory",
+    "region_tag": "IL",
+    "lat": 32.07,
+    "lng": 34.78,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ae-cert",
+      "authority_name": "UAE aeCERT",
+      "country": "United Arab Emirates",
+      "country_code": "AE",
+      "region": "Middle East",
+      "authority_type": "cert",
+      "base_url": "https://www.tra.gov.ae"
+    },
+    "feed_url": "https://www.tra.gov.ae/aecert/en/rss.xml",
+    "category": "cyber_advisory",
+    "region_tag": "AE",
+    "lat": 24.45,
+    "lng": 54.65,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "sa-cert",
+      "authority_name": "Saudi CERT (NCA)",
+      "country": "Saudi Arabia",
+      "country_code": "SA",
+      "region": "Middle East",
+      "authority_type": "cert",
+      "base_url": "https://cert.gov.sa"
+    },
+    "feed_url": "https://cert.gov.sa/en/rss/",
+    "category": "cyber_advisory",
+    "region_tag": "SA",
+    "lat": 24.71,
+    "lng": 46.68,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "jo-ncsc",
+      "authority_name": "Jordan NCSC",
+      "country": "Jordan",
+      "country_code": "JO",
+      "region": "Middle East",
+      "authority_type": "cert",
+      "base_url": "https://www.ncsc.jo"
+    },
+    "feed_url": "https://www.ncsc.jo/en/feed",
+    "category": "cyber_advisory",
+    "region_tag": "JO",
+    "lat": 31.95,
+    "lng": 35.93,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "qa-ncsa",
+      "authority_name": "Qatar NCSA",
+      "country": "Qatar",
+      "country_code": "QA",
+      "region": "Middle East",
+      "authority_type": "cert",
+      "base_url": "https://www.ncsa.gov.qa"
+    },
+    "feed_url": "https://www.ncsa.gov.qa/en/rss",
+    "category": "cyber_advisory",
+    "region_tag": "QA",
+    "lat": 25.29,
+    "lng": 51.53,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-african-union",
+      "authority_name": "African Union Peace & Security",
+      "country": "Ethiopia",
+      "country_code": "ET",
+      "region": "Africa",
+      "authority_type": "national_security",
+      "base_url": "https://www.peaceau.org"
+    },
+    "feed_url": "https://www.peaceau.org/rss/en/feed.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 9.02,
+    "lng": 38.75
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eg-cert",
+      "authority_name": "Egypt CERT (EG-CERT)",
+      "country": "Egypt",
+      "country_code": "EG",
+      "region": "Africa",
+      "authority_type": "cert",
+      "base_url": "https://www.egcert.eg"
+    },
+    "feed_url": "https://www.egcert.eg/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "EG",
+    "lat": 30.04,
+    "lng": 31.24,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ma-dgssi",
+      "authority_name": "Morocco DGSSI (maCERT)",
+      "country": "Morocco",
+      "country_code": "MA",
+      "region": "Africa",
+      "authority_type": "cert",
+      "base_url": "https://www.dgssi.gov.ma"
+    },
+    "feed_url": "https://www.dgssi.gov.ma/fr/feed",
+    "category": "cyber_advisory",
+    "region_tag": "MA",
+    "lat": 33.97,
+    "lng": -6.85,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "rw-police",
+      "authority_name": "Rwanda National Police",
+      "country": "Rwanda",
+      "country_code": "RW",
+      "region": "Africa",
+      "authority_type": "police",
+      "base_url": "https://www.police.gov.rw"
+    },
+    "feed_url": "https://www.police.gov.rw/rss/",
+    "category": "public_appeal",
+    "region_tag": "RW",
+    "lat": -1.94,
+    "lng": 29.87
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "et-insa",
+      "authority_name": "Ethiopia INSA (Cyber Security)",
+      "country": "Ethiopia",
+      "country_code": "ET",
+      "region": "Africa",
+      "authority_type": "cert",
+      "base_url": "https://www.insa.gov.et"
+    },
+    "feed_url": "https://www.insa.gov.et/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "ET",
+    "lat": 9.02,
+    "lng": 38.75,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "sn-police",
+      "authority_name": "Senegal Police Nationale",
+      "country": "Senegal",
+      "country_code": "SN",
+      "region": "Africa",
+      "authority_type": "police",
+      "base_url": "https://www.police.gouv.sn"
+    },
+    "feed_url": "https://www.police.gouv.sn/feed/",
+    "category": "public_appeal",
+    "region_tag": "SN",
+    "lat": 14.69,
+    "lng": -17.44
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dz-cert",
+      "authority_name": "Algeria CERT (DZ-CERT)",
+      "country": "Algeria",
+      "country_code": "DZ",
+      "region": "Africa",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.dz"
+    },
+    "feed_url": "https://www.cert.dz/feed",
+    "category": "cyber_advisory",
+    "region_tag": "DZ",
+    "lat": 36.74,
+    "lng": 3.06,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "tw-cert",
+      "authority_name": "Taiwan CERT (TWCERT/CC)",
+      "country": "Taiwan",
+      "country_code": "TW",
+      "region": "Asia",
+      "authority_type": "cert",
+      "base_url": "https://www.twcert.org.tw"
+    },
+    "feed_url": "https://www.twcert.org.tw/en/rss/",
+    "category": "cyber_advisory",
+    "region_tag": "TW",
+    "lat": 25.03,
+    "lng": 121.57,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cn-cert",
+      "authority_name": "CNCERT/CC (China CERT)",
+      "country": "China",
+      "country_code": "CN",
+      "region": "Asia",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.org.cn"
+    },
+    "feed_url": "https://www.cert.org.cn/publish/english/rss.xml",
+    "category": "cyber_advisory",
+    "region_tag": "CN",
+    "lat": 39.91,
+    "lng": 116.4,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "vn-cert",
+      "authority_name": "VNCERT/CC (Vietnam CERT)",
+      "country": "Vietnam",
+      "country_code": "VN",
+      "region": "Asia",
+      "authority_type": "cert",
+      "base_url": "https://vncert.vn"
+    },
+    "feed_url": "https://vncert.vn/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "VN",
+    "lat": 21.03,
+    "lng": 105.85,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "pk-cert",
+      "authority_name": "Pakistan CERT (PkCERT)",
+      "country": "Pakistan",
+      "country_code": "PK",
+      "region": "Asia",
+      "authority_type": "cert",
+      "base_url": "https://www.pkcert.org.pk"
+    },
+    "feed_url": "https://www.pkcert.org.pk/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "PK",
+    "lat": 33.69,
+    "lng": 73.04,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bd-cert",
+      "authority_name": "BGD e-GOV CIRT (Bangladesh)",
+      "country": "Bangladesh",
+      "country_code": "BD",
+      "region": "Asia",
+      "authority_type": "cert",
+      "base_url": "https://www.cirt.gov.bd"
+    },
+    "feed_url": "https://www.cirt.gov.bd/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "BD",
+    "lat": 23.81,
+    "lng": 90.41,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "lk-cert",
+      "authority_name": "Sri Lanka CERT",
+      "country": "Sri Lanka",
+      "country_code": "LK",
+      "region": "Asia",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.gov.lk"
+    },
+    "feed_url": "https://www.cert.gov.lk/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "LK",
+    "lat": 6.93,
+    "lng": 79.85,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "mn-cert",
+      "authority_name": "Mongolia CERT (MonCIRT)",
+      "country": "Mongolia",
+      "country_code": "MN",
+      "region": "Asia",
+      "authority_type": "cert",
+      "base_url": "https://www.moncirt.org.mn"
+    },
+    "feed_url": "https://www.moncirt.org.mn/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "MN",
+    "lat": 47.92,
+    "lng": 106.91,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "aseanapol",
+      "authority_name": "ASEANAPOL (ASEAN Police)",
+      "country": "Singapore",
+      "country_code": "SG",
+      "region": "Asia",
+      "authority_type": "police",
+      "base_url": "https://www.aseanapol.org"
+    },
+    "feed_url": "https://www.aseanapol.org/feed/",
+    "category": "public_appeal",
+    "region_tag": "INT",
+    "lat": 1.35,
+    "lng": 103.82
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "apcert",
+      "authority_name": "APCERT (Asia-Pacific CERT)",
+      "country": "Japan",
+      "country_code": "JP",
+      "region": "Asia-Pacific",
+      "authority_type": "cert",
+      "base_url": "https://www.apcert.org"
+    },
+    "feed_url": "https://www.apcert.org/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "INT",
+    "lat": 35.68,
+    "lng": 139.77,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-afp",
+      "authority_name": "Australian Federal Police",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Oceania",
+      "authority_type": "police",
+      "base_url": "https://www.afp.gov.au"
+    },
+    "feed_url": "https://www.afp.gov.au/rss.xml",
+    "category": "public_appeal",
+    "region_tag": "AU",
+    "lat": -35.28,
+    "lng": 149.13
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-acsc",
+      "authority_name": "Australian Cyber Security Centre",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Oceania",
+      "authority_type": "cert",
+      "base_url": "https://www.cyber.gov.au"
+    },
+    "feed_url": "https://www.cyber.gov.au/rss.xml",
+    "category": "cyber_advisory",
+    "region_tag": "AU",
+    "lat": -35.28,
+    "lng": 149.13,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ar-cert",
+      "authority_name": "Argentina CERT (ICIC-CERT)",
+      "country": "Argentina",
+      "country_code": "AR",
+      "region": "South America",
+      "authority_type": "cert",
+      "base_url": "https://www.argentina.gob.ar/jefatura/innovacion-publica/ssetic/direccion-nacional-ciberseguridad/cert"
+    },
+    "feed_url": "https://www.argentina.gob.ar/jefatura/innovacion-publica/ssetic/direccion-nacional-ciberseguridad/cert/rss",
+    "category": "cyber_advisory",
+    "region_tag": "AR",
+    "lat": -34.6,
+    "lng": -58.38,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "br-cert",
+      "authority_name": "CERT.br (Brazil CERT)",
+      "country": "Brazil",
+      "country_code": "BR",
+      "region": "South America",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.br"
+    },
+    "feed_url": "https://www.cert.br/rss/certbr-rss.xml",
+    "category": "cyber_advisory",
+    "region_tag": "BR",
+    "lat": -23.55,
+    "lng": -46.63,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ofac-sdn",
+      "authority_name": "US Treasury OFAC Sanctions",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.treasury.gov"
+    },
+    "feed_url": "https://ofac.treasury.gov/system/files/126/sdn.xml",
+    "category": "fraud_alert",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.03
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ofac-updates",
+      "authority_name": "OFAC Recent Actions",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://ofac.treasury.gov"
+    },
+    "feed_url": "https://ofac.treasury.gov/recent-actions/rss.xml",
+    "category": "fraud_alert",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.03
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eu-sanctions",
+      "authority_name": "EU Sanctions Map",
+      "country": "Belgium",
+      "country_code": "BE",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.sanctionsmap.eu"
+    },
+    "feed_url": "https://webgate.ec.europa.eu/fsd/fsf/public/rss/feed",
+    "category": "fraud_alert",
+    "region_tag": "EU",
+    "lat": 50.85,
+    "lng": 4.35
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-sanctions",
+      "authority_name": "UN Security Council Sanctions",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "national_security",
+      "base_url": "https://www.un.org/securitycouncil/sanctions"
+    },
+    "feed_url": "https://scsanctions.un.org/resources/xml/en/consolidated.xml",
+    "category": "fraud_alert",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fatf-updates",
+      "authority_name": "FATF (Financial Action Task Force)",
+      "country": "France",
+      "country_code": "FR",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.fatf-gafi.org"
+    },
+    "feed_url": "https://www.fatf-gafi.org/rss/publications.xml",
+    "category": "fraud_alert",
+    "region_tag": "INT",
+    "lat": 48.86,
+    "lng": 2.33
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "opensanctions",
+      "authority_name": "OpenSanctions",
+      "country": "Global",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.opensanctions.org"
+    },
+    "feed_url": "https://www.opensanctions.org/rss/index.xml",
+    "category": "fraud_alert",
+    "region_tag": "INT",
+    "lat": 52.52,
+    "lng": 13.41
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fca-warnings",
+      "authority_name": "FCA Consumer Warnings",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.fca.org.uk"
+    },
+    "feed_url": "https://www.fca.org.uk/news/rss.xml",
+    "category": "fraud_alert",
+    "region_tag": "GB",
+    "lat": 51.51,
+    "lng": -0.09
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bafin-warnings",
+      "authority_name": "BaFin Unauthorized Firms",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.bafin.de"
+    },
+    "feed_url": "https://www.bafin.de/SiteGlobals/Functions/RSSFeed/EN/RSSVerbraucherschutz/RSSVerbraucherschutz.xml",
+    "category": "fraud_alert",
+    "region_tag": "DE",
+    "lat": 50.11,
+    "lng": 8.68
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "esma-warnings",
+      "authority_name": "ESMA Investor Warnings",
+      "country": "France",
+      "country_code": "FR",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.esma.europa.eu"
+    },
+    "feed_url": "https://www.esma.europa.eu/rss.xml",
+    "category": "fraud_alert",
+    "region_tag": "EU",
+    "lat": 48.86,
+    "lng": 2.33
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "sec-enforcement",
+      "authority_name": "SEC Enforcement Actions",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.sec.gov"
+    },
+    "feed_url": "https://www.sec.gov/rss/litigation/litreleases.xml",
+    "category": "fraud_alert",
+    "region_tag": "US",
+    "lat": 38.9,
+    "lng": -77.04
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "sec-alerts",
+      "authority_name": "SEC Investor Alerts",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.sec.gov"
+    },
+    "feed_url": "https://www.sec.gov/rss/investor_alerts.xml",
+    "category": "fraud_alert",
+    "region_tag": "US",
+    "lat": 38.9,
+    "lng": -77.04
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fincen-advisories",
+      "authority_name": "FinCEN Advisories",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.fincen.gov"
+    },
+    "feed_url": "https://www.fincen.gov/rss/advisories.xml",
+    "category": "fraud_alert",
+    "region_tag": "US",
+    "lat": 38.88,
+    "lng": -77.17
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "finma-warnings",
+      "authority_name": "FINMA Warnings (Switzerland)",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.finma.ch"
+    },
+    "feed_url": "https://www.finma.ch/en/rss/finma-news/",
+    "category": "fraud_alert",
+    "region_tag": "CH",
+    "lat": 46.95,
+    "lng": 7.45
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "amf-warnings",
+      "authority_name": "AMF Blacklists (France)",
+      "country": "France",
+      "country_code": "FR",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.amf-france.org"
+    },
+    "feed_url": "https://www.amf-france.org/en/rss",
+    "category": "fraud_alert",
+    "region_tag": "FR",
+    "lat": 48.86,
+    "lng": 2.33
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "consob-warnings",
+      "authority_name": "CONSOB Investor Warnings (Italy)",
+      "country": "Italy",
+      "country_code": "IT",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.consob.it"
+    },
+    "feed_url": "https://www.consob.it/web/consob-en/rss-feed",
+    "category": "fraud_alert",
+    "region_tag": "IT",
+    "lat": 41.9,
+    "lng": 12.5
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cnmv-warnings",
+      "authority_name": "CNMV Investor Warnings (Spain)",
+      "country": "Spain",
+      "country_code": "ES",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.cnmv.es"
+    },
+    "feed_url": "https://www.cnmv.es/Portal/rss.aspx?lang=en",
+    "category": "fraud_alert",
+    "region_tag": "ES",
+    "lat": 40.42,
+    "lng": -3.7
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "afm-nl-warnings",
+      "authority_name": "AFM Warnings (Netherlands)",
+      "country": "Netherlands",
+      "country_code": "NL",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.afm.nl"
+    },
+    "feed_url": "https://www.afm.nl/en/rss/all",
+    "category": "fraud_alert",
+    "region_tag": "NL",
+    "lat": 52.37,
+    "lng": 4.89
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dnb-nl-warnings",
+      "authority_name": "DNB Warnings (Dutch Central Bank)",
+      "country": "Netherlands",
+      "country_code": "NL",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.dnb.nl"
+    },
+    "feed_url": "https://www.dnb.nl/en/rss/",
+    "category": "fraud_alert",
+    "region_tag": "NL",
+    "lat": 52.37,
+    "lng": 4.89
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ecb-press",
+      "authority_name": "ECB Press Releases",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.ecb.europa.eu"
+    },
+    "feed_url": "https://www.ecb.europa.eu/rss/press.html",
+    "category": "fraud_alert",
+    "region_tag": "EU",
+    "lat": 50.11,
+    "lng": 8.68
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "occrp-investigations",
+      "authority_name": "OCCRP Investigations",
+      "country": "Bosnia and Herzegovina",
+      "country_code": "BA",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.occrp.org"
+    },
+    "feed_url": "https://www.occrp.org/en/rss",
+    "category": "fraud_alert",
+    "region_tag": "INT",
+    "lat": 43.86,
+    "lng": 18.41
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "transparency-intl",
+      "authority_name": "Transparency International",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.transparency.org"
+    },
+    "feed_url": "https://www.transparency.org/en/rss",
+    "category": "fraud_alert",
+    "region_tag": "INT",
+    "lat": 52.52,
+    "lng": 13.38
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "unodc-news",
+      "authority_name": "UNODC (UN Office on Drugs & Crime)",
+      "country": "Austria",
+      "country_code": "AT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.unodc.org"
+    },
+    "feed_url": "https://www.unodc.org/rss/press.xml",
+    "category": "public_safety",
+    "region_tag": "INT",
+    "lat": 48.24,
+    "lng": 16.41
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eu-enfast",
+      "authority_name": "EU Most Wanted (ENFAST)",
+      "country": "Netherlands",
+      "country_code": "NL",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://eumostwanted.eu"
+    },
+    "feed_url": "https://eumostwanted.eu/rss.xml",
+    "category": "wanted_suspect",
+    "region_tag": "EU",
+    "lat": 52.09,
+    "lng": 4.27
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dia-it",
+      "authority_name": "DIA Anti-Mafia (Italy)",
+      "country": "Italy",
+      "country_code": "IT",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://direzioneinvestigativaantimafia.interno.gov.it"
+    },
+    "feed_url": "https://direzioneinvestigativaantimafia.interno.gov.it/feed/",
+    "category": "public_appeal",
+    "region_tag": "IT",
+    "lat": 41.9,
+    "lng": 12.5
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "gdf-it",
+      "authority_name": "Guardia di Finanza (Italy)",
+      "country": "Italy",
+      "country_code": "IT",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.gdf.gov.it"
+    },
+    "feed_url": "https://www.gdf.gov.it/it/rss",
+    "category": "fraud_alert",
+    "region_tag": "IT",
+    "lat": 41.9,
+    "lng": 12.5
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "sfo-uk",
+      "authority_name": "Serious Fraud Office (UK)",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.sfo.gov.uk"
+    },
+    "feed_url": "https://www.sfo.gov.uk/feed/",
+    "category": "fraud_alert",
+    "region_tag": "GB",
+    "lat": 51.51,
+    "lng": -0.1
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "olaf-eu",
+      "authority_name": "OLAF (EU Anti-Fraud Office)",
+      "country": "Belgium",
+      "country_code": "BE",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://anti-fraud.ec.europa.eu"
+    },
+    "feed_url": "https://anti-fraud.ec.europa.eu/rss_en",
+    "category": "fraud_alert",
+    "region_tag": "EU",
+    "lat": 50.84,
+    "lng": 4.37
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eppo-eu",
+      "authority_name": "EPPO (EU Public Prosecutor)",
+      "country": "Luxembourg",
+      "country_code": "LU",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.eppo.europa.eu"
+    },
+    "feed_url": "https://www.eppo.europa.eu/en/rss.xml",
+    "category": "fraud_alert",
+    "region_tag": "EU",
+    "lat": 49.61,
+    "lng": 6.13
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dea-press",
+      "authority_name": "DEA Press Releases",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.dea.gov"
+    },
+    "feed_url": "https://www.dea.gov/rss/press-releases.xml",
+    "category": "public_appeal",
+    "region_tag": "US",
+    "lat": 38.87,
+    "lng": -77.14
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "atf-press",
+      "authority_name": "ATF Press Releases",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.atf.gov"
+    },
+    "feed_url": "https://www.atf.gov/rss/news",
+    "category": "public_appeal",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.02
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ic3-fbi",
+      "authority_name": "FBI IC3 (Internet Crime Complaint Center)",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.ic3.gov"
+    },
+    "feed_url": "https://www.ic3.gov/Home/RSS",
+    "category": "fraud_alert",
+    "region_tag": "US",
+    "lat": 39.29,
+    "lng": -76.61
   }
 ]
