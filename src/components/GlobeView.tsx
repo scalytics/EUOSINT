@@ -129,7 +129,17 @@ export function GlobeView({
     mapRef.current = map;
     clusterRef.current = cluster;
 
+    // Leaflet needs a correctly-sized container. On force-reload the
+    // layout may not yet be computed when the map initialises, giving it
+    // 0×0 dimensions. A ResizeObserver fixes this by calling
+    // invalidateSize() whenever the container gets its real size.
+    const ro = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    ro.observe(containerRef.current);
+
     return () => {
+      ro.disconnect();
       map.remove();
       mapRef.current = null;
       clusterRef.current = null;

@@ -34,7 +34,7 @@ func ParseHTMLAnchors(body string, baseURL string) []FeedItem {
 		if err != nil {
 			continue
 		}
-		title := stripHTML(match[2])
+		title := StripHTML(match[2])
 		if len(title) < 8 {
 			continue
 		}
@@ -48,7 +48,9 @@ func ParseHTMLAnchors(body string, baseURL string) []FeedItem {
 	return out
 }
 
-func stripHTML(value string) string {
+// StripHTML removes script/style tags, strips remaining HTML tags,
+// unescapes entities, and normalizes whitespace.
+func StripHTML(value string) string {
 	value = scriptStripRe.ReplaceAllString(value, " ")
 	value = tagStripRe.ReplaceAllString(value, " ")
 	value = html.UnescapeString(value)

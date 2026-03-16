@@ -140,6 +140,9 @@ dev-restart: ## Restart the local dev stack (prunes old images first)
 	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 
+dev-sync-registry: ## Merge source_registry.json into the running DB (adds new feeds)
+	$(DOCKER_COMPOSE) exec collector euosint-collector --source-db /data/sources.db --curated-seed /app/registry/source_registry.json --source-db-merge-registry
+
 dev-logs: ## Tail local dev stack logs
 	$(DOCKER_COMPOSE) logs -f --tail=200
 

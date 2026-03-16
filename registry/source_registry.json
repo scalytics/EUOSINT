@@ -2761,6 +2761,7 @@
   },
   {
     "type": "travelwarning-json",
+    "followRedirects": true,
     "source": {
       "source_id": "de-aa-travel",
       "authority_name": "German Federal Foreign Office",

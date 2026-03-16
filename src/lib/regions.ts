@@ -50,6 +50,11 @@ export function latLngToRegion(lat: number, lng: number): string | null {
   return null;
 }
 
+export const MIDDLE_EAST_CODES = new Set([
+  "AE", "BH", "CY", "EG", "IL", "IQ", "IR", "JO", "KW", "LB",
+  "OM", "PS", "QA", "SA", "SY", "TR", "YE",
+]);
+
 export function alertMatchesRegionFilter(alert: Alert, regionFilter: string): boolean {
   if (regionFilter === "all") return true;
   if (regionFilter.startsWith("country:")) {
@@ -59,6 +64,12 @@ export function alertMatchesRegionFilter(alert: Alert, regionFilter: string): bo
     return (
       alert.source.region === "Caribbean" ||
       inBounds(alert.lat, alert.lng, CARIBBEAN_INTERACTION_BOUNDS)
+    );
+  }
+  if (regionFilter === "Middle East") {
+    return (
+      alert.source.region === "Middle East" ||
+      MIDDLE_EAST_CODES.has(alert.source.country_code)
     );
   }
   return alert.source.region === regionFilter;

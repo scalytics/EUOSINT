@@ -88,7 +88,7 @@ func ParseFBIWanted(body []byte) ([]FeedItem, int, error) {
 
 func buildFBISummary(entry FBIWantedEntry) string {
 	parts := []string{}
-	if desc := stripHTML(entry.Description); desc != "" {
+	if desc := StripHTML(entry.Description); desc != "" {
 		parts = append(parts, desc)
 	}
 	if entry.Nationality != "" {
@@ -101,7 +101,7 @@ func buildFBISummary(entry FBIWantedEntry) string {
 		parts = append(parts, "Aliases: "+strings.Join(entry.Aliases, ", "))
 	}
 	if entry.RewardText != "" {
-		parts = append(parts, "Reward: "+stripHTML(entry.RewardText))
+		parts = append(parts, "Reward: "+StripHTML(entry.RewardText))
 	}
 	return strings.Join(parts, ". ")
 }
