@@ -354,6 +354,17 @@ func init() {
 	}
 }
 
+// geocodeCountryCode returns the centroid for a 2-letter country code.
+func geocodeCountryCode(code string) (lat, lng float64, name string, ok bool) {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	for i := range geoCountries {
+		if geoCountries[i].Code == code {
+			return geoCountries[i].Lat, geoCountries[i].Lng, geoCountries[i].Name, true
+		}
+	}
+	return 0, 0, "", false
+}
+
 // geocodeText scans text for country/region mentions and returns the
 // centroid of the best match. Prefers the rightmost mention in the text
 // (headlines typically put the subject location last, e.g. "Israeli

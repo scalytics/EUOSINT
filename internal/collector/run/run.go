@@ -414,12 +414,7 @@ func parseInterpolNotices(nctx normalize.Context, source model.RegistrySource, b
 		if label != "" {
 			title = titlePrefix + ": " + label
 		}
-		link := notice.Links.Self.Href
-		if strings.TrimSpace(link) != "" {
-			if _, err := url.Parse(link); err == nil && !strings.HasPrefix(link, "http") {
-				link = (&url.URL{Scheme: "https", Host: "ws-public.interpol.int", Path: link}).String()
-			}
-		}
+		link := interpolWebURL(source.Type, notice.EntityID, notice.Links.Self.Href)
 		countryCode := ""
 		if len(notice.Nationalities) > 0 {
 			countryCode = notice.Nationalities[0]
@@ -483,6 +478,21 @@ func extractInterpolNoticeID(entityID string, link string) string {
 	}
 	parts := strings.Split(path, "/")
 	return strings.TrimSpace(parts[len(parts)-1])
+}
+
+// interpolWebURL converts an Interpol API self-link into a human-readable
+// web URL.  e.g. ".../notices/v1/red/2025-81216" becomes
+// "https://www.interpol.int/How-we-work/Notices/Red-Notices/View-Red-Notices#2025-81216".
+func interpolWebURL(sourceType string, entityID string, selfHref string) string {
+	noticeID := extractInterpolNoticeID(entityID, selfHref)
+	base := "https://www.interpol.int/How-we-work/Notices/Red-Notices/View-Red-Notices"
+	if sourceType == "interpol-yellow-json" {
+		base = "https://www.interpol.int/How-we-work/Notices/Yellow-Notices/View-Yellow-Notices"
+	}
+	if noticeID != "" {
+		return base + "#" + noticeID
+	}
+	return base
 }
 
 func (r Runner) fetchFBIWanted(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {

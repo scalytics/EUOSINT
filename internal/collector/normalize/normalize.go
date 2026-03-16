@@ -219,6 +219,11 @@ func InterpolAlert(ctx Context, meta model.RegistrySource, noticeID string, titl
 		if name := countryNameFromCode(code); name != "" {
 			alert.Source.Country = name
 		}
+		// Override lat/lng to the person's nationality country instead of
+		// Interpol HQ (Lyon, France).
+		if gLat, gLng, _, ok := geocodeCountryCode(code); ok {
+			alert.Lat, alert.Lng = jitter(gLat, gLng, meta.Source.SourceID+":"+link)
+		}
 	}
 	alert.Triage = score(ctx.Config, alert, FeedContext{
 		Summary:  summary,
