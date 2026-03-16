@@ -1995,8 +1995,7 @@
     "feed_url": "https://sitiooij.poder-judicial.go.cr/index.php/oficinas-y-departamentos/desaparecidos",
     "feed_urls": [
       "https://sitiooij.poder-judicial.go.cr/index.php/oficinas-y-departamentos/desaparecidos",
-      "https://sitiooij.poder-judicial.go.cr/index.php/noticias",
-      "https://sitiooij.poder-judicial.go.cr"
+      "https://sitiooij.poder-judicial.go.cr/index.php/noticias"
     ],
     "category": "missing_person",
     "region_tag": "CR",
@@ -2005,11 +2004,9 @@
     "max_items": 120,
     "include_keywords": [
       "desaparec",
-      "persona",
+      "no localiza",
       "se busca",
-      "informacion",
-      "auxilio",
-      "oij"
+      "auxilio"
     ],
     "exclude_keywords": [
       "licitacion",

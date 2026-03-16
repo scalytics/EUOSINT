@@ -304,6 +304,12 @@ func StaticInterpolEntry(now time.Time) model.Alert {
 }
 
 func baseAlert(ctx Context, meta model.RegistrySource, title string, link string, publishedAt time.Time) model.Alert {
+	title = strings.TrimSpace(title)
+	// Fix broken NCMEC-style titles that start with ": Name (State)".
+	if strings.HasPrefix(title, ": ") {
+		title = "Missing" + title
+	}
+
 	baseLat, baseLng := meta.Lat, meta.Lng
 	source := meta.Source
 
