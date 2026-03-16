@@ -49,6 +49,10 @@ func NewWithHTTPClient(cfg config.Config, httpClient *http.Client) *Client {
 }
 
 func (c *Client) Text(ctx context.Context, url string, followRedirects bool, accept string) ([]byte, error) {
+	return c.TextWithHeaders(ctx, url, followRedirects, accept, nil)
+}
+
+func (c *Client) TextWithHeaders(ctx context.Context, url string, followRedirects bool, accept string, extraHeaders map[string]string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("build request %s: %w", url, err)
@@ -67,6 +71,12 @@ func (c *Client) Text(ctx context.Context, url string, followRedirects bool, acc
 	req.Header.Set("Sec-Fetch-Mode", "navigate")
 	req.Header.Set("Sec-Fetch-Site", "none")
 	req.Header.Set("Sec-Fetch-User", "?1")
+	for key, value := range extraHeaders {
+		if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
+			continue
+		}
+		req.Header.Set(key, value)
+	}
 
 	client := c.httpClient
 	if !followRedirects {

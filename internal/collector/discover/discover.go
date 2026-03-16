@@ -71,7 +71,7 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	var discovered []DiscoveredSource
 	dead := loadDeadLetterQueue(cfg.ReplacementQueuePath)
 	fmt.Fprintf(stderr, "Dead-letter queue: %d sources will be skipped\n", len(dead))
-	seededCandidates, err := generateAutonomousCandidates(ctx, cfg, client, searchClient, stderr)
+	seededCandidates, err := generateAutonomousCandidates(ctx, cfg, client, searchClient, dead, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "WARN autonomous candidate discovery failed: %v\n", err)
 	}
@@ -180,13 +180,18 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	return nil
 }
 
-func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client *fetch.Client, searchClient searchCompleter, stderr io.Writer) ([]model.SourceCandidate, error) {
+func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client *fetch.Client, searchClient searchCompleter, dead []model.SourceReplacementCandidate, stderr io.Writer) ([]model.SourceCandidate, error) {
 	candidates := make([]model.SourceCandidate, 0)
 	var failures []string
+	var slowSkips []string
 
 	teams, err := FetchFIRSTTeams(ctx, client)
 	if err != nil {
-		failures = append(failures, fmt.Sprintf("FIRST.org: %v", err))
+		if isDiscoveryTimeout(err) {
+			slowSkips = append(slowSkips, "FIRST.org")
+		} else {
+			failures = append(failures, fmt.Sprintf("FIRST.org: %v", err))
+		}
 	} else {
 		fmt.Fprintf(stderr, "FIRST.org: fetched %d teams for candidate seeding\n", len(teams))
 		for _, team := range teams {
@@ -202,9 +207,13 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 		}
 	}
 
-	agencies, err := FetchPoliceAgencies(ctx, client)
+	agencies, err := FetchPoliceAgencies(ctx, cfg, client)
 	if err != nil {
-		failures = append(failures, fmt.Sprintf("Wikidata police: %v", err))
+		if isDiscoveryTimeout(err) {
+			slowSkips = append(slowSkips, "Wikidata police")
+		} else {
+			failures = append(failures, fmt.Sprintf("Wikidata police: %v", err))
+		}
 	} else {
 		fmt.Fprintf(stderr, "Wikidata: fetched %d police/law-enforcement agencies for candidate seeding\n", len(agencies))
 		for _, agency := range agencies {
@@ -224,9 +233,13 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 		}
 	}
 
-	humOrgs, err := FetchHumanitarianOrgs(ctx, client)
+	humOrgs, err := FetchHumanitarianOrgs(ctx, cfg, client)
 	if err != nil {
-		failures = append(failures, fmt.Sprintf("Wikidata humanitarian: %v", err))
+		if isDiscoveryTimeout(err) {
+			slowSkips = append(slowSkips, "Wikidata humanitarian")
+		} else {
+			failures = append(failures, fmt.Sprintf("Wikidata humanitarian: %v", err))
+		}
 	} else {
 		fmt.Fprintf(stderr, "Wikidata: fetched %d humanitarian/emergency orgs for candidate seeding\n", len(humOrgs))
 		for _, org := range humOrgs {
@@ -249,7 +262,16 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 	if len(failures) > 0 {
 		fmt.Fprintf(stderr, "WARN structured discovery partially failed: %s\n", strings.Join(failures, " | "))
 	}
-	llmCandidates, err := llmSearchCandidates(ctx, cfg, searchClient, candidates)
+	if len(slowSkips) > 0 {
+		fmt.Fprintf(stderr, "Structured discovery skipped slow providers: %s\n", strings.Join(slowSkips, ", "))
+	}
+	searchSeeds := append([]model.SourceCandidate{}, candidates...)
+	replacementTargets := buildReplacementSearchTargets(dead)
+	if len(replacementTargets) > 0 {
+		fmt.Fprintf(stderr, "Replacement search targets: %d dead-source metadata entries queued for feed search\n", len(replacementTargets))
+		searchSeeds = append(searchSeeds, replacementTargets...)
+	}
+	llmCandidates, err := llmSearchCandidates(ctx, cfg, searchClient, searchSeeds)
 	if err != nil {
 		failures = append(failures, fmt.Sprintf("llm-search: %v", err))
 	} else if len(llmCandidates) > 0 {
@@ -260,6 +282,49 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 		return candidates, fmt.Errorf("%s", strings.Join(failures, " | "))
 	}
 	return candidates, nil
+}
+
+func isDiscoveryTimeout(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "timeout") ||
+		strings.Contains(msg, "deadline exceeded") ||
+		strings.Contains(msg, "request canceled")
+}
+
+func buildReplacementSearchTargets(dead []model.SourceReplacementCandidate) []model.SourceCandidate {
+	out := make([]model.SourceCandidate, 0, len(dead))
+	seen := map[string]struct{}{}
+	for _, entry := range dead {
+		target := model.SourceCandidate{
+			AuthorityName: strings.TrimSpace(entry.AuthorityName),
+			AuthorityType: strings.TrimSpace(entry.AuthorityType),
+			Category:      strings.TrimSpace(entry.Category),
+			Country:       strings.TrimSpace(entry.Country),
+			CountryCode:   strings.ToUpper(strings.TrimSpace(entry.CountryCode)),
+			Region:        strings.TrimSpace(entry.Region),
+			BaseURL:       strings.TrimSpace(entry.BaseURL),
+			Notes:         "replacement-search: dead-source metadata",
+		}
+		if target.BaseURL == "" {
+			target.BaseURL = strings.TrimSpace(entry.FeedURL)
+		}
+		if !passesDiscoveryHygiene(target.AuthorityName, firstNonEmpty(target.BaseURL, target.URL), target.AuthorityType) {
+			continue
+		}
+		key := strings.ToLower(target.AuthorityName) + "|" + target.CountryCode + "|" + strings.ToLower(target.Category) + "|" + normalizeURL(firstNonEmpty(target.BaseURL, target.URL))
+		if key == "|||" {
+			continue
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, target)
+	}
+	return out
 }
 
 func mergeCandidates(existingQueue []model.SourceCandidate, discovered []model.SourceCandidate, active map[string]struct{}, dead []model.SourceReplacementCandidate) []model.SourceCandidate {

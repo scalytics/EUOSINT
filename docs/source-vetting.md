@@ -76,6 +76,7 @@ Bad pattern:
 SEARCH_DISCOVERY_ENABLED=true
 SEARCH_DISCOVERY_MAX_TARGETS=4
 SEARCH_DISCOVERY_MAX_URLS_PER_TARGET=3
+HTTP_TIMEOUT_MS=60000
 SOURCE_VETTING_ENABLED=true
 SOURCE_VETTING_PROVIDER=xai
 SOURCE_VETTING_BASE_URL=https://api.x.ai/v1
@@ -85,6 +86,7 @@ SOURCE_VETTING_TEMPERATURE=0
 SOURCE_VETTING_MAX_SAMPLE_ITEMS=6
 ALERT_LLM_ENABLED=true
 ALERT_LLM_MODEL=grok-4-1-fast
+ALERT_LLM_MAX_ITEMS_PER_SOURCE=4
 ```
 
 Put the real API key only in your local `.env`. Do not commit it.
@@ -198,9 +200,9 @@ The live watcher only loads `promotion_status = active`.
 
 ## Alert-Level LLM Gate
 
-You can also enable an item-level LLM gate for RSS and HTML-list items.
+You can also enable an item-level LLM gate for ambiguous `html-list` sources.
 
-When enabled, each candidate alert item is sent to the same OpenAI-compatible endpoint with a short prompt that must return strict JSON:
+When enabled, each candidate HTML item is sent to the same OpenAI-compatible endpoint with a short prompt that must return strict JSON:
 
 - `yes`: whether the item is intelligence-relevant or just noise
 - `translation`: a short English title
@@ -209,14 +211,24 @@ When enabled, each candidate alert item is sent to the same OpenAI-compatible en
 If `yes = false`, the collector drops the item.
 If `yes = true`, the collector uses the English title and category override during normalization.
 
+RSS, Atom, and structured API sources stay on the deterministic collector path so the live watcher does not stall behind LLM latency.
+
 Example:
 
 ```dotenv
 ALERT_LLM_ENABLED=true
 ALERT_LLM_MODEL=grok-4-1-fast
+ALERT_LLM_MAX_ITEMS_PER_SOURCE=4
 ```
 
 This uses the same provider/base URL/API key as source vetting.
+
+For xAI and similar reasoning-heavy models, keep `ALERT_LLM_MAX_ITEMS_PER_SOURCE` low and raise `HTTP_TIMEOUT_MS` above the default collector timeout. A practical starting point is:
+
+```dotenv
+HTTP_TIMEOUT_MS=60000
+ALERT_LLM_MAX_ITEMS_PER_SOURCE=4
+```
 
 The same principle applies here: if your configured model supports search, use it to return a strict, short yes/no decision, a short English title, and a category id. Keep prompts short and outputs structured to avoid wasting tokens.
 
