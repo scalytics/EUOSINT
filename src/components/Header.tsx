@@ -502,15 +502,15 @@ export function Header({
       <div className="flex flex-col gap-3">
         <div className="grid gap-3 md:grid-cols-[auto_minmax(18rem,1fr)_auto] md:items-center">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-siem-accent/35 bg-siem-accent/10 text-siem-accent">
-              <Shield size={20} />
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-orange-500/40 bg-orange-500/12 text-orange-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              <Shield size={20} strokeWidth={2.1} />
             </div>
             <div>
               <div className="text-[11px] uppercase tracking-[0.22em] text-siem-muted">
-                Scalytics Intelligence
+                Scalytics OSINT
               </div>
               <div className="mt-1 text-xl font-semibold tracking-[0.02em] text-siem-text">
-                Open Source Intelligence
+                Open Source Intelligence Console
               </div>
             </div>
           </div>
