@@ -1,3 +1,6 @@
+# Copyright 2026 ff, Scalytics, Inc. - https://www.scalytics.io
+# SPDX-License-Identifier: Apache-2.0
+
 FROM golang:1.25-alpine AS build
 
 WORKDIR /app

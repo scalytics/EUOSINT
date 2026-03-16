@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright 2026 ff, Scalytics, Inc. - https://www.scalytics.io
+# SPDX-License-Identifier: Apache-2.0
+
 set -eu
 
 seed_if_missing() {

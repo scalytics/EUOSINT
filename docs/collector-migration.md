@@ -1,3 +1,8 @@
+<!--
+Copyright 2026 ff, Scalytics, Inc. - https://www.scalytics.io
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Collector Migration
 
 The collector runtime is now fully Go-based. The Node collector has been retired from operational paths, and scheduled feed generation, Docker runtime, and local commands all run through `cmd/euosint-collector`.
