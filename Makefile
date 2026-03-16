@@ -143,6 +143,12 @@ dev-restart: ## Restart the local dev stack (removes volumes, rebuilds from scra
 dev-sync-registry: ## Merge source_registry.json into the running DB (adds new feeds)
 	$(DOCKER_COMPOSE) exec collector euosint-collector --source-db /data/sources.db --curated-seed /app/registry/source_registry.json --source-db-merge-registry
 
+dev-sync-dlq: ## Copy the dead-letter queue from the running container to update the local JSON registry
+	@docker cp euosint-collector-1:/data/source_dead_letter.json .tmp/dlq.json 2>/dev/null && \
+	python3 scripts/apply-dlq.py registry/source_registry.json .tmp/dlq.json && \
+	echo "DLQ applied — review changes with: git diff registry/source_registry.json" || \
+	echo "No DLQ data or container not running"
+
 dev-logs: ## Tail local dev stack logs
 	$(DOCKER_COMPOSE) logs -f --tail=200
 
