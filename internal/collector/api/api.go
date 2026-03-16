@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/scalytics/euosint/internal/sourcedb"
@@ -30,9 +31,10 @@ func New(db *sourcedb.DB, addr string, stderr io.Writer) *Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/search", s.handleSearch)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
+	rl := newRateLimiter(30, 5, 10*time.Minute) // 30 requests burst, 5/sec refill
 	s.srv = &http.Server{
 		Addr:         addr,
-		Handler:      cors(mux),
+		Handler:      cors(rateLimit(rl, mux)),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
@@ -130,4 +132,98 @@ func cors(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// ---------- per-IP token bucket rate limiter ----------
+
+type ipBucket struct {
+	tokens   float64
+	lastSeen time.Time
+}
+
+type rateLimiterState struct {
+	mu       sync.Mutex
+	buckets  map[string]*ipBucket
+	burst    float64
+	rate     float64 // tokens per second
+	staleAge time.Duration
+}
+
+func newRateLimiter(burst int, perSecond float64, staleAge time.Duration) *rateLimiterState {
+	rl := &rateLimiterState{
+		buckets:  make(map[string]*ipBucket),
+		burst:    float64(burst),
+		rate:     perSecond,
+		staleAge: staleAge,
+	}
+	go rl.evictLoop()
+	return rl
+}
+
+func (rl *rateLimiterState) allow(ip string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	now := time.Now()
+	b, ok := rl.buckets[ip]
+	if !ok {
+		b = &ipBucket{tokens: rl.burst, lastSeen: now}
+		rl.buckets[ip] = b
+	}
+	elapsed := now.Sub(b.lastSeen).Seconds()
+	b.tokens += elapsed * rl.rate
+	if b.tokens > rl.burst {
+		b.tokens = rl.burst
+	}
+	b.lastSeen = now
+	if b.tokens < 1 {
+		return false
+	}
+	b.tokens--
+	return true
+}
+
+func (rl *rateLimiterState) evictLoop() {
+	ticker := time.NewTicker(rl.staleAge)
+	defer ticker.Stop()
+	for range ticker.C {
+		rl.mu.Lock()
+		cutoff := time.Now().Add(-rl.staleAge)
+		for ip, b := range rl.buckets {
+			if b.lastSeen.Before(cutoff) {
+				delete(rl.buckets, ip)
+			}
+		}
+		rl.mu.Unlock()
+	}
+}
+
+func rateLimit(rl *rateLimiterState, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip rate limiting for health checks.
+		if r.URL.Path == "/api/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		ip := clientIP(r)
+		if !rl.allow(ip) {
+			w.Header().Set("Retry-After", "1")
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "rate limit exceeded"})
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func clientIP(r *http.Request) string {
+	// Trust X-Forwarded-For from Caddy reverse proxy.
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if ip := strings.TrimSpace(strings.SplitN(xff, ",", 2)[0]); ip != "" {
+			return ip
+		}
+	}
+	if xri := r.Header.Get("X-Real-Ip"); xri != "" {
+		return strings.TrimSpace(xri)
+	}
+	host, _, _ := net.SplitHostPort(r.RemoteAddr)
+	return host
 }

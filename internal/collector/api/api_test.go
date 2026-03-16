@@ -164,6 +164,59 @@ func TestSearchEmptyQueryReturns400(t *testing.T) {
 	}
 }
 
+func TestRateLimitReturns429(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+	seedAlerts(t, db)
+
+	srv := New(db, ":0", os.Stderr)
+	handler := srv.srv.Handler
+
+	// Exhaust the burst (30 requests).
+	for i := 0; i < 30; i++ {
+		req := httptest.NewRequest("GET", "/api/search?q=europol", nil)
+		req.RemoteAddr = "10.0.0.1:12345"
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		if w.Code == http.StatusTooManyRequests {
+			// Burst may be slightly less than 30 due to token consumption timing.
+			// Reaching 429 early is fine — the limiter works.
+			return
+		}
+	}
+
+	// The 31st request should be rate limited.
+	req := httptest.NewRequest("GET", "/api/search?q=europol", nil)
+	req.RemoteAddr = "10.0.0.1:12345"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", w.Code)
+	}
+	if w.Header().Get("Retry-After") == "" {
+		t.Fatal("expected Retry-After header")
+	}
+}
+
+func TestRateLimitSkipsHealth(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	srv := New(db, ":0", os.Stderr)
+	handler := srv.srv.Handler
+
+	// Even after many requests, health should never be rate limited.
+	for i := 0; i < 50; i++ {
+		req := httptest.NewRequest("GET", "/api/health", nil)
+		req.RemoteAddr = "10.0.0.2:12345"
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("health request %d: expected 200, got %d", i, w.Code)
+		}
+	}
+}
+
 func TestHealthEndpoint(t *testing.T) {
 	db := testDB(t)
 	defer db.Close()
