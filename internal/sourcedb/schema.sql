@@ -159,3 +159,15 @@ CREATE VIRTUAL TABLE IF NOT EXISTS agencies_fts USING fts5(
   authority_type,
   base_url
 );
+
+CREATE VIRTUAL TABLE IF NOT EXISTS alerts_fts USING fts5(
+  alert_id UNINDEXED,
+  title,
+  canonical_url UNINDEXED,
+  category,
+  severity UNINDEXED,
+  region_tag,
+  source_authority,
+  source_country,
+  source_country_code
+);
