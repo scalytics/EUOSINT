@@ -12,8 +12,18 @@ permissions:
 
 jobs:
   release:
-    name: publish
+    name: publish-${{ matrix.image.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: web
+            dockerfile: Dockerfile
+            image_suffix: -web
+          - name: collector
+            dockerfile: Dockerfile.collector
+            image_suffix: -collector
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,13 +41,14 @@ jobs:
         run: npm run build
 
       - name: Archive dist
+        if: matrix.image.name == 'web'
         run: |
           tar -czf euosint-dist-${GITHUB_REF_NAME}.tar.gz dist
           shasum -a 256 euosint-dist-${GITHUB_REF_NAME}.tar.gz > euosint-dist-${GITHUB_REF_NAME}.tar.gz.sha256
 
       - name: Prepare image name
         id: image
-        run: echo "name=ghcr.io/${GITHUB_REPOSITORY@L}" >> "$GITHUB_OUTPUT"
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY@L}${{ matrix.image.image_suffix }}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -64,7 +75,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
+          file: ./${{ matrix.image.dockerfile }}
           push: true
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
@@ -73,6 +84,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Publish GitHub release
+        if: matrix.image.name == 'web'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

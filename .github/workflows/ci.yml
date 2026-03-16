@@ -1,0 +1,64 @@
+# Copyright 2026 ff, Scalytics, Inc. - https://www.scalytics.io
+# SPDX-License-Identifier: Apache-2.0
+
+name: CI
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: UI lint
+        run: npm run lint
+
+      - name: UI typecheck
+        run: npm run typecheck
+
+      - name: UI build
+        run: npm run build
+
+      - name: Go format check
+        run: make go-fmt-check
+
+      - name: Go tests
+        run: make go-test
+
+      - name: Go race
+        run: make go-race
+
+      - name: Go coverage
+        run: make go-cover
+
+      - name: Go vet
+        run: make go-vet
