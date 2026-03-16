@@ -224,7 +224,7 @@ export function FeedDirectory({
           </div>
           <div className="rounded-xl border border-siem-border bg-siem-panel-strong px-3 py-2.5">
             <div className="flex items-center gap-1.5">
-              <Activity size={14} className="text-emerald-300" />
+              <Radar size={14} className="text-emerald-300" />
               <span className="text-xl font-semibold text-siem-text">{zoneSummary.feeds}</span>
             </div>
             <div className="text-[10px] uppercase tracking-[0.16em] text-siem-muted">Feeds</div>
