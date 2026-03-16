@@ -228,6 +228,22 @@ func InterpolAlert(ctx Context, meta model.RegistrySource, noticeID string, titl
 	return &alert
 }
 
+func FBIWantedAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
+	publishedAt := parseDate(item.Published)
+	if publishedAt.IsZero() {
+		publishedAt = ctx.Now
+	}
+	alert := baseAlert(ctx, meta, item.Title, item.Link, publishedAt)
+	alert.Severity = "critical"
+	triage := score(ctx.Config, alert, FeedContext{
+		Summary:  item.Summary,
+		Tags:     item.Tags,
+		FeedType: meta.Type,
+	})
+	alert.Triage = triage
+	return &alert
+}
+
 func TravelWarningAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
 	publishedAt := parseDate(item.Published)
 	if publishedAt.IsZero() {

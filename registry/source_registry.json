@@ -23,30 +23,7 @@
     "max_items": 15
   },
   {
-    "type": "rss",
-    "source": {
-      "source_id": "fbi",
-      "authority_name": "FBI",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "police",
-      "base_url": "https://www.fbi.gov"
-    },
-    "feed_url": "https://www.fbi.gov/wanted/seeking-information",
-    "category": "public_appeal",
-    "region_tag": "US",
-    "lat": 38.9,
-    "lng": -77,
-    "reporting": {
-      "label": "Report to FBI",
-      "url": "https://tips.fbi.gov/",
-      "phone": "1-800-CALL-FBI (1-800-225-5324)",
-      "notes": "Use 911 for emergencies."
-    }
-  },
-  {
-    "type": "rss",
+    "type": "fbi-wanted-json",
     "source": {
       "source_id": "fbi-wanted",
       "authority_name": "FBI Wanted",
@@ -56,16 +33,89 @@
       "authority_type": "police",
       "base_url": "https://www.fbi.gov"
     },
-    "feed_url": "https://www.fbi.gov/wanted",
+    "feed_url": "https://api.fbi.gov/wanted/v1/list?posterClassification=default",
     "category": "wanted_suspect",
     "region_tag": "US",
     "lat": 38.9,
     "lng": -77,
+    "max_items": 100,
     "reporting": {
       "label": "Submit a Tip to FBI",
       "url": "https://tips.fbi.gov/",
       "phone": "1-800-CALL-FBI (1-800-225-5324)",
       "notes": "Use 911 for emergencies."
+    }
+  },
+  {
+    "type": "fbi-wanted-json",
+    "source": {
+      "source_id": "fbi-mostwanted",
+      "authority_name": "FBI Ten Most Wanted",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.fbi.gov"
+    },
+    "feed_url": "https://api.fbi.gov/wanted/v1/list?posterClassification=ten",
+    "category": "wanted_suspect",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.02,
+    "max_items": 20,
+    "reporting": {
+      "label": "Report Sighting to FBI",
+      "url": "https://tips.fbi.gov/",
+      "phone": "1-800-CALL-FBI (1-800-225-5324)",
+      "notes": "Do NOT attempt to apprehend. Call 911 immediately if in danger."
+    }
+  },
+  {
+    "type": "fbi-wanted-json",
+    "source": {
+      "source_id": "fbi-seeking",
+      "authority_name": "FBI Seeking Info",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.fbi.gov"
+    },
+    "feed_url": "https://api.fbi.gov/wanted/v1/list?posterClassification=seeking-info",
+    "category": "public_appeal",
+    "region_tag": "US",
+    "lat": 38.91,
+    "lng": -77.01,
+    "max_items": 60,
+    "reporting": {
+      "label": "Submit a Tip to FBI",
+      "url": "https://tips.fbi.gov/",
+      "phone": "1-800-CALL-FBI (1-800-225-5324)",
+      "notes": "The FBI is seeking the public's assistance. If you have information, submit a tip."
+    }
+  },
+  {
+    "type": "fbi-wanted-json",
+    "source": {
+      "source_id": "fbi-kidnappings",
+      "authority_name": "FBI Parental Kidnappings",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.fbi.gov"
+    },
+    "feed_url": "https://api.fbi.gov/wanted/v1/list?posterClassification=kidnappings",
+    "category": "missing_person",
+    "region_tag": "US",
+    "lat": 38.88,
+    "lng": -76.99,
+    "max_items": 40,
+    "reporting": {
+      "label": "Report to FBI",
+      "url": "https://tips.fbi.gov/",
+      "phone": "1-800-CALL-FBI (1-800-225-5324)",
+      "notes": "If you have information about a parental kidnapping case, submit a tip."
     }
   },
   {
@@ -432,6 +482,7 @@
   },
   {
     "type": "html-list",
+    "fetch_mode": "browser",
     "followRedirects": true,
     "source": {
       "source_id": "dea",
@@ -471,6 +522,7 @@
   },
   {
     "type": "html-list",
+    "fetch_mode": "browser",
     "followRedirects": true,
     "source": {
       "source_id": "atf",
@@ -507,6 +559,62 @@
     "exclude_keywords": [
       "subscribe for atf updates"
     ]
+  },
+  {
+    "type": "html-list",
+    "fetch_mode": "browser",
+    "followRedirects": true,
+    "source": {
+      "source_id": "dea-fugitives",
+      "authority_name": "DEA Fugitives",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.dea.gov"
+    },
+    "feed_url": "https://www.dea.gov/fugitives",
+    "category": "wanted_suspect",
+    "region_tag": "US",
+    "lat": 38.87,
+    "lng": -77.06,
+    "max_items": 60,
+    "reporting": {
+      "label": "Report to DEA",
+      "url": "https://www.dea.gov/submit-tip",
+      "phone": "1-877-792-2873"
+    },
+    "include_keywords": [
+      "wanted",
+      "fugitive",
+      "reward"
+    ]
+  },
+  {
+    "type": "html-list",
+    "fetch_mode": "browser",
+    "followRedirects": true,
+    "source": {
+      "source_id": "usms-mostwanted",
+      "authority_name": "US Marshals Most Wanted",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.usmarshals.gov"
+    },
+    "feed_url": "https://www.usmarshals.gov/what-we-do/fugitive-investigations/15-most-wanted",
+    "category": "wanted_suspect",
+    "region_tag": "US",
+    "lat": 38.9,
+    "lng": -77.03,
+    "max_items": 20,
+    "reporting": {
+      "label": "Report to US Marshals",
+      "url": "https://www.usmarshals.gov/tips",
+      "phone": "1-877-926-8332",
+      "notes": "Do NOT attempt to apprehend. Call 911 immediately if in danger."
+    }
   },
   {
     "type": "rss",
@@ -1171,54 +1279,6 @@
       "label": "Report Missing Person in Chile",
       "url": "https://www.extraviados.cl/",
       "notes": "Coordinate with local police for urgent leads."
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "fbi-seeking",
-      "authority_name": "FBI Seeking Info",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "police",
-      "base_url": "https://www.fbi.gov"
-    },
-    "feed_url": "https://www.fbi.gov/wanted/seeking-information",
-    "category": "public_appeal",
-    "region_tag": "US",
-    "lat": 38.91,
-    "lng": -77.01,
-    "reporting": {
-      "label": "Submit a Tip to FBI",
-      "url": "https://tips.fbi.gov/",
-      "phone": "1-800-CALL-FBI (1-800-225-5324)",
-      "notes": "The FBI is seeking the public's assistance. If you have information, submit a tip."
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "fbi-mostwanted",
-      "authority_name": "FBI Most Wanted",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "police",
-      "base_url": "https://www.fbi.gov"
-    },
-    "feed_url": "https://www.fbi.gov/wanted",
-    "category": "wanted_suspect",
-    "region_tag": "US",
-    "lat": 38.89,
-    "lng": -77.02,
-    "reporting": {
-      "label": "Report Sighting to FBI",
-      "url": "https://tips.fbi.gov/",
-      "phone": "1-800-CALL-FBI (1-800-225-5324)",
-      "notes": "Do NOT attempt to apprehend. Call 911 immediately if in danger."
     }
   },
   {
