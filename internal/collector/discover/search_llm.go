@@ -164,7 +164,7 @@ func searchTopicLabel(category string, authorityType string) string {
 		return "missing persons and missing children"
 	case "wanted_suspect":
 		return "wanted persons, fugitives, and public appeals"
-	case "terror_warning":
+	case "terror_warning", "terrorism_tip":
 		return "terrorism warnings and threat notices"
 	case "organized_crime":
 		return "organized crime and major criminal investigations"
@@ -174,6 +174,20 @@ func searchTopicLabel(category string, authorityType string) string {
 		return "cyber advisories and security alerts"
 	case "public_appeal":
 		return "public appeals, wanted persons, and missing persons"
+	case "fraud_alert":
+		return "fraud alerts, financial crime warnings, and sanctions notices"
+	case "intelligence_report":
+		return "strategic intelligence assessments and geopolitical analysis"
+	case "conflict_monitoring":
+		return "armed conflict tracking, ceasefire monitoring, and peace processes"
+	case "humanitarian_security", "humanitarian_tasking":
+		return "humanitarian operations, aid worker security, and crisis coordination"
+	case "health_emergency", "disease_outbreak":
+		return "disease outbreaks, epidemics, pandemic surveillance, and public health emergencies"
+	case "environmental_disaster":
+		return "environmental disasters, earthquakes, oil spills, volcanic activity, and nuclear incidents"
+	case "public_safety", "emergency_management":
+		return "civil protection, emergency management, and natural disaster warnings"
 	default:
 		if strings.TrimSpace(authorityType) != "" {
 			return authorityType + " intelligence collection"
