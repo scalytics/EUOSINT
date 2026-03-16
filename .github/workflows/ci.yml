@@ -36,5 +36,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Commit check
-        run: make commit-check
+      - name: UI lint
+        run: npm run lint
+
+      - name: UI typecheck
+        run: npm run typecheck
+
+      - name: UI build
+        run: npm run build
+
+      - name: Go format check
+        run: make go-fmt-check
+
+      - name: Go tests
+        run: make go-test
+
+      - name: Go race
+        run: make go-race
+
+      - name: Go coverage
+        run: make go-cover
+
+      - name: Go vet
+        run: make go-vet
