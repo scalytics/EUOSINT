@@ -2148,6 +2148,8 @@
   },
   {
     "type": "html-list",
+    "promotion_status": "rejected",
+    "rejection_reason": "ICRC Family Links blocks all automated access (403)",
     "followRedirects": true,
     "source": {
       "source_id": "icrc-family-links",
@@ -2876,6 +2878,8 @@
   },
   {
     "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "ICRC removed main RSS feed; replaced by icrc-ihl and icrc-field-ops",
     "source": {
       "source_id": "icrc-news",
       "authority_name": "ICRC News",
@@ -2893,6 +2897,42 @@
   },
   {
     "type": "rss",
+    "source": {
+      "source_id": "icrc-ihl",
+      "authority_name": "ICRC Humanitarian Law & Policy",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://blogs.icrc.org/law-and-policy"
+    },
+    "feed_url": "https://blogs.icrc.org/law-and-policy/feed/",
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 46.22,
+    "lng": 6.14
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "icrc-field-ops",
+      "authority_name": "ICRC Field Operations",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://blogs.icrc.org/ilot"
+    },
+    "feed_url": "https://blogs.icrc.org/ilot/feed/",
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 46.22,
+    "lng": 6.14
+  },
+  {
+    "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "UNHCR blocks RSS access (403); replaced by un-refugees feed",
     "source": {
       "source_id": "unhcr-news",
       "authority_name": "UNHCR News",
@@ -2961,6 +3001,93 @@
   },
   {
     "type": "rss",
+    "source": {
+      "source_id": "un-peacekeeping",
+      "authority_name": "UN Peacekeeping (Blue Helmets)",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "national_security",
+      "base_url": "https://peacekeeping.un.org"
+    },
+    "feed_url": "https://peacekeeping.un.org/en/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "unocha",
+      "authority_name": "UN OCHA",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.unocha.org"
+    },
+    "feed_url": "https://www.unocha.org/rss.xml",
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-peace-security",
+      "authority_name": "UN News Peace & Security",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "national_security",
+      "base_url": "https://news.un.org"
+    },
+    "feed_url": "https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-refugees",
+      "authority_name": "UN News Refugees & Migrants",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://news.un.org"
+    },
+    "feed_url": "https://news.un.org/feed/subscribe/en/news/topic/migrants-and-refugees/feed/rss.xml",
+    "category": "humanitarian_security",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-humanitarian-aid",
+      "authority_name": "UN News Humanitarian Aid",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://news.un.org"
+    },
+    "feed_url": "https://news.un.org/feed/subscribe/en/news/topic/humanitarian-aid/feed/rss.xml",
+    "category": "humanitarian_tasking",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97
+  },
+  {
+    "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "WFP blocks RSS access (403); no alternative operational feed available",
     "source": {
       "source_id": "wfp-news",
       "authority_name": "World Food Programme News",
