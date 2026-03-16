@@ -22,6 +22,34 @@ type FIRSTTeam struct {
 	Website   string `json:"website"`
 }
 
+type firstWebsiteField string
+
+func (f *firstWebsiteField) UnmarshalJSON(data []byte) error {
+	data = []byte(strings.TrimSpace(string(data)))
+	if string(data) == "null" || len(data) == 0 {
+		*f = ""
+		return nil
+	}
+	var single string
+	if err := json.Unmarshal(data, &single); err == nil {
+		*f = firstWebsiteField(strings.TrimSpace(single))
+		return nil
+	}
+	var many []string
+	if err := json.Unmarshal(data, &many); err == nil {
+		for _, entry := range many {
+			entry = strings.TrimSpace(entry)
+			if entry != "" {
+				*f = firstWebsiteField(entry)
+				return nil
+			}
+		}
+		*f = ""
+		return nil
+	}
+	return fmt.Errorf("unsupported FIRST website field: %s", string(data))
+}
+
 // FetchFIRSTTeams fetches all CSIRT teams from the FIRST.org API,
 // paginating through all results. Returns teams that have a non-empty
 // website URL.
@@ -40,10 +68,10 @@ func FetchFIRSTTeams(ctx context.Context, client *fetch.Client) ([]FIRSTTeam, er
 
 		var resp struct {
 			Data []struct {
-				ShortName string `json:"short_name"`
-				Country   string `json:"country"`
-				Website   string `json:"website"`
-				Host      string `json:"host"`
+				ShortName string            `json:"short_name"`
+				Country   string            `json:"country"`
+				Website   firstWebsiteField `json:"website"`
+				Host      string            `json:"host"`
 			} `json:"data"`
 			Total int `json:"total"`
 		}
@@ -52,7 +80,7 @@ func FetchFIRSTTeams(ctx context.Context, client *fetch.Client) ([]FIRSTTeam, er
 		}
 
 		for _, team := range resp.Data {
-			website := strings.TrimSpace(team.Website)
+			website := strings.TrimSpace(string(team.Website))
 			if website == "" {
 				website = strings.TrimSpace(team.Host)
 			}

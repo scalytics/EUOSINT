@@ -5,6 +5,8 @@ package discover
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -177,7 +179,7 @@ func TestLLMSearchCandidatesReturnsTokenSafeCandidates(t *testing.T) {
 	cfg.VettingProvider = "xai"
 
 	got, err := llmSearchCandidates(context.Background(), cfg, stubSearchCompleter{
-		content: `{"urls":[{"url":"https://www.europol.europa.eu/cms/api/rss/news","reason":"official rss"},{"url":"https://www.europol.europa.eu/newsroom","reason":"official newsroom"},{"url":"not-a-url","reason":"ignore"}]}`,
+		content: `{"urls":[{"url":"https://www.europol.europa.eu/cms/api/rss/news","reason":"official rss"},{"url":"https://www.europol.europa.eu/feed.xml","reason":"official atom"},{"url":"https://www.europol.europa.eu/newsroom","reason":"ignore non-feed"}]}`,
 	}, []model.SourceCandidate{
 		{AuthorityName: "Europol", URL: "https://www.europol.europa.eu", AuthorityType: "police", Category: "public_appeal", Country: "Netherlands", CountryCode: "NL"},
 	})
@@ -192,5 +194,87 @@ func TestLLMSearchCandidatesReturnsTokenSafeCandidates(t *testing.T) {
 	}
 	if got[0].AuthorityName != "Europol" || got[0].CountryCode != "NL" {
 		t.Fatalf("expected metadata to be preserved, got %#v", got[0])
+	}
+}
+
+func TestFirstWebsiteFieldAcceptsStringOrArray(t *testing.T) {
+	var got struct {
+		Website firstWebsiteField `json:"website"`
+	}
+	if err := json.Unmarshal([]byte(`{"website":"https://example.test"}`), &got); err != nil {
+		t.Fatalf("unmarshal string website: %v", err)
+	}
+	if string(got.Website) != "https://example.test" {
+		t.Fatalf("unexpected string website %q", got.Website)
+	}
+	if err := json.Unmarshal([]byte(`{"website":["","https://array.example/feed"]}`), &got); err != nil {
+		t.Fatalf("unmarshal array website: %v", err)
+	}
+	if string(got.Website) != "https://array.example/feed" {
+		t.Fatalf("unexpected array website %q", got.Website)
+	}
+}
+
+func TestBuildReplacementSearchTargetsUsesMetadataNotDeadURL(t *testing.T) {
+	targets := buildReplacementSearchTargets([]model.SourceReplacementCandidate{
+		{
+			SourceID:      "bka",
+			AuthorityName: "Bundeskriminalamt",
+			FeedURL:       "https://dead.example/rss",
+			BaseURL:       "https://www.bka.de",
+			Country:       "Germany",
+			CountryCode:   "DE",
+			Region:        "Europe",
+			AuthorityType: "police",
+			Category:      "wanted_suspect",
+		},
+	})
+	if len(targets) != 1 {
+		t.Fatalf("expected 1 replacement search target, got %d", len(targets))
+	}
+	if targets[0].BaseURL != "https://www.bka.de" {
+		t.Fatalf("expected base URL to be used for replacement search, got %#v", targets[0])
+	}
+	if targets[0].URL != "" {
+		t.Fatalf("expected dead feed URL not to be reintroduced as direct candidate, got %#v", targets[0])
+	}
+	if !strings.HasPrefix(targets[0].Notes, "replacement-search:") {
+		t.Fatalf("expected replacement-search note, got %#v", targets[0])
+	}
+}
+
+func TestIsDiscoveryTimeout(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "deadline", err: context.DeadlineExceeded, want: true},
+		{name: "timeout text", err: errors.New("fetch failed: context deadline exceeded"), want: true},
+		{name: "request canceled", err: errors.New("request canceled while awaiting headers"), want: true},
+		{name: "parse failure", err: errors.New("json parse error"), want: false},
+	}
+	for _, tt := range tests {
+		if got := isDiscoveryTimeout(tt.err); got != tt.want {
+			t.Fatalf("%s: got %v want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestWikidataCacheRoundTrip(t *testing.T) {
+	cfg := config.Default()
+	cfg.WikidataCachePath = t.TempDir()
+	cfg.WikidataCacheTTLHours = 24
+
+	url := "https://query.wikidata.org/sparql?format=json&query=test"
+	want := []byte(`{"results":{"bindings":[]}}`)
+	writeWikidataCache(cfg, url, want)
+
+	got, ok := readWikidataCache(cfg, url)
+	if !ok {
+		t.Fatal("expected cached wikidata response to be readable")
+	}
+	if string(got) != string(want) {
+		t.Fatalf("unexpected cache body %q", string(got))
 	}
 }

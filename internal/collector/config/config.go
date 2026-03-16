@@ -41,6 +41,7 @@ type Config struct {
 	HTTPTimeoutMS                   int
 	MaxResponseBodyBytes            int64
 	UserAgent                       string
+	WikimediaUserAgent              string
 	TranslateEnabled                bool
 	BrowserEnabled                  bool
 	BrowserTimeoutMS                int
@@ -52,6 +53,8 @@ type Config struct {
 	SearchDiscoveryEnabled          bool
 	SearchDiscoveryMaxTargets       int
 	SearchDiscoveryMaxURLsPerTarget int
+	WikidataCachePath               string
+	WikidataCacheTTLHours           int
 	VettingEnabled                  bool
 	VettingProvider                 string
 	VettingBaseURL                  string
@@ -61,6 +64,7 @@ type Config struct {
 	VettingMaxSampleItems           int
 	AlertLLMEnabled                 bool
 	AlertLLMModel                   string
+	AlertLLMMaxItemsPerSource       int
 	CategoryDictionaryPath          string
 	ReplacementQueuePath            string
 	SourceDBPath                    string
@@ -90,6 +94,7 @@ func Default() Config {
 		HTTPTimeoutMS:                   defaultTimeoutMS,
 		MaxResponseBodyBytes:            defaultMaxBodyBytes,
 		UserAgent:                       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+		WikimediaUserAgent:              "EUOSINTBot/1.0 (https://www.scalytics.io; ops@scalytics.io) WDQS discovery",
 		TranslateEnabled:                true,
 		BrowserEnabled:                  false,
 		BrowserTimeoutMS:                30000,
@@ -101,6 +106,8 @@ func Default() Config {
 		SearchDiscoveryEnabled:          false,
 		SearchDiscoveryMaxTargets:       4,
 		SearchDiscoveryMaxURLsPerTarget: 3,
+		WikidataCachePath:               "registry/wikidata_cache",
+		WikidataCacheTTLHours:           24,
 		VettingEnabled:                  false,
 		VettingProvider:                 "openai-compatible",
 		VettingBaseURL:                  "https://api.openai.com/v1",
@@ -109,6 +116,7 @@ func Default() Config {
 		VettingMaxSampleItems:           6,
 		AlertLLMEnabled:                 false,
 		AlertLLMModel:                   "gpt-4.1-mini",
+		AlertLLMMaxItemsPerSource:       4,
 		CategoryDictionaryPath:          "registry/category_dictionary.json",
 		ReplacementQueuePath:            "registry/source_dead_letter.json",
 		SourceDBPath:                    "registry/sources.db",
@@ -139,6 +147,7 @@ func FromEnv() Config {
 	cfg.HTTPTimeoutMS = envInt("HTTP_TIMEOUT_MS", cfg.HTTPTimeoutMS)
 	cfg.MaxResponseBodyBytes = int64(envInt("MAX_RESPONSE_BODY_BYTES", int(cfg.MaxResponseBodyBytes)))
 	cfg.UserAgent = envString("USER_AGENT", cfg.UserAgent)
+	cfg.WikimediaUserAgent = envString("WIKIMEDIA_USER_AGENT", cfg.WikimediaUserAgent)
 	cfg.TranslateEnabled = envBool("TRANSLATE_ENABLED", cfg.TranslateEnabled)
 	cfg.BrowserEnabled = envBool("BROWSER_ENABLED", cfg.BrowserEnabled)
 	cfg.BrowserTimeoutMS = envInt("BROWSER_TIMEOUT_MS", cfg.BrowserTimeoutMS)
@@ -150,6 +159,8 @@ func FromEnv() Config {
 	cfg.SearchDiscoveryEnabled = envBool("SEARCH_DISCOVERY_ENABLED", cfg.SearchDiscoveryEnabled)
 	cfg.SearchDiscoveryMaxTargets = envInt("SEARCH_DISCOVERY_MAX_TARGETS", cfg.SearchDiscoveryMaxTargets)
 	cfg.SearchDiscoveryMaxURLsPerTarget = envInt("SEARCH_DISCOVERY_MAX_URLS_PER_TARGET", cfg.SearchDiscoveryMaxURLsPerTarget)
+	cfg.WikidataCachePath = envString("WIKIDATA_CACHE_PATH", cfg.WikidataCachePath)
+	cfg.WikidataCacheTTLHours = envInt("WIKIDATA_CACHE_TTL_HOURS", cfg.WikidataCacheTTLHours)
 	cfg.VettingEnabled = envBool("SOURCE_VETTING_ENABLED", cfg.VettingEnabled)
 	cfg.VettingProvider = envString("SOURCE_VETTING_PROVIDER", cfg.VettingProvider)
 	cfg.VettingBaseURL = envString("SOURCE_VETTING_BASE_URL", cfg.VettingBaseURL)
@@ -159,6 +170,7 @@ func FromEnv() Config {
 	cfg.VettingMaxSampleItems = envInt("SOURCE_VETTING_MAX_SAMPLE_ITEMS", cfg.VettingMaxSampleItems)
 	cfg.AlertLLMEnabled = envBool("ALERT_LLM_ENABLED", cfg.AlertLLMEnabled)
 	cfg.AlertLLMModel = envString("ALERT_LLM_MODEL", cfg.AlertLLMModel)
+	cfg.AlertLLMMaxItemsPerSource = envInt("ALERT_LLM_MAX_ITEMS_PER_SOURCE", cfg.AlertLLMMaxItemsPerSource)
 	cfg.CategoryDictionaryPath = envString("CATEGORY_DICTIONARY_PATH", cfg.CategoryDictionaryPath)
 	cfg.ReplacementQueuePath = envString("REPLACEMENT_QUEUE_PATH", cfg.ReplacementQueuePath)
 	cfg.SourceDBPath = envString("SOURCE_DB_PATH", cfg.SourceDBPath)

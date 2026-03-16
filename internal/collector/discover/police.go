@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/fetch"
 )
 
@@ -76,7 +77,7 @@ SELECT ?agency ?agencyLabel ?website ?countryLabel ?countryCode WHERE {
 // FetchPoliceAgencies queries Wikidata for law-enforcement agencies
 // worldwide that have official websites. This replaces a static curated
 // directory and scales to every country automatically.
-func FetchPoliceAgencies(ctx context.Context, client *fetch.Client) ([]PoliceAgency, error) {
+func FetchPoliceAgencies(ctx context.Context, cfg config.Config, client *fetch.Client) ([]PoliceAgency, error) {
 	// Query Wikidata in smaller chunks so one slow response does not zero out
 	// the entire law-enforcement directory.
 	seen := map[string]struct{}{}
@@ -86,7 +87,7 @@ func FetchPoliceAgencies(ctx context.Context, client *fetch.Client) ([]PoliceAge
 	for _, chunk := range chunkTypeIDs(policeAgencyTypeIDs, 2) {
 		query := strings.TrimSpace(buildPoliceAgencyQuery(chunk))
 		reqURL := wikidataSPARQL + "?format=json&query=" + url.QueryEscape(query)
-		body, err := fetchTextWithRetry(ctx, client, reqURL, "application/sparql-results+json, application/json;q=0.9")
+		body, err := fetchWikidataTextWithCache(ctx, cfg, client, reqURL, "application/sparql-results+json, application/json;q=0.9")
 		if err != nil {
 			failures = append(failures, fmt.Sprintf("%s: %v", strings.Join(chunk, ","), err))
 			continue

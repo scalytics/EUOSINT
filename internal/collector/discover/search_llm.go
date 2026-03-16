@@ -91,11 +91,11 @@ func searchCandidateTarget(ctx context.Context, client searchCompleter, cfg conf
 	}
 
 	prompt := fmt.Sprintf(
-		"Find up to %d official or authoritative source URLs for %s in %s relevant to %s intelligence collection. Prefer RSS, Atom, JSON APIs, official newsroom feeds, or durable alert/listing pages. Reject local or municipal sources. Return strict JSON only in the form {\"urls\":[{\"url\":\"https://...\",\"reason\":\"short\"}]}.",
+		"Find up to %d official RSS or ATOM feed URLs for %s in %s covering %s. Reject local or municipal sources. Return strict JSON only in the form {\"urls\":[{\"url\":\"https://...\",\"reason\":\"short\"}]}. If no official feed exists, return {\"urls\":[]}.",
 		maxURLs,
-		firstNonEmpty(target.AuthorityName, "the target authority"),
+		firstNonEmpty(target.AuthorityName, "high-authority OSINT sources"),
 		firstNonEmpty(target.Country, "its jurisdiction"),
-		firstNonEmpty(target.Category, target.AuthorityType, "public safety"),
+		searchTopicLabel(target.Category, target.AuthorityType),
 	)
 	if base := strings.TrimSpace(firstNonEmpty(target.BaseURL, target.URL)); base != "" {
 		prompt += " Known official website: " + base + "."
@@ -104,7 +104,7 @@ func searchCandidateTarget(ctx context.Context, client searchCompleter, cfg conf
 	content, err := client.Complete(ctx, []vet.Message{
 		{
 			Role:    "system",
-			Content: "You are a source discovery assistant. Return strict JSON only. Keep output short. Only list official or highly authoritative URLs likely to be usable as feeds, APIs, or durable listing pages for intelligence-relevant collection.",
+			Content: "You are a source discovery assistant. Return strict JSON only. Keep output short. Only list official or highly authoritative RSS or ATOM feed URLs suitable for intelligence-relevant collection.",
 		},
 		{
 			Role:    "user",
@@ -127,6 +127,9 @@ func searchCandidateTarget(ctx context.Context, client searchCompleter, cfg conf
 			continue
 		}
 		if !looksLikeURL(raw) {
+			continue
+		}
+		if !looksLikeFeedURL(raw) {
 			continue
 		}
 		key := normalizeURL(raw)
@@ -155,6 +158,30 @@ func searchCandidateTarget(ctx context.Context, client searchCompleter, cfg conf
 	return found, nil
 }
 
+func searchTopicLabel(category string, authorityType string) string {
+	switch strings.TrimSpace(category) {
+	case "missing_person":
+		return "missing persons and missing children"
+	case "wanted_suspect":
+		return "wanted persons, fugitives, and public appeals"
+	case "terror_warning":
+		return "terrorism warnings and threat notices"
+	case "organized_crime":
+		return "organized crime and major criminal investigations"
+	case "travel_warning":
+		return "travel warnings and travel advisories"
+	case "cyber_advisory":
+		return "cyber advisories and security alerts"
+	case "public_appeal":
+		return "public appeals, wanted persons, and missing persons"
+	default:
+		if strings.TrimSpace(authorityType) != "" {
+			return authorityType + " intelligence collection"
+		}
+		return "intelligence collection"
+	}
+}
+
 func decodeLLMSearchResponse(content string) (llmSearchResponse, error) {
 	content = strings.TrimSpace(content)
 	if match := searchJSONBlockRe.FindString(content); match != "" {
@@ -173,4 +200,12 @@ func looksLikeURL(raw string) bool {
 		return false
 	}
 	return (parsed.Scheme == "https" || parsed.Scheme == "http") && parsed.Host != ""
+}
+
+func looksLikeFeedURL(raw string) bool {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	return strings.Contains(raw, "rss") ||
+		strings.Contains(raw, "atom") ||
+		strings.HasSuffix(raw, ".xml") ||
+		strings.Contains(raw, "/feed")
 }

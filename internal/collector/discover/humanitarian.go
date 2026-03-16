@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"sort"
 	"strings"
 
+	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/fetch"
 )
 
@@ -21,75 +23,99 @@ type HumanitarianOrg struct {
 	Website     string
 }
 
-// The SPARQL query finds humanitarian, disaster-relief, and emergency management
-// agencies with official websites. Covers:
-//   - Emergency management agency (Q895526)
-//   - Humanitarian aid organization (Q15220109)
-//   - Disaster management (Q1460420)
-//   - Civil protection (Q1066476)
-const humanitarianQuery = `
+var humanitarianTypeIDs = []string{
+	"Q895526",
+	"Q15220109",
+	"Q1460420",
+	"Q1066476",
+}
+
+func buildHumanitarianQuery(typeIDs []string) string {
+	values := make([]string, 0, len(typeIDs))
+	for _, typeID := range typeIDs {
+		typeID = strings.TrimSpace(typeID)
+		if typeID == "" {
+			continue
+		}
+		values = append(values, "wd:"+typeID)
+	}
+	return fmt.Sprintf(`
 SELECT ?org ?orgLabel ?website ?countryLabel ?countryCode WHERE {
-  VALUES ?type {
-    wd:Q895526
-    wd:Q15220109
-    wd:Q1460420
-    wd:Q1066476
-  }
+  VALUES ?type { %s }
   ?org wdt:P31/wdt:P279* ?type ;
        wdt:P856 ?website ;
        wdt:P17 ?country .
   ?country wdt:P297 ?countryCode .
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
 }
-`
+`, strings.Join(values, " "))
+}
 
 // FetchHumanitarianOrgs queries Wikidata for humanitarian, emergency management,
 // and civil protection agencies worldwide.
-func FetchHumanitarianOrgs(ctx context.Context, client *fetch.Client) ([]HumanitarianOrg, error) {
-	query := strings.TrimSpace(humanitarianQuery)
-	reqURL := wikidataSPARQL + "?format=json&query=" + url.QueryEscape(query)
-	body, err := fetchTextWithRetry(ctx, client, reqURL, "application/sparql-results+json, application/json;q=0.9")
-	if err != nil {
-		return nil, fmt.Errorf("wikidata SPARQL humanitarian: %w", err)
-	}
-
-	var resp struct {
-		Results struct {
-			Bindings []struct {
-				OrgLabel     struct{ Value string } `json:"orgLabel"`
-				Website      struct{ Value string } `json:"website"`
-				CountryLabel struct{ Value string } `json:"countryLabel"`
-				CountryCode  struct{ Value string } `json:"countryCode"`
-			} `json:"bindings"`
-		} `json:"results"`
-	}
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("wikidata SPARQL humanitarian parse: %w", err)
-	}
-
+func FetchHumanitarianOrgs(ctx context.Context, cfg config.Config, client *fetch.Client) ([]HumanitarianOrg, error) {
+	var failures []string
 	seen := map[string]struct{}{}
 	var orgs []HumanitarianOrg
-	for _, b := range resp.Results.Bindings {
-		website := strings.TrimRight(strings.TrimSpace(b.Website.Value), "/")
-		if website == "" {
-			continue
-		}
-		u, err := url.Parse(website)
-		if err != nil {
-			continue
-		}
-		host := strings.ToLower(u.Hostname())
-		if _, ok := seen[host]; ok {
-			continue
-		}
-		seen[host] = struct{}{}
 
-		orgs = append(orgs, HumanitarianOrg{
-			Name:        b.OrgLabel.Value,
-			Country:     b.CountryLabel.Value,
-			CountryCode: strings.ToUpper(strings.TrimSpace(b.CountryCode.Value)),
-			Website:     website,
-		})
+	for _, chunk := range chunkTypeIDs(humanitarianTypeIDs, 2) {
+		query := strings.TrimSpace(buildHumanitarianQuery(chunk))
+		reqURL := wikidataSPARQL + "?format=json&query=" + url.QueryEscape(query)
+		body, err := fetchWikidataTextWithCache(ctx, cfg, client, reqURL, "application/sparql-results+json, application/json;q=0.9")
+		if err != nil {
+			failures = append(failures, fmt.Sprintf("%s: %v", strings.Join(chunk, ","), err))
+			continue
+		}
+
+		var resp struct {
+			Results struct {
+				Bindings []struct {
+					OrgLabel     struct{ Value string } `json:"orgLabel"`
+					Website      struct{ Value string } `json:"website"`
+					CountryLabel struct{ Value string } `json:"countryLabel"`
+					CountryCode  struct{ Value string } `json:"countryCode"`
+				} `json:"bindings"`
+			} `json:"results"`
+		}
+		if err := json.Unmarshal(body, &resp); err != nil {
+			failures = append(failures, fmt.Sprintf("%s: parse: %v", strings.Join(chunk, ","), err))
+			continue
+		}
+
+		for _, b := range resp.Results.Bindings {
+			website := strings.TrimRight(strings.TrimSpace(b.Website.Value), "/")
+			if website == "" {
+				continue
+			}
+			u, err := url.Parse(website)
+			if err != nil {
+				continue
+			}
+			host := strings.ToLower(u.Hostname())
+			if _, ok := seen[host]; ok {
+				continue
+			}
+			seen[host] = struct{}{}
+
+			orgs = append(orgs, HumanitarianOrg{
+				Name:        b.OrgLabel.Value,
+				Country:     b.CountryLabel.Value,
+				CountryCode: strings.ToUpper(strings.TrimSpace(b.CountryCode.Value)),
+				Website:     website,
+			})
+		}
 	}
-	return orgs, nil
+	sort.Slice(orgs, func(i, j int) bool {
+		if orgs[i].Country != orgs[j].Country {
+			return orgs[i].Country < orgs[j].Country
+		}
+		return orgs[i].Name < orgs[j].Name
+	})
+	if len(orgs) > 0 {
+		return orgs, nil
+	}
+	if len(failures) > 0 {
+		return nil, fmt.Errorf("wikidata SPARQL humanitarian: %s", strings.Join(failures, " | "))
+	}
+	return nil, nil
 }
