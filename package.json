@@ -1,0 +1,57 @@
+{
+  "name": "euosint",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "npm@11.11.0",
+  "engines": {
+    "node": "25.8.1",
+    "npm": "11.11.0"
+  },
+  "volta": {
+    "node": "25.8.1",
+    "npm": "11.11.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "fetch:alerts": "node scripts/fetch-alerts.mjs",
+    "fetch:alerts:watch": "node scripts/fetch-alerts.mjs --watch",
+    "collector:run": "node scripts/continuous-collector.mjs",
+    "typecheck": "tsc -b --pretty false",
+    "test": "npm run typecheck",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "ci": "npm run lint && npm run test && npm run build",
+    "docker:run": "docker-compose up --build"
+  },
+  "dependencies": {
+    "@types/three": "^0.182.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.563.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-globe.gl": "^2.37.0",
+    "tailwind-merge": "^3.4.0",
+    "three": "^0.182.0",
+    "topojson-client": "^3.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-specification": "^1.0.5",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4"
+  }
+}

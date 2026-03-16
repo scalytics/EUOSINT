@@ -1,0 +1,21 @@
+EUOSINT
+Copyright 2026 Scalytics
+
+This repository is a hard fork based on:
+
+1. novatechflow/osint-siem
+   https://github.com/novatechflow/osint-siem
+
+2. The original upstream repository cyberdude88/osint-siem
+   https://github.com/cyberdude88/osint-siem
+
+Acknowledgement:
+This project is based on the work published in cyberdude88/osint-siem and the
+subsequent novatechflow/osint-siem fork. EUOSINT carries that work forward as
+an EU-focused derivative with Docker packaging and local modifications.
+
+Provenance and licensing note:
+The repository root LICENSE covers repository-local licensing terms for
+materials and modifications added in EUOSINT. Upstream licensing and reuse
+conditions for inherited code should be validated against the upstream
+repositories and their maintainers' stated terms.

@@ -1,0 +1,167 @@
+/*
+ * EUOSINT
+ * Portions derived from novatechflow/osint-siem and cyberdude88/osint-siem.
+ * See NOTICE for provenance and LICENSE for repository-local terms.
+ */
+
+@import "tailwindcss";
+
+@theme {
+  --color-siem-bg: #0a0e17;
+  --color-siem-panel: #111827;
+  --color-siem-border: #1e293b;
+  --color-siem-text: #e2e8f0;
+  --color-siem-muted: #64748b;
+  --color-siem-accent: #5f8fa3;
+  --color-siem-neutral: #7f9ca8;
+  --color-siem-critical: #d96464;
+  --color-siem-high: #d98958;
+  --color-siem-medium: #d1b35a;
+  --color-siem-low: #4eaf82;
+  --color-siem-info: #4fa0b1;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--color-siem-bg);
+  color: var(--color-siem-text);
+  overflow: hidden;
+  height: 100dvh;
+}
+
+#root {
+  height: 100dvh;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-siem-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-siem-border);
+  border-radius: 3px;
+}
+
+/* Slide-in animation for detail panel */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in-right 0.25s ease-out;
+}
+
+.animate-slide-out {
+  animation: slide-out-right 0.25s ease-in forwards;
+}
+
+/* Left panel slide */
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes slide-out-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+
+.feed-panel-open {
+  animation: slide-in-left 0.28s ease-out forwards;
+}
+
+.feed-panel-closed {
+  animation: slide-out-left 0.28s ease-in forwards;
+}
+
+@keyframes alert-list-refresh {
+  from {
+    transform: translateY(8px);
+    opacity: 0.78;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes alert-new-glow {
+  0% {
+    box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.5), 0 0 0 rgba(59, 130, 246, 0);
+    background-color: rgba(59, 130, 246, 0.14);
+  }
+  100% {
+    box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0), 0 0 0 rgba(59, 130, 246, 0);
+    background-color: transparent;
+  }
+}
+
+@keyframes critical-badge-pulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.035);
+    filter: brightness(1.15);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.animate-alert-list-refresh {
+  animation: alert-list-refresh 160ms ease-out;
+}
+
+.animate-alert-new-glow {
+  animation: alert-new-glow 1.8s ease-out forwards;
+}
+
+.animate-critical-badge {
+  animation: critical-badge-pulse 2.2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-alert-list-refresh,
+  .animate-alert-new-glow,
+  .animate-critical-badge,
+  .feed-panel-open,
+  .feed-panel-closed {
+    animation: none !important;
+  }
+}
+
+/* Style the region dropdown options */
+select option {
+  background: #111827;
+  color: #e2e8f0;
+}

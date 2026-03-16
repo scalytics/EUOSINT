@@ -1,0 +1,81 @@
+name: User Intelligence Submission
+description: Submit a private-sector incident report (breach, crypto heist, fraud, etc.)
+title: "[User Intel] "
+labels:
+  - user-submission
+  - private_sector
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Submit Private Sector Intelligence
+        Use this form to report incidents like data breaches, crypto heists, corporate fraud, ransomware attacks, or supply chain compromises.
+
+  - type: input
+    id: incident_title
+    attributes:
+      label: Incident Title
+      description: A concise title for the incident
+      placeholder: "e.g., Exchange X hacked for $50M in crypto"
+    validations:
+      required: true
+
+  - type: input
+    id: source_url
+    attributes:
+      label: Source URL
+      description: Link to the original report or news article
+      placeholder: "https://..."
+    validations:
+      required: false
+
+  - type: input
+    id: affected_org
+    attributes:
+      label: Affected Organization
+      description: Name of the company or entity affected
+      placeholder: "e.g., Acme Corp"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: incident_type
+    attributes:
+      label: Incident Type
+      options:
+        - Crypto Heist / Theft
+        - Data Breach
+        - Corporate Fraud
+        - Ransomware Incident
+        - Supply Chain Attack
+        - Other Private Sector Incident
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Suggested Severity
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+        - Informational
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide details about the incident
+      placeholder: "Describe what happened, who was affected, estimated impact..."
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        _Your submission will be reviewed by maintainers. If validated, it will be categorized under `private_sector` in the EUOSINT feed._
