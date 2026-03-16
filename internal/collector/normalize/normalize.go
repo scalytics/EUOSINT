@@ -304,11 +304,26 @@ func StaticInterpolEntry(now time.Time) model.Alert {
 }
 
 func baseAlert(ctx Context, meta model.RegistrySource, title string, link string, publishedAt time.Time) model.Alert {
-	lat, lng := jitter(meta.Lat, meta.Lng, meta.Source.SourceID+":"+link)
+	baseLat, baseLng := meta.Lat, meta.Lng
+	source := meta.Source
+
+	// For international sources, try to geocode the alert to the actual
+	// crisis location instead of pinning it to the org's HQ.
+	if meta.RegionTag == "INT" || meta.Source.CountryCode == "INT" {
+		if gLat, gLng, code, ok := geocodeText(title); ok {
+			baseLat, baseLng = gLat, gLng
+			if name := countryNameFromCode(code); name != "" {
+				source.Country = name
+				source.CountryCode = code
+			}
+		}
+	}
+
+	lat, lng := jitter(baseLat, baseLng, meta.Source.SourceID+":"+link)
 	return model.Alert{
 		AlertID:        meta.Source.SourceID + "-" + hashID(link),
 		SourceID:       meta.Source.SourceID,
-		Source:         meta.Source,
+		Source:         source,
 		Title:          strings.TrimSpace(title),
 		CanonicalURL:   strings.TrimSpace(link),
 		FirstSeen:      publishedAt.UTC().Format(time.RFC3339),
@@ -333,152 +348,14 @@ func normalizeCountryCode(code string) string {
 }
 
 func countryNameFromCode(code string) string {
-	switch normalizeCountryCode(code) {
-	case "AF":
-		return "Afghanistan"
-	case "AL":
-		return "Albania"
-	case "AR":
-		return "Argentina"
-	case "AT":
-		return "Austria"
-	case "AU":
-		return "Australia"
-	case "BE":
-		return "Belgium"
-	case "BG":
-		return "Bulgaria"
-	case "BR":
-		return "Brazil"
-	case "CA":
-		return "Canada"
-	case "CH":
-		return "Switzerland"
-	case "CL":
-		return "Chile"
-	case "CN":
-		return "China"
-	case "CO":
-		return "Colombia"
-	case "CR":
-		return "Costa Rica"
-	case "CZ":
-		return "Czech Republic"
-	case "DE":
-		return "Germany"
-	case "DK":
-		return "Denmark"
-	case "DO":
-		return "Dominican Republic"
-	case "EC":
-		return "Ecuador"
-	case "EE":
-		return "Estonia"
-	case "EG":
-		return "Egypt"
-	case "ES":
-		return "Spain"
-	case "FI":
-		return "Finland"
-	case "FR":
-		return "France"
-	case "GB":
-		return "United Kingdom"
-	case "GE":
-		return "Georgia"
-	case "GH":
-		return "Ghana"
-	case "GR":
-		return "Greece"
-	case "GT":
-		return "Guatemala"
-	case "HR":
-		return "Croatia"
-	case "HU":
-		return "Hungary"
-	case "ID":
-		return "Indonesia"
-	case "IE":
-		return "Ireland"
-	case "IL":
-		return "Israel"
-	case "IN":
-		return "India"
-	case "IS":
-		return "Iceland"
-	case "IT":
-		return "Italy"
-	case "JP":
-		return "Japan"
-	case "KE":
-		return "Kenya"
-	case "KR":
-		return "South Korea"
-	case "LT":
-		return "Lithuania"
-	case "LU":
-		return "Luxembourg"
-	case "LV":
-		return "Latvia"
-	case "MA":
-		return "Morocco"
-	case "MT":
-		return "Malta"
-	case "MX":
-		return "Mexico"
-	case "MY":
-		return "Malaysia"
-	case "NG":
-		return "Nigeria"
-	case "NL":
-		return "Netherlands"
-	case "NO":
-		return "Norway"
-	case "NZ":
-		return "New Zealand"
-	case "PE":
-		return "Peru"
-	case "PH":
-		return "Philippines"
-	case "PL":
-		return "Poland"
-	case "PT":
-		return "Portugal"
-	case "RO":
-		return "Romania"
-	case "RS":
-		return "Serbia"
-	case "RU":
-		return "Russia"
-	case "SE":
-		return "Sweden"
-	case "SG":
-		return "Singapore"
-	case "SI":
-		return "Slovenia"
-	case "SK":
-		return "Slovakia"
-	case "TH":
-		return "Thailand"
-	case "TN":
-		return "Tunisia"
-	case "TR":
-		return "Turkey"
-	case "TW":
-		return "Taiwan"
-	case "UA":
-		return "Ukraine"
-	case "US":
-		return "United States"
-	case "UY":
-		return "Uruguay"
-	case "VE":
-		return "Venezuela"
-	case "ZA":
-		return "South Africa"
-	default:
-		return ""
+	code = normalizeCountryCode(code)
+	// Use the geocode table as the canonical source.
+	for i := range geoCountries {
+		if geoCountries[i].Code == code {
+			return geoCountries[i].Name
+		}
 	}
+	return ""
 }
 
 func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage {
