@@ -2287,6 +2287,8 @@
   },
   {
     "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "Product certification feed (NESAS audit/evaluation docs), not security advisories",
     "source": {
       "source_id": "bsi-nesas",
       "authority_name": "BSI NESAS",

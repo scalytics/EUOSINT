@@ -437,7 +437,7 @@ function RegionSearch({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search regions, countries\u2026"
+              placeholder="Search regions, countries..."
               className="w-full bg-transparent pl-7 pr-7 py-1.5 text-xs text-siem-text placeholder:text-siem-muted/60 outline-none"
             />
             {query && (
