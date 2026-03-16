@@ -154,6 +154,11 @@ export function AlertFeed({
       });
   }, [facetFiltered]);
 
+  // Reset navigator selection when region or category filter changes.
+  useEffect(() => {
+    setActiveNavigatorGroupKey(null);
+  }, [regionFilter, categoryFilter]);
+
   useEffect(() => {
     if (navigatorGroups.length === 0) {
       setActiveNavigatorGroupKey(null);
