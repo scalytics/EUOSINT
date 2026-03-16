@@ -522,6 +522,10 @@ func defaultSeverity(category string) string {
 		return "high"
 	case "travel_warning":
 		return "high"
+	case "environmental_disaster", "disease_outbreak":
+		return "high"
+	case "emergency_management", "health_emergency":
+		return "high"
 	default:
 		return "medium"
 	}
@@ -530,9 +534,9 @@ func defaultSeverity(category string) string {
 func inferSeverity(title string, fallback string) string {
 	t := strings.ToLower(title)
 	switch {
-	case containsAny(t, "critical", "kritische", "emergency", "zero-day", "0-day", "ransomware", "actively exploited", "exploitation", "breach", "data leak", "crypto heist", "million stolen", "wanted", "fugitive", "murder", "homicide", "missing", "amber alert", "kidnap", "do not travel", "notfall"):
+	case containsAny(t, "critical", "kritische", "emergency", "zero-day", "0-day", "ransomware", "actively exploited", "exploitation", "breach", "data leak", "crypto heist", "million stolen", "wanted", "fugitive", "murder", "homicide", "missing", "amber alert", "kidnap", "do not travel", "notfall", "pandemic", "ebola", "plague", "tsunami", "earthquake", "eruption", "nuclear incident", "radiation leak", "oil spill", "explosion"):
 		return "critical"
-	case containsAny(t, "hack", "compromise", "vulnerability", "schwachstelle", "sicherheitslücke", "high", "severe", "urgent", "dringend", "fatal", "death", "shooting", "fraud", "scam", "phishing", "reconsider travel", "avoid non-essential travel", "warnung", "gefährlich"):
+	case containsAny(t, "hack", "compromise", "vulnerability", "schwachstelle", "sicherheitslücke", "high", "severe", "urgent", "dringend", "fatal", "death", "shooting", "fraud", "scam", "phishing", "reconsider travel", "avoid non-essential travel", "warnung", "gefährlich", "outbreak", "epidemic", "cholera", "mpox", "avian influenza", "flood", "wildfire", "cyclone", "hurricane", "typhoon", "drought", "chemical spill", "hazmat"):
 		return "high"
 	case containsAny(t, "arrested", "charged", "sentenced", "medium", "moderate", "festgenommen", "verurteilt"):
 		return "medium"

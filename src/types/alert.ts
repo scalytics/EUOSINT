@@ -23,7 +23,9 @@ export type AlertCategory =
   | "travel_warning"
   | "health_emergency"
   | "intelligence_report"
-  | "emergency_management";
+  | "emergency_management"
+  | "environmental_disaster"
+  | "disease_outbreak";
 export type AuthorityType =
   | "police"
   | "national_security"

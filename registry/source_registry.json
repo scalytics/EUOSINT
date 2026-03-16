@@ -5403,6 +5403,8 @@
   },
   {
     "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "General press releases, not fraud intelligence",
     "source": {
       "source_id": "ecb-press",
       "authority_name": "ECB Press Releases",
@@ -5621,5 +5623,195 @@
     "region_tag": "US",
     "lat": 39.29,
     "lng": -76.61
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "gdacs-disasters",
+      "authority_name": "GDACS Global Disasters",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.gdacs.org"
+    },
+    "feed_url": "https://www.gdacs.org/xml/rss.xml",
+    "category": "environmental_disaster",
+    "region_tag": "INT",
+    "lat": 46.23,
+    "lng": 6.05,
+    "max_items": 50
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "usgs-earthquakes",
+      "authority_name": "USGS Significant Earthquakes",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://earthquake.usgs.gov"
+    },
+    "feed_url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.atom",
+    "category": "environmental_disaster",
+    "region_tag": "INT",
+    "lat": 38.95,
+    "lng": -77.37,
+    "max_items": 40
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "noaa-incidents",
+      "authority_name": "NOAA Incident News",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://incidentnews.noaa.gov"
+    },
+    "feed_url": "https://incidentnews.noaa.gov/incidents.rss",
+    "category": "environmental_disaster",
+    "region_tag": "US",
+    "lat": 38.85,
+    "lng": -76.93
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "smithsonian-volcanoes",
+      "authority_name": "Smithsonian Global Volcanism Program",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://volcano.si.edu"
+    },
+    "feed_url": "https://volcano.si.edu/news/WeeklyVolcanoRSS.xml",
+    "category": "environmental_disaster",
+    "region_tag": "INT",
+    "lat": 38.89,
+    "lng": -77.03
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "emsa-maritime",
+      "authority_name": "EMSA Maritime Safety",
+      "country": "Portugal",
+      "country_code": "PT",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.emsa.europa.eu"
+    },
+    "feed_url": "https://www.emsa.europa.eu/newsroom/latest-news.feed?type=rss&format=feed",
+    "category": "environmental_disaster",
+    "region_tag": "EU",
+    "lat": 38.71,
+    "lng": -9.14
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "iaea-news",
+      "authority_name": "IAEA Nuclear News",
+      "country": "Austria",
+      "country_code": "AT",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.iaea.org"
+    },
+    "feed_url": "https://www.iaea.org/feeds/news",
+    "category": "environmental_disaster",
+    "region_tag": "INT",
+    "lat": 48.23,
+    "lng": 16.41
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "who-news",
+      "authority_name": "WHO Disease & Health News",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.who.int"
+    },
+    "feed_url": "https://www.who.int/rss-feeds/news-english.xml",
+    "category": "disease_outbreak",
+    "region_tag": "INT",
+    "lat": 46.23,
+    "lng": 6.14
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ecdc-epi-updates",
+      "authority_name": "ECDC Epidemiological Updates",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.ecdc.europa.eu"
+    },
+    "feed_url": "https://www.ecdc.europa.eu/en/taxonomy/term/1310/feed",
+    "category": "disease_outbreak",
+    "region_tag": "EU",
+    "lat": 59.35,
+    "lng": 18.10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ecdc-risk-assessments",
+      "authority_name": "ECDC Risk Assessments",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.ecdc.europa.eu"
+    },
+    "feed_url": "https://www.ecdc.europa.eu/en/taxonomy/term/1295/feed",
+    "category": "disease_outbreak",
+    "region_tag": "EU",
+    "lat": 59.35,
+    "lng": 18.10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cdc-newsroom",
+      "authority_name": "CDC Health Alerts",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.cdc.gov"
+    },
+    "feed_url": "https://tools.cdc.gov/api/v2/resources/media/132608.rss",
+    "category": "disease_outbreak",
+    "region_tag": "US",
+    "lat": 33.80,
+    "lng": -84.39
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "woah-animal-health",
+      "authority_name": "WOAH Animal Health",
+      "country": "France",
+      "country_code": "FR",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.woah.org"
+    },
+    "feed_url": "https://www.woah.org/en/feed/",
+    "category": "disease_outbreak",
+    "region_tag": "INT",
+    "lat": 48.86,
+    "lng": 2.32,
+    "include_keywords": ["outbreak", "avian", "influenza", "disease", "epidemic", "zoonotic", "virus", "pathogen", "infection", "surveillance", "alert", "emergency"]
   }
 ]
