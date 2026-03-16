@@ -312,9 +312,29 @@ func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, browse
 	pageSize := 20
 	var allNotices []model.Alert
 
+	// Interpol's API sits behind Akamai WAF and requires XHR-style headers
+	// with Referer/Origin pointing to the Interpol website.
+	interpolHeaders := map[string]string{
+		"Referer":         "https://www.interpol.int/How-we-work/Notices/View-Notices",
+		"Origin":          "https://www.interpol.int",
+		"Sec-Fetch-Dest":  "empty",
+		"Sec-Fetch-Mode":  "cors",
+		"Sec-Fetch-Site":  "same-site",
+		"X-Requested-With": "XMLHttpRequest",
+	}
+
+	// Use TextWithHeaders if the fetcher is a *Client (stealth HTTP).
+	clientFetcher, isClient := fetcher.(*fetch.Client)
+
 	for page := 1; len(allNotices) < limit; page++ {
 		pageURL := buildInterpolPageURL(source.FeedURL, page, pageSize)
-		body, err := fetcher.Text(ctx, pageURL, source.FollowRedirects, "application/json")
+		var body []byte
+		var err error
+		if isClient {
+			body, err = clientFetcher.TextWithHeaders(ctx, pageURL, source.FollowRedirects, "application/json", interpolHeaders)
+		} else {
+			body, err = fetcher.Text(ctx, pageURL, source.FollowRedirects, "application/json")
+		}
 		if err != nil {
 			// If first page fails, try browser fallback for the whole batch.
 			if page == 1 && browser != nil {
