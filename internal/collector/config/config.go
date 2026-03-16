@@ -17,7 +17,7 @@ const (
 	defaultRegistryPath     = "registry/sources.db"
 	defaultTimeoutMS        = 15000
 	defaultIntervalMS       = 900000
-	defaultMaxPerSource     = 20
+	defaultMaxPerSource     = 40
 	defaultMaxAgeDays       = 180
 	defaultRemovedDays      = 14
 	defaultMaxBodyBytes     = 2 * 1024 * 1024
