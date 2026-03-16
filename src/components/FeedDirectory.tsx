@@ -6,7 +6,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Activity,
   AlertTriangle,
   Globe2,
   Radar,
@@ -32,6 +31,8 @@ interface Props {
   onSelectCategory: (category: AlertCategory | "all") => void;
   regionFilter: string;
   onSelectCountry: (countryCode: string) => void;
+  severityFilter: SeverityFilter;
+  onSeverityFilterChange: (filter: SeverityFilter) => void;
 }
 
 export function FeedDirectory({
@@ -44,10 +45,11 @@ export function FeedDirectory({
   onSelectCategory,
   regionFilter,
   onSelectCountry,
+  severityFilter,
+  onSeverityFilterChange,
 }: Props) {
   const sources = sourceHealth?.sources ?? [];
   const [now, setNow] = useState(() => Date.now());
-  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
@@ -61,12 +63,6 @@ export function FeedDirectory({
     [alerts, regionFilter],
   );
 
-  // Alerts after optional severity filter (for downstream stats).
-  const filteredAlerts = useMemo(() => {
-    if (!severityFilter) return regionAlerts;
-    return regionAlerts.filter((a) => a.severity === severityFilter);
-  }, [regionAlerts, severityFilter]);
-
   /* ── Derived stats (all from region-scoped alerts) ─────────────── */
 
   const severityCounts = useMemo(() => {
@@ -79,52 +75,52 @@ export function FeedDirectory({
 
   const countryCounts = useMemo(() => {
     const map = new Map<string, { name: string; code: string; count: number }>();
-    for (const a of filteredAlerts) {
+    for (const a of regionAlerts) {
       const key = a.source.country_code;
       const existing = map.get(key);
       if (existing) existing.count++;
       else map.set(key, { name: a.source.country, code: key, count: 1 });
     }
     return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 12);
-  }, [filteredAlerts]);
+  }, [regionAlerts]);
 
   const categoryCounts = useMemo(() => {
     const counts: Partial<Record<AlertCategory, number>> = {};
-    for (const a of filteredAlerts) {
+    for (const a of regionAlerts) {
       counts[a.category] = (counts[a.category] ?? 0) + 1;
     }
     return categoryOrder
       .filter((cat) => (counts[cat] ?? 0) > 0)
       .map((cat) => ({ category: cat, count: counts[cat]! }));
-  }, [filteredAlerts]);
+  }, [regionAlerts]);
 
   const topAuthorities = useMemo(() => {
     const map = new Map<string, { name: string; sourceId: string; count: number; maxItems: number }>();
-    for (const a of filteredAlerts) {
+    for (const a of regionAlerts) {
       const key = a.source_id;
       const existing = map.get(key);
       if (existing) existing.count++;
       else map.set(key, { name: a.source.authority_name, sourceId: key, count: 1, maxItems: 0 });
     }
     return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 12);
-  }, [filteredAlerts]);
+  }, [regionAlerts]);
 
   /* ── Zone summary stats ─────────────────────────────────────────── */
   const zoneSummary = useMemo(() => {
-    const uniqueCountries = new Set(filteredAlerts.map((a) => a.source.country_code));
-    const uniqueFeeds = new Set(filteredAlerts.map((a) => a.source_id));
+    const uniqueCountries = new Set(regionAlerts.map((a) => a.source.country_code));
+    const uniqueFeeds = new Set(regionAlerts.map((a) => a.source_id));
     // For global view, use the health document's total which includes sources
     // that returned 0 alerts (errors, empty feeds, etc.).
     const feedCount =
-      regionFilter === "all" && !severityFilter && sources.length > 0
+      regionFilter === "all" && sources.length > 0
         ? sources.length
         : uniqueFeeds.size;
     return {
-      alerts: filteredAlerts.length,
+      alerts: regionAlerts.length,
       countries: uniqueCountries.size,
       feeds: feedCount,
     };
-  }, [filteredAlerts, regionFilter, severityFilter, sources]);
+  }, [regionAlerts, regionFilter, sources]);
 
   const toggleSource = (sourceId: string) => {
     if (selectedSourceIds.includes(sourceId)) {
@@ -179,13 +175,9 @@ export function FeedDirectory({
             {regionFilter === "all" ? "Global Overview" : regionFilter.startsWith("country:") ? regionFilter.slice(8) : regionFilter}
           </div>
           {severityFilter && (
-            <button
-              type="button"
-              onClick={() => setSeverityFilter(null)}
-              className="rounded border border-siem-accent bg-siem-accent/14 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-siem-text"
-            >
-              Clear {severityFilter}
-            </button>
+            <span className="rounded border border-siem-accent/40 bg-siem-accent/10 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-siem-accent">
+              {severityFilter}
+            </span>
           )}
         </div>
       </div>
@@ -196,21 +188,23 @@ export function FeedDirectory({
           {([
             { key: "critical" as SeverityFilter, label: "Critical", value: severityCounts.critical, icon: AlertTriangle, tone: "text-rose-300", border: "border-rose-400/40" },
             { key: "high" as SeverityFilter, label: "High", value: severityCounts.high, icon: ShieldAlert, tone: "text-amber-300", border: "border-amber-400/40" },
-            { key: null as SeverityFilter, label: "Active", value: regionAlerts.filter((a) => a.status === "active").length, icon: Activity, tone: "text-emerald-300", border: "" },
+            { key: null as SeverityFilter, label: "Conflict", value: regionAlerts.filter((a) => a.category === "conflict_monitoring").length, icon: Radar, tone: "text-orange-300", border: "border-orange-400/40" },
           ]).map((card) => (
             <button
               key={card.label}
               type="button"
               onClick={() => {
                 if (card.key !== null) {
-                  setSeverityFilter(severityFilter === card.key ? null : card.key);
+                  onSeverityFilterChange(severityFilter === card.key ? null : card.key);
+                } else {
+                  onSelectCategory(categoryFilter === "conflict_monitoring" ? "all" : "conflict_monitoring");
                 }
               }}
-              className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                severityFilter === card.key && card.key !== null
+              className={`rounded-xl border px-3 py-2.5 text-left transition-colors cursor-pointer hover:border-siem-accent/40 ${
+                (severityFilter === card.key && card.key !== null) || (card.key === null && categoryFilter === "conflict_monitoring")
                   ? `${card.border} bg-siem-accent/14`
                   : "border-siem-border bg-siem-panel-strong"
-              } ${card.key !== null ? "cursor-pointer hover:border-siem-accent/40" : ""}`}
+              }`}
             >
               <card.icon size={13} className={card.tone} />
               <div className={`mt-1 text-sm font-semibold ${card.tone}`}>{card.value}</div>
