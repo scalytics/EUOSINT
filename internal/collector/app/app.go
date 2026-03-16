@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/scalytics/euosint/internal/collector/api"
 	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/discover"
 	"github.com/scalytics/euosint/internal/collector/run"
@@ -64,6 +65,8 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	fs.BoolVar(&cfg.SourceDBMergeRegistry, "source-db-merge-registry", cfg.SourceDBMergeRegistry, "Merge a JSON registry or curated seed into the SQLite source database")
 	fs.BoolVar(&cfg.SourceDBExportRegistry, "source-db-export-registry", cfg.SourceDBExportRegistry, "Export the SQLite source database back into the JSON registry")
 	fs.StringVar(&cfg.CuratedSeedPath, "curated-seed", cfg.CuratedSeedPath, "Path to the curated agency seed JSON file")
+	fs.BoolVar(&cfg.APIEnabled, "api", cfg.APIEnabled, "Start the search API server alongside the collector")
+	fs.StringVar(&cfg.APIAddr, "api-addr", cfg.APIAddr, "Listen address for the search API server")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -110,6 +113,21 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 			fmt.Fprintf(stdout, "Exported source DB registry -> %s\n", cfg.RegistryPath)
 		}
 		return nil
+	}
+
+	if cfg.APIEnabled {
+		apiDB, err := sourcedb.Open(cfg.RegistryPath)
+		if err != nil {
+			return fmt.Errorf("open DB for API: %w", err)
+		}
+		defer apiDB.Close()
+
+		srv := api.New(apiDB, cfg.APIAddr, stderr)
+		if err := srv.Start(); err != nil {
+			return err
+		}
+		defer srv.Stop(ctx)
+		fmt.Fprintf(stdout, "Search API listening on %s\n", cfg.APIAddr)
 	}
 
 	return run.New(stdout, stderr).Run(ctx, cfg)

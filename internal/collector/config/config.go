@@ -73,6 +73,8 @@ type Config struct {
 	SourceDBMergeRegistry           bool
 	SourceDBExportRegistry          bool
 	CuratedSeedPath                 string
+	APIEnabled                      bool
+	APIAddr                         string
 }
 
 func Default() Config {
@@ -125,6 +127,8 @@ func Default() Config {
 		SourceDBMergeRegistry:           false,
 		SourceDBExportRegistry:          false,
 		CuratedSeedPath:                 "registry/curated_agencies.seed.json",
+		APIEnabled:                      false,
+		APIAddr:                         ":3001",
 	}
 }
 
@@ -179,6 +183,8 @@ func FromEnv() Config {
 	cfg.SourceDBMergeRegistry = envBool("SOURCE_DB_MERGE_REGISTRY", cfg.SourceDBMergeRegistry)
 	cfg.SourceDBExportRegistry = envBool("SOURCE_DB_EXPORT_REGISTRY", cfg.SourceDBExportRegistry)
 	cfg.CuratedSeedPath = envString("CURATED_SEED_PATH", cfg.CuratedSeedPath)
+	cfg.APIEnabled = envBool("API_ENABLED", cfg.APIEnabled)
+	cfg.APIAddr = envString("API_ADDR", cfg.APIAddr)
 	return cfg
 }
 
