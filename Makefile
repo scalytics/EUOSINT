@@ -127,13 +127,13 @@ dev-start: ## Start the local HTTP dev stack on localhost
 	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 
-dev-stop: ## Stop the local dev stack and prune dangling images
-	$(DOCKER_COMPOSE) down --remove-orphans
+dev-stop: ## Stop the local dev stack, remove feed-data volume and prune images
+	$(DOCKER_COMPOSE) down --remove-orphans -v
 	@docker image prune -f --filter "label=com.docker.compose.project" >/dev/null 2>&1 || true
 	@docker builder prune -f >/dev/null 2>&1 || true
 
-dev-restart: ## Restart the local dev stack (prunes old images first)
-	$(DOCKER_COMPOSE) down --remove-orphans
+dev-restart: ## Restart the local dev stack (removes volumes, rebuilds from scratch)
+	$(DOCKER_COMPOSE) down --remove-orphans -v
 	@docker image prune -f --filter "label=com.docker.compose.project" >/dev/null 2>&1 || true
 	@docker builder prune -f >/dev/null 2>&1 || true
 	$(DOCKER_COMPOSE) up --build -d
