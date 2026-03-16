@@ -17,6 +17,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/parse"
 	"github.com/scalytics/euosint/internal/collector/registry"
 	"github.com/scalytics/euosint/internal/collector/state"
+	"github.com/scalytics/euosint/internal/collector/translate"
 )
 
 type Runner struct {
@@ -131,6 +132,13 @@ func (r Runner) fetchRSS(ctx context.Context, client *fetch.Client, nctx normali
 		return nil, err
 	}
 	items := parse.ParseFeed(string(body))
+	if nctx.Config.TranslateEnabled {
+		if translated, err := translate.Batch(ctx, client, items); err == nil {
+			items = translated
+		} else {
+			fmt.Fprintf(r.stderr, "WARN %s: translate batch failed: %v\n", source.Source.AuthorityName, err)
+		}
+	}
 	limit := perSourceLimit(nctx.Config, source)
 	out := make([]model.Alert, 0, limit)
 	for _, item := range items {

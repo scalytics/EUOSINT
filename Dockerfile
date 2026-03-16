@@ -8,11 +8,11 @@ RUN npm install -g npm@11.11.0 && npm ci
 COPY . .
 RUN npm run build
 
-FROM nginx:1.27-alpine
+FROM caddy:2.10-alpine
 
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY docker/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/dist /srv
 
-EXPOSE 8080
+EXPOSE 80 443
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
