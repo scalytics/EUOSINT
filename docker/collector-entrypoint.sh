@@ -19,5 +19,14 @@ seed_if_missing /app/public-defaults/alerts.json /data/alerts.json
 seed_if_missing /app/public-defaults/alerts-filtered.json /data/alerts-filtered.json
 seed_if_missing /app/public-defaults/alerts-state.json /data/alerts-state.json
 seed_if_missing /app/public-defaults/source-health.json /data/source-health.json
+seed_if_missing /app/registry/source_candidates.json /data/source_candidates.json
+
+if [ ! -f /data/sources.db ]; then
+  euosint-collector --source-db /data/sources.db --source-db-init
+  euosint-collector --source-db /data/sources.db --registry /app/registry/source_registry.json --source-db-import-registry
+  if [ -f /app/registry/curated_agencies.seed.json ]; then
+    euosint-collector --source-db /data/sources.db --curated-seed /app/registry/curated_agencies.seed.json --source-db-merge-registry
+  fi
+fi
 
 exec euosint-collector "$@"

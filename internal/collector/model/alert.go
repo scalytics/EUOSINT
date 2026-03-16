@@ -50,26 +50,69 @@ type DuplicateAudit struct {
 }
 
 type SourceHealthEntry struct {
-	SourceID      string `json:"source_id"`
-	AuthorityName string `json:"authority_name"`
-	Type          string `json:"type"`
-	Status        string `json:"status"`
-	FetchedCount  int    `json:"fetched_count"`
-	FeedURL       string `json:"feed_url"`
-	Error         string `json:"error,omitempty"`
-	StartedAt     string `json:"started_at"`
-	FinishedAt    string `json:"finished_at"`
-	ActiveCount   int    `json:"active_count,omitempty"`
-	FilteredCount int    `json:"filtered_count,omitempty"`
+	SourceID         string `json:"source_id"`
+	AuthorityName    string `json:"authority_name"`
+	Type             string `json:"type"`
+	Status           string `json:"status"`
+	FetchedCount     int    `json:"fetched_count"`
+	FeedURL          string `json:"feed_url"`
+	Error            string `json:"error,omitempty"`
+	ErrorClass       string `json:"error_class,omitempty"`
+	NeedsReplacement bool   `json:"needs_replacement,omitempty"`
+	DiscoveryAction  string `json:"discovery_action,omitempty"`
+	StartedAt        string `json:"started_at"`
+	FinishedAt       string `json:"finished_at"`
+	ActiveCount      int    `json:"active_count,omitempty"`
+	FilteredCount    int    `json:"filtered_count,omitempty"`
+}
+
+type SourceReplacementCandidate struct {
+	SourceID        string `json:"source_id"`
+	AuthorityName   string `json:"authority_name"`
+	Type            string `json:"type"`
+	FeedURL         string `json:"feed_url"`
+	BaseURL         string `json:"base_url,omitempty"`
+	Country         string `json:"country,omitempty"`
+	CountryCode     string `json:"country_code,omitempty"`
+	Region          string `json:"region,omitempty"`
+	AuthorityType   string `json:"authority_type,omitempty"`
+	Category        string `json:"category,omitempty"`
+	Error           string `json:"error,omitempty"`
+	ErrorClass      string `json:"error_class,omitempty"`
+	DiscoveryAction string `json:"discovery_action,omitempty"`
+	LastAttemptAt   string `json:"last_attempt_at,omitempty"`
 }
 
 type SourceHealthDocument struct {
-	GeneratedAt             string              `json:"generated_at"`
-	CriticalSourcePrefixes  []string            `json:"critical_source_prefixes"`
-	FailOnCriticalSourceGap bool                `json:"fail_on_critical_source_gap"`
-	TotalSources            int                 `json:"total_sources"`
-	SourcesOK               int                 `json:"sources_ok"`
-	SourcesError            int                 `json:"sources_error"`
-	DuplicateAudit          DuplicateAudit      `json:"duplicate_audit"`
-	Sources                 []SourceHealthEntry `json:"sources"`
+	GeneratedAt             string                       `json:"generated_at"`
+	CriticalSourcePrefixes  []string                     `json:"critical_source_prefixes"`
+	FailOnCriticalSourceGap bool                         `json:"fail_on_critical_source_gap"`
+	TotalSources            int                          `json:"total_sources"`
+	SourcesOK               int                          `json:"sources_ok"`
+	SourcesError            int                          `json:"sources_error"`
+	DuplicateAudit          DuplicateAudit               `json:"duplicate_audit"`
+	ReplacementQueue        []SourceReplacementCandidate `json:"replacement_queue"`
+	Sources                 []SourceHealthEntry          `json:"sources"`
+}
+
+type SourceReplacementDocument struct {
+	GeneratedAt string                       `json:"generated_at"`
+	Sources     []SourceReplacementCandidate `json:"sources"`
+}
+
+type SourceCandidate struct {
+	URL           string `json:"url"`
+	AuthorityName string `json:"authority_name,omitempty"`
+	AuthorityType string `json:"authority_type,omitempty"`
+	Category      string `json:"category,omitempty"`
+	Country       string `json:"country,omitempty"`
+	CountryCode   string `json:"country_code,omitempty"`
+	Region        string `json:"region,omitempty"`
+	BaseURL       string `json:"base_url,omitempty"`
+	Notes         string `json:"notes,omitempty"`
+}
+
+type SourceCandidateDocument struct {
+	GeneratedAt string            `json:"generated_at,omitempty"`
+	Sources     []SourceCandidate `json:"sources"`
 }

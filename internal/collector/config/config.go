@@ -14,7 +14,7 @@ const (
 	defaultFilteredPath     = "public/alerts-filtered.json"
 	defaultStatePath        = "public/alerts-state.json"
 	defaultSourceHealthPath = "public/source-health.json"
-	defaultRegistryPath     = "registry/source_registry.json"
+	defaultRegistryPath     = "registry/sources.db"
 	defaultTimeoutMS        = 15000
 	defaultIntervalMS       = 900000
 	defaultMaxPerSource     = 20
@@ -42,6 +42,33 @@ type Config struct {
 	MaxResponseBodyBytes            int64
 	UserAgent                       string
 	TranslateEnabled                bool
+	BrowserEnabled                  bool
+	BrowserTimeoutMS                int
+	DiscoverMode                    bool
+	DiscoverBackground              bool
+	DiscoverIntervalMS              int
+	DiscoverOutputPath              string
+	CandidateQueuePath              string
+	SearchDiscoveryEnabled          bool
+	SearchDiscoveryMaxTargets       int
+	SearchDiscoveryMaxURLsPerTarget int
+	VettingEnabled                  bool
+	VettingProvider                 string
+	VettingBaseURL                  string
+	VettingAPIKey                   string
+	VettingModel                    string
+	VettingTemperature              float64
+	VettingMaxSampleItems           int
+	AlertLLMEnabled                 bool
+	AlertLLMModel                   string
+	CategoryDictionaryPath          string
+	ReplacementQueuePath            string
+	SourceDBPath                    string
+	SourceDBInit                    bool
+	SourceDBImportRegistry          bool
+	SourceDBMergeRegistry           bool
+	SourceDBExportRegistry          bool
+	CuratedSeedPath                 string
 }
 
 func Default() Config {
@@ -62,8 +89,34 @@ func Default() Config {
 		IntervalMS:                      defaultIntervalMS,
 		HTTPTimeoutMS:                   defaultTimeoutMS,
 		MaxResponseBodyBytes:            defaultMaxBodyBytes,
-		UserAgent:                       "euosint-bot/1.0",
+		UserAgent:                       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
 		TranslateEnabled:                true,
+		BrowserEnabled:                  false,
+		BrowserTimeoutMS:                30000,
+		DiscoverMode:                    false,
+		DiscoverBackground:              true,
+		DiscoverIntervalMS:              defaultIntervalMS,
+		DiscoverOutputPath:              "discover-results.json",
+		CandidateQueuePath:              "registry/source_candidates.json",
+		SearchDiscoveryEnabled:          false,
+		SearchDiscoveryMaxTargets:       4,
+		SearchDiscoveryMaxURLsPerTarget: 3,
+		VettingEnabled:                  false,
+		VettingProvider:                 "openai-compatible",
+		VettingBaseURL:                  "https://api.openai.com/v1",
+		VettingModel:                    "gpt-4.1-mini",
+		VettingTemperature:              0,
+		VettingMaxSampleItems:           6,
+		AlertLLMEnabled:                 false,
+		AlertLLMModel:                   "gpt-4.1-mini",
+		CategoryDictionaryPath:          "registry/category_dictionary.json",
+		ReplacementQueuePath:            "registry/source_dead_letter.json",
+		SourceDBPath:                    "registry/sources.db",
+		SourceDBInit:                    false,
+		SourceDBImportRegistry:          false,
+		SourceDBMergeRegistry:           false,
+		SourceDBExportRegistry:          false,
+		CuratedSeedPath:                 "registry/curated_agencies.seed.json",
 	}
 }
 
@@ -87,6 +140,33 @@ func FromEnv() Config {
 	cfg.MaxResponseBodyBytes = int64(envInt("MAX_RESPONSE_BODY_BYTES", int(cfg.MaxResponseBodyBytes)))
 	cfg.UserAgent = envString("USER_AGENT", cfg.UserAgent)
 	cfg.TranslateEnabled = envBool("TRANSLATE_ENABLED", cfg.TranslateEnabled)
+	cfg.BrowserEnabled = envBool("BROWSER_ENABLED", cfg.BrowserEnabled)
+	cfg.BrowserTimeoutMS = envInt("BROWSER_TIMEOUT_MS", cfg.BrowserTimeoutMS)
+	cfg.DiscoverMode = envBool("DISCOVER_MODE", cfg.DiscoverMode)
+	cfg.DiscoverBackground = envBool("DISCOVER_BACKGROUND", cfg.DiscoverBackground)
+	cfg.DiscoverIntervalMS = envInt("DISCOVER_INTERVAL_MS", cfg.DiscoverIntervalMS)
+	cfg.DiscoverOutputPath = envString("DISCOVER_OUTPUT_PATH", cfg.DiscoverOutputPath)
+	cfg.CandidateQueuePath = envString("CANDIDATE_QUEUE_PATH", cfg.CandidateQueuePath)
+	cfg.SearchDiscoveryEnabled = envBool("SEARCH_DISCOVERY_ENABLED", cfg.SearchDiscoveryEnabled)
+	cfg.SearchDiscoveryMaxTargets = envInt("SEARCH_DISCOVERY_MAX_TARGETS", cfg.SearchDiscoveryMaxTargets)
+	cfg.SearchDiscoveryMaxURLsPerTarget = envInt("SEARCH_DISCOVERY_MAX_URLS_PER_TARGET", cfg.SearchDiscoveryMaxURLsPerTarget)
+	cfg.VettingEnabled = envBool("SOURCE_VETTING_ENABLED", cfg.VettingEnabled)
+	cfg.VettingProvider = envString("SOURCE_VETTING_PROVIDER", cfg.VettingProvider)
+	cfg.VettingBaseURL = envString("SOURCE_VETTING_BASE_URL", cfg.VettingBaseURL)
+	cfg.VettingAPIKey = envString("SOURCE_VETTING_API_KEY", cfg.VettingAPIKey)
+	cfg.VettingModel = envString("SOURCE_VETTING_MODEL", cfg.VettingModel)
+	cfg.VettingTemperature = envFloat("SOURCE_VETTING_TEMPERATURE", cfg.VettingTemperature)
+	cfg.VettingMaxSampleItems = envInt("SOURCE_VETTING_MAX_SAMPLE_ITEMS", cfg.VettingMaxSampleItems)
+	cfg.AlertLLMEnabled = envBool("ALERT_LLM_ENABLED", cfg.AlertLLMEnabled)
+	cfg.AlertLLMModel = envString("ALERT_LLM_MODEL", cfg.AlertLLMModel)
+	cfg.CategoryDictionaryPath = envString("CATEGORY_DICTIONARY_PATH", cfg.CategoryDictionaryPath)
+	cfg.ReplacementQueuePath = envString("REPLACEMENT_QUEUE_PATH", cfg.ReplacementQueuePath)
+	cfg.SourceDBPath = envString("SOURCE_DB_PATH", cfg.SourceDBPath)
+	cfg.SourceDBInit = envBool("SOURCE_DB_INIT", cfg.SourceDBInit)
+	cfg.SourceDBImportRegistry = envBool("SOURCE_DB_IMPORT_REGISTRY", cfg.SourceDBImportRegistry)
+	cfg.SourceDBMergeRegistry = envBool("SOURCE_DB_MERGE_REGISTRY", cfg.SourceDBMergeRegistry)
+	cfg.SourceDBExportRegistry = envBool("SOURCE_DB_EXPORT_REGISTRY", cfg.SourceDBExportRegistry)
+	cfg.CuratedSeedPath = envString("CURATED_SEED_PATH", cfg.CuratedSeedPath)
 	return cfg
 }
 

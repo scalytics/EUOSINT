@@ -32,7 +32,7 @@
       "authority_type": "police",
       "base_url": "https://www.fbi.gov"
     },
-    "feed_url": "https://www.fbi.gov/feeds/fbi-top-stories/rss.xml",
+    "feed_url": "https://www.fbi.gov/wanted/seeking-information",
     "category": "public_appeal",
     "region_tag": "US",
     "lat": 38.9,
@@ -55,7 +55,7 @@
       "authority_type": "police",
       "base_url": "https://www.fbi.gov"
     },
-    "feed_url": "https://www.fbi.gov/feeds/all-wanted/rss.xml",
+    "feed_url": "https://www.fbi.gov/wanted",
     "category": "wanted_suspect",
     "region_tag": "US",
     "lat": 38.9,
@@ -358,7 +358,8 @@
     }
   },
   {
-    "type": "rss",
+    "type": "html-list",
+    "fetch_mode": "browser",
     "followRedirects": true,
     "source": {
       "source_id": "dhs",
@@ -369,7 +370,7 @@
       "authority_type": "national_security",
       "base_url": "https://www.dhs.gov"
     },
-    "feed_url": "https://www.dhs.gov/news/rss.xml",
+    "feed_url": "https://www.dhs.gov/news-releases/press-releases",
     "category": "public_safety",
     "region_tag": "US",
     "lat": 38.886,
@@ -378,7 +379,25 @@
       "label": "Report to DHS",
       "url": "https://www.dhs.gov/see-something-say-something/how-to-report-suspicious-activity",
       "phone": "1-866-347-2423"
-    }
+    },
+    "feed_urls": [
+      "https://www.dhs.gov/news-releases/press-releases",
+      "https://www.dhs.gov/news"
+    ],
+    "max_items": 80,
+    "include_keywords": [
+      "cyber",
+      "terror",
+      "security",
+      "incident",
+      "threat",
+      "seizure"
+    ],
+    "exclude_keywords": [
+      "subscribe",
+      "blog",
+      "speeches"
+    ]
   },
   {
     "type": "rss",
@@ -404,7 +423,7 @@
     }
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "followRedirects": true,
     "source": {
       "source_id": "dea",
@@ -415,7 +434,7 @@
       "authority_type": "police",
       "base_url": "https://www.dea.gov"
     },
-    "feed_url": "https://www.dea.gov/press-releases/rss.xml",
+    "feed_url": "https://www.dea.gov/what-we-do/news/press-releases",
     "category": "public_appeal",
     "region_tag": "US",
     "lat": 38.871,
@@ -424,10 +443,26 @@
       "label": "Report to DEA",
       "url": "https://www.dea.gov/submit-tip",
       "phone": "1-877-792-2873"
-    }
+    },
+    "feed_urls": [
+      "https://www.dea.gov/what-we-do/news/press-releases"
+    ],
+    "max_items": 80,
+    "include_keywords": [
+      "arrest",
+      "fentanyl",
+      "drug",
+      "traffick",
+      "seiz",
+      "operation"
+    ],
+    "exclude_keywords": [
+      "submit a tip",
+      "subscribe"
+    ]
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "followRedirects": true,
     "source": {
       "source_id": "atf",
@@ -438,7 +473,7 @@
       "authority_type": "police",
       "base_url": "https://www.atf.gov"
     },
-    "feed_url": "https://www.atf.gov/news/rss.xml",
+    "feed_url": "https://www.atf.gov/news/press-releases",
     "category": "public_appeal",
     "region_tag": "US",
     "lat": 38.893,
@@ -448,7 +483,22 @@
       "url": "https://www.atf.gov/contact/atf-tips",
       "phone": "1-888-283-8477",
       "email": "atftips@atf.gov"
-    }
+    },
+    "feed_urls": [
+      "https://www.atf.gov/news/press-releases"
+    ],
+    "max_items": 80,
+    "include_keywords": [
+      "sentenced",
+      "arrest",
+      "firearm",
+      "explosive",
+      "gang",
+      "trafficking"
+    ],
+    "exclude_keywords": [
+      "subscribe for atf updates"
+    ]
   },
   {
     "type": "rss",
@@ -520,53 +570,7 @@
     }
   },
   {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "met-police-uk",
-      "authority_name": "Met Police UK",
-      "country": "United Kingdom",
-      "country_code": "GB",
-      "region": "Europe",
-      "authority_type": "police",
-      "base_url": "https://news.met.police.uk"
-    },
-    "feed_url": "https://news.met.police.uk/feeds/rss",
-    "category": "public_appeal",
-    "region_tag": "GB",
-    "lat": 51.51,
-    "lng": -0.14,
-    "reporting": {
-      "label": "Report to Met Police",
-      "url": "https://www.met.police.uk/ro/report/",
-      "phone": "999 (Emergency) / 101 (Non-emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "bsi-de",
-      "authority_name": "BSI Germany",
-      "country": "Germany",
-      "country_code": "DE",
-      "region": "Europe",
-      "authority_type": "cert",
-      "base_url": "https://www.bsi.bund.de"
-    },
-    "feed_url": "https://www.bsi.bund.de/SiteGlobals/Functions/RSSFeed/RSSNewsfeed/RSSNewsfeed.xml",
-    "category": "cyber_advisory",
-    "region_tag": "DE",
-    "lat": 50.73,
-    "lng": 7.1,
-    "reporting": {
-      "label": "Report to BSI",
-      "url": "https://www.bsi.bund.de/EN/Service-Navi/Contact/contact_node.html",
-      "email": "certbund@bsi.bund.de"
-    }
-  },
-  {
-    "type": "rss",
+    "type": "html-list",
     "followRedirects": true,
     "source": {
       "source_id": "bka-de",
@@ -577,7 +581,7 @@
       "authority_type": "police",
       "base_url": "https://www.bka.de"
     },
-    "feed_url": "https://www.bka.de/SharedDocs/Kurzmeldungen/DE/Warnhinweise/RSS/BKA_Pressemitteilungen_RSS.xml",
+    "feed_url": "https://www.bka.de/DE/Presse/Pressestelle/pressestelle_node.html",
     "category": "wanted_suspect",
     "region_tag": "DE",
     "lat": 50.12,
@@ -586,7 +590,23 @@
       "label": "Report to BKA",
       "url": "https://www.bka.de/DE/KontaktAufnehmen/Hinweisportal/hinweisportal_node.html",
       "phone": "+49 611 55-0"
-    }
+    },
+    "feed_urls": [
+      "https://www.bka.de/DE/Presse/Pressestelle/pressestelle_node.html"
+    ],
+    "max_items": 80,
+    "include_keywords": [
+      "pressemitteilung",
+      "cyber",
+      "fahnd",
+      "kriminal",
+      "hasspost",
+      "festnahme"
+    ],
+    "exclude_keywords": [
+      "kontakt",
+      "pressestelle"
+    ]
   },
   {
     "type": "rss",
@@ -620,34 +640,6 @@
     "type": "rss",
     "followRedirects": true,
     "source": {
-      "source_id": "afp-au",
-      "authority_name": "AFP Australia",
-      "country": "Australia",
-      "country_code": "AU",
-      "region": "Oceania",
-      "authority_type": "police",
-      "base_url": "https://www.afp.gov.au"
-    },
-    "feed_url": "https://www.afp.gov.au/news-centre/media-releases/rss.xml",
-    "feed_urls": [
-      "https://www.afp.gov.au/news-centre/media-releases/rss.xml",
-      "https://www.afp.gov.au/news-centre/media-release/rss.xml",
-      "https://www.afp.gov.au/news-centre/media-releases/feed"
-    ],
-    "category": "public_appeal",
-    "region_tag": "AU",
-    "lat": -35.31,
-    "lng": 149.14,
-    "reporting": {
-      "label": "Report to AFP",
-      "url": "https://www.afp.gov.au/what-we-do/crime-types/report-crime",
-      "phone": "131 237"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
       "source_id": "qps-au",
       "authority_name": "Queensland Police",
       "country": "Australia",
@@ -673,35 +665,7 @@
     }
   },
   {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "nsw-police-au",
-      "authority_name": "NSW Police",
-      "country": "Australia",
-      "country_code": "AU",
-      "region": "Oceania",
-      "authority_type": "police",
-      "base_url": "https://www.police.nsw.gov.au"
-    },
-    "feed_url": "https://www.police.nsw.gov.au/news/rss",
-    "feed_urls": [
-      "https://www.police.nsw.gov.au/news/rss",
-      "https://www.police.nsw.gov.au/rss/news",
-      "https://www.police.nsw.gov.au/news/feed"
-    ],
-    "category": "public_appeal",
-    "region_tag": "AU",
-    "lat": -33.87,
-    "lng": 151.21,
-    "reporting": {
-      "label": "Report to NSW Police",
-      "url": "https://portal.police.nsw.gov.au/s/online-services",
-      "phone": "000 (Emergency) / 131 444 (Police Assistance Line)"
-    }
-  },
-  {
-    "type": "rss",
+    "type": "html-list",
     "followRedirects": true,
     "source": {
       "source_id": "cccs-ca",
@@ -712,7 +676,7 @@
       "authority_type": "cert",
       "base_url": "https://www.cyber.gc.ca"
     },
-    "feed_url": "https://www.cyber.gc.ca/en/alerts-advisories/feed",
+    "feed_url": "https://www.cyber.gc.ca/en/alerts-advisories",
     "category": "cyber_advisory",
     "region_tag": "CA",
     "lat": 45.42,
@@ -722,7 +686,22 @@
       "url": "https://www.cyber.gc.ca/en/incident-management",
       "email": "contact@cyber.gc.ca",
       "phone": "1-833-292-3722"
-    }
+    },
+    "feed_urls": [
+      "https://www.cyber.gc.ca/en/alerts-advisories"
+    ],
+    "max_items": 80,
+    "include_keywords": [
+      "alert",
+      "advisory",
+      "vulnerability",
+      "cyber",
+      "threat"
+    ],
+    "exclude_keywords": [
+      "contact",
+      "report a cyber incident"
+    ]
   },
   {
     "type": "rss",
@@ -748,7 +727,7 @@
     }
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "followRedirects": true,
     "source": {
       "source_id": "cnp-es",
@@ -759,7 +738,7 @@
       "authority_type": "police",
       "base_url": "https://www.policia.es"
     },
-    "feed_url": "https://www.policia.es/rss/rss_prensa.xml",
+    "feed_url": "https://www.policia.es/_es/comunicacion_salaprensa.php",
     "category": "public_appeal",
     "region_tag": "ES",
     "lat": 40.42,
@@ -768,7 +747,25 @@
       "label": "Report to Policía Nacional",
       "url": "https://www.policia.es/colabora.php",
       "phone": "091"
-    }
+    },
+    "feed_urls": [
+      "https://www.policia.es/_es/comunicacion_salaprensa.php",
+      "https://www.policia.es/_es/comunicacion_portada.php"
+    ],
+    "max_items": 80,
+    "include_keywords": [
+      "prensa",
+      "detiene",
+      "operación",
+      "ciberdelincuencia",
+      "incauta",
+      "investigación"
+    ],
+    "exclude_keywords": [
+      "síguenos",
+      "gabinete de prensa",
+      "cargar más"
+    ]
   },
   {
     "type": "rss",
@@ -902,35 +899,6 @@
     "type": "rss",
     "followRedirects": true,
     "source": {
-      "source_id": "missing-children-za",
-      "authority_name": "Missing Children South Africa",
-      "country": "South Africa",
-      "country_code": "ZA",
-      "region": "Africa",
-      "authority_type": "public_safety_program",
-      "base_url": "https://missingchildren.org.za"
-    },
-    "feed_url": "https://missingchildren.org.za/feed/",
-    "feed_urls": [
-      "https://missingchildren.org.za/feed/",
-      "https://missingchildren.org.za/category/missing-children/feed/",
-      "https://missingchildren.org.za/category/cases/feed/"
-    ],
-    "category": "missing_person",
-    "region_tag": "ZA",
-    "lat": -29,
-    "lng": 24,
-    "reporting": {
-      "label": "Report to Missing Children SA",
-      "url": "https://missingchildren.org.za/report/",
-      "phone": "+27 72 647 7464",
-      "notes": "Coordinate directly with SAPS in emergency situations."
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
       "source_id": "crimestoppers-uk",
       "authority_name": "Crimestoppers UK",
       "country": "United Kingdom",
@@ -949,52 +917,6 @@
       "url": "https://crimestoppers-uk.org/give-information",
       "phone": "0800 555 111",
       "notes": "100% anonymous. You can also report online."
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "npa-jp",
-      "authority_name": "Japan NPA",
-      "country": "Japan",
-      "country_code": "JP",
-      "region": "Asia",
-      "authority_type": "police",
-      "base_url": "https://www.npa.go.jp"
-    },
-    "feed_url": "https://www.npa.go.jp/rss/index.xml",
-    "category": "public_safety",
-    "region_tag": "JP",
-    "lat": 35.69,
-    "lng": 139.75,
-    "reporting": {
-      "label": "Report to NPA Japan",
-      "url": "https://www.npa.go.jp/english/index.html",
-      "phone": "110 (Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "gendarmerie-fr",
-      "authority_name": "Gendarmerie France",
-      "country": "France",
-      "country_code": "FR",
-      "region": "Europe",
-      "authority_type": "police",
-      "base_url": "https://www.gendarmerie.interieur.gouv.fr"
-    },
-    "feed_url": "https://www.gendarmerie.interieur.gouv.fr/rss",
-    "category": "public_appeal",
-    "region_tag": "FR",
-    "lat": 48.85,
-    "lng": 2.3,
-    "reporting": {
-      "label": "Report to Gendarmerie",
-      "url": "https://www.pre-plainte-en-ligne.gouv.fr/",
-      "phone": "17 (Emergency)"
     }
   },
   {
@@ -1069,34 +991,6 @@
       "label": "Report to Polícia Federal",
       "url": "https://www.gov.br/pf/pt-br/canais_atendimento/denuncia",
       "phone": "190 (Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "carabineros-cl",
-      "authority_name": "Carabineros Chile",
-      "country": "Chile",
-      "country_code": "CL",
-      "region": "South America",
-      "authority_type": "police",
-      "base_url": "https://www.carabineros.cl"
-    },
-    "feed_url": "https://www.carabineros.cl/feed/",
-    "feed_urls": [
-      "https://www.carabineros.cl/feed/",
-      "https://www.carabineros.cl/rss",
-      "https://www.carabineros.cl/index.php/feed/"
-    ],
-    "category": "public_appeal",
-    "region_tag": "CL",
-    "lat": -33.45,
-    "lng": -70.67,
-    "reporting": {
-      "label": "Report to Carabineros",
-      "url": "https://www.carabineros.cl/",
-      "phone": "133 (Emergency)"
     }
   },
   {
@@ -1243,34 +1137,6 @@
     "type": "rss",
     "followRedirects": true,
     "source": {
-      "source_id": "fiscales-ar",
-      "authority_name": "Ministerio Público Fiscal Argentina",
-      "country": "Argentina",
-      "country_code": "AR",
-      "region": "South America",
-      "authority_type": "regulatory",
-      "base_url": "https://www.fiscales.gob.ar"
-    },
-    "feed_url": "https://www.fiscales.gob.ar/feed/",
-    "feed_urls": [
-      "https://www.fiscales.gob.ar/feed/",
-      "https://www.fiscales.gob.ar/category/noticias/feed/",
-      "https://www.fiscales.gob.ar/category/cibercrimen/feed/"
-    ],
-    "category": "public_safety",
-    "region_tag": "AR",
-    "lat": -34.61,
-    "lng": -58.38,
-    "reporting": {
-      "label": "Report to Fiscalía Argentina",
-      "url": "https://www.mpf.gob.ar/",
-      "phone": "137 (Emergency advisory line)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
       "source_id": "missing-cl-ngo",
       "authority_name": "Fundación Extraviados Chile",
       "country": "Chile",
@@ -1306,7 +1172,7 @@
       "authority_type": "police",
       "base_url": "https://www.fbi.gov"
     },
-    "feed_url": "https://www.fbi.gov/feeds/seeking-information/rss.xml",
+    "feed_url": "https://www.fbi.gov/wanted/seeking-information",
     "category": "public_appeal",
     "region_tag": "US",
     "lat": 38.91,
@@ -1330,7 +1196,7 @@
       "authority_type": "police",
       "base_url": "https://www.fbi.gov"
     },
-    "feed_url": "https://www.fbi.gov/feeds/fbi-most-wanted/rss.xml",
+    "feed_url": "https://www.fbi.gov/wanted",
     "category": "wanted_suspect",
     "region_tag": "US",
     "lat": 38.89,
@@ -1363,117 +1229,6 @@
       "label": "Report Fraud to Action Fraud",
       "url": "https://www.actionfraud.police.uk/reporting-fraud-and-cyber-crime",
       "phone": "0300 123 2040"
-    }
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "cna-sg-crime",
-      "authority_name": "CNA Singapore Crime",
-      "country": "Singapore",
-      "country_code": "SG",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.channelnewsasia.com"
-    },
-    "feed_url": "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511",
-    "category": "public_safety",
-    "region_tag": "SG",
-    "lat": 1.35,
-    "lng": 103.82,
-    "reporting": {
-      "label": "Report Crime in Singapore",
-      "url": "https://eservices.police.gov.sg/content/policehubhome/homepage/police-report.html",
-      "phone": "999 (Emergency) / 1800-255-0000 (Police Hotline)"
-    }
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "yonhap-kr",
-      "authority_name": "Yonhap News Korea",
-      "country": "South Korea",
-      "country_code": "KR",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://en.yna.co.kr"
-    },
-    "feed_url": "https://en.yna.co.kr/RSS/news.xml",
-    "category": "public_safety",
-    "region_tag": "KR",
-    "lat": 37.57,
-    "lng": 126.98,
-    "reporting": {
-      "label": "Report Crime in South Korea",
-      "url": "https://www.police.go.kr/eng/index.do",
-      "phone": "112 (Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "nhk-jp",
-      "authority_name": "NHK Japan",
-      "country": "Japan",
-      "country_code": "JP",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www3.nhk.or.jp"
-    },
-    "feed_url": "https://www3.nhk.or.jp/rss/news/cat1.xml",
-    "category": "public_safety",
-    "region_tag": "JP",
-    "lat": 35.67,
-    "lng": 139.71,
-    "reporting": {
-      "label": "Report to Japan Police",
-      "url": "https://www.npa.go.jp/english/index.html",
-      "phone": "110 (Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "scmp-hk",
-      "authority_name": "SCMP Hong Kong",
-      "country": "Hong Kong",
-      "country_code": "HK",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.scmp.com"
-    },
-    "feed_url": "https://www.scmp.com/rss/5/feed",
-    "followRedirects": true,
-    "category": "public_safety",
-    "region_tag": "HK",
-    "lat": 22.28,
-    "lng": 114.16,
-    "reporting": {
-      "label": "Report Crime in Hong Kong",
-      "url": "https://www.police.gov.hk/ppp_en/contact_us.html",
-      "phone": "999 (Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "straitstimes-sg",
-      "authority_name": "Straits Times Singapore",
-      "country": "Singapore",
-      "country_code": "SG",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.straitstimes.com"
-    },
-    "feed_url": "https://www.straitstimes.com/news/singapore/rss.xml",
-    "category": "public_safety",
-    "region_tag": "SG",
-    "lat": 1.3,
-    "lng": 103.84,
-    "reporting": {
-      "label": "Report Crime in Singapore",
-      "url": "https://eservices.police.gov.sg/content/policehubhome/homepage/police-report.html",
-      "phone": "999 (Emergency)"
     }
   },
   {
@@ -1633,79 +1388,6 @@
     }
   },
   {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "amber-mx",
-      "authority_name": "AMBER Alert Mexico",
-      "country": "Mexico",
-      "country_code": "MX",
-      "region": "North America",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.gob.mx/amber"
-    },
-    "feed_url": "https://www.gob.mx/amber/archivo/acciones_y_programas",
-    "feed_urls": [
-      "https://www.gob.mx/amber/archivo/acciones_y_programas",
-      "https://www.gob.mx/amber/es/archivo/acciones_y_programas",
-      "https://www.gob.mx/amber"
-    ],
-    "include_keywords": [
-      "alerta amber",
-      "desaparec",
-      "no localizado",
-      "se busca",
-      "ficha",
-      "menor",
-      "niña",
-      "niño",
-      "adolescente",
-      "auxilio",
-      "información"
-    ],
-    "exclude_keywords": [
-      "evento",
-      "campaña",
-      "conferencia",
-      "manual",
-      "material"
-    ],
-    "category": "missing_person",
-    "region_tag": "MX",
-    "lat": 19.44,
-    "lng": -99.14,
-    "reporting": {
-      "label": "Report Missing Child Mexico",
-      "url": "https://www.gob.mx/amber",
-      "phone": "800-008-5400",
-      "notes": "Alerta AMBER México"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "missing-ca",
-      "authority_name": "Canada Missing Children",
-      "country": "Canada",
-      "country_code": "CA",
-      "region": "North America",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.canadasmissing.ca"
-    },
-    "feed_url": "https://www.canadasmissing.ca/rss/index-eng.xml",
-    "category": "missing_person",
-    "region_tag": "CA",
-    "lat": 45.43,
-    "lng": -75.68,
-    "reporting": {
-      "label": "Report Missing Person Canada",
-      "url": "https://www.canadasmissing.ca/index-eng.htm",
-      "phone": "1-866-KID-TIPS (1-866-543-8477)",
-      "notes": "Canadian Centre for Child Protection"
-    }
-  },
-  {
     "type": "rss",
     "followRedirects": true,
     "source": {
@@ -1813,98 +1495,6 @@
     "type": "rss",
     "followRedirects": true,
     "source": {
-      "source_id": "bleepingcomputer",
-      "authority_name": "BleepingComputer",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "private_sector",
-      "base_url": "https://www.bleepingcomputer.com"
-    },
-    "feed_url": "https://www.bleepingcomputer.com/feed/",
-    "category": "private_sector",
-    "region_tag": "US",
-    "lat": 40.71,
-    "lng": -74.01,
-    "reporting": {
-      "label": "Read Full Report",
-      "url": "https://www.bleepingcomputer.com",
-      "notes": "Private-sector cybersecurity news. Report incidents to relevant authorities."
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "krebsonsecurity",
-      "authority_name": "Krebs on Security",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "private_sector",
-      "base_url": "https://krebsonsecurity.com"
-    },
-    "feed_url": "https://krebsonsecurity.com/feed/",
-    "category": "private_sector",
-    "region_tag": "US",
-    "lat": 38.9,
-    "lng": -77.04,
-    "reporting": {
-      "label": "Read Full Report",
-      "url": "https://krebsonsecurity.com",
-      "notes": "Investigative cybersecurity journalism by Brian Krebs."
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "thehackernews",
-      "authority_name": "The Hacker News",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "private_sector",
-      "base_url": "https://thehackernews.com"
-    },
-    "feed_url": "https://feeds.feedburner.com/TheHackersNews",
-    "category": "private_sector",
-    "region_tag": "US",
-    "lat": 37.39,
-    "lng": -122.08,
-    "reporting": {
-      "label": "Read Full Report",
-      "url": "https://thehackernews.com",
-      "notes": "Cybersecurity news and analysis."
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "databreaches-net",
-      "authority_name": "DataBreaches.net",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "private_sector",
-      "base_url": "https://databreaches.net"
-    },
-    "feed_url": "https://databreaches.net/feed/",
-    "category": "private_sector",
-    "region_tag": "US",
-    "lat": 39.83,
-    "lng": -98.58,
-    "reporting": {
-      "label": "Read Full Report",
-      "url": "https://databreaches.net",
-      "notes": "Data breach tracking and reporting."
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
       "source_id": "vpd-ca",
       "authority_name": "Vancouver Police Department",
       "country": "Canada",
@@ -1976,50 +1566,6 @@
     "type": "rss",
     "followRedirects": true,
     "source": {
-      "source_id": "cbc-canada",
-      "authority_name": "CBC Canada News",
-      "country": "Canada",
-      "country_code": "CA",
-      "region": "North America",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.cbc.ca"
-    },
-    "feed_url": "https://www.cbc.ca/webfeed/rss/rss-canada",
-    "category": "public_safety",
-    "region_tag": "CA",
-    "lat": 43.6532,
-    "lng": -79.3832,
-    "reporting": {
-      "label": "CBC News Tips",
-      "url": "https://www.cbc.ca/news/tips"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "globalnews-ca",
-      "authority_name": "Global News Canada",
-      "country": "Canada",
-      "country_code": "CA",
-      "region": "North America",
-      "authority_type": "public_safety_program",
-      "base_url": "https://globalnews.ca"
-    },
-    "feed_url": "https://globalnews.ca/feed/",
-    "category": "public_safety",
-    "region_tag": "CA",
-    "lat": 45.5017,
-    "lng": -73.5673,
-    "reporting": {
-      "label": "Global News Tips",
-      "url": "https://globalnews.ca/pages/contact-us/"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
       "source_id": "usom-tr",
       "authority_name": "TR-CERT / USOM",
       "country": "Turkey",
@@ -2036,346 +1582,6 @@
     "reporting": {
       "label": "Report Cyber Incident to USOM",
       "url": "https://www.usom.gov.tr/bildirim"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "timesofisrael-il",
-      "authority_name": "Times of Israel",
-      "country": "Israel",
-      "country_code": "IL",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.timesofisrael.com"
-    },
-    "feed_url": "https://www.timesofisrael.com/feed/",
-    "category": "public_safety",
-    "region_tag": "IL",
-    "lat": 31.7683,
-    "lng": 35.2137,
-    "reporting": {
-      "label": "Israel Police Tips",
-      "url": "https://www.police.gov.il/en",
-      "phone": "100 (Israel Police)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "middleeasteye",
-      "authority_name": "Middle East Eye",
-      "country": "Qatar",
-      "country_code": "QA",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.middleeasteye.net"
-    },
-    "feed_url": "https://www.middleeasteye.net/rss",
-    "category": "public_safety",
-    "region_tag": "ME",
-    "lat": 25.2854,
-    "lng": 51.531,
-    "reporting": {
-      "label": "Middle East Eye Tips",
-      "url": "https://www.middleeasteye.net/contact"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "dailysabah-tr",
-      "authority_name": "Daily Sabah Turkey",
-      "country": "Turkey",
-      "country_code": "TR",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.dailysabah.com"
-    },
-    "feed_url": "https://www.dailysabah.com/rssFeed/turkey",
-    "category": "public_safety",
-    "region_tag": "TR",
-    "lat": 41.0082,
-    "lng": 28.9784,
-    "reporting": {
-      "label": "Daily Sabah Contact",
-      "url": "https://www.dailysabah.com/contact"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "globaltimes-cn",
-      "authority_name": "Global Times China",
-      "country": "China",
-      "country_code": "CN",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.globaltimes.cn"
-    },
-    "feed_url": "https://www.globaltimes.cn/rss/outbrain.xml",
-    "category": "public_safety",
-    "region_tag": "CN",
-    "lat": 39.9042,
-    "lng": 116.4074,
-    "reporting": {
-      "label": "Global Times Contact",
-      "url": "https://www.globaltimes.cn/about-us/contact-us.html"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "indiatoday-crime",
-      "authority_name": "India Today Crime",
-      "country": "India",
-      "country_code": "IN",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.indiatoday.in"
-    },
-    "feed_url": "https://www.indiatoday.in/rss/1786661",
-    "category": "public_safety",
-    "region_tag": "IN",
-    "lat": 28.6139,
-    "lng": 77.209,
-    "reporting": {
-      "label": "India Crime Tips",
-      "url": "https://cybercrime.gov.in/",
-      "phone": "112 (India Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "ndtv-in",
-      "authority_name": "NDTV India News",
-      "country": "India",
-      "country_code": "IN",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.ndtv.com"
-    },
-    "feed_url": "https://feeds.feedburner.com/ndtvnews-india-news",
-    "category": "public_safety",
-    "region_tag": "IN",
-    "lat": 19.076,
-    "lng": 72.8777,
-    "reporting": {
-      "label": "NDTV News Tips",
-      "url": "https://www.ndtv.com/page/contact-us",
-      "phone": "112 (India Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "hindustantimes-in",
-      "authority_name": "Hindustan Times India",
-      "country": "India",
-      "country_code": "IN",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.hindustantimes.com"
-    },
-    "feed_url": "https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml",
-    "category": "public_safety",
-    "region_tag": "IN",
-    "lat": 12.9716,
-    "lng": 77.5946,
-    "reporting": {
-      "label": "Hindustan Times Tips",
-      "url": "https://www.hindustantimes.com/contact-us",
-      "phone": "112 (India Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "vnexpress-vn",
-      "authority_name": "VnExpress International",
-      "country": "Vietnam",
-      "country_code": "VN",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://e.vnexpress.net"
-    },
-    "feed_url": "https://e.vnexpress.net/rss/news.rss",
-    "category": "public_safety",
-    "region_tag": "VN",
-    "lat": 21.0278,
-    "lng": 105.8342,
-    "reporting": {
-      "label": "Vietnam Police Tips",
-      "url": "https://congan.com.vn/",
-      "phone": "113 (Vietnam Police)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "laotiantimes-la",
-      "authority_name": "Laotian Times",
-      "country": "Laos",
-      "country_code": "LA",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://laotiantimes.com"
-    },
-    "feed_url": "https://laotiantimes.com/feed/",
-    "category": "public_safety",
-    "region_tag": "LA",
-    "lat": 17.9757,
-    "lng": 102.6331,
-    "reporting": {
-      "label": "Laotian Times Contact",
-      "url": "https://laotiantimes.com/contact/"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "bangkokpost-th",
-      "authority_name": "Bangkok Post",
-      "country": "Thailand",
-      "country_code": "TH",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.bangkokpost.com"
-    },
-    "feed_url": "https://www.bangkokpost.com/rss/data/topstories.xml",
-    "category": "public_safety",
-    "region_tag": "TH",
-    "lat": 13.7563,
-    "lng": 100.5018,
-    "reporting": {
-      "label": "Thailand Police Tips",
-      "url": "https://www.royalthaipolice.go.th/",
-      "phone": "191 (Thailand Police)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "rappler-ph",
-      "authority_name": "Rappler Philippines",
-      "country": "Philippines",
-      "country_code": "PH",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.rappler.com"
-    },
-    "feed_url": "https://www.rappler.com/feed/",
-    "category": "public_safety",
-    "region_tag": "PH",
-    "lat": 14.5995,
-    "lng": 120.9842,
-    "reporting": {
-      "label": "PNP Philippines Tips",
-      "url": "https://www.pnp.gov.ph/",
-      "phone": "117 (PH Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "tempo-id",
-      "authority_name": "Tempo Indonesia",
-      "country": "Indonesia",
-      "country_code": "ID",
-      "region": "Asia",
-      "authority_type": "public_safety_program",
-      "base_url": "https://en.tempo.co"
-    },
-    "feed_url": "https://rss.tempo.co/en/",
-    "category": "public_safety",
-    "region_tag": "ID",
-    "lat": -6.2088,
-    "lng": 106.8456,
-    "reporting": {
-      "label": "Indonesia Police Tips",
-      "url": "https://www.polri.go.id/",
-      "phone": "110 (Indonesia Police)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "postcourier-pg",
-      "authority_name": "Post-Courier PNG",
-      "country": "Papua New Guinea",
-      "country_code": "PG",
-      "region": "Oceania",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.postcourier.com.pg"
-    },
-    "feed_url": "https://www.postcourier.com.pg/feed/",
-    "category": "public_safety",
-    "region_tag": "PG",
-    "lat": -6.3149,
-    "lng": 147.1802,
-    "reporting": {
-      "label": "PNG Police",
-      "url": "https://www.rpngc.gov.pg/",
-      "phone": "000 (PNG Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "fijitimes-fj",
-      "authority_name": "Fiji Times",
-      "country": "Fiji",
-      "country_code": "FJ",
-      "region": "Oceania",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.fijitimes.com"
-    },
-    "feed_url": "https://www.fijitimes.com/feed/",
-    "category": "public_safety",
-    "region_tag": "FJ",
-    "lat": -18.1416,
-    "lng": 178.4419,
-    "reporting": {
-      "label": "Fiji Police",
-      "url": "https://www.police.gov.fj/",
-      "phone": "917 (Fiji Police)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "rnz-pacific",
-      "authority_name": "RNZ Pacific",
-      "country": "New Zealand",
-      "country_code": "NZ",
-      "region": "Oceania",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.rnz.co.nz"
-    },
-    "feed_url": "https://www.rnz.co.nz/rss/pacific.xml",
-    "category": "public_safety",
-    "region_tag": "NZ",
-    "lat": -15.3767,
-    "lng": 166.9592,
-    "reporting": {
-      "label": "RNZ Pacific Contact",
-      "url": "https://www.rnz.co.nz/about/contact"
     }
   },
   {
@@ -2407,36 +1613,6 @@
       "label": "Report to Kenya DCI",
       "url": "https://www.dci.go.ke/contact-us/",
       "phone": "+254 20 2710000"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "eoco-gh-wanted",
-      "authority_name": "EOCO Ghana Wanted Persons",
-      "country": "Ghana",
-      "country_code": "GH",
-      "region": "Africa",
-      "authority_type": "police",
-      "base_url": "https://www.eoco.gov.gh"
-    },
-    "feed_url": "https://www.eoco.gov.gh/wanted-persons/",
-    "category": "wanted_suspect",
-    "region_tag": "GH",
-    "lat": 5.603717,
-    "lng": -0.186964,
-    "max_items": 80,
-    "include_keywords": [
-      "wanted",
-      "suspect",
-      "fraud",
-      "crime",
-      "appeal"
-    ],
-    "reporting": {
-      "label": "Report to EOCO Ghana",
-      "url": "https://www.eoco.gov.gh/contact-us/"
     }
   },
   {
@@ -2561,45 +1737,6 @@
     }
   },
   {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "missingchildren-za-html",
-      "authority_name": "Missing Children South Africa Cases",
-      "country": "South Africa",
-      "country_code": "ZA",
-      "region": "Africa",
-      "authority_type": "public_safety_program",
-      "base_url": "https://missingchildren.org.za"
-    },
-    "feed_url": "https://missingchildren.org.za/category/cases/",
-    "feed_urls": [
-      "https://missingchildren.org.za/category/cases/",
-      "https://missingchildren.org.za/category/missing-children/"
-    ],
-    "category": "missing_person",
-    "region_tag": "ZA",
-    "lat": -29,
-    "lng": 24,
-    "max_items": 120,
-    "include_keywords": [
-      "missing",
-      "child",
-      "teen",
-      "appeal",
-      "case"
-    ],
-    "exclude_keywords": [
-      "donate",
-      "event",
-      "newsletter"
-    ],
-    "reporting": {
-      "label": "Report Missing Person to MCSA",
-      "url": "https://missingchildren.org.za/report/"
-    }
-  },
-  {
     "type": "rss",
     "followRedirects": true,
     "source": {
@@ -2653,36 +1790,6 @@
     "type": "html-list",
     "followRedirects": true,
     "source": {
-      "source_id": "ngcert-ng-bulletins",
-      "authority_name": "ngCERT Nigeria Bulletins",
-      "country": "Nigeria",
-      "country_code": "NG",
-      "region": "Africa",
-      "authority_type": "cert",
-      "base_url": "https://www.cert.gov.ng"
-    },
-    "feed_url": "https://www.cert.gov.ng/",
-    "category": "cyber_advisory",
-    "region_tag": "NG",
-    "lat": 9.082,
-    "lng": 8.6753,
-    "max_items": 100,
-    "include_keywords": [
-      "advisory",
-      "alert",
-      "threat",
-      "vulnerability",
-      "incident"
-    ],
-    "reporting": {
-      "label": "Report Incident to ngCERT",
-      "url": "https://www.cert.gov.ng/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
       "source_id": "cert-tn-bulletins",
       "authority_name": "Tunisia CERT Bulletins",
       "country": "Tunisia",
@@ -2708,50 +1815,6 @@
     "reporting": {
       "label": "Report Incident to CERT-TN",
       "url": "https://www.cert.tn/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "mp-gt-casos",
-      "authority_name": "Ministerio Publico Guatemala Casos",
-      "country": "Guatemala",
-      "country_code": "GT",
-      "region": "North America",
-      "authority_type": "regulatory",
-      "base_url": "https://www.mp.gob.gt"
-    },
-    "feed_url": "https://www.mp.gob.gt/noticias/",
-    "feed_urls": [
-      "https://www.mp.gob.gt/noticias/",
-      "https://www.mp.gob.gt/category/noticias/",
-      "https://www.mp.gob.gt"
-    ],
-    "category": "public_appeal",
-    "region_tag": "GT",
-    "lat": 14.634915,
-    "lng": -90.506882,
-    "max_items": 120,
-    "include_keywords": [
-      "desaparec",
-      "secuestro",
-      "se busca",
-      "captura",
-      "investigacion",
-      "denuncia",
-      "fiscalia",
-      "homicidio"
-    ],
-    "exclude_keywords": [
-      "evento",
-      "licitacion",
-      "boletin",
-      "agenda"
-    ],
-    "reporting": {
-      "label": "Report to MP Guatemala",
-      "url": "https://www.mp.gob.gt"
     }
   },
   {
@@ -3007,84 +2070,6 @@
     "type": "html-list",
     "followRedirects": true,
     "source": {
-      "source_id": "hot-tasking",
-      "authority_name": "Humanitarian OpenStreetMap Team",
-      "country": "Global",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.hotosm.org"
-    },
-    "feed_url": "https://www.hotosm.org/projects/",
-    "feed_urls": [
-      "https://www.hotosm.org/projects/",
-      "https://tasks.hotosm.org/explore"
-    ],
-    "category": "humanitarian_tasking",
-    "region_tag": "INT",
-    "lat": 20,
-    "lng": 0,
-    "max_items": 100,
-    "include_keywords": [
-      "mapping",
-      "task",
-      "response",
-      "disaster",
-      "humanitarian",
-      "project"
-    ],
-    "exclude_keywords": [
-      "careers",
-      "donate"
-    ],
-    "reporting": {
-      "label": "Join HOT Mapping Tasks",
-      "url": "https://tasks.hotosm.org/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "missing-maps-tasking",
-      "authority_name": "Missing Maps",
-      "country": "Global",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.missingmaps.org"
-    },
-    "feed_url": "https://www.missingmaps.org/",
-    "feed_urls": [
-      "https://www.missingmaps.org/",
-      "https://www.missingmaps.org/blog/"
-    ],
-    "category": "humanitarian_tasking",
-    "region_tag": "INT",
-    "lat": 20,
-    "lng": 0,
-    "max_items": 80,
-    "include_keywords": [
-      "mapathon",
-      "mapping",
-      "task",
-      "response",
-      "field",
-      "vulnerable"
-    ],
-    "exclude_keywords": [
-      "donate",
-      "shop"
-    ],
-    "reporting": {
-      "label": "Join Missing Maps",
-      "url": "https://www.missingmaps.org/get-involved/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
       "source_id": "icrc-family-links",
       "authority_name": "ICRC Family Links",
       "country": "Global",
@@ -3157,594 +2142,598 @@
     }
   },
   {
-    "type": "html-list",
-    "followRedirects": true,
+    "type": "rss",
     "source": {
-      "source_id": "ict4peace-briefings",
-      "authority_name": "ICT4Peace",
-      "country": "Global",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "public_safety_program",
-      "base_url": "https://ict4peace.org"
-    },
-    "feed_url": "https://ict4peace.org/",
-    "feed_urls": [
-      "https://ict4peace.org/",
-      "https://ict4peace.org/category/publications/"
-    ],
-    "category": "humanitarian_tasking",
-    "region_tag": "INT",
-    "lat": 20,
-    "lng": 0,
-    "max_items": 80,
-    "include_keywords": [
-      "crisis",
-      "humanitarian",
-      "technology",
-      "coordination",
-      "response"
-    ],
-    "exclude_keywords": [
-      "about",
-      "board",
-      "contact"
-    ],
-    "reporting": {
-      "label": "ICT4Peace Publications",
-      "url": "https://ict4peace.org/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "cida-africa-updates",
-      "authority_name": "CIDA Africa",
-      "country": "South Africa",
-      "country_code": "ZA",
-      "region": "Africa",
-      "authority_type": "public_safety_program",
-      "base_url": "https://cida-africa.org"
-    },
-    "feed_url": "https://cida-africa.org/",
-    "feed_urls": [
-      "https://cida-africa.org/",
-      "https://cida-africa.org/news/"
-    ],
-    "category": "cyber_advisory",
-    "region_tag": "ZA",
-    "lat": -26.2041,
-    "lng": 28.0473,
-    "max_items": 80,
-    "include_keywords": [
-      "cyber",
-      "security",
-      "incident",
-      "resilience",
-      "capacity",
-      "training",
-      "civil society"
-    ],
-    "exclude_keywords": [
-      "privacy policy",
-      "terms",
-      "donate"
-    ],
-    "reporting": {
-      "label": "Contact CIDA Africa",
-      "url": "https://cida-africa.org/contact/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "digital-society-africa",
-      "authority_name": "Digital Society of Africa",
-      "country": "Kenya",
-      "country_code": "KE",
-      "region": "Africa",
-      "authority_type": "public_safety_program",
-      "base_url": "https://digitalsociety.africa"
-    },
-    "feed_url": "https://digitalsociety.africa/",
-    "feed_urls": [
-      "https://digitalsociety.africa/",
-      "https://digitalsociety.africa/blog/"
-    ],
-    "category": "cyber_advisory",
-    "region_tag": "KE",
-    "lat": -1.2864,
-    "lng": 36.8172,
-    "max_items": 80,
-    "include_keywords": [
-      "digital security",
-      "cyber",
-      "safety",
-      "threat",
-      "awareness",
-      "training",
-      "response"
-    ],
-    "exclude_keywords": [
-      "about us",
-      "privacy policy",
-      "terms"
-    ],
-    "reporting": {
-      "label": "Contact Digital Society Africa",
-      "url": "https://digitalsociety.africa/contact/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "resilio-africa",
-      "authority_name": "Resilio Africa",
-      "country": "Nigeria",
-      "country_code": "NG",
-      "region": "Africa",
-      "authority_type": "public_safety_program",
-      "base_url": "https://resilio.cybersafefoundation.org"
-    },
-    "feed_url": "https://resilio.cybersafefoundation.org/",
-    "category": "cyber_advisory",
-    "region_tag": "NG",
-    "lat": 9.082,
-    "lng": 8.6753,
-    "max_items": 80,
-    "include_keywords": [
-      "cyber",
-      "resilience",
-      "program",
-      "community",
-      "security",
-      "incident",
-      "capacity"
-    ],
-    "exclude_keywords": [
-      "privacy",
-      "terms"
-    ],
-    "reporting": {
-      "label": "Contact Resilio Africa",
-      "url": "https://resilio.cybersafefoundation.org/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "derechos-digitales-latam",
-      "authority_name": "Derechos Digitales",
-      "country": "Chile",
-      "country_code": "CL",
-      "region": "South America",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.derechosdigitales.org"
-    },
-    "feed_url": "https://www.derechosdigitales.org/noticias/",
-    "feed_urls": [
-      "https://www.derechosdigitales.org/noticias/",
-      "https://www.derechosdigitales.org/categoria/seguridad-digital/"
-    ],
-    "category": "cyber_advisory",
-    "region_tag": "CL",
-    "lat": -33.4489,
-    "lng": -70.6693,
-    "max_items": 100,
-    "include_keywords": [
-      "seguridad digital",
-      "resiliencia",
-      "proteccion",
-      "ciber",
-      "sociedad civil",
-      "amenaza"
-    ],
-    "exclude_keywords": [
-      "donar",
-      "newsletter",
-      "equipo"
-    ],
-    "reporting": {
-      "label": "Contact Derechos Digitales",
-      "url": "https://www.derechosdigitales.org/contacto/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "tedic-paraguay",
-      "authority_name": "TEDIC Paraguay",
-      "country": "Paraguay",
-      "country_code": "PY",
-      "region": "South America",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.tedic.org"
-    },
-    "feed_url": "https://www.tedic.org/noticias/",
-    "feed_urls": [
-      "https://www.tedic.org/noticias/",
-      "https://www.tedic.org/tag/seguridad-digital/"
-    ],
-    "category": "cyber_advisory",
-    "region_tag": "PY",
-    "lat": -25.2637,
-    "lng": -57.5759,
-    "max_items": 100,
-    "include_keywords": [
-      "seguridad digital",
-      "ciber",
-      "proteccion",
-      "sociedad civil",
-      "capacitacion",
-      "riesgo"
-    ],
-    "exclude_keywords": [
-      "donar",
-      "equipo",
-      "convocatoria laboral"
-    ],
-    "reporting": {
-      "label": "Contact TEDIC",
-      "url": "https://www.tedic.org/contacto/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "karisma-colombia",
-      "authority_name": "Fundacion Karisma",
-      "country": "Colombia",
-      "country_code": "CO",
-      "region": "South America",
-      "authority_type": "public_safety_program",
-      "base_url": "https://web.karisma.org.co"
-    },
-    "feed_url": "https://web.karisma.org.co/blog/",
-    "feed_urls": [
-      "https://web.karisma.org.co/blog/",
-      "https://web.karisma.org.co/tag/seguridad-digital/"
-    ],
-    "category": "cyber_advisory",
-    "region_tag": "CO",
-    "lat": 4.711,
-    "lng": -74.0721,
-    "max_items": 100,
-    "include_keywords": [
-      "seguridad digital",
-      "ciberseguridad",
-      "proteccion",
-      "organizaciones",
-      "amenaza",
-      "riesgo"
-    ],
-    "exclude_keywords": [
-      "donaciones",
-      "equipo",
-      "vacante"
-    ],
-    "reporting": {
-      "label": "Contact Fundacion Karisma",
-      "url": "https://web.karisma.org.co/contacto/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "unicef-giga",
-      "authority_name": "UNICEF Giga",
-      "country": "Global",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "public_safety_program",
-      "base_url": "https://giga.global"
-    },
-    "feed_url": "https://giga.global/",
-    "feed_urls": [
-      "https://giga.global/",
-      "https://giga.global/insights/",
-      "https://giga.global/projects/"
-    ],
-    "category": "education_digital_capacity",
-    "region_tag": "INT",
-    "lat": 20,
-    "lng": 0,
-    "max_items": 100,
-    "include_keywords": [
-      "school connectivity",
-      "internet",
-      "digital divide",
-      "schools",
-      "education",
-      "mapping"
-    ],
-    "exclude_keywords": [
-      "privacy policy",
-      "terms",
-      "careers"
-    ],
-    "reporting": {
-      "label": "UNICEF Giga Opportunities",
-      "url": "https://giga.global/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "itu-digital-capacity",
-      "authority_name": "ITU Digital Development",
-      "country": "Global",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "regulatory",
-      "base_url": "https://www.itu.int"
-    },
-    "feed_url": "https://www.itu.int/en/ITU-D/Pages/default.aspx",
-    "feed_urls": [
-      "https://www.itu.int/en/ITU-D/Pages/default.aspx",
-      "https://www.itu.int/hub/category/bridging-the-digital-divide/",
-      "https://www.itu.int/hub/category/cybersecurity/"
-    ],
-    "category": "education_digital_capacity",
-    "region_tag": "INT",
-    "lat": 20,
-    "lng": 0,
-    "max_items": 120,
-    "include_keywords": [
-      "digital skills",
-      "capacity",
-      "connectivity",
-      "cyber capacity",
-      "education",
-      "training"
-    ],
-    "exclude_keywords": [
-      "meeting calendar",
-      "press release"
-    ],
-    "reporting": {
-      "label": "ITU Development Programs",
-      "url": "https://www.itu.int/en/ITU-D/Pages/default.aspx"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "worldbank-education-digital",
-      "authority_name": "World Bank Education Digital",
-      "country": "Global",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "regulatory",
-      "base_url": "https://www.worldbank.org"
-    },
-    "feed_url": "https://www.worldbank.org/en/topic/education",
-    "feed_urls": [
-      "https://www.worldbank.org/en/topic/education",
-      "https://www.worldbank.org/en/topic/digitaldevelopment"
-    ],
-    "category": "education_digital_capacity",
-    "region_tag": "INT",
-    "lat": 20,
-    "lng": 0,
-    "max_items": 120,
-    "include_keywords": [
-      "education",
-      "digital",
-      "school",
-      "ICT",
-      "skills",
-      "capacity building"
-    ],
-    "exclude_keywords": [
-      "annual report",
-      "procurement policy"
-    ],
-    "reporting": {
-      "label": "World Bank Education Programs",
-      "url": "https://www.worldbank.org/en/topic/education"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "africa-code-week",
-      "authority_name": "Africa Code Week",
-      "country": "Africa",
-      "country_code": "AFR",
-      "region": "Africa",
-      "authority_type": "public_safety_program",
-      "base_url": "https://africacodeweek.org"
-    },
-    "feed_url": "https://africacodeweek.org/",
-    "feed_urls": [
-      "https://africacodeweek.org/",
-      "https://africacodeweek.org/news/"
-    ],
-    "category": "education_digital_capacity",
-    "region_tag": "AFR",
-    "lat": 1.65,
-    "lng": 17,
-    "max_items": 100,
-    "include_keywords": [
-      "mentor",
-      "teacher",
-      "volunteer",
-      "digital literacy",
-      "coding",
-      "training"
-    ],
-    "exclude_keywords": [
-      "privacy",
-      "terms",
-      "sponsor package"
-    ],
-    "reporting": {
-      "label": "Join Africa Code Week",
-      "url": "https://africacodeweek.org/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "dot-digital-opportunity-trust",
-      "authority_name": "Digital Opportunity Trust",
-      "country": "Global",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.dotrust.org"
-    },
-    "feed_url": "https://www.dotrust.org/",
-    "feed_urls": [
-      "https://www.dotrust.org/",
-      "https://www.dotrust.org/news/"
-    ],
-    "category": "education_digital_capacity",
-    "region_tag": "INT",
-    "lat": 20,
-    "lng": 0,
-    "max_items": 100,
-    "include_keywords": [
-      "digital skills",
-      "training",
-      "youth",
-      "employment",
-      "mentor",
-      "capacity"
-    ],
-    "exclude_keywords": [
-      "donate",
-      "annual report"
-    ],
-    "reporting": {
-      "label": "DOT Programs and Partnerships",
-      "url": "https://www.dotrust.org/"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "european-schoolnet",
-      "authority_name": "European Schoolnet",
-      "country": "Europe",
-      "country_code": "EU",
+      "source_id": "bsi-certbund",
+      "authority_name": "CERT-Bund",
+      "country": "Germany",
+      "country_code": "DE",
       "region": "Europe",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.eun.org"
+      "authority_type": "cert",
+      "base_url": "https://www.bsi.bund.de"
     },
-    "feed_url": "https://www.eun.org/",
+    "feed_url": "https://wid.cert-bund.de/content/public/securityAdvisory/rss",
+    "category": "cyber_advisory",
+    "region_tag": "DE",
+    "lat": 50.73,
+    "lng": 7.1,
+    "reporting": {
+      "label": "Report to BSI",
+      "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bsi-csw",
+      "authority_name": "BSI Cyber-Sicherheitswarnungen",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.bsi.bund.de"
+    },
+    "feed_url": "https://www.bsi.bund.de/SiteGlobals/Functions/RSSFeed/RSSNewsfeed/RSSNewsfeed_CSW.xml",
+    "category": "cyber_advisory",
+    "region_tag": "DE",
+    "lat": 50.73,
+    "lng": 7.09,
+    "reporting": {
+      "label": "Report to BSI",
+      "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bsi-kritis",
+      "authority_name": "BSI KRITIS",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.bsi.bund.de"
+    },
+    "feed_url": "https://www.bsi.bund.de/SiteGlobals/Functions/RSSFeed/RSSNewsfeed/RSSNewsfeed_KRITIS-aktuell.xml",
+    "category": "cyber_advisory",
+    "region_tag": "DE",
+    "lat": 50.74,
+    "lng": 7.1,
+    "reporting": {
+      "label": "Report to BSI",
+      "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bsi-nesas",
+      "authority_name": "BSI NESAS",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.bsi.bund.de"
+    },
+    "feed_url": "https://www.bsi.bund.de/SiteGlobals/Functions/RSSFeed/RSSNewsfeed/RSSNewsfeed_NESAS.xml",
+    "category": "cyber_advisory",
+    "region_tag": "DE",
+    "lat": 50.72,
+    "lng": 7.1,
+    "reporting": {
+      "label": "Report to BSI",
+      "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bsi-buergercert",
+      "authority_name": "BSI Bürger-CERT",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.bsi.bund.de"
+    },
+    "feed_url": "https://wid.cert-bund.de/content/public/buergercert/rss",
+    "category": "cyber_advisory",
+    "region_tag": "DE",
+    "lat": 50.74,
+    "lng": 7.09,
+    "reporting": {
+      "label": "Report to BSI",
+      "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "sans-isc",
+      "authority_name": "SANS Internet Storm Center",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "cert",
+      "base_url": "https://isc.sans.edu"
+    },
+    "feed_url": "https://isc.sans.edu/rssfeed.xml",
+    "category": "cyber_advisory",
+    "region_tag": "US",
+    "lat": 38.95,
+    "lng": -77.35,
+    "reporting": {
+      "label": "Report to SANS ISC",
+      "url": "https://isc.sans.edu/contact.html"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cert-at",
+      "authority_name": "CERT.at",
+      "country": "Austria",
+      "country_code": "AT",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://cert.at"
+    },
+    "feed_url": "https://www.cert.at/cert-at.de.warnings.rss_2.0.xml",
+    "category": "cyber_advisory",
+    "region_tag": "AT",
+    "lat": 48.21,
+    "lng": 16.37,
+    "reporting": {
+      "label": "Report to CERT.at",
+      "url": "https://cert.at/de/melden"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ccn-cert-es",
+      "authority_name": "CCN-CERT Spain",
+      "country": "Spain",
+      "country_code": "ES",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.ccn-cert.cni.es"
+    },
+    "feed_url": "https://www.ccn-cert.cni.es/es/seguridad-al-dia/alertas-ccn-cert.html?format=feed&type=rss",
+    "category": "cyber_advisory",
+    "region_tag": "ES",
+    "lat": 40.42,
+    "lng": -3.7,
+    "reporting": {
+      "label": "Report to CCN-CERT",
+      "url": "https://www.ccn-cert.cni.es/es/comunicacion-eventos/contacto.html"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cert-se",
+      "authority_name": "CERT-SE",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.se"
+    },
+    "feed_url": "https://www.cert.se/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "SE",
+    "lat": 59.33,
+    "lng": 18.07,
+    "reporting": {
+      "label": "Report to CERT-SE",
+      "url": "https://www.cert.se/om-cert-se/rapportera-en-incident/"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cert-pl",
+      "authority_name": "CERT.PL",
+      "country": "Poland",
+      "country_code": "PL",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://cert.pl"
+    },
+    "feed_url": "https://cert.pl/en/rss.xml",
+    "category": "cyber_advisory",
+    "region_tag": "PL",
+    "lat": 52.23,
+    "lng": 21.01,
+    "reporting": {
+      "label": "Report to CERT.PL",
+      "url": "https://incydent.cert.pl/"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cert-lv",
+      "authority_name": "CERT.LV",
+      "country": "Latvia",
+      "country_code": "LV",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.lv"
+    },
+    "feed_url": "https://www.cert.lv/en/rss/news.xml",
+    "category": "cyber_advisory",
+    "region_tag": "LV",
+    "lat": 56.95,
+    "lng": 24.11,
+    "reporting": {
+      "label": "Report to CERT.LV",
+      "url": "https://www.cert.lv/en/report"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cert-hr",
+      "authority_name": "CERT.hr",
+      "country": "Croatia",
+      "country_code": "HR",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.hr"
+    },
+    "feed_url": "https://www.cert.hr/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "HR",
+    "lat": 45.81,
+    "lng": 15.98,
+    "reporting": {
+      "label": "Report to CERT.hr",
+      "url": "https://www.cert.hr/prijava-incidenta/"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "si-cert",
+      "authority_name": "SI-CERT",
+      "country": "Slovenia",
+      "country_code": "SI",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.si"
+    },
+    "feed_url": "https://www.cert.si/en/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "SI",
+    "lat": 46.06,
+    "lng": 14.51,
+    "reporting": {
+      "label": "Report to SI-CERT",
+      "url": "https://www.cert.si/en/report/"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dnsc-ro",
+      "authority_name": "DNSC Romania",
+      "country": "Romania",
+      "country_code": "RO",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://dnsc.ro"
+    },
+    "feed_url": "https://dnsc.ro/feed",
+    "category": "cyber_advisory",
+    "region_tag": "RO",
+    "lat": 44.43,
+    "lng": 26.1,
+    "reporting": {
+      "label": "Report to DNSC",
+      "url": "https://dnsc.ro/sesizare"
+    }
+  },
+  {
+    "type": "html-list",
+    "source": {
+      "source_id": "ncsc-ch",
+      "authority_name": "NCSC Switzerland",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.ncsc.admin.ch"
+    },
+    "feed_url": "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/aktuelle-vorfaelle.html",
+    "category": "cyber_advisory",
+    "region_tag": "CH",
+    "lat": 46.95,
+    "lng": 7.45,
+    "reporting": {
+      "label": "Report to NCSC",
+      "url": "https://www.ncsc.admin.ch/ncsc/en/home/infos-fuer/infos-it-spezialisten/themen/schwachstelle-melden.html"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "politi-dk",
+      "authority_name": "Danish Police",
+      "country": "Denmark",
+      "country_code": "DK",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://politi.dk"
+    },
+    "feed_url": "https://politi.dk/rss",
     "feed_urls": [
-      "https://www.eun.org/",
-      "https://www.eun.org/news"
+      "https://politi.dk/rss",
+      "https://politi.dk/nyheder/rss"
     ],
-    "category": "education_digital_capacity",
-    "region_tag": "EU",
+    "category": "public_appeal",
+    "region_tag": "DK",
+    "lat": 55.68,
+    "lng": 12.57,
+    "reporting": {
+      "label": "Report to Danish Police",
+      "url": "https://politi.dk/anmeld",
+      "phone": "114"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "poliisi-fi",
+      "authority_name": "Finnish Police",
+      "country": "Finland",
+      "country_code": "FI",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://poliisi.fi"
+    },
+    "feed_url": "https://poliisi.fi/en/rss/news",
+    "feed_urls": [
+      "https://poliisi.fi/en/rss/news",
+      "https://poliisi.fi/rss/uutiset"
+    ],
+    "category": "public_appeal",
+    "region_tag": "FI",
+    "lat": 60.17,
+    "lng": 24.94,
+    "reporting": {
+      "label": "Report to Finnish Police",
+      "url": "https://poliisi.fi/en/report-a-crime",
+      "phone": "112"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "garda-ie",
+      "authority_name": "An Garda Síochána",
+      "country": "Ireland",
+      "country_code": "IE",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.garda.ie"
+    },
+    "feed_url": "https://www.garda.ie/en/about-us/our-departments/office-of-corporate-communications/press-releases/",
+    "category": "public_appeal",
+    "region_tag": "IE",
+    "lat": 53.34,
+    "lng": -6.26,
+    "reporting": {
+      "label": "Report to An Garda Síochána",
+      "url": "https://www.garda.ie/en/contact-us/",
+      "phone": "999 / 112"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "federale-politie-be",
+      "authority_name": "Belgian Federal Police",
+      "country": "Belgium",
+      "country_code": "BE",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.police.be"
+    },
+    "feed_url": "https://www.police.be/feeds/rss",
+    "feed_urls": [
+      "https://www.police.be/feeds/rss",
+      "https://www.politie.be/feeds/rss"
+    ],
+    "category": "public_appeal",
+    "region_tag": "BE",
     "lat": 50.85,
     "lng": 4.35,
-    "max_items": 100,
-    "include_keywords": [
-      "digital education",
-      "teacher training",
-      "skills",
-      "school",
-      "capacity"
-    ],
-    "exclude_keywords": [
-      "privacy policy",
-      "cookie policy"
-    ],
     "reporting": {
-      "label": "European Schoolnet Initiatives",
-      "url": "https://www.eun.org/"
+      "label": "Report to Belgian Police",
+      "url": "https://www.police.be/fr/contact",
+      "phone": "101 / 112"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "pj-pt",
+      "authority_name": "Polícia Judiciária",
+      "country": "Portugal",
+      "country_code": "PT",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.policiajudiciaria.pt"
+    },
+    "feed_url": "https://www.policiajudiciaria.pt/feed/",
+    "category": "public_appeal",
+    "region_tag": "PT",
+    "lat": 38.72,
+    "lng": -9.14,
+    "reporting": {
+      "label": "Report to PJ",
+      "url": "https://www.policiajudiciaria.pt/contactos/",
+      "phone": "112"
+    }
+  },
+  {
+    "type": "html-list",
+    "source": {
+      "source_id": "cert-ee",
+      "authority_name": "CERT-EE",
+      "country": "Estonia",
+      "country_code": "EE",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.ria.ee"
+    },
+    "feed_url": "https://www.ria.ee/kuberturvalisus/kuberintsidentide-kasitlemine-cert-ee",
+    "category": "cyber_advisory",
+    "region_tag": "EE",
+    "lat": 59.44,
+    "lng": 24.75,
+    "reporting": {
+      "label": "Report to CERT-EE",
+      "url": "https://www.ria.ee/en/cyber-security/cert-ee/reporting-incident"
+    }
+  },
+  {
+    "type": "html-list",
+    "source": {
+      "source_id": "nksc-lt",
+      "authority_name": "NKSC Lithuania",
+      "country": "Lithuania",
+      "country_code": "LT",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.nksc.lt"
+    },
+    "feed_url": "https://www.nksc.lt/en/threats.html",
+    "category": "cyber_advisory",
+    "region_tag": "LT",
+    "lat": 54.69,
+    "lng": 25.28,
+    "reporting": {
+      "label": "Report to NKSC",
+      "url": "https://www.nksc.lt/en/report.html"
+    }
+  },
+  {
+    "type": "html-list",
+    "source": {
+      "source_id": "ncsa-gr",
+      "authority_name": "NCSA Greece",
+      "country": "Greece",
+      "country_code": "GR",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.nis.gr"
+    },
+    "feed_url": "https://www.nis.gr/el/national-cert/",
+    "category": "cyber_advisory",
+    "region_tag": "GR",
+    "lat": 37.98,
+    "lng": 23.73,
+    "reporting": {
+      "label": "Report to NCSA Greece",
+      "url": "https://www.nis.gr/el/contact/"
+    }
+  },
+  {
+    "type": "html-list",
+    "source": {
+      "source_id": "govcert-bg",
+      "authority_name": "GovCERT Bulgaria",
+      "country": "Bulgaria",
+      "country_code": "BG",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.govcert.bg"
+    },
+    "feed_url": "https://www.govcert.bg/",
+    "category": "cyber_advisory",
+    "region_tag": "BG",
+    "lat": 42.7,
+    "lng": 23.32,
+    "reporting": {
+      "label": "Report to GovCERT.bg",
+      "url": "https://www.govcert.bg/"
+    }
+  },
+  {
+    "type": "travelwarning-json",
+    "source": {
+      "source_id": "de-aa-travel",
+      "authority_name": "German Federal Foreign Office",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.auswaertiges-amt.de"
+    },
+    "feed_url": "https://www.auswaertiges-amt.de/opendata/travelwarning",
+    "category": "travel_warning",
+    "region_tag": "DE",
+    "lat": 52.52,
+    "lng": 13.405,
+    "reporting": {
+      "label": "German Federal Foreign Office",
+      "url": "https://www.auswaertiges-amt.de/en/aussenpolitik/laenderinformationen",
+      "notes": "Travel and safety information for German citizens abroad."
+    }
+  },
+  {
+    "type": "travelwarning-atom",
+    "source": {
+      "source_id": "uk-fcdo-travel",
+      "authority_name": "UK FCDO Travel Advice",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.gov.uk"
+    },
+    "feed_url": "https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom",
+    "category": "travel_warning",
+    "region_tag": "GB",
+    "lat": 51.5074,
+    "lng": -0.1278,
+    "reporting": {
+      "label": "UK FCDO Travel Advice",
+      "url": "https://www.gov.uk/foreign-travel-advice",
+      "notes": "Travel advice and safety information for British nationals."
     }
   },
   {
     "type": "html-list",
     "followRedirects": true,
     "source": {
-      "source_id": "erasmus-plus-digital",
-      "authority_name": "Erasmus+ Digital Education",
-      "country": "Europe",
-      "country_code": "EU",
-      "region": "Europe",
-      "authority_type": "regulatory",
-      "base_url": "https://erasmus-plus.ec.europa.eu"
+      "source_id": "us-state-travel",
+      "authority_name": "US State Dept Travel Advisories",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://travel.state.gov"
     },
-    "feed_url": "https://erasmus-plus.ec.europa.eu/",
-    "feed_urls": [
-      "https://erasmus-plus.ec.europa.eu/",
-      "https://erasmus-plus.ec.europa.eu/opportunities"
-    ],
-    "category": "education_digital_capacity",
-    "region_tag": "EU",
-    "lat": 50.85,
-    "lng": 4.35,
-    "max_items": 120,
+    "feed_url": "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html",
+    "category": "travel_warning",
+    "region_tag": "US",
+    "lat": 38.9,
+    "lng": -77.05,
     "include_keywords": [
-      "digital",
-      "education",
-      "training",
-      "call",
-      "project",
-      "skills"
-    ],
-    "exclude_keywords": [
-      "about",
-      "legal notice"
+      "travel advisory",
+      "level",
+      "do not travel",
+      "reconsider",
+      "exercise caution"
     ],
     "reporting": {
-      "label": "Erasmus+ Opportunities",
-      "url": "https://erasmus-plus.ec.europa.eu/opportunities"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "coe-education-digital",
-      "authority_name": "Council of Europe Education",
-      "country": "Europe",
-      "country_code": "EU",
-      "region": "Europe",
-      "authority_type": "regulatory",
-      "base_url": "https://www.coe.int"
-    },
-    "feed_url": "https://www.coe.int/en/web/education",
-    "feed_urls": [
-      "https://www.coe.int/en/web/education",
-      "https://www.coe.int/en/web/digital-citizenship-education"
-    ],
-    "category": "education_digital_capacity",
-    "region_tag": "EU",
-    "lat": 48.58,
-    "lng": 7.75,
-    "max_items": 100,
-    "include_keywords": [
-      "digital citizenship",
-      "education",
-      "training",
-      "school",
-      "online safety"
-    ],
-    "exclude_keywords": [
-      "press room",
-      "vacancy"
-    ],
-    "reporting": {
-      "label": "Council of Europe Education Programs",
-      "url": "https://www.coe.int/en/web/education"
+      "label": "US State Department Travel Advisories",
+      "url": "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html",
+      "notes": "Travel advisories for US citizens abroad."
     }
   }
 ]

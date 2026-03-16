@@ -49,6 +49,13 @@ var (
 		regexp.MustCompile(`(?i)\b(?:ceremony|speech|statement|newsletter|weekly roundup)\b`),
 		regexp.MustCompile(`(?i)\b(?:partnership|memorandum|mou|initiative|campaign)\b`),
 	}
+	certificationPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(?:certification|certifi(?:ed|cate)|accreditation|compliance audit|standard(?:s)?)\b`),
+		regexp.MustCompile(`(?i)\b(?:NESAS|common criteria|ISO[\s-]?27001|ISO[\s-]?15408|ITSEC|protection profile)\b`),
+		regexp.MustCompile(`(?i)\b(?:evaluation|scheme|approval|conformity|audit report|test report)\b`),
+		regexp.MustCompile(`(?i)\b(?:product certification|vendor certification|zertifizierung|anerkennung)\b`),
+		regexp.MustCompile(`(?i)\b(?:training|course|curriculum|e-learning|online.?training|skill|qualification)\b`),
+	}
 	securityContextPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:cyber|cybersecurity|infosec|information security|it security)\b`),
 		regexp.MustCompile(`(?i)\b(?:security posture|security controls?|threat intelligence)\b`),
@@ -192,6 +199,40 @@ func InterpolAlert(ctx Context, meta model.RegistrySource, title string, link st
 	return &alert
 }
 
+func TravelWarningAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
+	publishedAt := parseDate(item.Published)
+	if publishedAt.IsZero() {
+		publishedAt = ctx.Now
+	}
+	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
+		return nil
+	}
+	alert := baseAlert(ctx, meta, item.Title, item.Link, publishedAt)
+	alert.Severity = inferTravelWarningSeverity(item.Title, item.Summary, item.Tags)
+	triage := score(ctx.Config, alert, FeedContext{
+		Summary:  item.Summary,
+		Author:   item.Author,
+		Tags:     item.Tags,
+		FeedType: meta.Type,
+	})
+	alert.Triage = triage
+	return &alert
+}
+
+func inferTravelWarningSeverity(title, summary string, tags []string) string {
+	text := strings.ToLower(title + " " + summary + " " + strings.Join(tags, " "))
+	switch {
+	case containsAny(text, "do not travel", "reisewarnung", "advise against all travel", "level 4"):
+		return "critical"
+	case containsAny(text, "reconsider travel", "avoid non-essential travel", "advise against all but essential travel", "level 3", "teilreisewarnung"):
+		return "high"
+	case containsAny(text, "exercise increased caution", "exercise a high degree of caution", "level 2"):
+		return "medium"
+	default:
+		return "medium"
+	}
+}
+
 func StaticInterpolEntry(now time.Time) model.Alert {
 	return model.Alert{
 		AlertID:        "interpol-hub-static",
@@ -278,6 +319,8 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 		add(0.07, "education and digital capacity category")
 	case "fraud_alert":
 		add(0.07, "fraud incident category")
+	case "travel_warning":
+		add(0.08, "travel warning category")
 	}
 
 	hasTechnical := hasAny(text, technicalSignalPatterns)
@@ -286,6 +329,7 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 	hasSpecificImpact := hasAny(text, impactSpecificityPatterns)
 	hasNarrative := hasAny(text, narrativePatterns)
 	hasGeneral := hasAny(text, generalNewsPatterns)
+	hasCertification := hasAny(text, certificationPatterns)
 	looksLikeBlog := isBlog(alert)
 
 	if hasTechnical {
@@ -308,6 +352,9 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 	}
 	if looksLikeBlog {
 		add(-0.10, "blog-style structure")
+	}
+	if hasCertification && !hasIncident && !hasTechnical {
+		add(-0.22, "certification/training/standards content")
 	}
 	if !hasTechnical && !hasIncident && (hasNarrative || hasGeneral) {
 		add(-0.08, "weak incident evidence relative to narrative cues")
@@ -376,6 +423,8 @@ func defaultSeverity(category string) string {
 		return "critical"
 	case "public_appeal", "humanitarian_tasking", "humanitarian_security", "private_sector":
 		return "high"
+	case "travel_warning":
+		return "high"
 	default:
 		return "medium"
 	}
@@ -384,9 +433,9 @@ func defaultSeverity(category string) string {
 func inferSeverity(title string, fallback string) string {
 	t := strings.ToLower(title)
 	switch {
-	case containsAny(t, "critical", "emergency", "zero-day", "0-day", "ransomware", "actively exploited", "exploitation", "breach", "data leak", "crypto heist", "million stolen", "wanted", "fugitive", "murder", "homicide", "missing", "amber alert", "kidnap"):
+	case containsAny(t, "critical", "emergency", "zero-day", "0-day", "ransomware", "actively exploited", "exploitation", "breach", "data leak", "crypto heist", "million stolen", "wanted", "fugitive", "murder", "homicide", "missing", "amber alert", "kidnap", "do not travel"):
 		return "critical"
-	case containsAny(t, "hack", "compromise", "vulnerability", "high", "severe", "urgent", "fatal", "death", "shooting", "fraud", "scam", "phishing"):
+	case containsAny(t, "hack", "compromise", "vulnerability", "high", "severe", "urgent", "fatal", "death", "shooting", "fraud", "scam", "phishing", "reconsider travel", "avoid non-essential travel"):
 		return "high"
 	case containsAny(t, "arrested", "charged", "sentenced", "medium", "moderate"):
 		return "medium"
@@ -441,6 +490,9 @@ func inferPublicationType(alert model.Alert, feedType string) string {
 	}
 	if feedType == "kev-json" || feedType == "interpol-red-json" || feedType == "interpol-yellow-json" {
 		return "structured_incident_feed"
+	}
+	if feedType == "travelwarning-json" || feedType == "travelwarning-atom" {
+		return "official_update"
 	}
 	return "official_update"
 }

@@ -19,7 +19,8 @@ export type AlertCategory =
   | "terrorism_tip"
   | "fraud_alert"
   | "public_safety"
-  | "private_sector";
+  | "private_sector"
+  | "travel_warning";
 export type AuthorityType =
   | "police"
   | "national_security"
