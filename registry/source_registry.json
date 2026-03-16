@@ -2106,6 +2106,8 @@
   },
   {
     "type": "html-list",
+    "promotion_status": "rejected",
+    "rejection_reason": "ACLED has no RSS feed; html-list scrape only captures navigation links, not conflict data. Requires authenticated API access.",
     "followRedirects": true,
     "source": {
       "source_id": "acled-conflict-monitor",
@@ -3019,7 +3021,7 @@
       "authority_type": "public_safety_program",
       "base_url": "https://www.sipri.org"
     },
-    "feed_url": "https://www.sipri.org/rss.xml",
+    "feed_url": "https://www.sipri.org/rss/combined.xml",
     "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 59.35,
@@ -3491,6 +3493,8 @@
   },
   {
     "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "NATO removed all public RSS feeds; only email newsletters available now",
     "source": {
       "source_id": "nato-news",
       "authority_name": "NATO News",
@@ -3517,7 +3521,7 @@
       "authority_type": "national_security",
       "base_url": "https://www.un.org"
     },
-    "feed_url": "https://press.un.org/en/un-press-releases/security-council/rss.xml",
+    "feed_url": "https://press.un.org/en/rss.xml",
     "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 40.75,
@@ -3525,6 +3529,8 @@
   },
   {
     "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "OSCE removed all public RSS feeds; redirects to email subscription",
     "source": {
       "source_id": "osce-news",
       "authority_name": "OSCE Press Releases",
