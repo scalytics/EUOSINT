@@ -14,7 +14,9 @@ import { useAlerts } from "@/hooks/useAlerts";
 import { useSearch } from "@/hooks/useSearch";
 import { useSourceHealth } from "@/hooks/useSourceHealth";
 import { alertMatchesRegionFilter } from "@/lib/regions";
-import type { AlertCategory } from "@/types/alert";
+import type { AlertCategory, Severity } from "@/types/alert";
+
+type SeverityFilter = Severity | null;
 
 const SOURCE_SELECTION_COOKIE = "euosint_selected_sources";
 
@@ -48,6 +50,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<AlertCategory | "all">("all");
+  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>(null);
   const [regionFilter, setRegionFilter] = useState<string>("Europe");
   const { query: searchQuery, setQuery: setSearchQuery, results: searchResults, isApiAvailable } = useSearch();
   const [visibleAlertIds, setVisibleAlertIds] = useState<string[]>([]);
@@ -124,8 +127,11 @@ export default function App() {
     if (categoryFilter !== "all") {
       filtered = filtered.filter((alert) => alert.category === categoryFilter);
     }
+    if (severityFilter) {
+      filtered = filtered.filter((alert) => alert.severity === severityFilter);
+    }
     return filtered;
-  }, [categoryFilter, regionScopedAlerts, selectedSourceIds]);
+  }, [categoryFilter, regionScopedAlerts, selectedSourceIds, severityFilter]);
 
   const handleCountrySelect = useCallback((countryCode: string) => {
     const nextRegion = `country:${countryCode}`;
@@ -207,6 +213,8 @@ export default function App() {
             onSelectCategory={setCategoryFilter}
             regionFilter={regionFilter}
             onSelectCountry={handleCountrySelect}
+            severityFilter={severityFilter}
+            onSeverityFilterChange={setSeverityFilter}
           />
         </div>
 
