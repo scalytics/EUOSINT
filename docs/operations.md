@@ -74,6 +74,7 @@ If the VM only has `docker-compose`, adjust the unit commands accordingly.
 ## Operational Notes
 
 - The collector writes feed output into the `feed-data` volume shared with the web container.
+- The UI footer freshness line is derived from `source-health.json.generated_at` and shows the age of the current collector snapshot. It is normal below 20 minutes, warning from 20 to 60 minutes, and stale above 60 minutes.
 - Discovery intake lives in [registry/source_candidates.json](/Users/alo/Development/scalytics/EUOSINT/registry/source_candidates.json).
 - Dead sources are written to the terminal DLQ in `source_dead_letter.json` and are not crawled again.
 - LLM-assisted source vetting is documented in [docs/source-vetting.md](/Users/alo/Development/scalytics/EUOSINT/docs/source-vetting.md).

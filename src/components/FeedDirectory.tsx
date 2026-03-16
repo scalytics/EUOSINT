@@ -4,14 +4,13 @@
  * See NOTICE for provenance and LICENSE for repository-local terms.
  */
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
   Globe2,
   Radar,
   ShieldAlert,
-  Siren,
   TrendingUp,
 } from "lucide-react";
 import type { Alert, AlertCategory } from "@/types/alert";
@@ -46,6 +45,12 @@ export function FeedDirectory({
   onSelectCountry,
 }: Props) {
   const sources = sourceHealth?.sources ?? [];
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   /* ── Region-scoped alerts ──────────────────────────────────────── */
 
@@ -104,10 +109,32 @@ export function FeedDirectory({
     onSelectSourceIdsChange([...selectedSourceIds, sourceId]);
   };
 
-  const feedErrors = useMemo(
-    () => sources.filter((s) => s.status === "error"),
-    [sources],
-  );
+  const snapshotStatus = useMemo(() => {
+    const generatedAt = sourceHealth?.generated_at?.trim();
+    if (!generatedAt) {
+      return null;
+    }
+    const ts = Date.parse(generatedAt);
+    if (Number.isNaN(ts)) {
+      return null;
+    }
+    const ageMinutes = Math.max(0, Math.floor((now - ts) / 60_000));
+    const tone =
+      ageMinutes > 60 ? "text-rose-300" : ageMinutes >= 20 ? "text-amber-300" : "text-siem-muted";
+    const relative =
+      ageMinutes < 1 ? "just now" : ageMinutes === 1 ? "1 min old" : `${ageMinutes} min old`;
+    const exact = new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "UTC",
+      timeZoneName: "short",
+      hour12: false,
+    }).format(new Date(ts));
+    return { tone, relative, exact };
+  }, [now, sourceHealth?.generated_at]);
 
   if (isLoading && !sourceHealth && regionAlerts.length === 0) {
     return (
@@ -159,17 +186,13 @@ export function FeedDirectory({
           </div>
           <div className="rounded-xl border border-siem-border bg-siem-panel-strong px-3 py-2.5">
             <div className="flex items-center gap-2">
-              {feedErrors.length > 0 ? (
-                <Siren size={13} className="text-rose-300" />
-              ) : (
-                <Activity size={13} className="text-emerald-300" />
-              )}
+              <Activity size={13} className="text-emerald-300" />
               <span className="text-lg font-semibold text-siem-text">
                 {sourceHealth?.sources_ok ?? 0}/{sourceHealth?.total_sources ?? 0}
               </span>
             </div>
             <div className="text-[10px] uppercase tracking-[0.16em] text-siem-muted">
-              Feeds OK{feedErrors.length > 0 ? ` (${feedErrors.length} err)` : ""}
+              Feeds OK
             </div>
           </div>
         </div>
@@ -274,31 +297,18 @@ export function FeedDirectory({
           </div>
         </div>
 
-        {/* ── Feed errors (if any) ────────────────────────────────── */}
-        {feedErrors.length > 0 && (
-          <div className="rounded-xl border border-rose-500/25 bg-rose-500/8 px-3 py-3">
-            <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-rose-300">
-              <Siren size={11} />
-              Feed errors ({feedErrors.length})
-            </div>
-            <div className="space-y-1.5 max-h-40 overflow-y-auto">
-              {feedErrors.slice(0, 15).map((entry) => (
-                <div key={entry.source_id} className="text-[11px]">
-                  <div className="text-siem-text truncate">{entry.authority_name}</div>
-                  <div className="text-rose-200/60 truncate text-[10px]">
-                    {entry.error ?? "Unknown error"}
-                  </div>
-                </div>
-              ))}
-              {feedErrors.length > 15 && (
-                <div className="text-[10px] text-rose-200/50">
-                  +{feedErrors.length - 15} more errors
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+
+      {snapshotStatus && (
+        <div className="border-t border-siem-border/80 px-4 py-2.5">
+          <div className={`text-[10px] uppercase tracking-[0.16em] ${snapshotStatus.tone}`}>
+            Data snapshot: {snapshotStatus.relative}
+          </div>
+          <div className="mt-1 text-[11px] text-siem-muted">
+            Last collector update: {snapshotStatus.exact}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
