@@ -14,9 +14,9 @@ import { useAlerts } from "@/hooks/useAlerts";
 import { useSearch } from "@/hooks/useSearch";
 import { useSourceHealth } from "@/hooks/useSourceHealth";
 import { alertMatchesRegionFilter } from "@/lib/regions";
-import type { AlertCategory, Severity } from "@/types/alert";
+import type { AlertCategory } from "@/types/alert";
 
-type SeverityFilter = Severity | null;
+type SeverityFilter = "critical" | "high" | null;
 
 const SOURCE_SELECTION_COOKIE = "euosint_selected_sources";
 
