@@ -275,7 +275,7 @@ export default function App() {
       </div>
 
       <div className="flex items-center justify-between border-t border-siem-border bg-siem-panel/85 px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-siem-muted">
-        <span>Open Source Intelligence // World monitor</span>
+        <span>Scalytics OSINT // Open Source Intelligence Console</span>
         <span className="hidden md:inline">
           {selectedSourceIds.length > 0
             ? `Scoped to ${selectedSourceIds.length} feeds`
