@@ -41,6 +41,9 @@
   --color-cat-terrorism: #a34c4c;
   --color-cat-private: #8f6a46;
   --color-cat-travel: #c27a3a;
+  --color-cat-health: #4ca38c;
+  --color-cat-intel: #7a6eab;
+  --color-cat-emergency: #b85c4a;
 }
 
 * {

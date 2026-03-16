@@ -20,7 +20,10 @@ export type AlertCategory =
   | "fraud_alert"
   | "public_safety"
   | "private_sector"
-  | "travel_warning";
+  | "travel_warning"
+  | "health_emergency"
+  | "intelligence_report"
+  | "emergency_management";
 export type AuthorityType =
   | "police"
   | "national_security"

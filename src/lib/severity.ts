@@ -50,6 +50,9 @@ export const categoryLabels: Record<AlertCategory, string> = {
   public_safety: "Public Safety",
   private_sector: "Private Sector",
   travel_warning: "Travel Warning",
+  health_emergency: "Health Emergency",
+  intelligence_report: "Intelligence Report",
+  emergency_management: "Emergency Management",
 };
 
 export const categoryOrder: AlertCategory[] = [
@@ -67,6 +70,9 @@ export const categoryOrder: AlertCategory[] = [
   "public_safety",
   "terrorism_tip",
   "travel_warning",
+  "health_emergency",
+  "intelligence_report",
+  "emergency_management",
 ];
 
 /**
@@ -88,6 +94,9 @@ export const categoryBadge: Record<AlertCategory, string> = {
   terrorism_tip: "bg-cat-terrorism/15 text-cat-terrorism border-cat-terrorism/30",
   private_sector: "bg-cat-private/15 text-cat-private border-cat-private/30",
   travel_warning: "bg-cat-travel/15 text-cat-travel border-cat-travel/30",
+  health_emergency: "bg-cat-health/15 text-cat-health border-cat-health/30",
+  intelligence_report: "bg-cat-intel/15 text-cat-intel border-cat-intel/30",
+  emergency_management: "bg-cat-emergency/15 text-cat-emergency border-cat-emergency/30",
 };
 
 export const categoryIcons: Record<AlertCategory, string> = {
@@ -105,6 +114,9 @@ export const categoryIcons: Record<AlertCategory, string> = {
   public_safety: "Siren",
   private_sector: "Building",
   travel_warning: "Plane",
+  health_emergency: "HeartPulse",
+  intelligence_report: "Eye",
+  emergency_management: "Siren",
 };
 
 export function freshnessLabel(hours: number): string {
