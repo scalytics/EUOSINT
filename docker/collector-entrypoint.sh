@@ -29,4 +29,11 @@ if [ ! -f /data/sources.db ]; then
   fi
 fi
 
+# Always merge the baked-in JSON registry into the DB on startup.
+# MergeRegistry upserts only — it adds new sources and updates existing
+# ones but never deletes discovered or runtime-added sources.
+# This ensures new feeds (FBI API, travel warnings, etc.) from image
+# updates are picked up without manual intervention.
+euosint-collector --source-db /data/sources.db --curated-seed /app/registry/source_registry.json --source-db-merge-registry
+
 exec euosint-collector "$@"

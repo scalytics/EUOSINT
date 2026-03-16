@@ -598,9 +598,11 @@ func fetchWithFallbackURL(ctx context.Context, fetcher fetch.Fetcher, source mod
 		candidates = append(candidates, source.FeedURL)
 	}
 	candidates = append(candidates, source.FeedURLs...)
+	// Always follow redirects for feed fetches — 301/302/307 are normal
+	// for RSS/Atom feeds (HTTP→HTTPS, www→non-www, CDN routing, etc.).
 	var lastErr error
 	for _, candidate := range candidates {
-		body, err := fetcher.Text(ctx, candidate, source.FollowRedirects, accept)
+		body, err := fetcher.Text(ctx, candidate, true, accept)
 		if err == nil {
 			return body, candidate, nil
 		}
@@ -751,7 +753,9 @@ func classifySourceError(err error) (string, bool, string) {
 	case strings.Contains(msg, "status 404"), strings.Contains(msg, "status 410"):
 		return "not_found", true, "dead_letter"
 	case strings.Contains(msg, "status 301"), strings.Contains(msg, "status 302"), strings.Contains(msg, "status 307"), strings.Contains(msg, "status 308"):
-		return "redirect", true, "dead_letter"
+		// Redirects should be followed automatically — if we still see
+		// one here it means the chain exceeded 10 hops.
+		return "redirect", false, "retry"
 	case strings.Contains(msg, "status 403"):
 		return "blocked", true, "dead_letter"
 	case strings.Contains(msg, "response too large"):

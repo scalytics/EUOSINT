@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Globe2, Radar, Search, Shield, X } from "lucide-react";
 import type { Alert } from "@/types/alert";
+import { alertMatchesRegionFilter } from "@/lib/regions";
 
 type MenuView = "overview" | "feeds" | "authorities" | "health";
 
@@ -29,6 +30,7 @@ const REGIONS = [
   "North America",
   "South America",
   "Africa",
+  "Middle East",
   "Asia",
   "Oceania",
   "Caribbean",
@@ -354,7 +356,7 @@ function RegionSearch({
       value: r,
       label: r === "all" ? "All regions" : r,
       type: "region" as const,
-      count: r === "all" ? alerts.length : alerts.filter((a) => a.source.region === r).length,
+      count: r === "all" ? alerts.length : alerts.filter((a) => alertMatchesRegionFilter(a, r)).length,
     }));
 
     const countryMap = new Map<string, { country: string; code: string; count: number }>();
