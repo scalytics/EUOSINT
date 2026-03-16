@@ -181,15 +181,21 @@ func KEVAlert(ctx Context, meta model.RegistrySource, cveID string, vulnName str
 	return &alert
 }
 
-func InterpolAlert(ctx Context, meta model.RegistrySource, title string, link string, countryCode string, summary string, tags []string) *model.Alert {
+func InterpolAlert(ctx Context, meta model.RegistrySource, noticeID string, title string, link string, countryCode string, summary string, tags []string) *model.Alert {
 	if strings.TrimSpace(title) == "" {
 		return nil
 	}
 	alert := baseAlert(ctx, meta, title, firstNonEmpty(link, meta.Source.BaseURL), ctx.Now)
 	alert.Severity = "critical"
-	alert.RegionTag = firstNonEmpty(countryCode, alert.RegionTag)
-	if strings.TrimSpace(countryCode) != "" {
-		alert.Source.CountryCode = strings.ToUpper(strings.TrimSpace(countryCode))
+	if id := strings.TrimSpace(noticeID); id != "" {
+		alert.AlertID = meta.Source.SourceID + ":" + id
+	}
+	if code := normalizeCountryCode(countryCode); code != "" {
+		alert.RegionTag = code
+		alert.Source.CountryCode = code
+		if name := countryNameFromCode(code); name != "" {
+			alert.Source.Country = name
+		}
 	}
 	alert.Triage = score(ctx.Config, alert, FeedContext{
 		Summary:  summary,
@@ -276,6 +282,163 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		Lng:            lng,
 		FreshnessHours: hoursBetween(ctx.Now, publishedAt),
 		Reporting:      meta.Reporting,
+	}
+}
+
+func normalizeCountryCode(code string) string {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if len(code) == 2 {
+		return code
+	}
+	return ""
+}
+
+func countryNameFromCode(code string) string {
+	switch normalizeCountryCode(code) {
+	case "AF":
+		return "Afghanistan"
+	case "AL":
+		return "Albania"
+	case "AR":
+		return "Argentina"
+	case "AT":
+		return "Austria"
+	case "AU":
+		return "Australia"
+	case "BE":
+		return "Belgium"
+	case "BG":
+		return "Bulgaria"
+	case "BR":
+		return "Brazil"
+	case "CA":
+		return "Canada"
+	case "CH":
+		return "Switzerland"
+	case "CL":
+		return "Chile"
+	case "CN":
+		return "China"
+	case "CO":
+		return "Colombia"
+	case "CR":
+		return "Costa Rica"
+	case "CZ":
+		return "Czech Republic"
+	case "DE":
+		return "Germany"
+	case "DK":
+		return "Denmark"
+	case "DO":
+		return "Dominican Republic"
+	case "EC":
+		return "Ecuador"
+	case "EE":
+		return "Estonia"
+	case "EG":
+		return "Egypt"
+	case "ES":
+		return "Spain"
+	case "FI":
+		return "Finland"
+	case "FR":
+		return "France"
+	case "GB":
+		return "United Kingdom"
+	case "GE":
+		return "Georgia"
+	case "GH":
+		return "Ghana"
+	case "GR":
+		return "Greece"
+	case "GT":
+		return "Guatemala"
+	case "HR":
+		return "Croatia"
+	case "HU":
+		return "Hungary"
+	case "ID":
+		return "Indonesia"
+	case "IE":
+		return "Ireland"
+	case "IL":
+		return "Israel"
+	case "IN":
+		return "India"
+	case "IS":
+		return "Iceland"
+	case "IT":
+		return "Italy"
+	case "JP":
+		return "Japan"
+	case "KE":
+		return "Kenya"
+	case "KR":
+		return "South Korea"
+	case "LT":
+		return "Lithuania"
+	case "LU":
+		return "Luxembourg"
+	case "LV":
+		return "Latvia"
+	case "MA":
+		return "Morocco"
+	case "MT":
+		return "Malta"
+	case "MX":
+		return "Mexico"
+	case "MY":
+		return "Malaysia"
+	case "NG":
+		return "Nigeria"
+	case "NL":
+		return "Netherlands"
+	case "NO":
+		return "Norway"
+	case "NZ":
+		return "New Zealand"
+	case "PE":
+		return "Peru"
+	case "PH":
+		return "Philippines"
+	case "PL":
+		return "Poland"
+	case "PT":
+		return "Portugal"
+	case "RO":
+		return "Romania"
+	case "RS":
+		return "Serbia"
+	case "RU":
+		return "Russia"
+	case "SE":
+		return "Sweden"
+	case "SG":
+		return "Singapore"
+	case "SI":
+		return "Slovenia"
+	case "SK":
+		return "Slovakia"
+	case "TH":
+		return "Thailand"
+	case "TN":
+		return "Tunisia"
+	case "TR":
+		return "Turkey"
+	case "TW":
+		return "Taiwan"
+	case "UA":
+		return "Ukraine"
+	case "US":
+		return "United States"
+	case "UY":
+		return "Uruguay"
+	case "VE":
+		return "Venezuela"
+	case "ZA":
+		return "South Africa"
+	default:
+		return ""
 	}
 }
 

@@ -5,6 +5,7 @@ package normalize
 
 import (
 	"testing"
+	"time"
 
 	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/model"
@@ -38,5 +39,36 @@ func TestFilterActiveUsesMissingPersonThreshold(t *testing.T) {
 	}
 	if len(filtered) != 1 || filtered[0].Category != "cyber_advisory" {
 		t.Fatalf("unexpected filtered alerts %#v", filtered)
+	}
+}
+
+func TestInterpolAlertUsesNoticeCountryAndStableID(t *testing.T) {
+	ctx := Context{Config: config.Default(), Now: time.Date(2026, 3, 16, 0, 0, 0, 0, time.UTC)}
+	meta := model.RegistrySource{
+		Type:      "interpol-yellow-json",
+		Category:  "missing_person",
+		RegionTag: "INT",
+		Source: model.SourceMetadata{
+			SourceID:      "interpol-yellow",
+			AuthorityName: "INTERPOL Yellow Notices",
+			Country:       "France",
+			CountryCode:   "FR",
+			Region:        "International",
+			AuthorityType: "police",
+			BaseURL:       "https://www.interpol.int",
+		},
+	}
+	alert := InterpolAlert(ctx, meta, "2026-17351", "INTERPOL Yellow Notice: Jane Doe", "https://www.interpol.int/How-we-work/Notices/Yellow-Notices/View-Yellow-Notices#2026-17351", "DE", "INTERPOL Paris", []string{"DE"})
+	if alert == nil {
+		t.Fatal("expected interpol alert")
+	}
+	if alert.AlertID != "interpol-yellow:2026-17351" {
+		t.Fatalf("expected stable interpol alert id, got %q", alert.AlertID)
+	}
+	if alert.Source.CountryCode != "DE" || alert.Source.Country != "Germany" {
+		t.Fatalf("expected country mapping to Germany, got %#v", alert.Source)
+	}
+	if alert.Source.AuthorityName != "INTERPOL Yellow Notices" {
+		t.Fatalf("expected source authority to remain INTERPOL, got %#v", alert.Source)
 	}
 }

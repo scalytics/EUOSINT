@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	_ "modernc.org/sqlite"
 
@@ -21,6 +22,8 @@ import (
 
 //go:embed schema.sql
 var schemaSQL string
+
+var initMu sync.Mutex
 
 type DB struct {
 	sql *sql.DB
@@ -46,6 +49,10 @@ func Open(path string) (*DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite source DB: %w", err)
 	}
+	if _, err := db.Exec(`PRAGMA busy_timeout = 5000`); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("set sqlite busy_timeout: %w", err)
+	}
 	return &DB{sql: db}, nil
 }
 
@@ -57,6 +64,9 @@ func (db *DB) Close() error {
 }
 
 func (db *DB) Init(ctx context.Context) error {
+	initMu.Lock()
+	defer initMu.Unlock()
+
 	if _, err := db.sql.ExecContext(ctx, schemaSQL); err != nil {
 		return fmt.Errorf("init source DB schema: %w", err)
 	}
@@ -228,6 +238,9 @@ func (db *DB) UpsertRegistrySources(ctx context.Context, sources []model.Registr
 }
 
 func (db *DB) LoadActiveSources(ctx context.Context) ([]model.RegistrySource, error) {
+	if err := db.Init(ctx); err != nil {
+		return nil, err
+	}
 	rows, err := db.sql.QueryContext(ctx, `
 SELECT
   s.id,

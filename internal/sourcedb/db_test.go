@@ -51,6 +51,118 @@ func TestImportAndExportRegistry(t *testing.T) {
 	}
 }
 
+func TestLoadActiveSourcesAutoMigratesOlderDatabase(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "sources.db")
+
+	db, err := Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	// Simulate an older DB that predates the hygiene columns added later.
+	for _, stmt := range []string{
+		`CREATE TABLE agencies (
+			id TEXT PRIMARY KEY,
+			authority_name TEXT NOT NULL,
+			country TEXT NOT NULL DEFAULT '',
+			country_code TEXT NOT NULL DEFAULT '',
+			region TEXT NOT NULL DEFAULT '',
+			authority_type TEXT NOT NULL DEFAULT '',
+			base_url TEXT NOT NULL DEFAULT '',
+			scope TEXT NOT NULL DEFAULT 'national',
+			jurisdiction_name TEXT NOT NULL DEFAULT '',
+			parent_agency_id TEXT NOT NULL DEFAULT '',
+			is_curated INTEGER NOT NULL DEFAULT 0,
+			is_high_value INTEGER NOT NULL DEFAULT 0,
+			language_code TEXT NOT NULL DEFAULT ''
+		)`,
+		`CREATE TABLE sources (
+			id TEXT PRIMARY KEY,
+			agency_id TEXT NOT NULL,
+			type TEXT NOT NULL,
+			fetch_mode TEXT NOT NULL DEFAULT '',
+			status TEXT NOT NULL DEFAULT 'active',
+			follow_redirects INTEGER NOT NULL DEFAULT 1,
+			feed_url TEXT NOT NULL,
+			feed_urls_json TEXT NOT NULL DEFAULT '[]',
+			category TEXT NOT NULL DEFAULT '',
+			region_tag TEXT NOT NULL DEFAULT '',
+			lat REAL NOT NULL DEFAULT 0,
+			lng REAL NOT NULL DEFAULT 0,
+			max_items INTEGER NOT NULL DEFAULT 20,
+			include_keywords_json TEXT NOT NULL DEFAULT '[]',
+			exclude_keywords_json TEXT NOT NULL DEFAULT '[]',
+			reporting_label TEXT NOT NULL DEFAULT '',
+			reporting_url TEXT NOT NULL DEFAULT '',
+			reporting_phone TEXT NOT NULL DEFAULT '',
+			reporting_notes TEXT NOT NULL DEFAULT '',
+			last_http_status INTEGER NOT NULL DEFAULT 0,
+			last_ok_at TEXT NOT NULL DEFAULT '',
+			last_error TEXT NOT NULL DEFAULT '',
+			last_error_class TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE source_categories (
+			source_id TEXT NOT NULL,
+			category TEXT NOT NULL,
+			PRIMARY KEY (source_id, category)
+		)`,
+		`CREATE TABLE source_candidates (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			discovered_url TEXT NOT NULL,
+			discovered_via TEXT NOT NULL DEFAULT '',
+			status TEXT NOT NULL DEFAULT 'candidate',
+			language_code TEXT NOT NULL DEFAULT '',
+			category TEXT NOT NULL DEFAULT '',
+			authority_type TEXT NOT NULL DEFAULT '',
+			country TEXT NOT NULL DEFAULT '',
+			country_code TEXT NOT NULL DEFAULT '',
+			notes TEXT NOT NULL DEFAULT '',
+			checked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(discovered_url)
+		)`,
+		`CREATE TABLE agencies_fts (
+			agency_id TEXT NOT NULL,
+			name TEXT NOT NULL,
+			aliases TEXT NOT NULL DEFAULT ''
+		)`,
+		`CREATE TABLE agency_category_coverage (
+			agency_id TEXT NOT NULL,
+			category TEXT NOT NULL,
+			PRIMARY KEY (agency_id, category)
+		)`,
+	} {
+		if _, err := db.sql.ExecContext(context.Background(), stmt); err != nil {
+			t.Fatalf("seed old schema: %v", err)
+		}
+	}
+
+	if _, err := db.sql.ExecContext(context.Background(), `
+INSERT INTO agencies (id, authority_name, country, country_code, region, authority_type, base_url, scope)
+VALUES ('agency-one', 'Agency One', 'France', 'FR', 'Europe', 'cert', 'https://one.example', 'national')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.sql.ExecContext(context.Background(), `
+INSERT INTO sources (id, agency_id, type, status, feed_url, category)
+VALUES ('agency-one-feed', 'agency-one', 'rss', 'active', 'https://one.example/feed', 'cyber_advisory')`); err != nil {
+		t.Fatal(err)
+	}
+
+	sources, err := db.LoadActiveSources(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) != 1 {
+		t.Fatalf("expected 1 active source after auto-migration, got %d", len(sources))
+	}
+	if sources[0].PromotionStatus != "active" {
+		t.Fatalf("expected promotion_status backfill to active, got %q", sources[0].PromotionStatus)
+	}
+}
+
 func TestDeactivateSourcesRemovesThemFromActiveLoad(t *testing.T) {
 	dir := t.TempDir()
 	registryPath := filepath.Join(dir, "registry.json")
