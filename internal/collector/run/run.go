@@ -103,6 +103,23 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		startedAt := time.Now().UTC()
 		fetcher := fetch.FetcherFor(source.FetchMode, client, browser)
 		batch, err := r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary)
+
+		// Retry once for transient errors (timeout, EOF) after a short backoff.
+		if err != nil {
+			errClass, _, _ := classifySourceError(err)
+			if (errClass == "timeout" || errClass == "eof" || errClass == "transient") && ctx.Err() == nil {
+				fmt.Fprintf(r.stderr, "RETRY %s (transient %s): %v\n", source.Source.AuthorityName, errClass, err)
+				retryDelay := 3 * time.Second
+				select {
+				case <-time.After(retryDelay):
+				case <-ctx.Done():
+				}
+				if ctx.Err() == nil {
+					batch, err = r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary)
+				}
+			}
+		}
+
 		entry := model.SourceHealthEntry{
 			SourceID:      source.Source.SourceID,
 			AuthorityName: source.Source.AuthorityName,
@@ -291,23 +308,55 @@ func (r Runner) fetchKEV(ctx context.Context, fetcher fetch.Fetcher, nctx normal
 }
 
 func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
-	var (
-		body []byte
-		err  error
-	)
-	if browser != nil {
-		body, err = fetchInterpolViaBrowser(ctx, browser, source)
+	limit := perSourceLimit(nctx.Config, source)
+	pageSize := 20
+	var allNotices []model.Alert
+
+	for page := 1; len(allNotices) < limit; page++ {
+		pageURL := buildInterpolPageURL(source.FeedURL, page, pageSize)
+		body, err := fetcher.Text(ctx, pageURL, source.FollowRedirects, "application/json")
 		if err != nil {
-			fmt.Fprintf(r.stderr, "WARN %s: browser notice capture failed, falling back to direct fetch: %v\n", source.Source.AuthorityName, err)
+			// If first page fails, try browser fallback for the whole batch.
+			if page == 1 && browser != nil {
+				fmt.Fprintf(r.stderr, "WARN %s: stealth fetch failed, trying browser fallback: %v\n", source.Source.AuthorityName, err)
+				bBody, bErr := fetchInterpolViaBrowser(ctx, browser, source)
+				if bErr == nil && len(bBody) > 0 {
+					return parseInterpolNotices(nctx, source, bBody)
+				}
+			}
+			break
+		}
+		batch, err := parseInterpolNotices(nctx, source, body)
+		if err != nil {
+			break
+		}
+		allNotices = append(allNotices, batch...)
+		if len(batch) < pageSize {
+			break // last page
+		}
+		// Polite delay between page requests.
+		select {
+		case <-time.After(2 * time.Second):
+		case <-ctx.Done():
+			return allNotices, nil
 		}
 	}
-	if len(body) == 0 {
-		body, err = fetcher.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
+	if len(allNotices) > limit {
+		allNotices = allNotices[:limit]
 	}
+	return allNotices, nil
+}
+
+func buildInterpolPageURL(baseURL string, page int, pageSize int) string {
+	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, err
+		return baseURL
 	}
-	return parseInterpolNotices(nctx, source, body)
+	q := u.Query()
+	q.Set("page", fmt.Sprintf("%d", page))
+	q.Set("resultPerPage", fmt.Sprintf("%d", pageSize))
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 func parseInterpolNotices(nctx normalize.Context, source model.RegistrySource, body []byte) ([]model.Alert, error) {
@@ -332,12 +381,8 @@ func parseInterpolNotices(nctx normalize.Context, source model.RegistrySource, b
 	if err := json.Unmarshal(body, &doc); err != nil {
 		return nil, err
 	}
-	limit := perSourceLimit(nctx.Config, source)
 	out := []model.Alert{}
 	for _, notice := range doc.Embedded.Notices {
-		if len(out) == limit {
-			break
-		}
 		titlePrefix := "INTERPOL Red Notice"
 		if source.Type == "interpol-yellow-json" {
 			titlePrefix = "INTERPOL Yellow Notice"

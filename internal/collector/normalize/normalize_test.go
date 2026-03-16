@@ -9,6 +9,7 @@ import (
 
 	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/euosint/internal/collector/parse"
 )
 
 func TestDeduplicatePrefersHigherScore(t *testing.T) {
@@ -70,5 +71,54 @@ func TestInterpolAlertUsesNoticeCountryAndStableID(t *testing.T) {
 	}
 	if alert.Source.AuthorityName != "INTERPOL Yellow Notices" {
 		t.Fatalf("expected source authority to remain INTERPOL, got %#v", alert.Source)
+	}
+}
+
+func TestLocalCrimeDownranked(t *testing.T) {
+	cfg := config.Default()
+	ctx := Context{Config: cfg, Now: time.Date(2026, 3, 16, 0, 0, 0, 0, time.UTC)}
+	meta := model.RegistrySource{
+		Type:     "rss",
+		Category: "public_appeal",
+		Source: model.SourceMetadata{
+			SourceID:      "pj-pt",
+			AuthorityName: "Polícia Judiciária",
+			Country:       "Portugal",
+			CountryCode:   "PT",
+			Region:        "Europe",
+			AuthorityType: "police",
+		},
+	}
+
+	// Local crime: police raid on a mortuary — no cross-border significance.
+	localItem := parse.FeedItem{
+		Title:     "Operação Rigor Mortis – PJ realiza buscas em casa mortuária e em domicílios",
+		Link:      "https://www.policiajudiciaria.pt/operacao-rigor-mortis/",
+		Published: "2026-03-15T10:00:00Z",
+		Summary:   "A Polícia Judiciária realizou buscas em casa mortuária. Autopsy fraud investigation.",
+	}
+	localAlert := RSSItem(ctx, meta, localItem)
+	if localAlert == nil {
+		t.Fatal("expected local crime alert to be normalized")
+	}
+	if localAlert.Triage.RelevanceScore >= cfg.IncidentRelevanceThreshold {
+		t.Fatalf("expected local crime to be below threshold, got %.3f (threshold %.3f)",
+			localAlert.Triage.RelevanceScore, cfg.IncidentRelevanceThreshold)
+	}
+
+	// Cross-border crime: Europol joint operation — should stay above threshold.
+	crossBorderItem := parse.FeedItem{
+		Title:     "Operação conjunta PJ-Europol — rede transnacional de tráfico desmantelada",
+		Link:      "https://www.policiajudiciaria.pt/operacao-europol/",
+		Published: "2026-03-15T10:00:00Z",
+		Summary:   "Joint operation with Europol dismantled cross-border trafficking network. Drug seizure of 500 kg cocaine.",
+	}
+	crossBorderAlert := RSSItem(ctx, meta, crossBorderItem)
+	if crossBorderAlert == nil {
+		t.Fatal("expected cross-border alert to be normalized")
+	}
+	if crossBorderAlert.Triage.RelevanceScore < localAlert.Triage.RelevanceScore {
+		t.Fatalf("expected cross-border alert (%.3f) to score higher than local crime (%.3f)",
+			crossBorderAlert.Triage.RelevanceScore, localAlert.Triage.RelevanceScore)
 	}
 }

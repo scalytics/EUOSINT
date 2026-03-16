@@ -62,6 +62,29 @@ var (
 		regexp.MustCompile(`(?i)\b(?:vulnerability|exploit|patch|advisory|defend|defensive)\b`),
 		regexp.MustCompile(`(?i)\b(?:soc|siem|incident response|malware analysis)\b`),
 	}
+	// localCrimePatterns match routine domestic police operations that lack
+	// cross-border or international intelligence significance.
+	localCrimePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(?:operac[aã]o|opera[çc][aã]o|operation)\b.*\b(?:busca|raid|search|apreens[aã]o|seizure)\b`),
+		regexp.MustCompile(`(?i)\b(?:drug bust|drug seizure|narcotics seized|heroin|cocaine|cannabis|marijuana)\b.*\b(?:kg|kilos?|grams?|pounds?|tonnes?)\b`),
+		regexp.MustCompile(`(?i)\b(?:burglary|robbery|theft|shoplifting|pickpocket|break-?in|car theft|vehicle theft)\b`),
+		regexp.MustCompile(`(?i)\b(?:domestic (?:violence|abuse|dispute)|bar fight|pub brawl|assault|gbh|abh)\b`),
+		regexp.MustCompile(`(?i)\b(?:drunk driv|dui|dwi|speeding|traffic (?:offence|offense|violation)|road rage)\b`),
+		regexp.MustCompile(`(?i)\b(?:sentenced to|prison sentence|jail (?:term|sentence)|community service|probation order)\b`),
+		regexp.MustCompile(`(?i)\b(?:mortu[aá]ri[ao]|autopsy|autópsia|post-?mortem|inquest|coroner)\b`),
+		regexp.MustCompile(`(?i)\b(?:local police|polícia local|commissariat|poste de police|comisaría)\b`),
+	}
+	// crossBorderSignals indicate international/strategic significance that
+	// should prevent local-crime downranking.
+	crossBorderSignals = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(?:interpol|europol|eurojust|frontex|five eyes|nato)\b`),
+		regexp.MustCompile(`(?i)\b(?:cross-?border|transnational|international|multi-?country|joint (?:operation|investigation))\b`),
+		regexp.MustCompile(`(?i)\b(?:terror(?:ism|ist)?|extremis[tm]|radicaliz|foreign fighter)\b`),
+		regexp.MustCompile(`(?i)\b(?:cyber.?attack|state-?sponsored|apt|espionage|intelligence)\b`),
+		regexp.MustCompile(`(?i)\b(?:trafficking|smuggling|organized crime|money laundering|sanctions evasion)\b`),
+		regexp.MustCompile(`(?i)\b(?:critical infrastructure|national security|chemical|biological|nuclear|radiological)\b`),
+		regexp.MustCompile(`(?i)\b(?:mass casualty|mass shooting|bombing|explosion|hostage)\b`),
+	}
 	assistancePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:report(?:\s+a)?(?:\s+crime)?|submit (?:a )?tip|tip[-\s]?off)\b`),
 		regexp.MustCompile(`(?i)\b(?:contact (?:police|authorities|law enforcement)|hotline|helpline)\b`),
@@ -518,6 +541,13 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 	}
 	if hasCertification && !hasIncident && !hasTechnical {
 		add(-0.22, "certification/training/standards content")
+	}
+	// Downrank routine local crime stories from police feeds unless
+	// they carry cross-border or strategic intelligence significance.
+	hasLocalCrime := hasAny(text, localCrimePatterns)
+	hasCrossBorder := hasAny(text, crossBorderSignals)
+	if hasLocalCrime && !hasCrossBorder && !hasTechnical {
+		add(-0.20, "routine local crime without cross-border significance")
 	}
 	if !hasTechnical && !hasIncident && (hasNarrative || hasGeneral) {
 		add(-0.08, "weak incident evidence relative to narrative cues")
