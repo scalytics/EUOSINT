@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -73,6 +74,14 @@ func (r Runner) watch(ctx context.Context, cfg config.Config) error {
 }
 
 func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
+	// Live-merge the baked-in JSON registry into SQLite every cycle.
+	// This picks up new sources and syncs rejected status without restart.
+	if cfg.RegistrySeedPath != "" && isSQLitePath(cfg.RegistryPath) {
+		if err := r.mergeRegistry(ctx, cfg); err != nil {
+			fmt.Fprintf(r.stderr, "WARN registry merge: %v\n", err)
+		}
+	}
+
 	sources, err := registry.Load(cfg.RegistryPath)
 	if err != nil {
 		return err
@@ -169,6 +178,11 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	replacementQueue := buildReplacementQueue(sourceHealth, sources)
 	if err := deactivateReplacementSources(ctx, cfg.RegistryPath, replacementQueue); err != nil {
 		return err
+	}
+	if cfg.RegistrySeedPath != "" && len(replacementQueue) > 0 {
+		if err := rejectInJSONRegistry(cfg.RegistrySeedPath, replacementQueue); err != nil {
+			fmt.Fprintf(r.stderr, "WARN JSON registry reject: %v\n", err)
+		}
 	}
 	if err := saveAlertState(ctx, cfg, fullState); err != nil {
 		return err
@@ -761,6 +775,75 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func rejectInJSONRegistry(registryPath string, queue []model.SourceReplacementCandidate) error {
+	data, err := os.ReadFile(registryPath)
+	if err != nil {
+		return err
+	}
+	var entries []json.RawMessage
+	if err := json.Unmarshal(data, &entries); err != nil {
+		return err
+	}
+
+	deadIDs := make(map[string]string, len(queue))
+	for _, c := range queue {
+		deadIDs[c.SourceID] = c.Error
+	}
+
+	modified := false
+	for i, raw := range entries {
+		var peek struct {
+			Source struct {
+				SourceID string `json:"source_id"`
+			} `json:"source"`
+			PromotionStatus string `json:"promotion_status"`
+		}
+		if err := json.Unmarshal(raw, &peek); err != nil {
+			continue
+		}
+		reason, isDead := deadIDs[peek.Source.SourceID]
+		if !isDead || peek.PromotionStatus == "rejected" {
+			continue
+		}
+		var obj map[string]any
+		if err := json.Unmarshal(raw, &obj); err != nil {
+			continue
+		}
+		obj["promotion_status"] = "rejected"
+		obj["rejection_reason"] = "Dead source: " + reason
+		updated, err := json.Marshal(obj)
+		if err != nil {
+			continue
+		}
+		entries[i] = updated
+		modified = true
+	}
+
+	if !modified {
+		return nil
+	}
+	out, err := json.MarshalIndent(entries, "", "  ")
+	if err != nil {
+		return err
+	}
+	out = append(out, '\n')
+	return os.WriteFile(registryPath, out, 0o644)
+}
+
+func isSQLitePath(path string) bool {
+	ext := filepath.Ext(path)
+	return ext == ".db" || ext == ".sqlite" || ext == ".sqlite3"
+}
+
+func (r Runner) mergeRegistry(ctx context.Context, cfg config.Config) error {
+	db, err := sourcedb.Open(cfg.RegistryPath)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.MergeRegistry(ctx, cfg.RegistrySeedPath)
 }
 
 func (r Runner) runDiscoveryLoop(ctx context.Context, cfg config.Config) {

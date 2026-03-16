@@ -12,6 +12,8 @@ services:
       - ":3001"
       - --registry
       - /data/sources.db
+      - --registry-seed
+      - /app/registry/source_registry.json
       - --output
       - /data/alerts.json
       - --filtered-output
