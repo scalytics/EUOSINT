@@ -48,7 +48,7 @@ export function FeedDirectory({
   severityFilter,
   onSeverityFilterChange,
 }: Props) {
-  const sources = sourceHealth?.sources ?? [];
+  const sources = useMemo(() => sourceHealth?.sources ?? [], [sourceHealth]);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {

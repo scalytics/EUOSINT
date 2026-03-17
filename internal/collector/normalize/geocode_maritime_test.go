@@ -81,11 +81,11 @@ func TestExtractCoordinates_NoMatch(t *testing.T) {
 
 func TestMatchMaritimeRegion(t *testing.T) {
 	tests := []struct {
-		text       string
-		wantName   string
-		wantLat    float64
-		wantLng    float64
-		wantOK     bool
+		text     string
+		wantName string
+		wantLat  float64
+		wantLng  float64
+		wantOK   bool
 	}{
 		{"Attack in the Gulf of Aden", "Gulf of Aden", 12.0, 45.0, true},
 		{"Tanker seized near Strait of Hormuz", "Strait of Hormuz", 26.5, 56.3, true},

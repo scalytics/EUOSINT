@@ -159,24 +159,40 @@ export async function loadOverlay(
         );
       },
     }).addTo(group);
+  } else if (def.id === "cables") {
+    L.geoJSON(geojson, {
+      style: (feature) => ({
+        color: feature?.properties?.color ?? def.color,
+        weight: 1.5,
+        opacity: 0.5,
+        dashArray: "4,3",
+      }),
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties;
+        layer.bindTooltip(
+          `<strong>${p.name}</strong>`,
+          { className: "siem-tooltip", sticky: true },
+        );
+      },
+    }).addTo(group);
   } else {
-    // Lines: cables or shipping lanes
+    // Shipping lanes (Major / Middle)
+    const laneWeight: Record<string, number> = { Major: 2, Middle: 1.4 };
+    const laneOpacity: Record<string, number> = { Major: 0.5, Middle: 0.35 };
     L.geoJSON(geojson, {
       style: (feature) => {
-        const isChokepoint = feature?.properties?.type === "chokepoint";
+        const type = feature?.properties?.Type ?? "Major";
         return {
           color: def.color,
-          weight: def.id === "cables" ? 1.5 : isChokepoint ? 2.5 : 1.8,
-          opacity: def.id === "cables" ? 0.5 : 0.45,
-          dashArray: def.id === "cables" ? "4,3" : isChokepoint ? undefined : "8,5",
+          weight: laneWeight[type] ?? 1.4,
+          opacity: laneOpacity[type] ?? 0.35,
+          dashArray: "8,5",
         };
       },
       onEachFeature: (feature, layer) => {
-        const p = feature.properties;
-        const extra = p.capacity ? `<br/>${p.capacity}` : "";
-        const typeLabel = p.type === "chokepoint" ? " (chokepoint)" : "";
+        const type = feature?.properties?.Type ?? "Shipping Lane";
         layer.bindTooltip(
-          `<strong>${p.name}</strong>${typeLabel}${extra}`,
+          `<strong>${type} shipping lane</strong>`,
           { className: "siem-tooltip", sticky: true },
         );
       },
