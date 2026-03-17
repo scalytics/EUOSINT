@@ -39,6 +39,7 @@ services:
       INTERVAL_MS: "900000"
       MAX_PER_SOURCE: "40"
       CURSORS_PATH: "/data/cursors.json"
+      BACKOFF_PATH: "/data/source_backoff.json"
       WIKIDATA_CACHE_PATH: "/data/wikidata_cache"
       CATEGORY_DICTIONARY_PATH: "/app/registry/category_dictionary.json"
       MISSING_PERSON_RELEVANCE_THRESHOLD: "0"

@@ -80,6 +80,7 @@ type Config struct {
 	CuratedSeedPath                 string
 	RegistrySeedPath                string
 	CursorsPath                     string
+	BackoffPath                     string
 	GeoNamesPath                    string
 	NominatimBaseURL                string
 	NominatimEnabled                bool
@@ -144,6 +145,7 @@ func Default() Config {
 		CuratedSeedPath:                 "registry/curated_agencies.seed.json",
 		RegistrySeedPath:                "registry/source_registry.json",
 		CursorsPath:                     "public/cursors.json",
+		BackoffPath:                     "public/source_backoff.json",
 		GeoNamesPath:                    "registry/cities500.txt",
 		NominatimBaseURL:                "https://nominatim.openstreetmap.org",
 		NominatimEnabled:                true,
@@ -207,6 +209,7 @@ func FromEnv() Config {
 	cfg.CuratedSeedPath = envString("CURATED_SEED_PATH", cfg.CuratedSeedPath)
 	cfg.RegistrySeedPath = envString("REGISTRY_SEED_PATH", cfg.RegistrySeedPath)
 	cfg.CursorsPath = envString("CURSORS_PATH", cfg.CursorsPath)
+	cfg.BackoffPath = envString("BACKOFF_PATH", cfg.BackoffPath)
 	cfg.DDGSearchEnabled = envBool("DDG_SEARCH_ENABLED", cfg.DDGSearchEnabled)
 	cfg.DDGSearchMaxQueries = envInt("DDG_SEARCH_MAX_QUERIES", cfg.DDGSearchMaxQueries)
 	cfg.DDGSearchDelayMS = envInt("DDG_SEARCH_DELAY_MS", cfg.DDGSearchDelayMS)

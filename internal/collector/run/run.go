@@ -112,6 +112,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 
 	cursors := state.ReadCursors(cfg.CursorsPath)
+	backoff := state.ReadSourceBackoff(cfg.BackoffPath)
 
 	// Load previous alerts early so progress snapshots include them.
 	// This prevents the dashboard from going blank during a sweep.
@@ -166,11 +167,31 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 					if ctx.Err() != nil {
 						return
 					}
+					if backoff.ShouldSkip(source.Source.SourceID, now) {
+						mu.Lock()
+						sourceHealth = append(sourceHealth, model.SourceHealthEntry{
+							SourceID:      source.Source.SourceID,
+							AuthorityName: source.Source.AuthorityName,
+							Type:          source.Type,
+							FeedURL:       source.FeedURL,
+							Status:        "skipped",
+							Error:         "backoff: too many consecutive failures",
+							ErrorClass:    "backoff",
+						})
+						completed++
+						mu.Unlock()
+						continue
+					}
 					batch, entry := r.fetchOneSource(ctx, fastClient, nil, nctx, source, categoryDictionary, cursors)
 					mu.Lock()
 					sourceHealth = append(sourceHealth, entry)
 					alerts = append(alerts, batch...)
 					completed++
+					if entry.Status == "error" {
+						backoff.RecordFailure(source.Source.SourceID, now, entry.Error)
+					} else {
+						backoff.RecordSuccess(source.Source.SourceID)
+					}
 					if completed%25 == 0 || completed == 1 {
 						r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
 					}
@@ -191,12 +212,28 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		if ctx.Err() != nil {
 			break
 		}
+		if backoff.ShouldSkip(source.Source.SourceID, now) {
+			sourceHealth = append(sourceHealth, model.SourceHealthEntry{
+				SourceID:      source.Source.SourceID,
+				AuthorityName: source.Source.AuthorityName,
+				Type:          source.Type,
+				FeedURL:       source.FeedURL,
+				Status:        "skipped",
+				Error:         "backoff: too many consecutive failures",
+				ErrorClass:    "backoff",
+			})
+			completed++
+			continue
+		}
 		batch, entry := r.fetchOneSourceSlow(ctx, client, browser, nctx, source, categoryDictionary, cursors)
 		sourceHealth = append(sourceHealth, entry)
 		alerts = append(alerts, batch...)
 		completed++
 		if entry.Status == "error" {
+			backoff.RecordFailure(source.Source.SourceID, now, entry.Error)
 			fmt.Fprintf(r.stderr, "WARN %s: %s\n", source.Source.AuthorityName, entry.Error)
+		} else {
+			backoff.RecordSuccess(source.Source.SourceID)
 		}
 		if completed%25 == 0 {
 			r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
@@ -205,6 +242,9 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 
 	if err := state.WriteCursors(cfg.CursorsPath, cursors); err != nil {
 		fmt.Fprintf(r.stderr, "WARN failed to save cursors: %v\n", err)
+	}
+	if err := state.WriteSourceBackoff(cfg.BackoffPath, backoff); err != nil {
+		fmt.Fprintf(r.stderr, "WARN failed to save backoff state: %v\n", err)
 	}
 
 	deduped, duplicateAudit := normalize.Deduplicate(alerts)
@@ -324,7 +364,7 @@ func prioritizeSources(sources []model.RegistrySource) []model.RegistrySource {
 // or need the full HTTP timeout (HTML scraping, Interpol API with WAF, etc.).
 func needsBrowser(s model.RegistrySource) bool {
 	switch s.Type {
-	case "html-list":
+	case "html-list", "telegram":
 		return true
 	case "interpol-red-json", "interpol-yellow-json":
 		return true // Akamai WAF, needs special headers + browser fallback
@@ -444,7 +484,7 @@ func typePriority(kind string) int {
 		return 4
 	case "rss":
 		return 3
-	case "html-list":
+	case "html-list", "telegram":
 		return 2
 	default:
 		return 1
@@ -480,6 +520,8 @@ func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser 
 		return r.fetchTravelWarningJSON(ctx, fetcher, nctx, source)
 	case "travelwarning-atom":
 		return r.fetchTravelWarningAtom(ctx, fetcher, nctx, source)
+	case "telegram":
+		return r.fetchTelegram(ctx, fetcher, nctx, source)
 	default:
 		return nil, fmt.Errorf("unsupported source type %s", source.Type)
 	}
@@ -518,6 +560,7 @@ func (r Runner) fetchRSS(ctx context.Context, fetcher fetch.Fetcher, nctx normal
 			out = append(out, *alert)
 		}
 	}
+	out = downgradeNonActionable(out, source)
 	return out, nil
 }
 
@@ -560,6 +603,7 @@ func (r Runner) fetchHTML(ctx context.Context, fetcher fetch.Fetcher, nctx norma
 					out = append(out, *alert)
 				}
 			}
+			out = downgradeNonActionable(out, source)
 			return out, nil
 		}
 	}
@@ -569,7 +613,42 @@ func (r Runner) fetchHTML(ctx context.Context, fetcher fetch.Fetcher, nctx norma
 			out = append(out, *alert)
 		}
 	}
+	out = downgradeNonActionable(out, source)
 	return out, nil
+}
+
+func (r Runner) fetchTelegram(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	body, err := fetcher.Text(ctx, source.FeedURL, true, "text/html,application/xhtml+xml,*/*;q=0.8")
+	if err != nil {
+		return nil, err
+	}
+	channel := extractTelegramChannel(source.FeedURL)
+	items := parse.ParseTelegram(string(body), channel)
+	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords)
+	limit := perSourceLimit(nctx.Config, source)
+	if len(items) > limit {
+		items = items[:limit]
+	}
+	out := make([]model.Alert, 0, len(items))
+	for _, item := range items {
+		alert := normalize.HTMLItem(nctx, source, item)
+		if alert != nil {
+			out = append(out, *alert)
+		}
+	}
+	out = downgradeNonActionable(out, source)
+	return out, nil
+}
+
+func extractTelegramChannel(feedURL string) string {
+	u, err := url.Parse(feedURL)
+	if err != nil {
+		return ""
+	}
+	path := strings.TrimPrefix(u.Path, "/s/")
+	path = strings.TrimPrefix(path, "/")
+	path = strings.TrimSuffix(path, "/")
+	return path
 }
 
 func (r Runner) fetchKEV(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
@@ -1017,6 +1096,40 @@ func containsKeyword(hay string, needles []string) bool {
 		}
 	}
 	return false
+}
+
+// downgradeNonActionable marks alerts from broad sources (those without
+// include_keywords) as informational if their title doesn't contain
+// actionable intelligence signals. This reduces noise from general-news
+// or government feeds that publish ceremony/conference/sports content.
+func downgradeNonActionable(alerts []model.Alert, source model.RegistrySource) []model.Alert {
+	if len(source.IncludeKeywords) > 0 {
+		return alerts // source already keyword-filtered
+	}
+	// Only downgrade news-like categories that tend to be noisy.
+	switch source.Category {
+	case "public_safety", "public_appeal", "legislative", "conflict_monitoring",
+		"maritime_security", "logistics_incident", "humanitarian_tasking", "humanitarian_security":
+		// These categories are typically curated enough — skip.
+		return alerts
+	}
+	for i := range alerts {
+		if alerts[i].Severity == "info" || alerts[i].Category == "informational" {
+			continue // already informational
+		}
+		if normalize.IsActionableTitle(alerts[i].Title) {
+			continue
+		}
+		alerts[i].Severity = "info"
+		alerts[i].Category = "informational"
+		if alerts[i].Triage != nil {
+			alerts[i].Triage.WeakSignals = append(
+				[]string{"downgraded: non-actionable title from broad source"},
+				alerts[i].Triage.WeakSignals...,
+			)
+		}
+	}
+	return alerts
 }
 
 func filterCategoryItems(items []parse.FeedItem, source model.RegistrySource, categoryDictionary *dictionary.Store) []parse.FeedItem {

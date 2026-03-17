@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"name":"Zaporizhzhia NPP","country":"UA","type":"power_plant","status":"occupied","capacity":"6 GW"},"geometry":{"type":"Point","coordinates":[34.59,47.51]}},
+    {"type":"Feature","properties":{"name":"Chernobyl Exclusion Zone","country":"UA","type":"exclusion_zone","status":"decommissioned"},"geometry":{"type":"Point","coordinates":[30.1,51.39]}},
+    {"type":"Feature","properties":{"name":"Natanz Enrichment","country":"IR","type":"enrichment","status":"active"},"geometry":{"type":"Point","coordinates":[51.73,33.72]}},
+    {"type":"Feature","properties":{"name":"Fordow Enrichment","country":"IR","type":"enrichment","status":"active"},"geometry":{"type":"Point","coordinates":[51.57,34.88]}},
+    {"type":"Feature","properties":{"name":"Isfahan UCF","country":"IR","type":"conversion","status":"active"},"geometry":{"type":"Point","coordinates":[51.66,32.66]}},
+    {"type":"Feature","properties":{"name":"Bushehr NPP","country":"IR","type":"power_plant","status":"active","capacity":"1 GW"},"geometry":{"type":"Point","coordinates":[50.89,28.83]}},
+    {"type":"Feature","properties":{"name":"Yongbyon Complex","country":"KP","type":"weapons","status":"active"},"geometry":{"type":"Point","coordinates":[125.75,39.8]}},
+    {"type":"Feature","properties":{"name":"Punggye-ri Test Site","country":"KP","type":"test_site","status":"collapsed/dormant"},"geometry":{"type":"Point","coordinates":[129.09,41.28]}},
+    {"type":"Feature","properties":{"name":"Dimona (Negev NRC)","country":"IL","type":"weapons","status":"active"},"geometry":{"type":"Point","coordinates":[35.14,31.0]}},
+    {"type":"Feature","properties":{"name":"Kahuta (KRL)","country":"PK","type":"enrichment","status":"active"},"geometry":{"type":"Point","coordinates":[73.38,33.59]}},
+    {"type":"Feature","properties":{"name":"Bhabha ARC (Trombay)","country":"IN","type":"weapons","status":"active"},"geometry":{"type":"Point","coordinates":[72.92,19.01]}},
+    {"type":"Feature","properties":{"name":"Sellafield","country":"GB","type":"reprocessing","status":"decommissioning"},"geometry":{"type":"Point","coordinates":[-3.5,54.42]}},
+    {"type":"Feature","properties":{"name":"La Hague","country":"FR","type":"reprocessing","status":"active"},"geometry":{"type":"Point","coordinates":[-1.88,49.68]}},
+    {"type":"Feature","properties":{"name":"Sarov (Arzamas-16)","country":"RU","type":"weapons","status":"active"},"geometry":{"type":"Point","coordinates":[43.58,54.93]}},
+    {"type":"Feature","properties":{"name":"Mayak (Chelyabinsk-65)","country":"RU","type":"reprocessing","status":"active"},"geometry":{"type":"Point","coordinates":[60.85,55.72]}},
+    {"type":"Feature","properties":{"name":"Pantex Plant","country":"US","type":"weapons_assembly","status":"active"},"geometry":{"type":"Point","coordinates":[-101.95,35.32]}},
+    {"type":"Feature","properties":{"name":"Y-12 (Oak Ridge)","country":"US","type":"weapons","status":"active"},"geometry":{"type":"Point","coordinates":[-84.25,35.98]}},
+    {"type":"Feature","properties":{"name":"Fukushima Daiichi","country":"JP","type":"power_plant","status":"decommissioning"},"geometry":{"type":"Point","coordinates":[141.03,37.42]}}
+  ]
+}

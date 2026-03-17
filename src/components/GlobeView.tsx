@@ -4,7 +4,7 @@
  * See NOTICE for provenance and LICENSE for repository-local terms.
  */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
@@ -12,6 +12,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import type { Alert } from "@/types/alert";
 import { alertMatchesRegionFilter } from "@/lib/regions";
 import { severityHex, textHex } from "@/lib/theme";
+import { OVERLAYS, loadOverlay, type OverlayId } from "@/lib/map-overlays";
 
 /* ── Region viewports ─────────────────────────────────────────────── */
 
@@ -58,6 +59,8 @@ export function GlobeView({
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const markerLookup = useRef<Map<string, L.CircleMarker>>(new Map());
+  const overlayLayers = useRef<Map<OverlayId, L.LayerGroup>>(new Map());
+  const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set());
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
@@ -69,6 +72,32 @@ export function GlobeView({
     }
     onSelectSourceIdsChange([...selectedSourceIds, sourceId]);
   };
+
+  const toggleOverlay = useCallback((id: OverlayId) => {
+    setActiveOverlays((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        const layer = overlayLayers.current.get(id);
+        if (layer && mapRef.current) {
+          mapRef.current.removeLayer(layer);
+          overlayLayers.current.delete(id);
+        }
+      } else {
+        next.add(id);
+        const map = mapRef.current;
+        if (map) {
+          const def = OVERLAYS.find((o) => o.id === id);
+          if (def) {
+            loadOverlay(map, def).then((layer) => {
+              overlayLayers.current.set(id, layer);
+            });
+          }
+        }
+      }
+      return next;
+    });
+  }, []);
 
   const visibleIdSet = useMemo(() => new Set(visibleAlertIds), [visibleAlertIds]);
 
@@ -284,6 +313,29 @@ export function GlobeView({
                   <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-siem-muted">
                     {cluster.count} alerts in sector
                   </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Infrastructure Layers</div>
+            <div className="mt-3 space-y-1.5">
+              {OVERLAYS.map((overlay) => (
+                <button
+                  key={overlay.id}
+                  type="button"
+                  onClick={() => toggleOverlay(overlay.id)}
+                  className={`w-full flex items-center gap-2 text-left rounded-xl border px-3 py-2 text-xs transition-colors ${
+                    activeOverlays.has(overlay.id)
+                      ? "border-siem-accent/40 bg-siem-accent/12 text-siem-text"
+                      : "border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/30 hover:bg-siem-accent/8"
+                  }`}
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: overlay.color, opacity: activeOverlays.has(overlay.id) ? 1 : 0.4 }}
+                  />
+                  {overlay.label}
                 </button>
               ))}
             </div>
