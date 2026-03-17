@@ -231,6 +231,45 @@ export function FeedDirectory({
           </div>
         </div>
 
+        {/* ── Category breakdown ──────────────────────────────────── */}
+        <div className="rounded-xl border border-siem-border bg-siem-panel px-3 py-3">
+          <div className="mb-2.5 flex items-center justify-between gap-2">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-siem-muted">
+              Categories
+            </div>
+            {categoryFilter !== "all" && (
+              <button
+                type="button"
+                onClick={() => onSelectCategory("all")}
+                className="rounded border border-siem-accent bg-siem-accent/14 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-siem-text"
+              >
+                All
+              </button>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            {categoryCounts.map(({ category, count }) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => onSelectCategory(categoryFilter === category ? "all" : category)}
+                className={`flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
+                  categoryFilter === category
+                    ? "border-siem-accent bg-siem-accent/14 text-siem-text"
+                    : "border-siem-border bg-siem-panel-strong text-siem-text hover:border-siem-accent/40 hover:bg-siem-accent/8"
+                }`}
+              >
+                <span
+                  className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${categoryBadge[category]}`}
+                >
+                  {categoryLabels[category]}
+                </span>
+                <span className="text-xs text-siem-muted">{count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* ── Top authorities (clickable to scope) ────────────────── */}
         <div className="rounded-xl border border-siem-border bg-siem-panel px-3 py-3">
           <div className="mb-2.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-siem-muted">
@@ -270,45 +309,6 @@ export function FeedDirectory({
                 </button>
               );
             })}
-          </div>
-        </div>
-
-        {/* ── Category breakdown ──────────────────────────────────── */}
-        <div className="rounded-xl border border-siem-border bg-siem-panel px-3 py-3">
-          <div className="mb-2.5 flex items-center justify-between gap-2">
-            <div className="text-[10px] uppercase tracking-[0.16em] text-siem-muted">
-              Categories
-            </div>
-            {categoryFilter !== "all" && (
-              <button
-                type="button"
-                onClick={() => onSelectCategory("all")}
-                className="rounded border border-siem-accent bg-siem-accent/14 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-siem-text"
-              >
-                All
-              </button>
-            )}
-          </div>
-          <div className="space-y-1.5">
-            {categoryCounts.map(({ category, count }) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => onSelectCategory(categoryFilter === category ? "all" : category)}
-                className={`flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
-                  categoryFilter === category
-                    ? "border-siem-accent bg-siem-accent/14 text-siem-text"
-                    : "border-siem-border bg-siem-panel-strong text-siem-text hover:border-siem-accent/40 hover:bg-siem-accent/8"
-                }`}
-              >
-                <span
-                  className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${categoryBadge[category]}`}
-                >
-                  {categoryLabels[category]}
-                </span>
-                <span className="text-xs text-siem-muted">{count}</span>
-              </button>
-            ))}
           </div>
         </div>
 
