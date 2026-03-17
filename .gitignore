@@ -35,6 +35,9 @@ docker-compose.override.yml
 *.sln
 *.sw?
 
+# GeoNames dataset (downloaded at build time, ~30MB)
+registry/cities500.txt
+
 # Tool caches
 .eslintcache
 .npm/

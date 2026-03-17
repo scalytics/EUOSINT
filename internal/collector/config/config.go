@@ -75,6 +75,9 @@ type Config struct {
 	CuratedSeedPath                 string
 	RegistrySeedPath                string
 	CursorsPath                     string
+	GeoNamesPath                    string
+	NominatimBaseURL                string
+	NominatimEnabled                bool
 	APIEnabled                      bool
 	APIAddr                         string
 }
@@ -131,6 +134,9 @@ func Default() Config {
 		CuratedSeedPath:                 "registry/curated_agencies.seed.json",
 		RegistrySeedPath:                "registry/source_registry.json",
 		CursorsPath:                     "public/cursors.json",
+		GeoNamesPath:                    "registry/cities500.txt",
+		NominatimBaseURL:                "https://nominatim.openstreetmap.org",
+		NominatimEnabled:                true,
 		APIEnabled:                      false,
 		APIAddr:                         ":3001",
 	}
@@ -189,6 +195,9 @@ func FromEnv() Config {
 	cfg.CuratedSeedPath = envString("CURATED_SEED_PATH", cfg.CuratedSeedPath)
 	cfg.RegistrySeedPath = envString("REGISTRY_SEED_PATH", cfg.RegistrySeedPath)
 	cfg.CursorsPath = envString("CURSORS_PATH", cfg.CursorsPath)
+	cfg.GeoNamesPath = envString("GEONAMES_PATH", cfg.GeoNamesPath)
+	cfg.NominatimBaseURL = envString("NOMINATIM_BASE_URL", cfg.NominatimBaseURL)
+	cfg.NominatimEnabled = envBool("NOMINATIM_ENABLED", cfg.NominatimEnabled)
 	cfg.APIEnabled = envBool("API_ENABLED", cfg.APIEnabled)
 	cfg.APIAddr = envString("API_ADDR", cfg.APIAddr)
 	return cfg

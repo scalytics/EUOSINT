@@ -99,6 +99,7 @@ var geoCountries = []countryGeo{
 	{"Malawi", "MW", -13.25, 34.30},
 	{"Malaysia", "MY", 4.21, 101.98},
 	{"Mali", "ML", 17.57, -4.00},
+	{"Malta", "MT", 35.90, 14.51},
 	{"Mauritania", "MR", 21.01, -10.94},
 	{"Mexico", "MX", 23.63, -102.55},
 	{"Moldova", "MD", 47.41, 28.37},
@@ -222,6 +223,7 @@ var geoAliases = map[string]string{
 	"malawian":     "Malawi",
 	"malaysian":    "Malaysia",
 	"malian":       "Mali",
+	"maltese":      "Malta",
 	"mauritanian":  "Mauritania",
 	"mexican":      "Mexico",
 	"moldovan":     "Moldova",
@@ -333,6 +335,7 @@ var geoAliases = map[string]string{
 	"hodeida":   "Yemen",
 	"hodeidah":  "Yemen",
 	"taipei":    "Taiwan",
+	"valletta":  "Malta",
 	"kyiv":      "Ukraine",
 	"kharkiv":   "Ukraine",
 }
@@ -354,9 +357,19 @@ func init() {
 	}
 }
 
-// geocodeCountryCode returns the centroid for a 2-letter country code.
+// geocodeCountryCode returns the capital city coordinates for a 2-letter
+// country code, falling back to geographic centroid if no capital is known.
 func geocodeCountryCode(code string) (lat, lng float64, name string, ok bool) {
 	code = strings.ToUpper(strings.TrimSpace(code))
+	// Prefer capital city coords (fixes islands-in-water problem).
+	if capital, cok := capitalCoords[code]; cok {
+		for i := range geoCountries {
+			if geoCountries[i].Code == code {
+				return capital[0], capital[1], geoCountries[i].Name, true
+			}
+		}
+		return capital[0], capital[1], code, true
+	}
 	for i := range geoCountries {
 		if geoCountries[i].Code == code {
 			return geoCountries[i].Lat, geoCountries[i].Lng, geoCountries[i].Name, true

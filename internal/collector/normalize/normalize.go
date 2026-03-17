@@ -4,6 +4,7 @@
 package normalize
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"math"
@@ -124,8 +125,9 @@ var (
 )
 
 type Context struct {
-	Config config.Config
-	Now    time.Time
+	Config   config.Config
+	Now      time.Time
+	Geocoder *Geocoder // optional; nil falls back to country-level only
 }
 
 type FeedContext struct {
@@ -318,15 +320,44 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	baseLat, baseLng := meta.Lat, meta.Lng
 	source := meta.Source
 
+	// Use capital coords instead of geographic centroid for the source's
+	// country — fixes islands (Malta, Cyprus, etc.) landing in the sea.
+	if source.CountryCode != "" && source.CountryCode != "INT" {
+		if capital, ok := capitalCoords[source.CountryCode]; ok {
+			baseLat, baseLng = capital[0], capital[1]
+		}
+	}
+
+	geocoded := false
+
 	// For international sources, try to geocode the alert to the actual
 	// crisis location instead of pinning it to the org's HQ.
 	if meta.RegionTag == "INT" || meta.Source.CountryCode == "INT" {
-		if gLat, gLng, code, ok := geocodeText(title); ok {
-			baseLat, baseLng = gLat, gLng
-			if name := countryNameFromCode(code); name != "" {
-				source.Country = name
-				source.CountryCode = code
+		if ctx.Geocoder != nil {
+			// Enhanced geocoding: city DB → Nominatim → country text.
+			if result := ctx.Geocoder.Resolve(context.Background(), title, ""); result.CountryCode != "" {
+				baseLat, baseLng = result.Lat, result.Lng
+				geocoded = true
+				if name := countryNameFromCode(result.CountryCode); name != "" {
+					source.Country = name
+					source.CountryCode = result.CountryCode
+				}
 			}
+		}
+		if !geocoded {
+			if gLat, gLng, code, ok := geocodeText(title); ok {
+				baseLat, baseLng = gLat, gLng
+				if name := countryNameFromCode(code); name != "" {
+					source.Country = name
+					source.CountryCode = code
+				}
+			}
+		}
+	} else if ctx.Geocoder != nil {
+		// Non-international source: try city-level geocoding within the
+		// source's country for better pin placement.
+		if result := ctx.Geocoder.Resolve(context.Background(), title, source.CountryCode); result.Source == "city-db" || result.Source == "nominatim" {
+			baseLat, baseLng = result.Lat, result.Lng
 		}
 	}
 
