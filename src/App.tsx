@@ -274,7 +274,7 @@ export default function App() {
               key={pane}
               type="button"
               onClick={() => setMobilePane(pane as "intel" | "map" | "alerts")}
-              className={`rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.18em] ${
+              className={`rounded-full border px-3 py-2 text-xxs uppercase tracking-[0.18em] ${
                 mobilePane === pane
                   ? "border-siem-accent bg-siem-accent/14 text-siem-text"
                   : "border-siem-border bg-siem-panel text-siem-muted"
@@ -302,7 +302,7 @@ export default function App() {
         )}
       </div>
 
-      <div className="flex items-center justify-between border-t border-siem-border bg-siem-panel/85 px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-siem-muted">
+      <div className="flex items-center justify-between border-t border-siem-border bg-siem-panel/85 px-4 py-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
         <span>
           <a href="https://www.scalytics.io/streamingintelligence?utm_source=euosint&utm_medium=footer&utm_campaign=osint_console" target="_blank" rel="noopener" className="hover:text-siem-accent transition-colors">Scalytics OSINT</a>
           {" // Open Source Intelligence Console // "}

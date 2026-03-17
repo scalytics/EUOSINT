@@ -100,7 +100,7 @@ export function AlertDetail({ alert, onClose }: Props) {
         {/* Metadata Grid */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
-            <div className="text-[10px] uppercase tracking-wider text-siem-muted mb-1">
+            <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">
               Authority
             </div>
             <div className="flex items-center gap-1.5 text-sm">
@@ -109,7 +109,7 @@ export function AlertDetail({ alert, onClose }: Props) {
             </div>
           </div>
           <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
-            <div className="text-[10px] uppercase tracking-wider text-siem-muted mb-1">
+            <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">
               Country
             </div>
             <div className="flex items-center gap-1.5 text-sm">
@@ -118,13 +118,13 @@ export function AlertDetail({ alert, onClose }: Props) {
             </div>
           </div>
           <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
-            <div className="text-[10px] uppercase tracking-wider text-siem-muted mb-1">
+            <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">
               Category
             </div>
             <div className="text-sm">{categoryLabels[alert.category]}</div>
           </div>
           <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
-            <div className="text-[10px] uppercase tracking-wider text-siem-muted mb-1">
+            <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">
               First Seen
             </div>
             <div className="flex items-center gap-1.5 text-sm">
@@ -136,7 +136,7 @@ export function AlertDetail({ alert, onClose }: Props) {
 
         {/* Authority Type */}
         <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
-          <div className="text-[10px] uppercase tracking-wider text-siem-muted mb-1">
+          <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">
             Authority Type
           </div>
           <div className="text-sm capitalize">
@@ -146,13 +146,13 @@ export function AlertDetail({ alert, onClose }: Props) {
 
         {/* Notice Age */}
         <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
-          <div className="text-[10px] uppercase tracking-wider text-siem-muted mb-1">
+          <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">
             Notice Age
           </div>
           <div className="text-sm font-mono font-bold text-siem-text">
             {freshnessLabel(alert.freshness_hours)}
           </div>
-          <div className="text-[11px] text-siem-muted mt-1">
+          <div className="text-xxs text-siem-muted mt-1">
             Last confirmed: {freshnessLabel(
               (Date.now() - new Date(alert.last_seen).getTime()) / 3600000
             )}
@@ -161,14 +161,14 @@ export function AlertDetail({ alert, onClose }: Props) {
 
         {alert.triage && (
           <div className="bg-white/5 rounded-lg p-3 border border-siem-border space-y-2">
-            <div className="text-[10px] uppercase tracking-wider text-siem-muted">
+            <div className="text-2xs uppercase tracking-wider text-siem-muted">
               Relevance Scoring
             </div>
             <div className="flex items-center justify-between gap-2">
               <div className="text-sm font-mono font-bold text-siem-text">
                 {Math.round(alert.triage.relevance_score * 100)} / 100
               </div>
-              <div className="text-[10px] uppercase tracking-wider text-siem-muted">
+              <div className="text-2xs uppercase tracking-wider text-siem-muted">
                 {alert.triage.confidence} confidence
               </div>
             </div>
@@ -178,7 +178,7 @@ export function AlertDetail({ alert, onClose }: Props) {
                 style={{ width: `${Math.max(0, Math.min(100, alert.triage.relevance_score * 100))}%` }}
               />
             </div>
-            <div className="text-[11px] text-siem-muted">
+            <div className="text-xxs text-siem-muted">
               Threshold: {Math.round(alert.triage.threshold * 100)} | Disposition:{" "}
               {alert.triage.disposition.replace("_", " ")}
             </div>
@@ -186,15 +186,15 @@ export function AlertDetail({ alert, onClose }: Props) {
         )}
 
         <div className="rounded-lg border border-siem-border bg-white/5 p-3 space-y-2">
-          <div className="text-[10px] uppercase tracking-wider text-siem-muted">
+          <div className="text-2xs uppercase tracking-wider text-siem-muted">
             How To Help (OSINT Playbook)
           </div>
-          <ol className="space-y-1.5 text-[11px] text-siem-text list-decimal pl-4">
+          <ol className="space-y-1.5 text-xxs text-siem-text list-decimal pl-4">
             {playbook.map((step) => (
               <li key={step}>{step}</li>
             ))}
           </ol>
-          <p className="text-[10px] text-siem-muted">
+          <p className="text-2xs text-siem-muted">
             Do not contact suspects or victims directly. Use only official channels.
           </p>
         </div>
@@ -210,7 +210,7 @@ export function AlertDetail({ alert, onClose }: Props) {
           GO TO OFFICIAL ALERT
         </a>
 
-        <p className="text-[10px] text-siem-muted text-center leading-relaxed">
+        <p className="text-2xs text-siem-muted text-center leading-relaxed">
           This link opens the official authority bulletin.
           <br />
           No content is stored on this platform.
@@ -224,7 +224,7 @@ export function AlertDetail({ alert, onClose }: Props) {
                 {alert.reporting.label}
               </span>
             </div>
-            <p className="text-[11px] text-amber-200/70 leading-relaxed">
+            <p className="text-xxs text-amber-200/70 leading-relaxed">
               Have information? Submit a tip or report to the authority below.
             </p>
             {alert.reporting.url && (
@@ -257,7 +257,7 @@ export function AlertDetail({ alert, onClose }: Props) {
               </a>
             )}
             {alert.reporting.notes && (
-              <div className="text-[10px] text-amber-200/50 leading-relaxed border-t border-amber-500/20 pt-2">
+              <div className="text-2xs text-amber-200/50 leading-relaxed border-t border-amber-500/20 pt-2">
                 {alert.reporting.notes}
               </div>
             )}

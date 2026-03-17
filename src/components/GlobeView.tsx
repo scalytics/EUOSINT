@@ -263,7 +263,7 @@ export function GlobeView({
       {/* Header bar */}
       <div className="z-10 flex items-start justify-between p-4">
         <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Theatre</div>
+          <div className="text-xxs uppercase tracking-[0.18em] text-siem-muted">Theatre</div>
           <div className="mt-1 text-lg font-semibold text-siem-text">
             {regionFilter === "all"
               ? "Global operating picture"
@@ -282,7 +282,7 @@ export function GlobeView({
               key={region}
               type="button"
               onClick={() => onRegionChange(region)}
-              className={`rounded-xl border px-3 py-2 text-[11px] uppercase tracking-[0.18em] transition-colors ${
+              className={`rounded-xl border px-3 py-2 text-xxs uppercase tracking-[0.18em] transition-colors ${
                 regionFilter === region
                   ? "border-siem-accent bg-siem-accent/16 text-siem-text"
                   : "border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/40 hover:bg-siem-accent/8"
@@ -300,7 +300,7 @@ export function GlobeView({
           <div ref={containerRef} className="absolute inset-0 overflow-hidden rounded-[1.4rem] border border-siem-border" />
 
           <div className="pointer-events-none absolute left-1/2 top-[-5px] z-[1000] -translate-x-1/2">
-            <div className="flex items-center gap-2 rounded-full border border-siem-border/80 bg-siem-panel/92 px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-siem-muted shadow-[0_10px_24px_rgba(0,0,0,0.24)] backdrop-blur-sm">
+            <div className="flex items-center gap-2 rounded-full border border-siem-border/80 bg-siem-panel/92 px-3 py-1.5 text-2xs uppercase tracking-[0.14em] text-siem-muted shadow-[0_10px_24px_rgba(0,0,0,0.24)] backdrop-blur-sm">
               {(
                 [
                   ["Critical", "bg-siem-critical"],
@@ -321,7 +321,7 @@ export function GlobeView({
 
         <aside className="m-4 ml-0 mt-0 flex flex-col gap-3 overflow-y-auto">
           <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Hot sectors</div>
+            <div className="text-xxs uppercase tracking-[0.18em] text-siem-muted">Hot sectors</div>
             <div className="mt-3 space-y-2">
               {topClusters.map((cluster) => (
                 <button
@@ -335,7 +335,7 @@ export function GlobeView({
                   }`}
                 >
                   <div className="text-sm text-siem-text">{cluster.title}</div>
-                  <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-siem-muted">
+                  <div className="mt-1 text-xxs uppercase tracking-[0.16em] text-siem-muted">
                     {cluster.count} alerts in sector
                   </div>
                 </button>
@@ -344,7 +344,7 @@ export function GlobeView({
           </div>
           {activitySpikes.length > 0 && (
             <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Activity spikes</div>
+              <div className="text-xxs uppercase tracking-[0.18em] text-siem-muted">Activity spikes</div>
               <div className="mt-3 space-y-1.5">
                 {activitySpikes.slice(0, 5).map((spike) => (
                   <button
@@ -356,7 +356,7 @@ export function GlobeView({
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs text-siem-text truncate">{spike.country}</span>
                       <span
-                        className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border ${
+                        className={`shrink-0 rounded px-1.5 py-0.5 text-3xs font-bold uppercase tracking-wider border ${
                           spike.level === "surge"
                             ? "bg-red-500/15 text-red-300 border-red-500/30"
                             : "bg-amber-500/15 text-amber-300 border-amber-500/30"
@@ -365,7 +365,7 @@ export function GlobeView({
                         {spike.level === "surge" ? "Surge" : "Elevated"}
                       </span>
                     </div>
-                    <div className="mt-1 text-[10px] text-siem-muted font-mono">
+                    <div className="mt-1 text-2xs text-siem-muted font-mono">
                       {spike.last24h} alerts / 24h — {spike.ratio}x baseline
                     </div>
                   </button>
@@ -374,7 +374,7 @@ export function GlobeView({
             </div>
           )}
           <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Layers</div>
+            <div className="text-xxs uppercase tracking-[0.18em] text-siem-muted">Layers</div>
             <div className="mt-3 space-y-1.5">
               {OVERLAYS.map((overlay) => (
                 <button

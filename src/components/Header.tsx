@@ -136,7 +136,7 @@ function FeedFocus({
   return (
     <div ref={containerRef} className="relative">
       <div className="rounded-2xl border border-siem-border bg-siem-panel-strong px-3 py-2">
-        <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-siem-muted">
+        <div className="mb-1 flex items-center gap-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
           <Radar size={11} />
           Feed focus
         </div>
@@ -180,14 +180,14 @@ function FeedFocus({
             <button
               type="button"
               onClick={() => onSelectedSourceIdsChange([])}
-              className="w-full rounded-lg border border-siem-accent/35 bg-siem-accent/12 px-3 py-2 text-left text-[11px] uppercase tracking-[0.16em] text-siem-text"
+              className="w-full rounded-lg border border-siem-accent/35 bg-siem-accent/12 px-3 py-2 text-left text-xxs uppercase tracking-[0.16em] text-siem-text"
             >
               All feeds
             </button>
           </div>
           <div className="max-h-72 overflow-y-auto p-1">
             {filteredSources.length === 0 && (
-              <div className="px-3 py-4 text-center text-[11px] text-siem-muted">No matching feeds</div>
+              <div className="px-3 py-4 text-center text-xxs text-siem-muted">No matching feeds</div>
             )}
             {filteredSources.map((source) => {
               const selected = selectedSourceIds.includes(source.id);
@@ -204,11 +204,11 @@ function FeedFocus({
                 >
                   <span className="min-w-0">
                     <span className="block truncate">{source.name}</span>
-                    <span className="block truncate text-[10px] text-siem-muted">
+                    <span className="block truncate text-2xs text-siem-muted">
                       {source.country} · {source.id}
                     </span>
                   </span>
-                  <span className="shrink-0 text-[10px] text-siem-muted">{source.count}</span>
+                  <span className="shrink-0 text-2xs text-siem-muted">{source.count}</span>
                 </button>
               );
             })}
@@ -283,7 +283,7 @@ function SearchBar({
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
           <button
             type="submit"
-            className="rounded-full border border-siem-accent/35 bg-siem-accent/14 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-siem-text"
+            className="rounded-full border border-siem-accent/35 bg-siem-accent/14 px-3 py-1.5 text-2xs uppercase tracking-[0.16em] text-siem-text"
           >
             Search
           </button>
@@ -292,7 +292,7 @@ function SearchBar({
 
       {isOpen && filteredHistory.length > 0 && (
         <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-2xl border border-siem-border bg-siem-panel-strong shadow-[0_16px_48px_rgba(0,0,0,0.4)]">
-          <div className="border-b border-siem-border px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-siem-muted">
+          <div className="border-b border-siem-border px-4 py-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
             Recent queries
           </div>
           <div className="p-2">
@@ -392,7 +392,7 @@ function RegionSearch({
   return (
     <div ref={containerRef} className="relative">
       <div className="rounded-2xl border border-siem-border bg-siem-panel-strong px-3 py-2">
-        <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-siem-muted">
+        <div className="mb-1 flex items-center gap-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
           <Globe2 size={11} />
           Region scope
         </div>
@@ -434,7 +434,7 @@ function RegionSearch({
           </div>
           <div className="max-h-64 overflow-y-auto p-1">
             {filtered.length === 0 && (
-              <div className="px-3 py-4 text-center text-[11px] text-siem-muted">No matches</div>
+              <div className="px-3 py-4 text-center text-xxs text-siem-muted">No matches</div>
             )}
             {filtered.map((item) => (
               <button
@@ -459,7 +459,7 @@ function RegionSearch({
                   />
                   <span className="truncate">{item.label}</span>
                 </span>
-                <span className="text-[10px] text-siem-muted shrink-0">{item.count}</span>
+                <span className="text-2xs text-siem-muted shrink-0">{item.count}</span>
               </button>
             ))}
           </div>
@@ -492,7 +492,7 @@ export function Header({
               <Shield size={20} strokeWidth={2.1} />
             </div>
             <div>
-              <div className="text-[11px] uppercase tracking-[0.22em] text-siem-muted">
+              <div className="text-xxs uppercase tracking-[0.22em] text-siem-muted">
                 Scalytics OSINT
               </div>
               <div className="mt-1 text-xl font-semibold tracking-[0.02em] text-siem-text">
