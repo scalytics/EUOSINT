@@ -6576,5 +6576,275 @@
     "lat": 12.5,
     "lng": 43.0,
     "include_keywords": ["vessel", "ship", "maritime", "piracy", "attack", "seized", "tanker", "cargo", "port", "navy", "houthi", "red sea", "strait"]
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-deepstateua",
+      "authority_name": "DeepState UA",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "Europe",
+      "authority_type": "osint",
+      "base_url": "https://t.me/DeepStateUA"
+    },
+    "feed_url": "https://t.me/s/DeepStateUA",
+    "category": "conflict_monitoring",
+    "region_tag": "UA",
+    "lat": 50.45,
+    "lng": 30.52,
+    "include_keywords": ["attack", "strike", "front", "advance", "retreat", "shelling", "missile", "drone", "offensive", "captured", "liberated", "troops", "map"]
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-operativnoZSU",
+      "authority_name": "General Staff ZSU",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "Europe",
+      "authority_type": "government",
+      "base_url": "https://t.me/operativnoZSU"
+    },
+    "feed_url": "https://t.me/s/operativnoZSU",
+    "category": "conflict_monitoring",
+    "region_tag": "UA",
+    "lat": 50.45,
+    "lng": 30.52,
+    "include_keywords": ["attack", "strike", "missile", "drone", "shelling", "killed", "destroyed", "offensive", "defense", "front", "enemy", "losses"]
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-abualiexpress",
+      "authority_name": "Abu Ali Express",
+      "country": "Israel",
+      "country_code": "IL",
+      "region": "Middle East",
+      "authority_type": "osint",
+      "base_url": "https://t.me/AbuAliExpress"
+    },
+    "feed_url": "https://t.me/s/AbuAliExpressEnglish",
+    "category": "conflict_monitoring",
+    "region_tag": "IL",
+    "lat": 31.77,
+    "lng": 35.21,
+    "include_keywords": ["attack", "strike", "rocket", "missile", "killed", "military", "hamas", "hezbollah", "gaza", "lebanon", "iran", "drone", "airstrike", "ceasefire"]
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-sudanwarmonitor",
+      "authority_name": "Sudan War Monitor",
+      "country": "Sudan",
+      "country_code": "SD",
+      "region": "Africa",
+      "authority_type": "osint",
+      "base_url": "https://t.me/SudanWarMonitor"
+    },
+    "feed_url": "https://t.me/s/SudanWarMonitor",
+    "category": "conflict_monitoring",
+    "region_tag": "SD",
+    "lat": 15.59,
+    "lng": 32.53,
+    "include_keywords": ["attack", "killed", "RSF", "SAF", "clashes", "shelling", "airstrike", "Khartoum", "Darfur", "displaced", "fighting", "military"]
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-menaconflict",
+      "authority_name": "MENA Conflict",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Middle East",
+      "authority_type": "osint",
+      "base_url": "https://t.me/MENAConflict"
+    },
+    "feed_url": "https://t.me/s/MENAConflict",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 33.0,
+    "lng": 44.0,
+    "include_keywords": ["attack", "strike", "killed", "missile", "drone", "airstrike", "militia", "ceasefire", "conflict", "war", "bomb", "military", "syria", "iraq", "yemen"]
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-modrussia",
+      "authority_name": "Russian MoD",
+      "country": "Russia",
+      "country_code": "RU",
+      "region": "Europe",
+      "authority_type": "government",
+      "base_url": "https://t.me/mod_russia_en"
+    },
+    "feed_url": "https://t.me/s/mod_russia_en",
+    "category": "conflict_monitoring",
+    "region_tag": "RU",
+    "lat": 55.75,
+    "lng": 37.62,
+    "include_keywords": ["attack", "strike", "destroyed", "missile", "drone", "offensive", "killed", "military", "front", "defense", "troops", "losses"]
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-warmonitors",
+      "authority_name": "War Monitor",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/WarMonitors"
+    },
+    "feed_url": "https://t.me/s/WarMonitors",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 35.0,
+    "lng": 39.0,
+    "include_keywords": ["attack", "strike", "killed", "missile", "drone", "explosion", "military", "conflict", "war", "offensive", "front", "ceasefire"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "us-state-fto",
+      "authority_name": "US State Dept — Foreign Terrorist Organizations",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "national_security",
+      "base_url": "https://www.state.gov"
+    },
+    "feed_url": "https://www.state.gov/rss/channels/bureau-of-counterterrorism.xml",
+    "category": "terrorism_tip",
+    "region_tag": "INT",
+    "lat": 38.89,
+    "lng": -77.05,
+    "include_keywords": ["terrorist", "designation", "sanction", "FTO", "counter-terrorism", "threat", "attack", "extremist", "listing"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "us-nctc-alerts",
+      "authority_name": "US NCTC / ODNI Press",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "intelligence",
+      "base_url": "https://www.dni.gov"
+    },
+    "feed_url": "https://www.dni.gov/index.php?option=com_content&view=category&id=5&Itemid=222&format=feed&type=rss",
+    "category": "terrorism_tip",
+    "region_tag": "INT",
+    "lat": 38.93,
+    "lng": -77.02,
+    "include_keywords": ["terrorist", "threat", "extremist", "counterterrorism", "attack", "homeland", "assessment"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eu-council-sanctions",
+      "authority_name": "EU Council — Sanctions / Restrictive Measures",
+      "country": "Belgium",
+      "country_code": "BE",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.consilium.europa.eu"
+    },
+    "feed_url": "https://www.consilium.europa.eu/en/policies/sanctions/rss.xml",
+    "category": "terrorism_tip",
+    "region_tag": "EU",
+    "lat": 50.84,
+    "lng": 4.36,
+    "include_keywords": ["terrorist", "sanctions", "designation", "restrictive measures", "listing", "al-Qaeda", "ISIS", "ISIL", "Daesh", "proliferation"]
+  },
+  {
+    "type": "html-list",
+    "source": {
+      "source_id": "uk-home-proscribed",
+      "authority_name": "UK Home Office — Proscribed Organisations",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.gov.uk"
+    },
+    "feed_url": "https://www.gov.uk/government/publications/proscribed-terror-groups-or-organisations--2.atom",
+    "category": "terrorism_tip",
+    "region_tag": "GB",
+    "lat": 51.5,
+    "lng": -0.13,
+    "include_keywords": ["proscribed", "terrorist", "organisation", "designation", "ban", "extremist"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-sc-sanctions",
+      "authority_name": "UN Security Council — Sanctions Committees",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.un.org"
+    },
+    "feed_url": "https://www.un.org/securitycouncil/content/news/rss.xml",
+    "category": "terrorism_tip",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97,
+    "include_keywords": ["sanctions", "terrorist", "ISIL", "Al-Qaida", "listing", "designation", "Taliban", "arms embargo", "travel ban", "asset freeze"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fatf-statements",
+      "authority_name": "FATF — Financial Action Task Force",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.fatf-gafi.org"
+    },
+    "feed_url": "https://www.fatf-gafi.org/rss/fatf-news.xml",
+    "category": "terrorism_tip",
+    "region_tag": "INT",
+    "lat": 48.86,
+    "lng": 2.32,
+    "include_keywords": ["terrorist", "financing", "money laundering", "high-risk", "jurisdiction", "grey list", "black list", "sanctions", "proliferation"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-asio-threats",
+      "authority_name": "ASIO — Australian Security Intelligence",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Oceania",
+      "authority_type": "intelligence",
+      "base_url": "https://www.asio.gov.au"
+    },
+    "feed_url": "https://www.asio.gov.au/rss.xml",
+    "category": "terrorism_tip",
+    "region_tag": "AU",
+    "lat": -35.28,
+    "lng": 149.13,
+    "include_keywords": ["terrorist", "threat", "extremist", "espionage", "security", "assessment", "attack"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fr-dgsi-news",
+      "authority_name": "DGSI — French Internal Security",
+      "country": "France",
+      "country_code": "FR",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.dgsi.interieur.gouv.fr"
+    },
+    "feed_url": "https://www.dgsi.interieur.gouv.fr/rss",
+    "category": "terrorism_tip",
+    "region_tag": "FR",
+    "lat": 48.86,
+    "lng": 2.32,
+    "include_keywords": ["terrorisme", "menace", "attentat", "radicalisation", "extremisme", "terrorist", "threat"]
   }
 ]

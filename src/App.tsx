@@ -312,6 +312,7 @@ export default function App() {
               : categoryFilter !== "all"
                 ? `Scoped to ${categoryFilter}`
                 : "All live streams"}
+            {" // 14-day collection window"}
           </span>
         </span>
         <span className="font-mono tabular-nums text-siem-muted">{utcTime}</span>

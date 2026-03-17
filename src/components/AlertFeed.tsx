@@ -372,7 +372,7 @@ export function AlertFeed({
                 : `${regionFilter} scope`}
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-[10px] font-mono uppercase tracking-wide">
+        <div className="grid grid-cols-3 gap-2 text-[10px] font-mono uppercase tracking-wide">
           <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
             <span className="text-siem-muted">Active</span>{" "}
             <span className="text-siem-text">{alerts.filter((a) => a.status === "active").length}</span>
@@ -382,6 +382,10 @@ export function AlertFeed({
             <span className="text-siem-text">
               {alerts.filter((a) => a.reporting?.url || a.reporting?.phone).length}
             </span>
+          </div>
+          <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+            <span className="text-siem-muted">Window</span>{" "}
+            <span className="text-siem-text">14d</span>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-2">
