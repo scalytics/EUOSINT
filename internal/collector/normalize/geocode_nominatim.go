@@ -176,4 +176,3 @@ func (n *NominatimClient) CacheStats() (total int, hits int) {
 	}
 	return total, hits
 }
-

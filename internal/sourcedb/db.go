@@ -676,11 +676,11 @@ LIMIT ?`, args...)
 	var results []model.Alert
 	for rows.Next() {
 		var (
-			a           model.Alert
-			sourceJSON  string
-			reportJSON  string
-			triageJSON  string
-			rank        float64
+			a          model.Alert
+			sourceJSON string
+			reportJSON string
+			triageJSON string
+			rank       float64
 		)
 		if err := rows.Scan(&a.AlertID, &a.SourceID, &a.Status, &a.FirstSeen, &a.LastSeen,
 			&a.Title, &a.CanonicalURL, &a.Category, &a.Severity, &a.RegionTag,

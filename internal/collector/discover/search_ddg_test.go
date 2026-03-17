@@ -28,8 +28,8 @@ func TestExtractDDGURLs(t *testing.T) {
 
 	// Should have 3 URLs (DDG internal filtered out).
 	expected := map[string]bool{
-		"https://www.ncsc.gov.uk/rss/all":                   false,
-		"https://www.cert.se/feed/rss.xml":                  false,
+		"https://www.ncsc.gov.uk/rss/all":                    false,
+		"https://www.cert.se/feed/rss.xml":                   false,
 		"https://www.justice.gov/feeds/opa/justice-news.xml": false,
 	}
 
