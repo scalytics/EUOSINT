@@ -31,7 +31,7 @@ interface Props {
 }
 
 interface PolygonFeature {
-  geometry: { type: string; coordinates: number[][][] };
+  geometry: { type: string; coordinates: unknown };
   properties: Record<string, string>;
   __color: string;
   __label: string;
@@ -199,7 +199,7 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
     Promise.all(fetches).then(() => {
       globe
         .polygonsData(polygons)
-        .polygonGeoJsonGeometry((d: object) => (d as PolygonFeature).geometry)
+        .polygonGeoJsonGeometry("geometry")
         .pathsData(paths)
         .pathPoints("coords")
         .pathPointLat((p: unknown) => (p as number[])[0])
