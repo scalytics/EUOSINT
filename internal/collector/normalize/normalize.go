@@ -798,13 +798,13 @@ func jitterRadiusKM(geoSource string) (float64, float64) {
 	case "nominatim":
 		return 0.8, 2.5
 	case "capital":
-		return 1.2, 4
+		return 0.5, 1.5
 	case "country-text":
-		return 4, 14
+		return 0.5, 1.5
 	case "registry":
-		return 2, 10
+		return 0.5, 1.5
 	default:
-		return 2, 10
+		return 0.5, 1.5
 	}
 }
 
