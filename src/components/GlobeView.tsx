@@ -4,7 +4,7 @@
  * See NOTICE for provenance and LICENSE for repository-local terms.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
@@ -13,6 +13,8 @@ import type { Alert } from "@/types/alert";
 import { alertMatchesRegionFilter } from "@/lib/regions";
 import { severityHex, textHex } from "@/lib/theme";
 import { OVERLAYS, loadOverlay, type OverlayId } from "@/lib/map-overlays";
+
+const Globe3D = lazy(() => import("@/components/Globe3D").then((m) => ({ default: m.Globe3D })));
 
 /* ── Region viewports ─────────────────────────────────────────────── */
 
@@ -61,6 +63,7 @@ export function GlobeView({
   const markerLookup = useRef<Map<string, L.CircleMarker>>(new Map());
   const overlayLayers = useRef<Map<OverlayId, L.LayerGroup>>(new Map());
   const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set());
+  const [view3d, setView3d] = useState(false);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
@@ -259,7 +262,26 @@ export function GlobeView({
       {/* Header bar */}
       <div className="z-10 flex items-start justify-between p-4">
         <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Theatre</div>
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Theatre</div>
+            <button
+              type="button"
+              onClick={() => setView3d((v) => !v)}
+              className="flex items-center gap-1.5 rounded-lg border border-siem-border bg-siem-panel-strong px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-siem-muted transition-colors hover:border-siem-accent/40 hover:text-siem-text"
+            >
+              <span className={view3d ? "text-siem-muted" : "text-siem-accent"}>2D</span>
+              <span
+                className="relative inline-block h-3.5 w-7 rounded-full transition-colors"
+                style={{ background: view3d ? "var(--color-siem-accent)" : "var(--color-siem-border)" }}
+              >
+                <span
+                  className="absolute top-0.5 h-2.5 w-2.5 rounded-full bg-siem-text transition-[left]"
+                  style={{ left: view3d ? 14 : 2 }}
+                />
+              </span>
+              <span className={view3d ? "text-siem-accent" : "text-siem-muted"}>3D</span>
+            </button>
+          </div>
           <div className="mt-1 text-lg font-semibold text-siem-text">
             {regionFilter === "all"
               ? "Global operating picture"
@@ -292,7 +314,19 @@ export function GlobeView({
 
       {/* Map + sidebar */}
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_16rem] gap-0">
-        <div ref={containerRef} className="relative m-4 mt-0 overflow-hidden rounded-[1.4rem] border border-siem-border" />
+        <div className="relative m-4 mt-0 min-h-0">
+          <div ref={containerRef} className={`absolute inset-0 overflow-hidden rounded-[1.4rem] border border-siem-border transition-opacity ${view3d ? "pointer-events-none opacity-0" : "opacity-100"}`} />
+          {view3d && (
+            <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center rounded-[1.4rem] border border-siem-border bg-siem-panel-strong text-sm text-siem-muted">Loading 3D globe…</div>}>
+              <Globe3D
+                alerts={visibleAlerts}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                regionFilter={regionFilter}
+              />
+            </Suspense>
+          )}
+        </div>
 
         <aside className="m-4 ml-0 mt-0 flex flex-col gap-3 overflow-y-auto">
           <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
