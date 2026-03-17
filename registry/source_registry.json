@@ -6466,8 +6466,7 @@
     "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 50.0,
-    "lng": 36.0,
-    "include_keywords": ["attack", "strike", "missile", "drone", "offensive", "killed", "destroyed", "advance", "retreat", "captured", "shelling", "front", "troops", "military"]
+    "lng": 36.0
   },
   {
     "type": "telegram",
@@ -6484,8 +6483,7 @@
     "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 48.0,
-    "lng": 35.0,
-    "include_keywords": ["attack", "strike", "missile", "drone", "explosion", "killed", "military", "front", "offensive", "shelling", "conflict"]
+    "lng": 35.0
   },
   {
     "type": "telegram",
@@ -6502,8 +6500,7 @@
     "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 50.0,
-    "lng": 37.0,
-    "include_keywords": ["attack", "strike", "missile", "drone", "offensive", "killed", "destroyed", "front", "advance", "retreat", "military", "map"]
+    "lng": 37.0
   },
   {
     "type": "telegram",
@@ -6520,8 +6517,7 @@
     "category": "conflict_monitoring",
     "region_tag": "UA",
     "lat": 50.45,
-    "lng": 30.52,
-    "include_keywords": ["attack", "missile", "drone", "shelling", "killed", "strike", "air raid", "alert", "military", "front", "defense"]
+    "lng": 30.52
   },
   {
     "type": "telegram",
@@ -6538,8 +6534,7 @@
     "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 33.0,
-    "lng": 44.0,
-    "include_keywords": ["attack", "strike", "missile", "drone", "killed", "explosion", "military", "ceasefire", "conflict", "war", "bomb", "airstrike"]
+    "lng": 44.0
   },
   {
     "type": "telegram",
@@ -6556,8 +6551,7 @@
     "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 48.0,
-    "lng": 37.0,
-    "include_keywords": ["attack", "strike", "shelling", "missile", "explosion", "killed", "military", "offensive", "front", "drone"]
+    "lng": 37.0
   },
   {
     "type": "telegram",
@@ -6574,8 +6568,7 @@
     "category": "maritime_security",
     "region_tag": "INT",
     "lat": 12.5,
-    "lng": 43.0,
-    "include_keywords": ["vessel", "ship", "maritime", "piracy", "attack", "seized", "tanker", "cargo", "port", "navy", "houthi", "red sea", "strait"]
+    "lng": 43.0
   },
   {
     "type": "telegram",
@@ -6592,8 +6585,7 @@
     "category": "conflict_monitoring",
     "region_tag": "UA",
     "lat": 50.45,
-    "lng": 30.52,
-    "include_keywords": ["attack", "strike", "front", "advance", "retreat", "shelling", "missile", "drone", "offensive", "captured", "liberated", "troops", "map"]
+    "lng": 30.52
   },
   {
     "type": "telegram",
@@ -6610,8 +6602,7 @@
     "category": "conflict_monitoring",
     "region_tag": "UA",
     "lat": 50.45,
-    "lng": 30.52,
-    "include_keywords": ["attack", "strike", "missile", "drone", "shelling", "killed", "destroyed", "offensive", "defense", "front", "enemy", "losses"]
+    "lng": 30.52
   },
   {
     "type": "telegram",
@@ -6628,8 +6619,7 @@
     "category": "conflict_monitoring",
     "region_tag": "IL",
     "lat": 31.77,
-    "lng": 35.21,
-    "include_keywords": ["attack", "strike", "rocket", "missile", "killed", "military", "hamas", "hezbollah", "gaza", "lebanon", "iran", "drone", "airstrike", "ceasefire"]
+    "lng": 35.21
   },
   {
     "type": "telegram",
@@ -6646,8 +6636,7 @@
     "category": "conflict_monitoring",
     "region_tag": "SD",
     "lat": 15.59,
-    "lng": 32.53,
-    "include_keywords": ["attack", "killed", "RSF", "SAF", "clashes", "shelling", "airstrike", "Khartoum", "Darfur", "displaced", "fighting", "military"]
+    "lng": 32.53
   },
   {
     "type": "telegram",
@@ -6664,8 +6653,7 @@
     "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 33.0,
-    "lng": 44.0,
-    "include_keywords": ["attack", "strike", "killed", "missile", "drone", "airstrike", "militia", "ceasefire", "conflict", "war", "bomb", "military", "syria", "iraq", "yemen"]
+    "lng": 44.0
   },
   {
     "type": "telegram",
@@ -6682,8 +6670,7 @@
     "category": "conflict_monitoring",
     "region_tag": "RU",
     "lat": 55.75,
-    "lng": 37.62,
-    "include_keywords": ["attack", "strike", "destroyed", "missile", "drone", "offensive", "killed", "military", "front", "defense", "troops", "losses"]
+    "lng": 37.62
   },
   {
     "type": "telegram",
@@ -6700,8 +6687,7 @@
     "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 35.0,
-    "lng": 39.0,
-    "include_keywords": ["attack", "strike", "killed", "missile", "drone", "explosion", "military", "conflict", "war", "offensive", "front", "ceasefire"]
+    "lng": 39.0
   },
   {
     "type": "rss",
