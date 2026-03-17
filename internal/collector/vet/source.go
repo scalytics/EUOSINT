@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/scalytics/euosint/internal/collector/config"
@@ -34,14 +35,46 @@ type Input struct {
 }
 
 type Verdict struct {
-	Approve              bool     `json:"approve"`
-	PromotionStatus      string   `json:"promotion_status"`
-	Category             string   `json:"category,omitempty"`
-	Level                string   `json:"level"`
-	MissionTags          []string `json:"mission_tags"`
-	SourceQuality        float64  `json:"source_quality"`
-	OperationalRelevance float64  `json:"operational_relevance"`
-	Reason               string   `json:"reason"`
+	Approve              bool      `json:"approve"`
+	PromotionStatus      string    `json:"promotion_status"`
+	Category             string    `json:"category,omitempty"`
+	Level                string    `json:"level"`
+	MissionTags          []string  `json:"mission_tags"`
+	SourceQuality        flexFloat `json:"source_quality"`
+	OperationalRelevance flexFloat `json:"operational_relevance"`
+	Reason               string    `json:"reason"`
+}
+
+type flexFloat float64
+
+func (f *flexFloat) UnmarshalJSON(data []byte) error {
+	raw := strings.TrimSpace(string(data))
+	if raw == "" || raw == "null" {
+		*f = 0
+		return nil
+	}
+
+	var num float64
+	if err := json.Unmarshal(data, &num); err == nil {
+		*f = flexFloat(num)
+		return nil
+	}
+
+	var asString string
+	if err := json.Unmarshal(data, &asString); err != nil {
+		return err
+	}
+	asString = strings.TrimSpace(asString)
+	if asString == "" {
+		*f = 0
+		return nil
+	}
+	num, err := strconv.ParseFloat(asString, 64)
+	if err != nil {
+		return err
+	}
+	*f = flexFloat(num)
+	return nil
 }
 
 type Vetter struct {
@@ -179,8 +212,8 @@ func (v *Verdict) normalize() {
 	default:
 		v.Level = "national"
 	}
-	v.SourceQuality = clamp01(v.SourceQuality)
-	v.OperationalRelevance = clamp01(v.OperationalRelevance)
+	v.SourceQuality = flexFloat(clamp01(float64(v.SourceQuality)))
+	v.OperationalRelevance = flexFloat(clamp01(float64(v.OperationalRelevance)))
 	if !v.Approve {
 		v.PromotionStatus = "rejected"
 	}

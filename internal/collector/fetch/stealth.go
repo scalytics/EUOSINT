@@ -65,6 +65,8 @@ type dualProtoTransport struct {
 
 	mu          sync.Mutex
 	protoByHost map[string]string // scheme://hostname -> "h2" | "h1"
+	roundTripH1 func(*http.Request) (*http.Response, error)
+	roundTripH2 func(*http.Request) (*http.Response, error)
 }
 
 func (dt *dualProtoTransport) dialTLS(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -132,18 +134,21 @@ func (s *stealthRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 
 	switch proto {
 	case "h2":
-		res, err = s.dual.h2.RoundTrip(req)
+		res, err = s.dual.doRoundTripH2(req)
+		if err != nil && shouldRetryH2AsH1(err) {
+			res, err = s.dual.doRoundTripH1(req)
+		}
 	case "h1":
-		res, err = s.dual.h1.RoundTrip(req)
+		res, err = s.dual.doRoundTripH1(req)
 	default:
 		// Unknown host — try h1 first. If the server negotiates h2 via
 		// ALPN, the h1 transport will fail with "malformed HTTP response"
 		// because it tries HTTP/1.1 framing on an h2 connection. The
 		// dialTLS callback caches the negotiated proto regardless, so we
 		// can detect this and retry with the h2 transport.
-		res, err = s.dual.h1.RoundTrip(req)
+		res, err = s.dual.doRoundTripH1(req)
 		if err != nil && s.dual.getProto(req.URL.Scheme, host) == "h2" {
-			res, err = s.dual.h2.RoundTrip(req)
+			res, err = s.dual.doRoundTripH2(req)
 		}
 	}
 
@@ -155,6 +160,30 @@ func (s *stealthRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 		res.Body = io.NopCloser(bufio.NewReader(res.Body))
 	}
 	return res, nil
+}
+
+func shouldRetryH2AsH1(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "stream error") ||
+		strings.Contains(msg, "internal_error") ||
+		strings.Contains(msg, "received from peer")
+}
+
+func (dt *dualProtoTransport) doRoundTripH1(req *http.Request) (*http.Response, error) {
+	if dt.roundTripH1 != nil {
+		return dt.roundTripH1(req)
+	}
+	return dt.h1.RoundTrip(req)
+}
+
+func (dt *dualProtoTransport) doRoundTripH2(req *http.Request) (*http.Response, error) {
+	if dt.roundTripH2 != nil {
+		return dt.roundTripH2(req)
+	}
+	return dt.h2.RoundTrip(req)
 }
 
 // decompressBody wraps the response body reader to handle Content-Encoding.

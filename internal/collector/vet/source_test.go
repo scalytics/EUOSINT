@@ -20,6 +20,20 @@ func TestDecodeVerdictExtractsJSONBlock(t *testing.T) {
 	}
 }
 
+func TestDecodeVerdictAcceptsNumericStrings(t *testing.T) {
+	verdict, err := decodeVerdict(`{"approve":true,"promotion_status":"active","level":"national","source_quality":"0.9","operational_relevance":"0.8","mission_tags":["organized_crime"],"reason":"high signal"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verdict.normalize()
+	if float64(verdict.SourceQuality) != 0.9 {
+		t.Fatalf("expected source_quality 0.9, got %v", verdict.SourceQuality)
+	}
+	if float64(verdict.OperationalRelevance) != 0.8 {
+		t.Fatalf("expected operational_relevance 0.8, got %v", verdict.OperationalRelevance)
+	}
+}
+
 func TestDeterministicRejectsLocalAndMissingSamples(t *testing.T) {
 	if _, reject := deterministicReject(Input{AuthorityName: "City of Valletta Police Department", Samples: []Sample{{Title: "x"}}}); !reject {
 		t.Fatal("expected local police deterministic reject")
