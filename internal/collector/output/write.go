@@ -15,7 +15,7 @@ import (
 )
 
 func Write(cfg config.Config, active []model.Alert, filtered []model.Alert, state []model.Alert, sourceHealth []model.SourceHealthEntry, duplicateAudit model.DuplicateAudit, replacementQueue []model.SourceReplacementCandidate) error {
-	paths := []string{cfg.OutputPath, cfg.FilteredOutputPath, cfg.StateOutputPath, cfg.SourceHealthOutputPath, cfg.ReplacementQueuePath}
+	paths := []string{cfg.OutputPath, cfg.FilteredOutputPath, cfg.StateOutputPath, cfg.SourceHealthOutputPath}
 	for _, path := range paths {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return err
@@ -44,17 +44,7 @@ func Write(cfg config.Config, active []model.Alert, filtered []model.Alert, stat
 	if doc.ReplacementQueue == nil {
 		doc.ReplacementQueue = []model.SourceReplacementCandidate{}
 	}
-	if err := writeJSON(cfg.SourceHealthOutputPath, doc); err != nil {
-		return err
-	}
-	queueDoc := model.SourceReplacementDocument{
-		GeneratedAt: doc.GeneratedAt,
-		Sources:     replacementQueue,
-	}
-	if queueDoc.Sources == nil {
-		queueDoc.Sources = []model.SourceReplacementCandidate{}
-	}
-	return writeJSON(cfg.ReplacementQueuePath, queueDoc)
+	return writeJSON(cfg.SourceHealthOutputPath, doc)
 }
 
 func writeJSON(path string, value any) error {

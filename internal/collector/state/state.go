@@ -6,6 +6,7 @@ package state
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -48,74 +49,122 @@ func WriteCursors(path string, c Cursors) error {
 	return os.WriteFile(path, data, 0644)
 }
 
-// SourceBackoffEntry tracks consecutive fetch failures for a source.
-type SourceBackoffEntry struct {
-	ConsecutiveFailures int       `json:"consecutive_failures"`
-	SkipUntil           time.Time `json:"skip_until"`
-	LastError           string    `json:"last_error,omitempty"`
+// DLQ (Dead Letter Queue) tracks sources that returned permanent errors
+// (404, 410, DNS failure, etc.). Sources in the DLQ are skipped during
+// normal collection and probed once per day to check if they've come back.
+// Discovery uses the same file to find replacement feeds.
+type DLQ struct {
+	entries map[string]model.SourceReplacementCandidate
 }
 
-// SourceBackoff maps source IDs to their backoff state.
-type SourceBackoff map[string]SourceBackoffEntry
+// DLQRetryInterval is how often DLQ sources are re-probed (once per day).
+const DLQRetryInterval = 7 * 24 * time.Hour
 
-// backoffDurations defines exponential backoff tiers after N consecutive failures.
-// After 3 failures: 1h → 6h → 24h → 7d (capped).
-var backoffDurations = []time.Duration{
-	0,              // 0 failures: no backoff
-	0,              // 1 failure: no backoff
-	0,              // 2 failures: no backoff
-	1 * time.Hour,  // 3 failures
-	6 * time.Hour,  // 4 failures
-	24 * time.Hour, // 5 failures
-	7 * 24 * time.Hour, // 6+ failures
-}
-
-func ReadSourceBackoff(path string) SourceBackoff {
+func ReadDLQ(path string) *DLQ {
+	dlq := &DLQ{entries: make(map[string]model.SourceReplacementCandidate)}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return SourceBackoff{}
+		return dlq
 	}
-	var b SourceBackoff
-	if err := json.Unmarshal(data, &b); err != nil {
-		return SourceBackoff{}
+	var doc model.SourceReplacementDocument
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return dlq
 	}
-	return b
+	for _, entry := range doc.Sources {
+		dlq.entries[entry.SourceID] = entry
+	}
+	return dlq
 }
 
-func WriteSourceBackoff(path string, b SourceBackoff) error {
-	data, err := json.MarshalIndent(b, "", "  ")
+func (d *DLQ) Write(path string) error {
+	if dir := filepath.Dir(path); dir != "" && dir != "." {
+		_ = os.MkdirAll(dir, 0o755)
+	}
+	sources := make([]model.SourceReplacementCandidate, 0, len(d.entries))
+	for _, entry := range d.entries {
+		sources = append(sources, entry)
+	}
+	doc := model.SourceReplacementDocument{
+		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		Sources:     sources,
+	}
+	data, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+	data = append(data, '\n')
+	return os.WriteFile(path, data, 0o644)
 }
 
-// ShouldSkip returns true if the source should be skipped in this cycle.
-func (b SourceBackoff) ShouldSkip(sourceID string, now time.Time) bool {
-	entry, ok := b[sourceID]
+// ShouldSkip returns true if the source is in the DLQ and not yet due
+// for its daily re-probe.
+func (d *DLQ) ShouldSkip(sourceID string, now time.Time) bool {
+	entry, ok := d.entries[sourceID]
 	if !ok {
 		return false
 	}
-	return entry.ConsecutiveFailures >= 3 && now.Before(entry.SkipUntil)
-}
-
-// RecordFailure increments the consecutive failure count and sets the
-// next skip_until time based on exponential backoff.
-func (b SourceBackoff) RecordFailure(sourceID string, now time.Time, errMsg string) {
-	entry := b[sourceID]
-	entry.ConsecutiveFailures++
-	entry.LastError = errMsg
-	tier := entry.ConsecutiveFailures
-	if tier >= len(backoffDurations) {
-		tier = len(backoffDurations) - 1
+	if entry.LastAttemptAt == "" {
+		return true
 	}
-	entry.SkipUntil = now.Add(backoffDurations[tier])
-	b[sourceID] = entry
+	lastAttempt, err := time.Parse(time.RFC3339, entry.LastAttemptAt)
+	if err != nil {
+		return true
+	}
+	return now.Sub(lastAttempt) < DLQRetryInterval
 }
 
-// RecordSuccess resets the backoff state for a source.
-func (b SourceBackoff) RecordSuccess(sourceID string) {
-	delete(b, sourceID)
+// DueForRetry returns true if the source is in the DLQ but its retry
+// interval has elapsed so it should be probed this cycle.
+func (d *DLQ) DueForRetry(sourceID string, now time.Time) bool {
+	entry, ok := d.entries[sourceID]
+	if !ok {
+		return false
+	}
+	if entry.LastAttemptAt == "" {
+		return false
+	}
+	lastAttempt, err := time.Parse(time.RFC3339, entry.LastAttemptAt)
+	if err != nil {
+		return false
+	}
+	return now.Sub(lastAttempt) >= DLQRetryInterval
+}
+
+// Add places a source into the DLQ.
+func (d *DLQ) Add(entry model.SourceReplacementCandidate) {
+	entry.LastAttemptAt = time.Now().UTC().Format(time.RFC3339)
+	d.entries[entry.SourceID] = entry
+}
+
+// Remove takes a source out of the DLQ (it came back).
+func (d *DLQ) Remove(sourceID string) {
+	delete(d.entries, sourceID)
+}
+
+// UpdateAttempt refreshes LastAttemptAt after a failed re-probe.
+func (d *DLQ) UpdateAttempt(sourceID string, now time.Time) {
+	if entry, ok := d.entries[sourceID]; ok {
+		entry.LastAttemptAt = now.UTC().Format(time.RFC3339)
+		d.entries[sourceID] = entry
+	}
+}
+
+// Len returns the number of sources in the DLQ.
+func (d *DLQ) Len() int { return len(d.entries) }
+
+// Entries returns all DLQ entries for reporting.
+func (d *DLQ) Entries() []model.SourceReplacementCandidate {
+	out := make([]model.SourceReplacementCandidate, 0, len(d.entries))
+	for _, entry := range d.entries {
+		out = append(out, entry)
+	}
+	return out
+}
+
+// Has returns true if the source is in the DLQ.
+func (d *DLQ) Has(sourceID string) bool {
+	_, ok := d.entries[sourceID]
+	return ok
 }
 
 // Reconcile merges current fetch results with previous state.

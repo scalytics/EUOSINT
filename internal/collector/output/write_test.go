@@ -25,7 +25,7 @@ func TestWriteOutputs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range []string{cfg.OutputPath, cfg.FilteredOutputPath, cfg.StateOutputPath, cfg.SourceHealthOutputPath, cfg.ReplacementQueuePath} {
+	for _, path := range []string{cfg.OutputPath, cfg.FilteredOutputPath, cfg.StateOutputPath, cfg.SourceHealthOutputPath} {
 		if _, err := os.Stat(path); err != nil {
 			t.Fatalf("expected output file %s: %v", path, err)
 		}

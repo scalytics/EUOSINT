@@ -112,7 +112,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 
 	cursors := state.ReadCursors(cfg.CursorsPath)
-	backoff := state.ReadSourceBackoff(cfg.BackoffPath)
+	dlq := state.ReadDLQ(cfg.ReplacementQueuePath)
 
 	// Load previous alerts early so progress snapshots include them.
 	// This prevents the dashboard from going blank during a sweep.
@@ -167,7 +167,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 					if ctx.Err() != nil {
 						return
 					}
-					if backoff.ShouldSkip(source.Source.SourceID, now) {
+					if dlq.ShouldSkip(source.Source.SourceID, now) {
 						mu.Lock()
 						sourceHealth = append(sourceHealth, model.SourceHealthEntry{
 							SourceID:      source.Source.SourceID,
@@ -175,8 +175,8 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 							Type:          source.Type,
 							FeedURL:       source.FeedURL,
 							Status:        "skipped",
-							Error:         "backoff: too many consecutive failures",
-							ErrorClass:    "backoff",
+							Error:         "dead letter queue",
+							ErrorClass:    "dlq",
 						})
 						completed++
 						mu.Unlock()
@@ -187,16 +187,20 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 					sourceHealth = append(sourceHealth, entry)
 					alerts = append(alerts, batch...)
 					completed++
-					if entry.Status == "error" {
-						backoff.RecordFailure(source.Source.SourceID, now, entry.Error)
-					} else {
-						backoff.RecordSuccess(source.Source.SourceID)
+					if entry.Status == "error" && entry.DiscoveryAction == "dead_letter" {
+						dlq.Add(buildDLQEntry(entry, source))
+					} else if entry.Status == "error" && dlq.DueForRetry(source.Source.SourceID, now) {
+						dlq.UpdateAttempt(source.Source.SourceID, now)
+					} else if entry.Status != "error" {
+						dlq.Remove(source.Source.SourceID)
 					}
 					if completed%25 == 0 || completed == 1 {
 						r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
 					}
 					mu.Unlock()
-					if entry.Status == "error" {
+					if entry.Status == "error" && entry.DiscoveryAction == "dead_letter" {
+						fmt.Fprintf(r.stderr, "WARN %s: %s (added to DLQ)\n", source.Source.AuthorityName, entry.Error)
+					} else if entry.Status == "error" {
 						fmt.Fprintf(r.stderr, "WARN %s: %s\n", source.Source.AuthorityName, entry.Error)
 					}
 				}
@@ -212,15 +216,15 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		if ctx.Err() != nil {
 			break
 		}
-		if backoff.ShouldSkip(source.Source.SourceID, now) {
+		if dlq.ShouldSkip(source.Source.SourceID, now) {
 			sourceHealth = append(sourceHealth, model.SourceHealthEntry{
 				SourceID:      source.Source.SourceID,
 				AuthorityName: source.Source.AuthorityName,
 				Type:          source.Type,
 				FeedURL:       source.FeedURL,
 				Status:        "skipped",
-				Error:         "backoff: too many consecutive failures",
-				ErrorClass:    "backoff",
+				Error:         "dead letter queue",
+				ErrorClass:    "dlq",
 			})
 			completed++
 			continue
@@ -229,11 +233,16 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		sourceHealth = append(sourceHealth, entry)
 		alerts = append(alerts, batch...)
 		completed++
-		if entry.Status == "error" {
-			backoff.RecordFailure(source.Source.SourceID, now, entry.Error)
+		if entry.Status == "error" && entry.DiscoveryAction == "dead_letter" {
+			dlq.Add(buildDLQEntry(entry, source))
+			fmt.Fprintf(r.stderr, "WARN %s: %s (added to DLQ)\n", source.Source.AuthorityName, entry.Error)
+		} else if entry.Status == "error" && dlq.DueForRetry(source.Source.SourceID, now) {
+			dlq.UpdateAttempt(source.Source.SourceID, now)
+			fmt.Fprintf(r.stderr, "WARN %s: %s (still dead, retry in 7d)\n", source.Source.AuthorityName, entry.Error)
+		} else if entry.Status == "error" {
 			fmt.Fprintf(r.stderr, "WARN %s: %s\n", source.Source.AuthorityName, entry.Error)
 		} else {
-			backoff.RecordSuccess(source.Source.SourceID)
+			dlq.Remove(source.Source.SourceID)
 		}
 		if completed%25 == 0 {
 			r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
@@ -243,8 +252,11 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if err := state.WriteCursors(cfg.CursorsPath, cursors); err != nil {
 		fmt.Fprintf(r.stderr, "WARN failed to save cursors: %v\n", err)
 	}
-	if err := state.WriteSourceBackoff(cfg.BackoffPath, backoff); err != nil {
-		fmt.Fprintf(r.stderr, "WARN failed to save backoff state: %v\n", err)
+	if err := dlq.Write(cfg.ReplacementQueuePath); err != nil {
+		fmt.Fprintf(r.stderr, "WARN failed to save DLQ: %v\n", err)
+	}
+	if dlq.Len() > 0 {
+		fmt.Fprintf(r.stderr, "DLQ: %d dead sources skipped (retry every 7d)\n", dlq.Len())
 	}
 
 	deduped, duplicateAudit := normalize.Deduplicate(alerts)
@@ -273,7 +285,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		}
 	}
 	currentActive, currentFiltered, fullState := state.Reconcile(cfg, active, filtered, previousAlerts, now, accumulateSources)
-	replacementQueue := buildReplacementQueue(sourceHealth, sources)
+	replacementQueue := dlq.Entries()
 	if err := deactivateReplacementSources(ctx, cfg.RegistryPath, replacementQueue); err != nil {
 		return err
 	}
@@ -1325,6 +1337,24 @@ func classifySourceError(err error) (string, bool, string) {
 		return "eof", false, "retry"
 	default:
 		return "transient", false, "retry"
+	}
+}
+
+func buildDLQEntry(entry model.SourceHealthEntry, source model.RegistrySource) model.SourceReplacementCandidate {
+	return model.SourceReplacementCandidate{
+		SourceID:        entry.SourceID,
+		AuthorityName:   entry.AuthorityName,
+		Type:            entry.Type,
+		FeedURL:         entry.FeedURL,
+		BaseURL:         source.Source.BaseURL,
+		Country:         source.Source.Country,
+		CountryCode:     source.Source.CountryCode,
+		Region:          source.Source.Region,
+		AuthorityType:   source.Source.AuthorityType,
+		Category:        source.Category,
+		Error:           entry.Error,
+		ErrorClass:      entry.ErrorClass,
+		DiscoveryAction: entry.DiscoveryAction,
 	}
 }
 
