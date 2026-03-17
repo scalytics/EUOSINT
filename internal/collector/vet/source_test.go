@@ -34,6 +34,34 @@ func TestDecodeVerdictAcceptsNumericStrings(t *testing.T) {
 	}
 }
 
+func TestDecodeVerdictAcceptsQualitativeScores(t *testing.T) {
+	verdict, err := decodeVerdict(`{"approve":true,"promotion_status":"active","level":"national","source_quality":"low","operational_relevance":"medium","mission_tags":["organized_crime"],"reason":"high signal"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verdict.normalize()
+	if float64(verdict.SourceQuality) != 0.25 {
+		t.Fatalf("expected source_quality 0.25, got %v", verdict.SourceQuality)
+	}
+	if float64(verdict.OperationalRelevance) != 0.5 {
+		t.Fatalf("expected operational_relevance 0.5, got %v", verdict.OperationalRelevance)
+	}
+}
+
+func TestDecodeVerdictAcceptsPercentScores(t *testing.T) {
+	verdict, err := decodeVerdict(`{"approve":true,"promotion_status":"active","level":"national","source_quality":"80%","operational_relevance":"50%","mission_tags":["organized_crime"],"reason":"high signal"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verdict.normalize()
+	if float64(verdict.SourceQuality) != 0.8 {
+		t.Fatalf("expected source_quality 0.8, got %v", verdict.SourceQuality)
+	}
+	if float64(verdict.OperationalRelevance) != 0.5 {
+		t.Fatalf("expected operational_relevance 0.5, got %v", verdict.OperationalRelevance)
+	}
+}
+
 func TestDeterministicRejectsLocalAndMissingSamples(t *testing.T) {
 	if _, reject := deterministicReject(Input{AuthorityName: "City of Valletta Police Department", Samples: []Sample{{Title: "x"}}}); !reject {
 		t.Fatal("expected local police deterministic reject")
