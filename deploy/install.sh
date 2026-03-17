@@ -284,7 +284,7 @@ start_stack() {
   start_choice="$(prompt_yes_no "Start EUOSINT now with Docker Compose?" "yes")"
   if [[ "$start_choice" != "yes" ]]; then
     if [[ "$INSTALL_MODE" == "install" ]]; then
-      info "Installation complete. Start later with: cd $INSTALL_DIR && $COMPOSE_CMD down -v --remove-orphans && $COMPOSE_CMD pull && $COMPOSE_CMD up -d --no-build"
+      info "Installation complete. Start later with: cd $INSTALL_DIR && $COMPOSE_CMD down --remove-orphans && $COMPOSE_CMD pull && $COMPOSE_CMD up -d --no-build"
     else
       info "Installation complete. Start later with: cd $INSTALL_DIR && $COMPOSE_CMD pull && $COMPOSE_CMD up -d --no-build"
     fi
@@ -294,10 +294,13 @@ start_stack() {
   preflight_tls_checks
 
   if [[ "$INSTALL_MODE" == "install" ]]; then
-    warn "Install mode selected: stopping stack and deleting Compose volumes (feed-data/caddy-data/caddy-config)."
+    info "Install mode selected: stopping stack (preserving feed-data volume)."
     (
       cd "$INSTALL_DIR"
-      $COMPOSE_CMD down -v --remove-orphans || true
+      $COMPOSE_CMD down --remove-orphans || true
+      # Only remove ephemeral Caddy caches, never feed-data which holds the DB.
+      docker volume rm "${COMPOSE_PROJECT_NAME:-euosint}_caddy-data" 2>/dev/null || true
+      docker volume rm "${COMPOSE_PROJECT_NAME:-euosint}_caddy-config" 2>/dev/null || true
     )
   else
     info "Update mode selected: keeping existing Docker volumes/data."
