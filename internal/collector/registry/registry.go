@@ -16,6 +16,27 @@ import (
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
+var knownDeadFeedURLs = map[string]struct{}{
+	"https://www.actionfraud.police.uk/rss":                        {},
+	"https://www.tra.gov.ae/aecert/en/rss.xml":                     {},
+	"https://www.aivd.nl/rss/nieuws":                               {},
+	"https://www.amf-france.org/en/rss":                            {},
+	"https://www.apcert.org/feed/":                                 {},
+	"https://www.aseanapol.org/feed/":                              {},
+	"https://www.asio.gov.au/rss.xml":                              {},
+	"https://www.bmeia.gv.at/reise-services/reiseinformation/rss/": {},
+	"https://www.atf.gov/rss/news":                                 {},
+	"https://www.cyber.gov.au/rss.xml":                             {},
+	"https://www.afp.gov.au/rss.xml":                               {},
+	"https://www.smartraveller.gov.au/rss/countries":               {},
+	"https://www.bafin.de/siteglobals/functions/rssfeed/en/rssverbraucherschutz/rssverbraucherschutz.xml": {},
+	"https://www.cirt.gov.bd/feed/": {},
+	"https://www.verfassungsschutz.de/siteglobals/functions/rssfeed/de/rssnewsfeed/rssnewsfeed.xml": {},
+	"https://www.mvr.bg/rss": {},
+	"https://www.bnd.bund.de/siteglobals/functions/rssfeed/de/rssnewsfeed/rssnewsfeed.xml": {},
+	"https://bssn.go.id/category/peringatan-keamanan/feed/":                                {},
+}
+
 func Load(path string) ([]model.RegistrySource, error) {
 	if isSQLitePath(path) {
 		db, err := sourcedb.Open(path)
@@ -58,6 +79,9 @@ func normalize(entry model.RegistrySource) (model.RegistrySource, bool) {
 	if entry.Type == "" || entry.Category == "" || entry.Source.SourceID == "" || entry.Source.AuthorityName == "" {
 		return model.RegistrySource{}, false
 	}
+	if isKnownDeadFeedURL(entry.FeedURL) {
+		return model.RegistrySource{}, false
+	}
 	if entry.FeedURL == "" && len(entry.FeedURLs) == 0 {
 		return model.RegistrySource{}, false
 	}
@@ -72,6 +96,21 @@ func fallback(value, fallback string) string {
 		return fallback
 	}
 	return strings.TrimSpace(value)
+}
+
+func isKnownDeadFeedURL(rawURL string) bool {
+	candidate := strings.TrimSpace(strings.ToLower(rawURL))
+	candidate = strings.TrimRight(candidate, "/")
+	if candidate == "" {
+		return false
+	}
+	if _, ok := knownDeadFeedURLs[candidate]; ok {
+		return true
+	}
+	if _, ok := knownDeadFeedURLs[candidate+"/"]; ok {
+		return true
+	}
+	return false
 }
 
 func normalizeAll(raw []model.RegistrySource) []model.RegistrySource {

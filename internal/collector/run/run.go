@@ -48,9 +48,6 @@ func New(stdout io.Writer, stderr io.Writer) Runner {
 }
 
 func (r Runner) Run(ctx context.Context, cfg config.Config) error {
-	if cfg.Watch && cfg.DiscoverBackground {
-		go r.runDiscoveryLoop(ctx, cfg)
-	}
 	if cfg.Watch {
 		return r.watch(ctx, cfg)
 	}
@@ -60,10 +57,15 @@ func (r Runner) Run(ctx context.Context, cfg config.Config) error {
 func (r Runner) watch(ctx context.Context, cfg config.Config) error {
 	ticker := time.NewTicker(time.Duration(cfg.IntervalMS) * time.Millisecond)
 	defer ticker.Stop()
+	discoveryStarted := false
 
 	for {
 		if err := r.runOnce(ctx, cfg); err != nil {
 			fmt.Fprintf(r.stderr, "collector run failed: %v\n", err)
+		}
+		if cfg.DiscoverBackground && !discoveryStarted {
+			go r.runDiscoveryLoop(ctx, cfg)
+			discoveryStarted = true
 		}
 		select {
 		case <-ctx.Done():
@@ -1033,6 +1035,12 @@ func classifySourceError(err error) (string, bool, string) {
 	switch {
 	case strings.Contains(msg, "status 404"), strings.Contains(msg, "status 410"):
 		return "not_found", true, "dead_letter"
+	case strings.Contains(msg, "status 401"):
+		// Feed requires auth or blocks anonymous clients.
+		return "unauthorized", true, "dead_letter"
+	case strings.Contains(msg, "status 522"):
+		// Cloudflare connection timeout at origin; frequently persistent dead feeds.
+		return "origin_unreachable", true, "dead_letter"
 	case strings.Contains(msg, "status 301"), strings.Contains(msg, "status 302"), strings.Contains(msg, "status 307"), strings.Contains(msg, "status 308"):
 		// Redirects should be followed automatically — if we still see
 		// one here it means the chain exceeded 10 hops.

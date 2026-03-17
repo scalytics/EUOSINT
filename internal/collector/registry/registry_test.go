@@ -67,3 +67,25 @@ func TestLoadRegistryFromSQLite(t *testing.T) {
 		t.Fatalf("expected normalized country code, got %q", sources[0].Source.CountryCode)
 	}
 }
+
+func TestLoadRegistrySkipsKnownDeadFeedURLs(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "registry.json")
+	content := `[
+	  {"type":"rss","feed_url":"https://www.actionfraud.police.uk/rss","category":"fraud_alert","source":{"source_id":"action-fraud-uk","authority_name":"Action Fraud UK"}},
+	  {"type":"rss","feed_url":"https://example.test/live","category":"cyber_advisory","source":{"source_id":"live-source","authority_name":"Live Source"}}
+	]`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sources, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) != 1 {
+		t.Fatalf("expected 1 source after dead URL filtering, got %d", len(sources))
+	}
+	if sources[0].Source.SourceID != "live-source" {
+		t.Fatalf("unexpected source after dead URL filtering: %q", sources[0].Source.SourceID)
+	}
+}

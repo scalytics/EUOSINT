@@ -6,6 +6,7 @@ package run
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -357,6 +358,18 @@ func TestRunnerRunOnceUsesSQLiteAlertStateWithoutDuplicatingAlerts(t *testing.T)
 		} else if alert.FirstSeen != want {
 			t.Fatalf("expected first_seen for %s to remain %q, got %q", alert.AlertID, want, alert.FirstSeen)
 		}
+	}
+}
+
+func TestClassifySourceErrorTreats401And522AsDeadLetter(t *testing.T) {
+	errClass, needsReplacement, action := classifySourceError(errors.New("fetch https://example.test/feed: status 401"))
+	if errClass != "unauthorized" || !needsReplacement || action != "dead_letter" {
+		t.Fatalf("expected 401 to dead-letter, got class=%q needs=%v action=%q", errClass, needsReplacement, action)
+	}
+
+	errClass, needsReplacement, action = classifySourceError(errors.New("fetch https://example.test/feed: status 522"))
+	if errClass != "origin_unreachable" || !needsReplacement || action != "dead_letter" {
+		t.Fatalf("expected 522 to dead-letter, got class=%q needs=%v action=%q", errClass, needsReplacement, action)
 	}
 }
 
