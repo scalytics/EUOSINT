@@ -88,6 +88,21 @@ func TestDiscoveryHygieneRejectsLocalPolice(t *testing.T) {
 	}
 }
 
+func TestDiscoveryHygieneDoesNotTreatTransportAsSport(t *testing.T) {
+	if !passesDiscoveryHygiene("Ministry of Transport", "https://transport.gov.example", "national_security") {
+		t.Fatal("expected transport ministry to avoid sport false-positive")
+	}
+}
+
+func TestSearchTopicLabelIncludesNewCategories(t *testing.T) {
+	if got := searchTopicLabel("maritime_security", "national_security"); !strings.Contains(got, "maritime security") {
+		t.Fatalf("expected maritime topic label, got %q", got)
+	}
+	if got := searchTopicLabel("legislative", "regulatory"); !strings.Contains(got, "sanctions") {
+		t.Fatalf("expected legislative topic label, got %q", got)
+	}
+}
+
 func TestLoadCandidateQueueAndDeadLetterSkip(t *testing.T) {
 	dir := t.TempDir()
 	candidatePath := filepath.Join(dir, "candidates.json")

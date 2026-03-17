@@ -180,6 +180,10 @@ func searchTopicLabel(category string, authorityType string) string {
 		return "strategic intelligence assessments and geopolitical analysis"
 	case "conflict_monitoring":
 		return "armed conflict tracking, ceasefire monitoring, and peace processes"
+	case "maritime_security":
+		return "maritime security, piracy, shipping threats, coast guard activity, and naval incidents"
+	case "legislative":
+		return "sanctions, defense policy, foreign affairs, security legislation, and parliamentary security debates"
 	case "humanitarian_security", "humanitarian_tasking":
 		return "humanitarian operations, aid worker security, and crisis coordination"
 	case "health_emergency", "disease_outbreak":

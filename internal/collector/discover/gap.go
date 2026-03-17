@@ -22,6 +22,9 @@ type gapTarget struct {
 var coreCategories = []string{
 	"cyber_advisory",
 	"public_appeal",
+	"legislative",
+	"conflict_monitoring",
+	"maritime_security",
 }
 
 // expandedCategories adds intel, travel, and fraud for countries where these
@@ -29,12 +32,12 @@ var coreCategories = []string{
 var expandedCategories = []string{
 	"cyber_advisory",
 	"public_appeal",
-	"travel_warning",
-	"intelligence_report",
-	"fraud_alert",
 	"legislative",
 	"conflict_monitoring",
 	"maritime_security",
+	"travel_warning",
+	"intelligence_report",
+	"fraud_alert",
 }
 
 // targetCountries lists all countries the system should cover with at least

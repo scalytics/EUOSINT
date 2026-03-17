@@ -6,6 +6,7 @@ package discover
 import (
 	"net/url"
 	"strings"
+	"unicode"
 )
 
 var localEntityTerms = []string{
@@ -78,7 +79,7 @@ func passesDiscoveryHygiene(name string, website string, authorityType string) b
 		}
 	}
 	for _, term := range nonOSINTTerms {
-		if strings.Contains(name, term) {
+		if containsTerm(name, term) {
 			return false
 		}
 	}
@@ -124,4 +125,33 @@ func hostIsNonOSINT(rawURL string) bool {
 		}
 	}
 	return false
+}
+
+func containsTerm(text string, term string) bool {
+	text = strings.ToLower(strings.TrimSpace(text))
+	term = strings.ToLower(strings.TrimSpace(term))
+	if text == "" || term == "" {
+		return false
+	}
+	offset := 0
+	for {
+		idx := strings.Index(text[offset:], term)
+		if idx < 0 {
+			return false
+		}
+		start := offset + idx
+		end := start + len(term)
+		if isBoundary(text, start-1) && isBoundary(text, end) {
+			return true
+		}
+		offset = start + 1
+	}
+}
+
+func isBoundary(text string, idx int) bool {
+	if idx < 0 || idx >= len(text) {
+		return true
+	}
+	r := rune(text[idx])
+	return !unicode.IsLetter(r) && !unicode.IsDigit(r)
 }

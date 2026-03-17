@@ -219,6 +219,20 @@ func TestFilterCategoryItemsMatchesCatalanMissingPersonPage(t *testing.T) {
 	}
 }
 
+func TestFilterFeedKeywordsAppliesToRSSContent(t *testing.T) {
+	items := []parse.FeedItem{
+		{Title: "Budget debate", Summary: "Parliament procedure only", Link: "https://example.test/a"},
+		{Title: "Parliament update", Summary: "New sanctions package announced", Link: "https://example.test/b"},
+	}
+	filtered := filterFeedKeywords(items, []string{"sanction"}, nil)
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 retained RSS item, got %d", len(filtered))
+	}
+	if filtered[0].Link != "https://example.test/b" {
+		t.Fatalf("unexpected retained RSS item: %#v", filtered[0])
+	}
+}
+
 func TestRunnerRunOnceUsesSQLiteAlertStateWithoutDuplicatingAlerts(t *testing.T) {
 	dir := t.TempDir()
 	registryPath := filepath.Join(dir, "sources.db")

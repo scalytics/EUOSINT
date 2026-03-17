@@ -250,6 +250,7 @@ func (r Runner) fetchRSS(ctx context.Context, fetcher fetch.Fetcher, nctx normal
 			fmt.Fprintf(r.stderr, "WARN %s: translate batch failed: %v\n", source.Source.AuthorityName, err)
 		}
 	}
+	items = filterFeedKeywords(items, source.IncludeKeywords, source.ExcludeKeywords)
 	limit := perSourceLimit(nctx.Config, source)
 	if len(items) > limit {
 		items = items[:limit]
@@ -364,11 +365,11 @@ func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, browse
 	// Interpol's API sits behind Akamai WAF and requires XHR-style headers
 	// with Referer/Origin pointing to the Interpol website.
 	interpolHeaders := map[string]string{
-		"Referer":         "https://www.interpol.int/How-we-work/Notices/View-Notices",
-		"Origin":          "https://www.interpol.int",
-		"Sec-Fetch-Dest":  "empty",
-		"Sec-Fetch-Mode":  "cors",
-		"Sec-Fetch-Site":  "same-site",
+		"Referer":          "https://www.interpol.int/How-we-work/Notices/View-Notices",
+		"Origin":           "https://www.interpol.int",
+		"Sec-Fetch-Dest":   "empty",
+		"Sec-Fetch-Mode":   "cors",
+		"Sec-Fetch-Site":   "same-site",
 		"X-Requested-With": "XMLHttpRequest",
 	}
 
@@ -712,6 +713,35 @@ func filterKeywords(items []parse.FeedItem, include []string, exclude []string) 
 		}
 		// Exclude keywords match against title + URL (conservative).
 		if len(exclude) > 0 && containsKeyword(fullHay, exclude) {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+func filterFeedKeywords(items []parse.FeedItem, include []string, exclude []string) []parse.FeedItem {
+	include = normalizeKeywords(include)
+	exclude = normalizeKeywords(exclude)
+	out := []parse.FeedItem{}
+	for _, item := range items {
+		includeHay := strings.ToLower(strings.Join([]string{
+			item.Title,
+			item.Summary,
+			item.Author,
+			strings.Join(item.Tags, " "),
+		}, " "))
+		excludeHay := strings.ToLower(strings.Join([]string{
+			item.Title,
+			item.Summary,
+			item.Author,
+			strings.Join(item.Tags, " "),
+			item.Link,
+		}, " "))
+		if len(include) > 0 && !containsKeyword(includeHay, include) {
+			continue
+		}
+		if len(exclude) > 0 && containsKeyword(excludeHay, exclude) {
 			continue
 		}
 		out = append(out, item)
