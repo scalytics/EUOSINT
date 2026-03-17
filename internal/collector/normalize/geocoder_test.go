@@ -174,3 +174,10 @@ func TestExtractCandidateNames(t *testing.T) {
 		t.Error("expected 'Mission District' in candidates")
 	}
 }
+
+func TestExtractCandidateNamesSkipsLowercaseNoise(t *testing.T) {
+	candidates := extractCandidateNames("vulnerability assessment and testing automation for global enhancement")
+	if len(candidates) != 0 {
+		t.Fatalf("expected no city candidates from lowercase advisory prose, got %d", len(candidates))
+	}
+}

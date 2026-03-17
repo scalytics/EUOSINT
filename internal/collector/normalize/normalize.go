@@ -335,10 +335,11 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	}
 
 	geocoded := false
+	allowDynamicGeocode := shouldUseDynamicGeocoding(meta.Category)
 
 	// For international sources, try to geocode the alert to the actual
 	// crisis location instead of pinning it to the org's HQ.
-	if meta.RegionTag == "INT" || meta.Source.CountryCode == "INT" {
+	if allowDynamicGeocode && (meta.RegionTag == "INT" || meta.Source.CountryCode == "INT") {
 		if ctx.Geocoder != nil {
 			// Enhanced geocoding: city DB → Nominatim → country text.
 			if result := ctx.Geocoder.Resolve(context.Background(), geoText, ""); result.CountryCode != "" {
@@ -361,7 +362,7 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 				}
 			}
 		}
-	} else if ctx.Geocoder != nil {
+	} else if allowDynamicGeocode && ctx.Geocoder != nil {
 		// Non-international source: try city-level geocoding within the
 		// source's country for better pin placement.
 		if result := ctx.Geocoder.Resolve(context.Background(), geoText, source.CountryCode); result.CountryCode != "" &&
@@ -388,6 +389,18 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		Lng:            lng,
 		FreshnessHours: hoursBetween(ctx.Now, publishedAt),
 		Reporting:      meta.Reporting,
+	}
+}
+
+func shouldUseDynamicGeocoding(category string) bool {
+	switch strings.ToLower(strings.TrimSpace(category)) {
+	case "missing_person", "wanted_suspect", "public_appeal", "public_safety",
+		"travel_warning", "humanitarian_tasking", "humanitarian_security",
+		"conflict_monitoring", "health_emergency", "disease_outbreak",
+		"environmental_disaster", "emergency_management":
+		return true
+	default:
+		return false
 	}
 }
 

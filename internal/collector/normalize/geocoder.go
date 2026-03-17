@@ -179,6 +179,12 @@ func extractCandidateNames(text string) []nameCandidate {
 			if allEmpty || len(parts) != n {
 				break
 			}
+			// Keep city matching focused on proper nouns. Without this guard,
+			// lower-case advisory prose produces huge candidate sets and
+			// expensive DB lookups (e.g. KEV/cyber feeds).
+			if !looksLikePlaceSequence(parts) {
+				continue
+			}
 			name := strings.Join(parts, " ")
 			lower := strings.ToLower(name)
 
@@ -201,6 +207,52 @@ func extractCandidateNames(text string) []nameCandidate {
 		}
 	}
 	return candidates
+}
+
+func looksLikePlaceSequence(parts []string) bool {
+	if len(parts) == 0 {
+		return false
+	}
+	properCount := 0
+	for _, p := range parts {
+		if isCapitalizedToken(p) || isAllCapsAbbreviation(p) {
+			properCount++
+		}
+	}
+	// Require at least one proper-looking token for single words, and at
+	// least half for multi-word phrases.
+	if len(parts) == 1 {
+		return properCount == 1
+	}
+	return properCount*2 >= len(parts)
+}
+
+func isCapitalizedToken(token string) bool {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return false
+	}
+	for _, r := range token {
+		return unicode.IsUpper(r)
+	}
+	return false
+}
+
+func isAllCapsAbbreviation(token string) bool {
+	token = strings.TrimSpace(token)
+	if token == "" || len(token) > 6 {
+		return false
+	}
+	hasLetter := false
+	for _, r := range token {
+		if unicode.IsLetter(r) {
+			hasLetter = true
+			if !unicode.IsUpper(r) {
+				return false
+			}
+		}
+	}
+	return hasLetter
 }
 
 type wordToken struct {
