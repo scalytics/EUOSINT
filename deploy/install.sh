@@ -6,14 +6,14 @@
 # Optional environment overrides:
 #   REPO_URL=https://github.com/scalytics/EUOSINT.git
 #   REPO_REF=main
-#   INSTALL_DIR=/opt/euosint
+#   INSTALL_DIR=$HOME/euosint
 #   IMAGE_TAG=latest
 
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/scalytics/EUOSINT.git}"
 REPO_REF="${REPO_REF:-main}"
-INSTALL_DIR="${INSTALL_DIR:-/opt/euosint}"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/euosint}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 INSTALL_MODE="${INSTALL_MODE:-preserve}"
 TLS_MODE="false"
@@ -21,6 +21,19 @@ TLS_MODE="false"
 info() { echo "[euosint-install] $*"; }
 warn() { echo "[euosint-install][warn] $*" >&2; }
 fatal() { echo "[euosint-install][error] $*" >&2; exit 1; }
+
+read_prompt() {
+  local prompt_text="$1"
+  local out
+  if [[ -t 0 ]]; then
+    read -r -p "$prompt_text" out
+  elif [[ -r /dev/tty ]]; then
+    read -r -p "$prompt_text" out < /dev/tty
+  else
+    out=""
+  fi
+  echo "$out"
+}
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || fatal "Missing required command: $1"
@@ -31,10 +44,10 @@ prompt() {
   local default_value="${2:-}"
   local value
   if [[ -n "${default_value}" ]]; then
-    read -r -p "$label [$default_value]: " value
+    value="$(read_prompt "$label [$default_value]: ")"
     echo "${value:-$default_value}"
   else
-    read -r -p "$label: " value
+    value="$(read_prompt "$label: ")"
     echo "$value"
   fi
 }
@@ -44,7 +57,7 @@ prompt_yes_no() {
   local default_value="$2"
   local value
   while true; do
-    read -r -p "$label [$default_value]: " value
+    value="$(read_prompt "$label [$default_value]: ")"
     value="${value:-$default_value}"
     value="$(echo "$value" | tr '[:upper:]' '[:lower:]')"
     case "$value" in
@@ -58,7 +71,7 @@ prompt_yes_no() {
 prompt_install_mode() {
   local value
   while true; do
-    read -r -p "Install mode (preserve/fresh) [${INSTALL_MODE}]: " value
+    value="$(read_prompt "Install mode (preserve/fresh) [${INSTALL_MODE}]: ")"
     value="${value:-$INSTALL_MODE}"
     value="$(echo "$value" | tr '[:upper:]' '[:lower:]')"
     case "$value" in
