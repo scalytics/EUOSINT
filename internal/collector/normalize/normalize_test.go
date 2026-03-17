@@ -125,13 +125,19 @@ func TestLocalCrimeDownranked(t *testing.T) {
 
 func TestJitterRadiusKMIsPrecisionAware(t *testing.T) {
 	cityMin, cityMax := jitterRadiusKM("city-db")
-	countryMin, countryMax := jitterRadiusKM("country-text")
-	if cityMax >= countryMin {
-		t.Fatalf("expected city jitter to be tighter than country jitter, got city %.1f-%.1f km vs country %.1f-%.1f km", cityMin, cityMax, countryMin, countryMax)
-	}
 	if cityMax > 2 {
 		t.Fatalf("expected city-db jitter to stay very tight, got max %.1f km", cityMax)
 	}
+	// National-level pins (capital, registry, country-text) use tight jitter
+	// (~1.5 km) so markers cluster near the capital rather than scattering
+	// across a wide radius.
+	for _, src := range []string{"capital", "registry", "country-text"} {
+		min, max := jitterRadiusKM(src)
+		if max > 1.5 {
+			t.Fatalf("expected %s jitter max <= 1.5 km, got %.1f-%.1f km", src, min, max)
+		}
+	}
+	_ = cityMin // used above
 }
 
 func TestRSSItemUsesSummaryForCityPlacement(t *testing.T) {

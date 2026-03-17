@@ -41,7 +41,7 @@ export function AlertFeed({
   onNavigatorSelect,
   onVisibleAlertIdsChange,
 }: Props) {
-  const [viewMode, setViewMode] = useState<"navigator" | "timeline">("navigator");
+  const [viewMode, setViewMode] = useState<"navigator" | "timeline" | "briefing">("navigator");
   const [actionableOnly, setActionableOnly] = useState(true);
   const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
   const [activeNavigatorGroupKey, setActiveNavigatorGroupKey] = useState<string | null>(null);
@@ -122,7 +122,7 @@ export function AlertFeed({
         critical: number;
       }
     >();
-    facetFiltered.forEach((alert) => {
+    primaryAlerts.forEach((alert) => {
       const key = `${alert.source.region}::${alert.category}`;
       const existing = buckets.get(key);
       if (existing) {
@@ -152,7 +152,37 @@ export function AlertFeed({
         if (criticalDelta !== 0) return criticalDelta;
         return b.total - a.total;
       });
-  }, [facetFiltered]);
+  }, [primaryAlerts]);
+
+  /* ── Briefing: time-grouped informational alerts ───────────────── */
+
+  const briefingGroups = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart.getTime() - 86_400_000);
+    const weekStart = new Date(todayStart.getTime() - 7 * 86_400_000);
+
+    const buckets: { label: string; alerts: Alert[] }[] = [
+      { label: "Today", alerts: [] },
+      { label: "Yesterday", alerts: [] },
+      { label: "This Week", alerts: [] },
+      { label: "Older", alerts: [] },
+    ];
+
+    const sortedInfo = [...infoAlerts].sort(
+      (a, b) => new Date(b.first_seen).getTime() - new Date(a.first_seen).getTime()
+    );
+
+    for (const alert of sortedInfo) {
+      const t = new Date(alert.first_seen).getTime();
+      if (t >= todayStart.getTime()) buckets[0].alerts.push(alert);
+      else if (t >= yesterdayStart.getTime()) buckets[1].alerts.push(alert);
+      else if (t >= weekStart.getTime()) buckets[2].alerts.push(alert);
+      else buckets[3].alerts.push(alert);
+    }
+
+    return buckets.filter((b) => b.alerts.length > 0);
+  }, [infoAlerts]);
 
   // Reset navigator selection when region or category filter changes.
   useEffect(() => {
@@ -185,9 +215,9 @@ export function AlertFeed({
     onNavigatorSelect?.(group.region, group.category);
   };
 
-  // Keep globe visibility aligned with current filters, not only the active navigator bucket.
+  // Keep globe visibility aligned with current filters — exclude informational alerts from map.
   const visibleAlertIds = useMemo(
-    () => facetFiltered.map((a) => a.alert_id),
+    () => facetFiltered.filter((a) => a.severity !== "info").map((a) => a.alert_id),
     [facetFiltered]
   );
 
@@ -424,29 +454,30 @@ export function AlertFeed({
         </div>
       </div>
       <div className="border-b border-siem-border bg-siem-panel/95 px-3 py-3 space-y-3">
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setViewMode("navigator")}
-            className={`rounded border px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
-              viewMode === "navigator"
-                ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
-                : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
-            }`}
-          >
-            Navigator
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("timeline")}
-            className={`rounded border px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
-              viewMode === "timeline"
-                ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
-                : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
-            }`}
-          >
-            Queue
-          </button>
+        <div className="grid grid-cols-3 gap-2">
+          {(
+            [
+              ["navigator", "Navigator"],
+              ["timeline", "Queue"],
+              ["briefing", "Briefing"],
+            ] as const
+          ).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setViewMode(mode)}
+              className={`rounded border px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+                viewMode === mode
+                  ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
+                  : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
+              }`}
+            >
+              {label}
+              {mode === "briefing" && infoAlerts.length > 0 && (
+                <span className="ml-1 text-[9px] opacity-60">{infoAlerts.length}</span>
+              )}
+            </button>
+          ))}
         </div>
         {viewMode === "navigator" && (
           <>
@@ -547,7 +578,7 @@ export function AlertFeed({
               </div>
             )}
           </div>
-        ) : (
+        ) : viewMode === "timeline" ? (
           <div className="h-full overflow-y-auto space-y-3">
             {grouped.map((group) => (
               <section
@@ -582,34 +613,62 @@ export function AlertFeed({
                 )}
               </section>
             ))}
-            {infoAlerts.length > 0 && (
-              <section className="rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => toggleSection("informational")}
-                  className="w-full flex items-center justify-between px-3 py-2 border-b border-siem-border bg-siem-panel/70 hover:bg-siem-accent/10 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    {collapsedSections.has("informational") ? (
-                      <ChevronRight size={12} className="text-siem-muted" />
-                    ) : (
-                      <ChevronDown size={12} className="text-siem-muted" />
-                    )}
-                    <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border bg-cyan-500/15 text-cyan-300 border-cyan-500/30">
-                      Informational / Traffic
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-siem-muted font-mono uppercase tracking-wide">
-                    {infoAlerts.length}
-                  </span>
-                </button>
-                {!collapsedSections.has("informational") && (
-                  <div className="p-2 space-y-2">
-                    {infoAlerts.map((alert, idx) => renderAlertCard(alert, "Stack", idx))}
-                  </div>
-                )}
-              </section>
+          </div>
+        ) : (
+          /* ── Briefing: compact informational feed ─────────────────── */
+          <div className="h-full overflow-y-auto space-y-3">
+            {briefingGroups.length === 0 && (
+              <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
+                <p className="text-xs text-siem-muted uppercase tracking-wider">
+                  No informational items match current filters
+                </p>
+              </div>
             )}
+            {briefingGroups.map((group) => (
+              <section key={group.label}>
+                <div className="px-1 pb-1.5 text-[10px] font-mono uppercase tracking-wider text-siem-muted">
+                  {group.label}
+                </div>
+                <div className="space-y-1.5">
+                  {group.alerts.map((alert) => (
+                    <button
+                      key={alert.alert_id}
+                      onClick={() => onSelect(alert.alert_id)}
+                      className={`w-full text-left rounded-lg border px-3 py-2 transition-colors hover:bg-siem-accent/8 ${
+                        selectedId === alert.alert_id
+                          ? "bg-siem-accent/10 border-siem-accent/45"
+                          : "border-siem-border bg-siem-bg/45"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="flex items-center gap-1 text-[10px] text-siem-muted font-mono min-w-0">
+                          <Building2 size={10} className="shrink-0" />
+                          <span className="truncate">{alert.source.authority_name}</span>
+                        </span>
+                        <span className="flex items-center gap-1 text-[10px] text-siem-muted font-mono shrink-0">
+                          <Clock size={10} />
+                          {freshnessLabel(alert.freshness_hours)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-siem-text leading-snug line-clamp-2">
+                        {alert.title}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <span
+                          className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded border ${categoryBadge[alert.category]}`}
+                        >
+                          {categoryLabels[alert.category]}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] bg-siem-accent/10 text-siem-accent border border-siem-accent/20">
+                          <Globe size={8} />
+                          {alert.source.region}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
         )}
         {facetFiltered.length === 0 && (
