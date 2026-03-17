@@ -123,4 +123,3 @@ func buildFBITags(entry FBIWantedEntry) []string {
 	}
 	return tags
 }
-

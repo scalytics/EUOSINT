@@ -10,9 +10,9 @@ import (
 
 // DiscoveryReport is the JSON output structure for a discovery run.
 type DiscoveryReport struct {
-	NewCandidates      []DiscoveredSource `json:"new_candidates"`
-	NewCandidateCount  int                `json:"new_candidate_count"`
-	ExistingFeedURLs   int                `json:"existing_feed_urls"`
+	NewCandidates     []DiscoveredSource `json:"new_candidates"`
+	NewCandidateCount int                `json:"new_candidate_count"`
+	ExistingFeedURLs  int                `json:"existing_feed_urls"`
 }
 
 // WriteReport writes the discovery results to the output path and logs

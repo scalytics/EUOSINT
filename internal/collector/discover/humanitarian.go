@@ -29,10 +29,10 @@ var humanitarianTypeIDs = []string{
 	"Q1460420",  // civil protection
 	"Q1066476",  // emergency management
 	// Subclasses we'd miss without P279* traversal:
-	"Q3918693",  // emergency service
-	"Q863734",   // rescue service
-	"Q167546",   // NGO (filtered later by hygiene)
-	"Q484652",   // international organization
+	"Q3918693", // emergency service
+	"Q863734",  // rescue service
+	"Q167546",  // NGO (filtered later by hygiene)
+	"Q484652",  // international organization
 }
 
 func buildHumanitarianQuery(typeID string) string {
