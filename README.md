@@ -30,10 +30,26 @@ make dev-restart
 make dev-logs
 ```
 
+## Remote Install (wget bootstrap)
+
+```bash
+wget -qO- https://raw.githubusercontent.com/scalytics/EUOSINT/main/deploy/install.sh | bash
+```
+
+The installer will:
+- verify Docker + Compose availability
+- clone or update the repo on the host
+- set GHCR runtime images (`ghcr.io/scalytics/euosint-web` + `ghcr.io/scalytics/euosint-collector`)
+- prompt for install mode (`preserve` or `fresh` volume reset)
+- prompt for domain (`EUOSINT_SITE_ADDRESS`)
+- when domain mode is enabled, optionally check `ufw`/`firewalld` and validate local 80/443 availability
+- prompt for key runtime flags (browser + LLM vetting settings)
+- optionally run `docker compose pull` and start with `--no-build`
+
 - The release pipeline now builds two images: a web image and a Go collector image.
 - The scheduled feed refresh workflow now runs the Go collector.
 - The web image now uses Caddy instead of nginx, with the collector output mounted into the web container at runtime.
-- In Docker dev mode, the collector seeds the shared feed volume with the repository snapshots first, then replaces them with live output on the first successful run.
+- In Docker dev mode, the collector initializes empty JSON outputs on a fresh volume and then writes live output on the first successful run.
 
 ## Run Locally Without Docker
 

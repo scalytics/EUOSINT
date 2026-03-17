@@ -33,7 +33,7 @@ Default local behavior:
 
 - HTTP on `http://localhost:8080`
 - HTTPS listener mapped to `https://localhost:8443` but not used unless `EUOSINT_SITE_ADDRESS` is changed to a hostname that enables TLS
-- The collector seeds the shared feed volume with bundled JSON snapshots if the volume is empty, so the UI has data immediately while the first live refresh runs
+- The collector initializes empty JSON outputs on a fresh shared feed volume, then replaces them with live collector output on the first successful run
 
 ## Domain Setup For A VM
 
