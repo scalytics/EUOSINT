@@ -29,6 +29,9 @@ services:
     environment:
       GEONAMES_PATH: "/app/registry/cities500.txt"
       NOMINATIM_ENABLED: "1"
+      DDG_SEARCH_ENABLED: "1"
+      DDG_SEARCH_DELAY_MS: "8000"
+      BROWSER_ENABLED: "1"
       INTERVAL_MS: "900000"
       MAX_PER_SOURCE: "40"
       MISSING_PERSON_RELEVANCE_THRESHOLD: "0"
