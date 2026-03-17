@@ -106,6 +106,53 @@ func TestRunnerRunOnceWritesOutputs(t *testing.T) {
 	}
 }
 
+func TestPrioritizeSourcesPrefersRankedCuratedHighValue(t *testing.T) {
+	sources := []model.RegistrySource{
+		{
+			Type:          "rss",
+			SourceQuality: 0.95,
+			Source: model.SourceMetadata{
+				SourceID:             "ranked-curated",
+				AuthorityName:        "Ranked Curated",
+				OperationalRelevance: 0.8,
+				IsCurated:            true,
+				IsHighValue:          true,
+			},
+			PreferredRank: 1,
+		},
+		{
+			Type:          "rss",
+			SourceQuality: 0.99,
+			Source: model.SourceMetadata{
+				SourceID:             "unranked-high-quality",
+				AuthorityName:        "Unranked High Quality",
+				OperationalRelevance: 0.9,
+				IsCurated:            true,
+				IsHighValue:          true,
+			},
+		},
+		{
+			Type:          "html-list",
+			SourceQuality: 0.2,
+			Source: model.SourceMetadata{
+				SourceID:      "tail-source",
+				AuthorityName: "Tail Source",
+			},
+		},
+	}
+
+	ordered := prioritizeSources(sources)
+	if len(ordered) != 3 {
+		t.Fatalf("expected 3 sources, got %d", len(ordered))
+	}
+	if ordered[0].Source.SourceID != "ranked-curated" {
+		t.Fatalf("expected ranked curated source first, got %q", ordered[0].Source.SourceID)
+	}
+	if ordered[2].Source.SourceID != "tail-source" {
+		t.Fatalf("expected low-signal tail source last, got %q", ordered[2].Source.SourceID)
+	}
+}
+
 func TestBuildReplacementQueueFromPermanentFailures(t *testing.T) {
 	sources := []model.RegistrySource{
 		{

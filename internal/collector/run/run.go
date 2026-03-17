@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/url"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -85,6 +86,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
+	sources = prioritizeSources(sources)
 	client := r.clientFactory(cfg)
 
 	var browser *fetch.BrowserClient
@@ -215,6 +217,83 @@ func (r Runner) writeProgressSnapshot(cfg config.Config, alerts []model.Alert, s
 		return
 	}
 	fmt.Fprintf(r.stdout, "Progress snapshot: %d active alerts after %d sources\n", len(active), len(sourceHealth))
+}
+
+func prioritizeSources(sources []model.RegistrySource) []model.RegistrySource {
+	if len(sources) < 2 {
+		return sources
+	}
+	out := make([]model.RegistrySource, len(sources))
+	copy(out, sources)
+	sort.SliceStable(out, func(i, j int) bool {
+		a := out[i]
+		b := out[j]
+
+		// Explicit preferred_source_rank wins first (lower rank = higher priority).
+		aRanked := a.PreferredRank > 0
+		bRanked := b.PreferredRank > 0
+		if aRanked != bRanked {
+			return aRanked
+		}
+		if aRanked && a.PreferredRank != b.PreferredRank {
+			return a.PreferredRank < b.PreferredRank
+		}
+
+		// Curated/high-value agencies should be fetched early so startup reaches
+		// high-signal alerts before sweeping long-tail candidate feeds.
+		if a.Source.IsHighValue != b.Source.IsHighValue {
+			return a.Source.IsHighValue
+		}
+		if a.Source.IsCurated != b.Source.IsCurated {
+			return a.Source.IsCurated
+		}
+		if a.Source.OperationalRelevance != b.Source.OperationalRelevance {
+			return a.Source.OperationalRelevance > b.Source.OperationalRelevance
+		}
+		if a.SourceQuality != b.SourceQuality {
+			return a.SourceQuality > b.SourceQuality
+		}
+
+		// Stable tiebreakers keep output deterministic.
+		aStatus := strings.ToLower(strings.TrimSpace(a.PromotionStatus))
+		bStatus := strings.ToLower(strings.TrimSpace(b.PromotionStatus))
+		if statusPriority(aStatus) != statusPriority(bStatus) {
+			return statusPriority(aStatus) > statusPriority(bStatus)
+		}
+		if typePriority(a.Type) != typePriority(b.Type) {
+			return typePriority(a.Type) > typePriority(b.Type)
+		}
+		return a.Source.SourceID < b.Source.SourceID
+	})
+	return out
+}
+
+func statusPriority(status string) int {
+	switch status {
+	case "active":
+		return 3
+	case "promoted":
+		return 2
+	case "candidate":
+		return 1
+	default:
+		return 0
+	}
+}
+
+func typePriority(kind string) int {
+	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case "kev-json":
+		return 5
+	case "interpol-red-json", "interpol-yellow-json", "fbi-wanted-json", "travelwarning-json", "travelwarning-atom":
+		return 4
+	case "rss":
+		return 3
+	case "html-list":
+		return 2
+	default:
+		return 1
+	}
 }
 
 // purgeOrphanAlerts removes alerts whose source_id is no longer in the
