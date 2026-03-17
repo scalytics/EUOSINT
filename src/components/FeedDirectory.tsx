@@ -7,7 +7,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  Globe2,
   Radar,
   ShieldAlert,
   TrendingUp,
