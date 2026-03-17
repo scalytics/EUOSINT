@@ -151,6 +151,12 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		entry.FetchedCount = len(batch)
 		sourceHealth = append(sourceHealth, entry)
 		alerts = append(alerts, batch...)
+
+		// Write periodic progress snapshots so the UI receives fresh alerts
+		// even while long source sweeps are still running.
+		if len(sourceHealth)%25 == 0 || len(sourceHealth) == 1 {
+			r.writeProgressSnapshot(cfg, alerts, sourceHealth)
+		}
 	}
 
 	if err := state.WriteCursors(cfg.CursorsPath, cursors); err != nil {
@@ -199,6 +205,16 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 	_, err = fmt.Fprintf(r.stdout, "Wrote %d active alerts -> %s (%d filtered in %s)\n", len(currentActive), cfg.OutputPath, len(currentFiltered), cfg.FilteredOutputPath)
 	return err
+}
+
+func (r Runner) writeProgressSnapshot(cfg config.Config, alerts []model.Alert, sourceHealth []model.SourceHealthEntry) {
+	deduped, duplicateAudit := normalize.Deduplicate(alerts)
+	active, filtered := normalize.FilterActive(cfg, deduped)
+	if err := output.Write(cfg, active, filtered, active, sourceHealth, duplicateAudit, nil); err != nil {
+		fmt.Fprintf(r.stderr, "WARN progress snapshot write failed: %v\n", err)
+		return
+	}
+	fmt.Fprintf(r.stdout, "Progress snapshot: %d active alerts after %d sources\n", len(active), len(sourceHealth))
 }
 
 // purgeOrphanAlerts removes alerts whose source_id is no longer in the
