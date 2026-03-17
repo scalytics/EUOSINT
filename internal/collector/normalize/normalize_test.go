@@ -122,3 +122,51 @@ func TestLocalCrimeDownranked(t *testing.T) {
 			crossBorderAlert.Triage.RelevanceScore, localAlert.Triage.RelevanceScore)
 	}
 }
+
+func TestJitterRadiusKMIsPrecisionAware(t *testing.T) {
+	cityMin, cityMax := jitterRadiusKM("city-db")
+	countryMin, countryMax := jitterRadiusKM("country-text")
+	if cityMax >= countryMin {
+		t.Fatalf("expected city jitter to be tighter than country jitter, got city %.1f-%.1f km vs country %.1f-%.1f km", cityMin, cityMax, countryMin, countryMax)
+	}
+	if cityMax > 2 {
+		t.Fatalf("expected city-db jitter to stay very tight, got max %.1f km", cityMax)
+	}
+}
+
+func TestRSSItemUsesSummaryForCityPlacement(t *testing.T) {
+	cfg := config.Default()
+	ctx := Context{
+		Config: cfg,
+		Now:    time.Date(2026, 3, 17, 0, 0, 0, 0, time.UTC),
+		Geocoder: NewGeocoder(&mockCityLookup{cities: map[string]CityLookupResult{
+			"Valletta|MT": {Name: "Valletta", CountryCode: "MT", Lat: 35.90, Lng: 14.51, Population: 6400},
+		}}, nil),
+	}
+	meta := model.RegistrySource{
+		Type:     "rss",
+		Category: "public_safety",
+		Source: model.SourceMetadata{
+			SourceID:      "malta-civil",
+			AuthorityName: "Malta Civil Protection",
+			Country:       "Malta",
+			CountryCode:   "MT",
+			Region:        "Europe",
+			AuthorityType: "public_safety_program",
+			BaseURL:       "https://example.test",
+		},
+	}
+	item := parse.FeedItem{
+		Title:     "Incident update",
+		Summary:   "Emergency crews dispatched in Valletta harbour district",
+		Link:      "https://example.test/incident",
+		Published: "2026-03-16T10:00:00Z",
+	}
+	alert := RSSItem(ctx, meta, item)
+	if alert == nil {
+		t.Fatal("expected alert")
+	}
+	if alert.Lat < 35.7 || alert.Lat > 36.1 || alert.Lng < 14.3 || alert.Lng > 14.7 {
+		t.Fatalf("expected alert to stay near Valletta, got (%f, %f)", alert.Lat, alert.Lng)
+	}
+}
