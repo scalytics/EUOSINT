@@ -57,6 +57,29 @@ var wordBoundaryRe = regexp.MustCompile(`[\p{L}\p{N}][\p{L}\p{N}\s'-]{2,30}`)
 func (g *Geocoder) Resolve(ctx context.Context, text string, countryHint string) GeoResult {
 	countryHint = strings.ToUpper(strings.TrimSpace(countryHint))
 
+	// ── Tier 0a: Explicit coordinates in text ───────────────────
+	if lat, lng, ok := ExtractCoordinates(text); ok {
+		// Try to resolve country from the coordinates via nearest country.
+		code := countryHint
+		if code == "" || code == "INT" {
+			if _, _, c, cok := geocodeText(text); cok {
+				code = c
+			}
+		}
+		return GeoResult{Lat: lat, Lng: lng, CountryCode: code, Source: "coordinates"}
+	}
+
+	// ── Tier 0b: Maritime region lookup ─────────────────────────
+	if lat, lng, _, ok := MatchMaritimeRegion(text); ok {
+		code := countryHint
+		if code == "" || code == "INT" {
+			if _, _, c, cok := geocodeText(text); cok {
+				code = c
+			}
+		}
+		return GeoResult{Lat: lat, Lng: lng, CountryCode: code, Source: "maritime-region"}
+	}
+
 	// ── Tier 1: City gazetteer ──────────────────────────────────
 	if g.cities != nil {
 		if result, ok := g.matchCityInText(ctx, text, countryHint); ok {
@@ -90,9 +113,33 @@ func (g *Geocoder) Resolve(ctx context.Context, text string, countryHint string)
 	return GeoResult{} // no match
 }
 
+// hitBetter returns true if a is a better geocoding match than b.
+// Country-hint matches always win over non-hint matches. Within the same
+// hint tier, rightmost position wins, then highest population.
+func hitBetter(a, b struct {
+	pos         int
+	pop         int
+	name        string
+	lat         float64
+	lng         float64
+	code        string
+	matchesHint bool
+}) bool {
+	// Hint match always beats non-hint match.
+	if a.matchesHint != b.matchesHint {
+		return a.matchesHint
+	}
+	// Within same tier: rightmost position wins.
+	if a.pos != b.pos {
+		return a.pos > b.pos
+	}
+	// Tiebreak: larger city wins.
+	return a.pop > b.pop
+}
+
 // matchCityInText extracts candidate n-grams from text and looks them up
-// in the city database. Returns the match with the highest population that
-// appears rightmost in the text (consistent with geocodeText strategy).
+// in the city database. Returns the best match, preferring country-hint
+// matches, then rightmost position, then highest population.
 func (g *Geocoder) matchCityInText(ctx context.Context, text string, countryHint string) (GeoResult, bool) {
 	candidates := extractCandidateNames(text)
 	if len(candidates) == 0 {
@@ -100,12 +147,13 @@ func (g *Geocoder) matchCityInText(ctx context.Context, text string, countryHint
 	}
 
 	type hit struct {
-		pos  int
-		pop  int
-		name string
-		lat  float64
-		lng  float64
-		code string
+		pos         int
+		pop         int
+		name        string
+		lat         float64
+		lng         float64
+		code        string
+		matchesHint bool
 	}
 	var best *hit
 
@@ -114,21 +162,24 @@ func (g *Geocoder) matchCityInText(ctx context.Context, text string, countryHint
 		if !ok {
 			continue
 		}
-		// Skip tiny places (pop < 5000) unless they match country hint.
-		if result.Population < 5000 && result.CountryCode != countryHint {
+		matchesHint := countryHint != "" && result.CountryCode == countryHint
+
+		// Cross-country matches need high population to avoid false positives
+		// (e.g. "Police" → Połice, Poland; "Malta" → Malta, Brazil).
+		if !matchesHint && result.Population < 50000 {
 			continue
 		}
+
 		h := hit{
-			pos:  c.endPos,
-			pop:  result.Population,
-			name: result.Name,
-			lat:  result.Lat,
-			lng:  result.Lng,
-			code: result.CountryCode,
+			pos:         c.endPos,
+			pop:         result.Population,
+			name:        result.Name,
+			lat:         result.Lat,
+			lng:         result.Lng,
+			code:        result.CountryCode,
+			matchesHint: matchesHint,
 		}
-		if best == nil ||
-			h.pos > best.pos ||
-			(h.pos == best.pos && h.pop > best.pop) {
+		if best == nil || hitBetter(h, *best) {
 			best = &h
 		}
 	}
@@ -293,6 +344,21 @@ var geoStopwords = map[string]bool{
 	"warning": true, "report": true, "press": true, "release": true,
 	"security": true, "advisory": true, "notice": true, "bulletin": true,
 	"critical": true, "high": true, "medium": true, "low": true, "info": true,
+	// Institutional/authority terms that match city/village names worldwide.
+	"police": true, "national": true, "federal": true, "general": true,
+	"public": true, "central": true, "royal": true, "state": true,
+	"justice": true, "defense": true, "defence": true, "interior": true,
+	"ministry": true, "department": true, "office": true, "bureau": true,
+	"agency": true, "service": true, "command": true, "force": true,
+	"unit": true, "division": true, "section": true, "branch": true,
+	"council": true, "commission": true, "authority": true, "board": true,
+	// Common first/last names that are also place names.
+	"mark": true, "lee": true, "jordan": true, "chase": true,
+	"grant": true, "Hope": true, "hope": true, "reading": true,
+	"florence": true, "victoria": true, "augusta": true, "regina": true,
+	"lincoln": true, "jackson": true, "clinton": true, "hamilton": true,
+	"nelson": true, "marshall": true, "stuart": true, "douglas": true,
+	"orange": true, "mobile": true, "enterprise": true, "summit": true,
 }
 
 func isGeoStopword(lower string) bool {

@@ -1,0 +1,14 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"name":"Russia","regime":"EU/US/UK","since":"2022","type":"comprehensive"},"geometry":{"type":"Polygon","coordinates":[[[28,70],[180,70],[180,42],[50,42],[40,45],[30,55],[28,70]]]}},
+    {"type":"Feature","properties":{"name":"Belarus","regime":"EU/US/UK","since":"2021","type":"comprehensive"},"geometry":{"type":"Polygon","coordinates":[[[23.2,51.4],[32.7,51.4],[32.7,56.2],[23.2,56.2],[23.2,51.4]]]}},
+    {"type":"Feature","properties":{"name":"North Korea","regime":"UN","since":"2006","type":"comprehensive"},"geometry":{"type":"Polygon","coordinates":[[[124,37.7],[131,37.7],[131,43.1],[124,43.1],[124,37.7]]]}},
+    {"type":"Feature","properties":{"name":"Iran","regime":"EU/US/UN","since":"2006","type":"sectoral"},"geometry":{"type":"Polygon","coordinates":[[[44,25],[63,25],[63,40],[44,40],[44,25]]]}},
+    {"type":"Feature","properties":{"name":"Syria","regime":"EU/US","since":"2011","type":"comprehensive"},"geometry":{"type":"Polygon","coordinates":[[[35.7,32.3],[42.4,32.3],[42.4,37.3],[35.7,37.3],[35.7,32.3]]]}},
+    {"type":"Feature","properties":{"name":"Cuba","regime":"US","since":"1962","type":"comprehensive"},"geometry":{"type":"Polygon","coordinates":[[[-85,19.8],[-74,19.8],[-74,23.3],[-85,23.3],[-85,19.8]]]}},
+    {"type":"Feature","properties":{"name":"Venezuela","regime":"US/EU","since":"2017","type":"sectoral"},"geometry":{"type":"Polygon","coordinates":[[[-73,1],[-60,1],[-60,12],[-73,12],[-73,1]]]}},
+    {"type":"Feature","properties":{"name":"Myanmar","regime":"EU/US/UK","since":"2021","type":"targeted"},"geometry":{"type":"Polygon","coordinates":[[[92,10],[101,10],[101,28],[92,28],[92,10]]]}},
+    {"type":"Feature","properties":{"name":"Yemen (Houthi-controlled)","regime":"US/UK","since":"2024","type":"targeted"},"geometry":{"type":"Polygon","coordinates":[[[42,13],[46,13],[46,17],[42,17],[42,13]]]}}
+  ]
+}

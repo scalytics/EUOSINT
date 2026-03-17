@@ -355,6 +355,21 @@ export function AlertFeed({
         </div>
         <div className="grid grid-cols-1 gap-2">
           <div className="relative">
+            <select
+              value={categoryFilter}
+              onChange={(e) => onCategoryChange(e.target.value as AlertCategory | "all")}
+              className="w-full appearance-none bg-white/5 border border-siem-border rounded-md px-2.5 pr-8 py-1.5 text-xs text-siem-text cursor-pointer hover:bg-siem-accent/10 transition-colors focus:outline-none focus:ring-1 focus:ring-siem-accent"
+            >
+              <option value="all">All Categories</option>
+              {categoryOrder.map((category) => (
+                <option key={category} value={category}>
+                  {categoryLabels[category]}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-siem-muted pointer-events-none" />
+          </div>
+          <div className="relative">
             <Globe size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-siem-muted pointer-events-none" />
             <select
               value={regionFilter}
@@ -373,21 +388,6 @@ export function AlertFeed({
               {countries.map((c) => (
                 <option key={c.code} value={`country:${c.code}`}>
                   {c.name} ({c.count})
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-siem-muted pointer-events-none" />
-          </div>
-          <div className="relative">
-            <select
-              value={categoryFilter}
-              onChange={(e) => onCategoryChange(e.target.value as AlertCategory | "all")}
-              className="w-full appearance-none bg-white/5 border border-siem-border rounded-md px-2.5 pr-8 py-1.5 text-xs text-siem-text cursor-pointer hover:bg-siem-accent/10 transition-colors focus:outline-none focus:ring-1 focus:ring-siem-accent"
-            >
-              <option value="all">All Categories</option>
-              {categoryOrder.map((category) => (
-                <option key={category} value={category}>
-                  {categoryLabels[category]}
                 </option>
               ))}
             </select>

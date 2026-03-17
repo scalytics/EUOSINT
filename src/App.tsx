@@ -56,6 +56,14 @@ export default function App() {
   const [visibleAlertIds, setVisibleAlertIds] = useState<string[]>([]);
   const [mobilePane, setMobilePane] = useState<"intel" | "map" | "alerts">("map");
   const panelRef = useRef<HTMLDivElement>(null);
+  const [utcTime, setUtcTime] = useState(() => new Date().toISOString().slice(0, 19).replace("T", " ") + "Z");
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setUtcTime(new Date().toISOString().slice(0, 19).replace("T", " ") + "Z");
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     setSelectedSourceIds(readSelectedSources());
@@ -308,6 +316,7 @@ export default function App() {
           {" // "}
           <a href="https://www.scalytics.io/contact?utm_source=euosint&utm_medium=footer&utm_campaign=osint_console" target="_blank" rel="noopener" className="hover:text-siem-accent transition-colors">Build your intelligence pipeline — Contact us</a>
         </span>
+        <span className="font-mono tabular-nums text-siem-muted">{utcTime}</span>
       </div>
     </div>
   );

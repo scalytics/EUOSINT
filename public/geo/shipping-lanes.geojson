@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"name":"Suez–Gibraltar Route","type":"major"},"geometry":{"type":"LineString","coordinates":[[32.3,31.2],[28,34],[20,36],[15,37],[10,37],[5,37],[-2,36],[-5.5,36]]}},
+    {"type":"Feature","properties":{"name":"Suez–Bab el-Mandeb","type":"chokepoint"},"geometry":{"type":"LineString","coordinates":[[32.3,31.2],[34,27],[36,22],[38,18],[42,14],[43.3,12.6]]}},
+    {"type":"Feature","properties":{"name":"Bab el-Mandeb–Hormuz","type":"major"},"geometry":{"type":"LineString","coordinates":[[43.3,12.6],[48,13],[53,16],[56.3,26.5]]}},
+    {"type":"Feature","properties":{"name":"Strait of Hormuz–Indian Ocean","type":"chokepoint"},"geometry":{"type":"LineString","coordinates":[[56.3,26.5],[60,23],[65,18],[70,15]]}},
+    {"type":"Feature","properties":{"name":"Malacca Strait Route","type":"chokepoint"},"geometry":{"type":"LineString","coordinates":[[80,8],[90,7],[96,5],[100,3],[101,2.5],[103.8,1.3],[104,1.2]]}},
+    {"type":"Feature","properties":{"name":"South China Sea Lane","type":"major"},"geometry":{"type":"LineString","coordinates":[[104,1.2],[106,5],[110,10],[114,15],[117,20],[114,22.3]]}},
+    {"type":"Feature","properties":{"name":"Cape of Good Hope Route","type":"major"},"geometry":{"type":"LineString","coordinates":[[43.3,12.6],[45,5],[42,-5],[38,-15],[32,-25],[25,-33],[18.5,-34.4],[15,-33],[10,-20],[5,-5],[0,5],[-5.5,36]]}},
+    {"type":"Feature","properties":{"name":"Panama Canal Approach","type":"chokepoint"},"geometry":{"type":"LineString","coordinates":[[-82,10],[-79.7,9.1],[-77,8]]}},
+    {"type":"Feature","properties":{"name":"English Channel","type":"chokepoint"},"geometry":{"type":"LineString","coordinates":[[-5.5,50],[0,50.5],[1.5,51.1],[2,51.5]]}},
+    {"type":"Feature","properties":{"name":"Bosphorus Route","type":"chokepoint"},"geometry":{"type":"LineString","coordinates":[[26,38],[27,39],[28.5,40.5],[29,41],[29.1,41.1]]}},
+    {"type":"Feature","properties":{"name":"Taiwan Strait","type":"chokepoint"},"geometry":{"type":"LineString","coordinates":[[117,22],[118,23],[119.5,24],[120.5,25],[121,26]]}},
+    {"type":"Feature","properties":{"name":"North Atlantic Route","type":"major"},"geometry":{"type":"LineString","coordinates":[[-74,40.5],[-60,42],[-45,46],[-30,49],[-15,51],[-5.5,50.4]]}},
+    {"type":"Feature","properties":{"name":"Singapore–Shanghai","type":"major"},"geometry":{"type":"LineString","coordinates":[[103.8,1.3],[106,5],[110,10],[115,18],[120,25],[121.5,31.2]]}},
+    {"type":"Feature","properties":{"name":"Strait of Gibraltar","type":"chokepoint"},"geometry":{"type":"LineString","coordinates":[[-6,35.8],[-5.5,36],[-5,36.1]]}},
+    {"type":"Feature","properties":{"name":"Persian Gulf–India","type":"major"},"geometry":{"type":"LineString","coordinates":[[56.3,26.5],[58.5,24.5],[62,22],[66,20],[72,18]]}}
+  ]
+}

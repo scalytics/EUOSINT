@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"name":"TAT-14","capacity":"3.2 Tbps","owners":"Multiple","landing":"US-UK-FR-DE-DK-NL"},"geometry":{"type":"LineString","coordinates":[[-73.95,40.65],[-50,45],[-20,48],[-5.5,50.4],[-1.1,50.8],[1.5,51],[3.5,51.9],[8,54],[9.8,55.3]]}},
+    {"type":"Feature","properties":{"name":"AEConnect-1","capacity":"52 Tbps","owners":"Aqua Comms","landing":"US-IE"},"geometry":{"type":"LineString","coordinates":[[-73.8,40.6],[-55,47],[-35,50],[-15,52],[-10,53.2]]}},
+    {"type":"Feature","properties":{"name":"SEA-ME-WE 6","capacity":"100+ Tbps","owners":"Multiple","landing":"SG-IN-DJ-EG-FR"},"geometry":{"type":"LineString","coordinates":[[103.8,1.3],[98,5],[80,10],[73,15],[65,18],[55,15],[45,12.5],[43,12.6],[38,20],[33,30],[32.3,31.2],[15,37],[5,40],[2.2,43.3]]}},
+    {"type":"Feature","properties":{"name":"2Africa","capacity":"180 Tbps","owners":"Meta","landing":"Multi-Africa-EU-ME"},"geometry":{"type":"LineString","coordinates":[[2.2,43.3],[-5.5,36],[-10,34],[-17,15],[-5,5],[3,5],[8,4],[12,-5],[25,-15],[35,-25],[40,-15],[50,0],[55,15],[60,25],[65,25],[72,20],[80,10],[103.8,1.3]]}},
+    {"type":"Feature","properties":{"name":"PEACE Cable","capacity":"96 Tbps","owners":"PEACE Cable International","landing":"PK-DJ-EG-FR-KE"},"geometry":{"type":"LineString","coordinates":[[66.9,24.8],[62,22],[55,15],[45,12.5],[43,12.6],[43.1,11.6],[38,20],[33,30],[32.3,31.2],[20,36],[5,40],[2.2,43.3]]}},
+    {"type":"Feature","properties":{"name":"EIG","capacity":"3.84 Tbps","owners":"Multiple","landing":"UK-FR-PT-GI-LY-EG-SA-DJ-IN"},"geometry":{"type":"LineString","coordinates":[[-0.8,51.2],[0,50.5],[-1.5,48.5],[-9,39],[-5.4,36.1],[9,33],[15,33],[25,32],[32.3,31.2],[36,24],[38.5,15],[43.1,11.6],[55,15],[65,20],[72,18]]}},
+    {"type":"Feature","properties":{"name":"TGN-Atlantic","capacity":"2 Tbps","owners":"Telia","landing":"US-UK"},"geometry":{"type":"LineString","coordinates":[[-73.9,40.6],[-50,43],[-25,47],[-5.6,50.4]]}},
+    {"type":"Feature","properties":{"name":"Asia-America Gateway","capacity":"2.88 Tbps","owners":"Multiple","landing":"MY-SG-VN-PH-HK-US"},"geometry":{"type":"LineString","coordinates":[[101.7,3.1],[103.8,1.3],[106.5,10.8],[117,10],[120,14.5],[114,22.3],[125,25],[150,30],[180,35],[-160,38],[-140,35],[-120,33.7]]}},
+    {"type":"Feature","properties":{"name":"FLAG Atlantic","capacity":"10 Gbps","owners":"GTL","landing":"US-UK"},"geometry":{"type":"LineString","coordinates":[[-73.9,40.6],[-50,42],[-25,46],[-5.5,50.3]]}},
+    {"type":"Feature","properties":{"name":"EllaLink","capacity":"100 Tbps","owners":"EllaLink","landing":"PT-BR"},"geometry":{"type":"LineString","coordinates":[[-9.5,39],[-15,30],[-25,18],[-35,5],[-38,-3]]}},
+    {"type":"Feature","properties":{"name":"Marea","capacity":"224 Tbps","owners":"Microsoft-Meta","landing":"US-ES"},"geometry":{"type":"LineString","coordinates":[[-73.9,39.4],[-50,40],[-25,40],[-3,43.4]]}},
+    {"type":"Feature","properties":{"name":"Arctic Connect","capacity":"200 Tbps","owners":"Cinia","landing":"FI-NO-JP"},"geometry":{"type":"LineString","coordinates":[[25,60],[20,65],[15,70],[30,72],[60,73],[100,73],[140,65],[145,43]]}},
+    {"type":"Feature","properties":{"name":"SEA-ME-WE 3","capacity":"960 Gbps","owners":"Multiple","landing":"Multi-Asia-ME-EU"},"geometry":{"type":"LineString","coordinates":[[103.8,1.3],[100,5],[80,10],[73,15],[65,20],[55,15],[45,12.5],[43,12.6],[38,20],[33,30],[32.3,31.2],[15,37],[9,39],[5,43]]}},
+    {"type":"Feature","properties":{"name":"IMEWE","capacity":"3.84 Tbps","owners":"Multiple","landing":"IN-PK-SA-EG-IT-FR"},"geometry":{"type":"LineString","coordinates":[[72,19],[66,25],[55,15],[40,20],[33,30],[32.3,31.2],[15,37],[12,42],[5,43]]}},
+    {"type":"Feature","properties":{"name":"Asia-Africa-Europe-1","capacity":"100 Tbps","owners":"Multiple","landing":"HK-SG-PK-DJ-EG-FR"},"geometry":{"type":"LineString","coordinates":[[114,22.3],[103.8,1.3],[80,10],[66,25],[55,15],[45,12.5],[43.1,11.6],[38,20],[33,30],[32.3,31.2],[15,37],[5,43]]}}
+  ]
+}

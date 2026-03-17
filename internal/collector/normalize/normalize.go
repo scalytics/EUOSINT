@@ -86,6 +86,29 @@ var (
 		regexp.MustCompile(`(?i)\b(?:critical infrastructure|national security|chemical|biological|nuclear|radiological)\b`),
 		regexp.MustCompile(`(?i)\b(?:mass casualty|mass shooting|bombing|explosion|hostage)\b`),
 	}
+	// actionableTitlePatterns detect titles that carry intelligence or safety
+	// value — used to classify noise from broad sources without include_keywords.
+	actionableTitlePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(?:attack(?:ed)?|struck|bomb(?:ed|ing)?|explosion|strike|shelling|shoot(?:ing)?|fire[ds]?\s+(?:on|at|upon))\b`),
+		regexp.MustCompile(`(?i)\b(?:seiz(?:ed|ure)|intercept(?:ed)?|captur(?:ed)?|hijack(?:ed)?|board(?:ed|ing))\b`),
+		regexp.MustCompile(`(?i)\b(?:missing|wanted|fugitive|kidnapp(?:ed|ing)|abduct(?:ed|ion)|hostage)\b`),
+		regexp.MustCompile(`(?i)\b(?:arrest(?:ed)?|charged|indicted|sentenced|convicted|extradited)\b`),
+		regexp.MustCompile(`(?i)\b(?:advisory|alert|warning|threat|sanctions?|embargo)\b`),
+		regexp.MustCompile(`(?i)\b(?:breach|hack|leak|ransomware|malware|phishing|exploit|vulnerability|cve-\d)\b`),
+		regexp.MustCompile(`(?i)\b(?:fraud|scam|theft|launder(?:ing)?|trafficking|smuggling)\b`),
+		regexp.MustCompile(`(?i)\b(?:terror(?:ism|ist)?|extremis[tm]|radicaliz)\b`),
+		regexp.MustCompile(`(?i)\b(?:killed|dead|death|fatal(?:ity|ities)?|casualt(?:y|ies)|injur(?:ed|y|ies))\b`),
+		regexp.MustCompile(`(?i)\b(?:evacuat(?:ed|ion)|disaster|emergency|crisis|outbreak|epidemic|pandemic)\b`),
+		regexp.MustCompile(`(?i)\b(?:earthquake|tsunami|flood(?:ing)?|hurricane|typhoon|cyclone|wildfire|eruption)\b`),
+		regexp.MustCompile(`(?i)\b(?:piracy|pirate|drone|missile|torpedo|submarine|naval|warship|destroyer|frigate)\b`),
+		regexp.MustCompile(`(?i)\b(?:sanction(?:ed|s)?|blacklist(?:ed)?|designat(?:ed|ion)|banned)\b`),
+		regexp.MustCompile(`(?i)\b(?:ceasefire|truce|peace (?:deal|agreement|talks)|withdrawal|deploy(?:ed|ment))\b`),
+		regexp.MustCompile(`(?i)\b(?:espionage|spy|intelligence|surveillance|intercept(?:ion)?)\b`),
+		regexp.MustCompile(`(?i)\b(?:coup|uprising|protest|riot|unrest|martial law|state of emergency)\b`),
+		regexp.MustCompile(`(?i)\b(?:travel (?:warning|advisory|ban)|do not travel|reisewarnung)\b`),
+		regexp.MustCompile(`(?i)\b(?:sunk|sinking|grounding|collision|capsiz(?:ed|ing)|adrift|distress|mayday|sos)\b`),
+		regexp.MustCompile(`(?i)\b(?:oil spill|chemical|hazmat|radiation|nuclear|contamination)\b`),
+	}
 	assistancePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:report(?:\s+a)?(?:\s+crime)?|submit (?:a )?tip|tip[-\s]?off)\b`),
 		regexp.MustCompile(`(?i)\b(?:contact (?:police|authorities|law enforcement)|hotline|helpline)\b`),
@@ -364,9 +387,11 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		}
 	} else if allowDynamicGeocode && ctx.Geocoder != nil {
 		// Non-international source: try city-level geocoding within the
-		// source's country for better pin placement.
+		// source's country for better pin placement. Only accept results
+		// that match the source's country to prevent cross-country false
+		// positives (e.g. Malta news pinned to Brazil).
 		if result := ctx.Geocoder.Resolve(context.Background(), geoText, source.CountryCode); result.CountryCode != "" &&
-			(result.Source == "city-db" || result.Source == "nominatim" || result.CountryCode == source.CountryCode) {
+			result.CountryCode == source.CountryCode {
 			baseLat, baseLng = result.Lat, result.Lng
 			geoSource = result.Source
 		}
@@ -396,8 +421,9 @@ func shouldUseDynamicGeocoding(category string) bool {
 	switch strings.ToLower(strings.TrimSpace(category)) {
 	case "missing_person", "wanted_suspect", "public_appeal", "public_safety",
 		"travel_warning", "humanitarian_tasking", "humanitarian_security",
-		"conflict_monitoring", "health_emergency", "disease_outbreak",
-		"environmental_disaster", "emergency_management":
+		"conflict_monitoring", "maritime_security", "logistics_incident",
+		"health_emergency", "disease_outbreak", "environmental_disaster",
+		"emergency_management":
 		return true
 	default:
 		return false
@@ -459,6 +485,10 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 		add(0.09, "law-enforcement incident category")
 	case "humanitarian_tasking", "conflict_monitoring", "humanitarian_security":
 		add(0.08, "humanitarian incident/tasking category")
+	case "maritime_security":
+		add(0.08, "maritime security category")
+	case "logistics_incident":
+		add(0.08, "logistics/transportation incident category")
 	case "education_digital_capacity":
 		add(0.07, "education and digital capacity category")
 	case "fraud_alert":
@@ -575,6 +605,8 @@ func defaultSeverity(category string) string {
 	case "public_appeal", "humanitarian_tasking", "humanitarian_security", "private_sector":
 		return "high"
 	case "travel_warning":
+		return "high"
+	case "maritime_security", "logistics_incident":
 		return "high"
 	case "environmental_disaster", "disease_outbreak":
 		return "high"
@@ -698,6 +730,17 @@ func isSecurityInformational(alert model.Alert, feed FeedContext) bool {
 		(hasAny(text, generalNewsPatterns) || hasAny(text, narrativePatterns) || publicationType == "news_media")
 }
 
+// IsActionableTitle returns true if the alert title contains words that
+// indicate intelligence, security, or safety significance. Used by the
+// collection loop to downgrade non-actionable content from broad sources
+// (those without include_keywords) to informational severity.
+func IsActionableTitle(title string) bool {
+	lower := strings.ToLower(title)
+	return hasAny(lower, actionableTitlePatterns) ||
+		hasAny(lower, technicalSignalPatterns) ||
+		hasAny(lower, incidentDisclosurePatterns)
+}
+
 func containsAny(value string, needles ...string) bool {
 	for _, needle := range needles {
 		if strings.Contains(value, needle) {
@@ -733,6 +776,10 @@ func jitter(lat float64, lng float64, seed string, geoSource string) (float64, f
 
 func jitterRadiusKM(geoSource string) (float64, float64) {
 	switch geoSource {
+	case "coordinates":
+		return 0.2, 0.8
+	case "maritime-region":
+		return 5, 25
 	case "city-db":
 		return 0.4, 1.6
 	case "nominatim":

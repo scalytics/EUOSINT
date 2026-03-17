@@ -27,6 +27,7 @@ export type AlertCategory =
   | "environmental_disaster"
   | "disease_outbreak"
   | "maritime_security"
+  | "logistics_incident"
   | "legislative";
 export type AuthorityType =
   | "police"
@@ -35,7 +36,8 @@ export type AuthorityType =
   | "regulatory"
   | "public_safety_program"
   | "cert"
-  | "private_sector";
+  | "private_sector"
+  | "osint";
 
 export interface AuthoritySource {
   source_id: string;

@@ -1,0 +1,33 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"name":"Ramstein Air Base","country":"DE","operator":"US/NATO","type":"air"},"geometry":{"type":"Point","coordinates":[7.6,49.44]}},
+    {"type":"Feature","properties":{"name":"Camp Bondsteel","country":"XK","operator":"US/KFOR","type":"army"},"geometry":{"type":"Point","coordinates":[21.25,42.36]}},
+    {"type":"Feature","properties":{"name":"Naval Station Rota","country":"ES","operator":"US/NATO","type":"naval"},"geometry":{"type":"Point","coordinates":[-6.35,36.62]}},
+    {"type":"Feature","properties":{"name":"RAF Lakenheath","country":"GB","operator":"US/RAF","type":"air"},"geometry":{"type":"Point","coordinates":[0.56,52.41]}},
+    {"type":"Feature","properties":{"name":"Incirlik Air Base","country":"TR","operator":"US/NATO","type":"air"},"geometry":{"type":"Point","coordinates":[35.43,37.0]}},
+    {"type":"Feature","properties":{"name":"Al Udeid Air Base","country":"QA","operator":"US","type":"air"},"geometry":{"type":"Point","coordinates":[51.31,25.12]}},
+    {"type":"Feature","properties":{"name":"Camp Lemonnier","country":"DJ","operator":"US","type":"joint"},"geometry":{"type":"Point","coordinates":[43.15,11.55]}},
+    {"type":"Feature","properties":{"name":"Yokosuka Naval Base","country":"JP","operator":"US","type":"naval"},"geometry":{"type":"Point","coordinates":[139.66,35.28]}},
+    {"type":"Feature","properties":{"name":"Kadena Air Base","country":"JP","operator":"US","type":"air"},"geometry":{"type":"Point","coordinates":[127.77,26.35]}},
+    {"type":"Feature","properties":{"name":"Camp Humphreys","country":"KR","operator":"US","type":"army"},"geometry":{"type":"Point","coordinates":[127.03,36.96]}},
+    {"type":"Feature","properties":{"name":"Diego Garcia","country":"IO","operator":"US/UK","type":"naval"},"geometry":{"type":"Point","coordinates":[72.4,-7.32]}},
+    {"type":"Feature","properties":{"name":"Bahrain Naval Base","country":"BH","operator":"US","type":"naval"},"geometry":{"type":"Point","coordinates":[50.6,26.2]}},
+    {"type":"Feature","properties":{"name":"Kaliningrad","country":"RU","operator":"RU","type":"joint"},"geometry":{"type":"Point","coordinates":[20.5,54.7]}},
+    {"type":"Feature","properties":{"name":"Sevastopol","country":"UA","operator":"RU","type":"naval"},"geometry":{"type":"Point","coordinates":[33.5,44.6]}},
+    {"type":"Feature","properties":{"name":"Tartus Naval Facility","country":"SY","operator":"RU","type":"naval"},"geometry":{"type":"Point","coordinates":[35.89,34.89]}},
+    {"type":"Feature","properties":{"name":"Khmeimim Air Base","country":"SY","operator":"RU","type":"air"},"geometry":{"type":"Point","coordinates":[35.95,35.4]}},
+    {"type":"Feature","properties":{"name":"Hainan / Yulin Naval Base","country":"CN","operator":"CN","type":"naval"},"geometry":{"type":"Point","coordinates":[109.5,18.2]}},
+    {"type":"Feature","properties":{"name":"Djibouti PLA Support Base","country":"DJ","operator":"CN","type":"joint"},"geometry":{"type":"Point","coordinates":[43.08,11.59]}},
+    {"type":"Feature","properties":{"name":"Ream Naval Base","country":"KH","operator":"CN","type":"naval"},"geometry":{"type":"Point","coordinates":[103.6,10.5]}},
+    {"type":"Feature","properties":{"name":"Thule Air Base","country":"GL","operator":"US","type":"air"},"geometry":{"type":"Point","coordinates":[-68.7,76.53]}},
+    {"type":"Feature","properties":{"name":"Pine Gap","country":"AU","operator":"US/AU","type":"intelligence"},"geometry":{"type":"Point","coordinates":[133.74,-23.8]}},
+    {"type":"Feature","properties":{"name":"Norfolk Naval Station","country":"US","operator":"US","type":"naval"},"geometry":{"type":"Point","coordinates":[-76.3,36.95]}},
+    {"type":"Feature","properties":{"name":"Pearl Harbor","country":"US","operator":"US","type":"naval"},"geometry":{"type":"Point","coordinates":[-157.95,21.35]}},
+    {"type":"Feature","properties":{"name":"Guam (Andersen AFB)","country":"GU","operator":"US","type":"air"},"geometry":{"type":"Point","coordinates":[144.93,13.58]}},
+    {"type":"Feature","properties":{"name":"Sigonella NAS","country":"IT","operator":"US/NATO","type":"air"},"geometry":{"type":"Point","coordinates":[14.92,37.4]}},
+    {"type":"Feature","properties":{"name":"Souda Bay","country":"GR","operator":"US/NATO","type":"naval"},"geometry":{"type":"Point","coordinates":[24.12,35.49]}},
+    {"type":"Feature","properties":{"name":"Muwaffaq Salti AB","country":"JO","operator":"US","type":"air"},"geometry":{"type":"Point","coordinates":[36.78,32.36]}},
+    {"type":"Feature","properties":{"name":"Prince Sultan AB","country":"SA","operator":"US","type":"air"},"geometry":{"type":"Point","coordinates":[47.58,24.06]}}
+  ]
+}
