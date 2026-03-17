@@ -13,6 +13,7 @@ import type { Alert } from "@/types/alert";
 import { alertMatchesRegionFilter } from "@/lib/regions";
 import { severityHex, textHex } from "@/lib/theme";
 import { OVERLAYS, loadOverlay, type OverlayId } from "@/lib/map-overlays";
+import { detectSpikes } from "@/lib/activity-spikes";
 
 /* ── Region viewports ─────────────────────────────────────────────── */
 
@@ -253,6 +254,8 @@ export function GlobeView({
     return [...bins.values()].sort((a, b) => b.count - a.count).slice(0, 6);
   }, [visibleAlerts]);
 
+  const activitySpikes = useMemo(() => detectSpikes(alerts), [alerts]);
+
   /* ── Render ───────────────────────────────────────────────────── */
 
   return (
@@ -339,6 +342,37 @@ export function GlobeView({
               ))}
             </div>
           </div>
+          {activitySpikes.length > 0 && (
+            <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Activity spikes</div>
+              <div className="mt-3 space-y-1.5">
+                {activitySpikes.slice(0, 5).map((spike) => (
+                  <button
+                    key={spike.countryCode}
+                    type="button"
+                    onClick={() => onRegionChange(`country:${spike.countryCode}`)}
+                    className="w-full text-left rounded-xl border border-siem-border bg-siem-panel-strong px-3 py-2 hover:border-siem-accent/40 hover:bg-siem-accent/8 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-siem-text truncate">{spike.country}</span>
+                      <span
+                        className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border ${
+                          spike.level === "surge"
+                            ? "bg-red-500/15 text-red-300 border-red-500/30"
+                            : "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                        }`}
+                      >
+                        {spike.level === "surge" ? "Surge" : "Elevated"}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-[10px] text-siem-muted font-mono">
+                      {spike.last24h} alerts / 24h — {spike.ratio}x baseline
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
             <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Layers</div>
             <div className="mt-3 space-y-1.5">
