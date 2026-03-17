@@ -53,9 +53,11 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 		searchClient = vet.NewClient(cfg)
 	}
 
-	// Load existing registry for deduplication.
+	// Load existing registry for deduplication and gap analysis.
 	existing := map[string]struct{}{}
+	var registrySources []model.RegistrySource
 	if sources, err := registry.Load(cfg.RegistryPath); err == nil {
+		registrySources = sources
 		for _, src := range sources {
 			if src.FeedURL != "" {
 				existing[normalizeURL(src.FeedURL)] = struct{}{}
@@ -71,7 +73,7 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	var discovered []DiscoveredSource
 	dead := loadDeadLetterQueue(cfg.ReplacementQueuePath)
 	fmt.Fprintf(stderr, "Dead-letter queue: %d sources will be skipped\n", len(dead))
-	seededCandidates, err := generateAutonomousCandidates(ctx, cfg, client, searchClient, dead, stderr)
+	seededCandidates, err := generateAutonomousCandidates(ctx, cfg, client, searchClient, dead, registrySources, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "WARN autonomous candidate discovery failed: %v\n", err)
 	}
@@ -180,7 +182,7 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	return nil
 }
 
-func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client *fetch.Client, searchClient searchCompleter, dead []model.SourceReplacementCandidate, stderr io.Writer) ([]model.SourceCandidate, error) {
+func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client *fetch.Client, searchClient searchCompleter, dead []model.SourceReplacementCandidate, registrySources []model.RegistrySource, stderr io.Writer) ([]model.SourceCandidate, error) {
 	candidates := make([]model.SourceCandidate, 0)
 	var failures []string
 	var slowSkips []string
@@ -265,6 +267,12 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 	if len(slowSkips) > 0 {
 		fmt.Fprintf(stderr, "Structured discovery skipped slow providers: %s\n", strings.Join(slowSkips, ", "))
 	}
+	// Gap analysis: find countries with missing categories and seed searches.
+	gapCandidates := AnalyzeGaps(registrySources, stderr)
+	if len(gapCandidates) > 0 {
+		candidates = append(candidates, gapCandidates...)
+	}
+
 	searchSeeds := append([]model.SourceCandidate{}, candidates...)
 	replacementTargets := buildReplacementSearchTargets(dead)
 	if len(replacementTargets) > 0 {

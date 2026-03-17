@@ -507,20 +507,24 @@ func interpolBrowserURLs(sourceType string) (pageURL string, matchURL string) {
 
 func extractInterpolNoticeID(entityID string, link string) string {
 	if id := strings.TrimSpace(entityID); id != "" {
-		return id
+		return strings.ReplaceAll(id, "/", "-")
 	}
 	parsed, err := url.Parse(strings.TrimSpace(link))
 	if err != nil {
 		return ""
 	}
 	if fragment := strings.TrimSpace(parsed.Fragment); fragment != "" {
-		return fragment
+		return strings.ReplaceAll(fragment, "/", "-")
 	}
 	path := strings.Trim(parsed.Path, "/")
 	if path == "" {
 		return ""
 	}
+	// API paths like /notices/v1/red/2026/5314 → "2026-5314"
 	parts := strings.Split(path, "/")
+	if len(parts) >= 2 && parts[len(parts)-2] >= "1900" && parts[len(parts)-2] <= "2099" {
+		return parts[len(parts)-2] + "-" + parts[len(parts)-1]
+	}
 	return strings.TrimSpace(parts[len(parts)-1])
 }
 
