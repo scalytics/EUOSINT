@@ -339,7 +339,7 @@ export function GlobeView({
             </div>
           </div>
           <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Infrastructure Layers</div>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Layers</div>
             <div className="mt-3 space-y-1.5">
               {OVERLAYS.map((overlay) => (
                 <button

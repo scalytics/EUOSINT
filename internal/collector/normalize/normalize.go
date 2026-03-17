@@ -368,9 +368,10 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	geocoded := false
 	allowDynamicGeocode := shouldUseDynamicGeocoding(meta.Category)
 
-	// For international sources, try to geocode the alert to the actual
-	// crisis location instead of pinning it to the org's HQ.
-	if allowDynamicGeocode && (meta.RegionTag == "INT" || meta.Source.CountryCode == "INT") {
+	// For international sources and travel warnings, geocode to the actual
+	// target location instead of pinning to the issuing org's HQ.
+	isCrossCountry := meta.RegionTag == "INT" || meta.Source.CountryCode == "INT" || meta.Category == "travel_warning"
+	if allowDynamicGeocode && isCrossCountry {
 		if ctx.Geocoder != nil {
 			// Enhanced geocoding: city DB → Nominatim → country text.
 			if result := ctx.Geocoder.Resolve(context.Background(), geoText, ""); result.CountryCode != "" {
@@ -797,14 +798,10 @@ func jitterRadiusKM(geoSource string) (float64, float64) {
 		return 0.4, 1.6
 	case "nominatim":
 		return 0.8, 2.5
-	case "capital":
-		return 0.5, 1.5
-	case "country-text":
-		return 0.5, 1.5
-	case "registry":
-		return 0.5, 1.5
+	case "capital", "country-text", "registry":
+		return 0, 0
 	default:
-		return 0.5, 1.5
+		return 0, 0
 	}
 }
 

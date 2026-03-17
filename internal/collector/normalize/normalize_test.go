@@ -128,13 +128,12 @@ func TestJitterRadiusKMIsPrecisionAware(t *testing.T) {
 	if cityMax > 2 {
 		t.Fatalf("expected city-db jitter to stay very tight, got max %.1f km", cityMax)
 	}
-	// National-level pins (capital, registry, country-text) use tight jitter
-	// (~1.5 km) so markers cluster near the capital rather than scattering
-	// across a wide radius.
+	// National-level pins (capital, registry, country-text) use zero jitter
+	// so markers stack exactly on the capital and the cluster handles display.
 	for _, src := range []string{"capital", "registry", "country-text"} {
 		min, max := jitterRadiusKM(src)
-		if max > 1.5 {
-			t.Fatalf("expected %s jitter max <= 1.5 km, got %.1f-%.1f km", src, min, max)
+		if min != 0 || max != 0 {
+			t.Fatalf("expected %s jitter to be zero, got %.1f-%.1f km", src, min, max)
 		}
 	}
 	_ = cityMin // used above

@@ -93,7 +93,8 @@ export function AlertFeed({
     return categoryMatch && severityMatch;
   });
 
-  const infoAlerts = facetFiltered.filter((a) => a.severity === "info");
+  // Briefing: all informational alerts, only region-filtered (ignores category/severity/actionable filters)
+  const infoAlerts = regionFiltered.filter((a) => a.severity === "info");
   const primaryAlerts = facetFiltered.filter((a) => a.severity !== "info");
 
   const sorted = [...primaryAlerts].sort((a, b) => {
@@ -435,7 +436,6 @@ export function AlertFeed({
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
-                <option value="info">Informational</option>
               </select>
               <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-siem-muted pointer-events-none" />
             </div>
@@ -457,7 +457,7 @@ export function AlertFeed({
         <div className="grid grid-cols-3 gap-2">
           {(
             [
-              ["navigator", "Navigator"],
+              ["navigator", "Sectors"],
               ["timeline", "Queue"],
               ["briefing", "Briefing"],
             ] as const
@@ -473,9 +473,6 @@ export function AlertFeed({
               }`}
             >
               {label}
-              {mode === "briefing" && infoAlerts.length > 0 && (
-                <span className="ml-1 text-[9px] opacity-60">{infoAlerts.length}</span>
-              )}
             </button>
           ))}
         </div>
@@ -553,7 +550,7 @@ export function AlertFeed({
               <section className="flex min-h-0 flex-1 flex-col rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
                 <div className="px-3 py-2 border-b border-siem-border bg-siem-panel/70 flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-siem-muted">Case Queue</p>
+                    <p className="text-[10px] uppercase tracking-wider text-siem-muted">Alerts</p>
                     <p className="text-xs text-siem-text truncate">
                       {activeNavigatorGroup.region} •{" "}
                       {categoryLabels[activeNavigatorGroup.category]}
@@ -565,7 +562,7 @@ export function AlertFeed({
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto p-2 space-y-2">
                   {activeNavigatorGroup.alerts.map((alert, idx) =>
-                    renderAlertCard(alert, "Case", idx)
+                    renderAlertCard(alert, "Alert", idx)
                   )}
                 </div>
               </section>
