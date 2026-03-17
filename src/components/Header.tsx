@@ -37,13 +37,6 @@ const REGIONS = [
   "International",
 ];
 
-const _MENU_ITEMS: { key: MenuView; label: string }[] = [
-  { key: "overview", label: "Overview" },
-  { key: "feeds", label: "Feeds" },
-  { key: "authorities", label: "Authorities" },
-  { key: "health", label: "Source Health" },
-];
-
 const SEARCH_HISTORY_COOKIE = "euosint_search_history";
 
 function readSearchHistory(): string[] {
@@ -499,6 +492,8 @@ export function Header({
   onMenuChange,
   alerts,
 }: Props) {
+  void activeMenu;
+  void onMenuChange;
   return (
     <header className="border-b border-siem-border bg-siem-panel/96 px-4 py-3 md:px-5">
       <div className="flex flex-col gap-3">
