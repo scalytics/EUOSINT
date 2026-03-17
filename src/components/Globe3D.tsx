@@ -1,12 +1,14 @@
 /*
  * EUOSINT
  * 3D Globe view using globe.gl with Natural Earth textures.
+ * Supports the same overlay layers as the 2D Leaflet map.
  */
 
 import { useEffect, useRef, useMemo, useCallback } from "react";
-import Globe from "globe.gl";
+import Globe, { type GlobeInstance } from "globe.gl";
 import type { Alert } from "@/types/alert";
 import { severityHex } from "@/lib/theme";
+import { OVERLAYS, type OverlayId } from "@/lib/map-overlays";
 
 const REGION_POV: Record<string, { lat: number; lng: number; altitude: number }> = {
   Europe: { lat: 50, lng: 10, altitude: 1.8 },
@@ -25,11 +27,33 @@ interface Props {
   selectedId: string | null;
   onSelect: (id: string) => void;
   regionFilter: string;
+  activeOverlays: Set<OverlayId>;
 }
 
-export function Globe3D({ alerts, selectedId, onSelect, regionFilter }: Props) {
+interface PolygonFeature {
+  geometry: { type: string; coordinates: number[][][] };
+  properties: Record<string, string>;
+  __color: string;
+  __label: string;
+}
+
+interface PathFeature {
+  coords: [number, number][];
+  __color: string;
+  __label: string;
+}
+
+// Colors matching map-overlays.ts
+const overlayColors: Record<string, string> = {
+  conflicts: "#ff5d5d",
+  cables: "#60a5fa",
+  shipping: "#4ccb8d",
+  sanctions: "#f87171",
+};
+
+export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOverlays }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const globeRef = useRef<ReturnType<typeof Globe> | null>(null);
+  const globeRef = useRef<GlobeInstance | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
@@ -60,7 +84,7 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter }: Props) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const globe = Globe()(containerRef.current)
+    const globe = new Globe(containerRef.current)
       .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
       .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
       .backgroundImageUrl("//unpkg.com/three-globe/example/img/night-sky.png")
@@ -80,13 +104,23 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter }: Props) {
         },
       )
       .onPointClick(handlePointClick)
-      .showGraticules(true);
-
-    // Style graticules to be subtle
-    const globeMaterial = globe.globeMaterial() as { color?: { set: (c: string) => void } };
-    if (globeMaterial?.color?.set) {
-      globeMaterial.color.set("#0d1117");
-    }
+      .showGraticules(true)
+      .polygonsData([])
+      .polygonCapColor((d: object) => (d as PolygonFeature).__color + "22")
+      .polygonSideColor((d: object) => (d as PolygonFeature).__color + "11")
+      .polygonStrokeColor((d: object) => (d as PolygonFeature).__color)
+      .polygonAltitude(0.005)
+      .polygonLabel((d: object) => {
+        const f = d as PolygonFeature;
+        return `<div style="background:rgba(15,18,25,0.92);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px 10px;font-size:11px;color:#e2e8f0">${f.__label}</div>`;
+      })
+      .pathsData([])
+      .pathColor((d: object) => (d as PathFeature).__color)
+      .pathStroke(1.5)
+      .pathLabel((d: object) => {
+        const f = d as PathFeature;
+        return `<div style="background:rgba(15,18,25,0.92);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px 10px;font-size:11px;color:#e2e8f0">${f.__label}</div>`;
+      });
 
     // Dim scene lights for dark theme
     const scene = globe.scene();
@@ -107,7 +141,7 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter }: Props) {
 
     return () => {
       ro.disconnect();
-      globe._destructor?.();
+      globe._destructor();
       globeRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,6 +151,61 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter }: Props) {
   useEffect(() => {
     globeRef.current?.pointsData(points);
   }, [points]);
+
+  /* Sync overlays */
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe) return;
+
+    const polygons: PolygonFeature[] = [];
+    const paths: PathFeature[] = [];
+
+    const fetches = Array.from(activeOverlays).map(async (id) => {
+      const def = OVERLAYS.find((o) => o.id === id);
+      if (!def) return;
+      try {
+        const resp = await fetch(def.url);
+        const geojson = await resp.json();
+        const color = overlayColors[id] ?? def.color;
+
+        for (const feature of geojson.features) {
+          const gtype = feature.geometry?.type;
+          const props = feature.properties ?? {};
+          const label = `<strong>${props.name ?? ""}</strong>${props.type ? `<br/>${props.type}` : ""}`;
+
+          if (gtype === "Polygon" || gtype === "MultiPolygon") {
+            polygons.push({
+              geometry: feature.geometry,
+              properties: props,
+              __color: color,
+              __label: label,
+            });
+          } else if (gtype === "LineString") {
+            // globe.gl paths: array of [lng, lat] → need [lat, lng, alt]
+            paths.push({
+              coords: feature.geometry.coordinates.map((c: number[]) => [c[1], c[0]]),
+              __color: color,
+              __label: label,
+            });
+          }
+          // Points (ports, bases, nuclear) rendered as additional globe points
+          // could be added here but alert points already cover the map
+        }
+      } catch {
+        // overlay fetch failed silently
+      }
+    });
+
+    Promise.all(fetches).then(() => {
+      globe
+        .polygonsData(polygons)
+        .polygonGeoJsonGeometry((d: object) => (d as PolygonFeature).geometry)
+        .pathsData(paths)
+        .pathPoints("coords")
+        .pathPointLat((p: unknown) => (p as number[])[0])
+        .pathPointLng((p: unknown) => (p as number[])[1]);
+    });
+  }, [activeOverlays]);
 
   /* Fly to region */
   useEffect(() => {
