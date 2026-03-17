@@ -40,6 +40,28 @@ func New(cfg config.Config) *Client {
 	})
 }
 
+// NewFast creates a client with the fast timeout (FetchTimeoutFastMS)
+// for RSS/JSON feeds that should respond quickly.
+func NewFast(cfg config.Config) *Client {
+	timeout := time.Duration(cfg.FetchTimeoutFastMS) * time.Millisecond
+	if timeout <= 0 {
+		timeout = 3 * time.Second
+	}
+	return NewWithHTTPClient(cfg, &http.Client{
+		Timeout: timeout,
+		Transport: newStealthTransport(&net.Dialer{
+			Timeout:   timeout,
+			KeepAlive: 30 * time.Second,
+		}),
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return errors.New("stopped after 10 redirects")
+			}
+			return nil
+		},
+	})
+}
+
 func NewWithHTTPClient(cfg config.Config, httpClient *http.Client) *Client {
 	return &Client{
 		httpClient:   httpClient,

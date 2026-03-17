@@ -39,6 +39,8 @@ type Config struct {
 	Watch                           bool
 	IntervalMS                      int
 	HTTPTimeoutMS                   int
+	FetchTimeoutFastMS              int
+	FetchWorkers                    int
 	MaxResponseBodyBytes            int64
 	UserAgent                       string
 	WikimediaUserAgent              string
@@ -102,6 +104,8 @@ func Default() Config {
 		Watch:                           false,
 		IntervalMS:                      defaultIntervalMS,
 		HTTPTimeoutMS:                   defaultTimeoutMS,
+		FetchTimeoutFastMS:              3000,
+		FetchWorkers:                    12,
 		MaxResponseBodyBytes:            defaultMaxBodyBytes,
 		UserAgent:                       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
 		WikimediaUserAgent:              "EUOSINTBot/1.0 (https://www.scalytics.io; ops@scalytics.io) WDQS discovery",
@@ -165,6 +169,8 @@ func FromEnv() Config {
 	cfg.Watch = envBool("WATCH", cfg.Watch)
 	cfg.IntervalMS = envInt("INTERVAL_MS", cfg.IntervalMS)
 	cfg.HTTPTimeoutMS = envInt("HTTP_TIMEOUT_MS", cfg.HTTPTimeoutMS)
+	cfg.FetchTimeoutFastMS = envInt("FETCH_TIMEOUT_FAST_MS", cfg.FetchTimeoutFastMS)
+	cfg.FetchWorkers = envInt("FETCH_WORKERS", cfg.FetchWorkers)
 	cfg.MaxResponseBodyBytes = int64(envInt("MAX_RESPONSE_BODY_BYTES", int(cfg.MaxResponseBodyBytes)))
 	cfg.UserAgent = envString("USER_AGENT", cfg.UserAgent)
 	cfg.WikimediaUserAgent = envString("WIKIMEDIA_USER_AGENT", cfg.WikimediaUserAgent)
