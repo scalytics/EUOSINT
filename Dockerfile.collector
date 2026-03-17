@@ -30,7 +30,6 @@ WORKDIR /app
 COPY --from=build /out/euosint-collector /usr/local/bin/euosint-collector
 COPY --from=geonames /tmp/cities500.txt ./registry/cities500.txt
 COPY registry ./registry
-COPY public ./public-defaults
 COPY docker/collector-entrypoint.sh /usr/local/bin/collector-entrypoint.sh
 
 RUN chmod +x /usr/local/bin/collector-entrypoint.sh
