@@ -8,6 +8,11 @@
 @import "tailwindcss";
 
 @theme {
+  /* ── Relative type scale (scales with html font-size) ──────────── */
+  --font-size-3xs: 0.692rem;   /* ~9px at 13px root  */
+  --font-size-2xs: 0.77rem;    /* ~10px at 13px root */
+  --font-size-xxs: 0.846rem;   /* ~11px at 13px root */
+
   /* ── Brand ──────────────────────────────────────────────────────── */
   --color-siem-bg: #070E1A;
   --color-siem-panel: #0b1120;
@@ -53,6 +58,10 @@
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  font-size: 13px;
 }
 
 html,

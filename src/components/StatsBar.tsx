@@ -65,7 +65,7 @@ export function StatsBar({ alerts, sourceHealth }: Props) {
               <metric.icon size={14} className={metric.tone} />
               <span className={`text-lg font-semibold ${metric.tone}`}>{metric.value}</span>
             </div>
-            <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-siem-muted">
+            <div className="mt-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
               {metric.label}
             </div>
           </div>

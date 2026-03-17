@@ -170,12 +170,12 @@ export function FeedDirectory({
       {/* Header */}
       <div className="border-b border-siem-border/80 px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-siem-muted">
+          <div className="flex items-center gap-2 text-xxs uppercase tracking-[0.2em] text-siem-muted">
             <Radar size={12} />
             {regionFilter === "all" ? "Global Overview" : regionFilter.startsWith("country:") ? regionFilter.slice(8) : regionFilter}
           </div>
           {severityFilter && (
-            <span className="rounded border border-siem-accent/40 bg-siem-accent/10 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-siem-accent">
+            <span className="rounded border border-siem-accent/40 bg-siem-accent/10 px-1.5 py-0.5 text-2xs uppercase tracking-[0.14em] text-siem-accent">
               {severityFilter}
             </span>
           )}
@@ -208,7 +208,7 @@ export function FeedDirectory({
             >
               <card.icon size={13} className={card.tone} />
               <div className={`mt-1 text-sm font-semibold ${card.tone}`}>{card.value}</div>
-              <div className="text-[10px] uppercase tracking-[0.16em] text-siem-muted">{card.label}</div>
+              <div className="text-2xs uppercase tracking-[0.16em] text-siem-muted">{card.label}</div>
             </button>
           ))}
         </div>
@@ -220,28 +220,28 @@ export function FeedDirectory({
               <Globe2 size={14} className="text-siem-accent" />
               <span className="text-xl font-semibold text-siem-text">{zoneSummary.countries}</span>
             </div>
-            <div className="text-[10px] uppercase tracking-[0.16em] text-siem-muted">Countries</div>
+            <div className="text-2xs uppercase tracking-[0.16em] text-siem-muted">Countries</div>
           </div>
           <div className="rounded-xl border border-siem-border bg-siem-panel-strong px-3 py-2.5">
             <div className="flex items-center gap-1.5">
               <Radar size={14} className="text-emerald-300" />
               <span className="text-xl font-semibold text-siem-text">{zoneSummary.feeds}</span>
             </div>
-            <div className="text-[10px] uppercase tracking-[0.16em] text-siem-muted">Streams</div>
+            <div className="text-2xs uppercase tracking-[0.16em] text-siem-muted">Streams</div>
           </div>
         </div>
 
         {/* ── Category breakdown ──────────────────────────────────── */}
         <div className="rounded-xl border border-siem-border bg-siem-panel px-3 py-3">
           <div className="mb-2.5 flex items-center justify-between gap-2">
-            <div className="text-[10px] uppercase tracking-[0.16em] text-siem-muted">
+            <div className="text-2xs uppercase tracking-[0.16em] text-siem-muted">
               Categories
             </div>
             {categoryFilter !== "all" && (
               <button
                 type="button"
                 onClick={() => onSelectCategory("all")}
-                className="rounded border border-siem-accent bg-siem-accent/14 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-siem-text"
+                className="rounded border border-siem-accent bg-siem-accent/14 px-1.5 py-0.5 text-2xs uppercase tracking-[0.14em] text-siem-text"
               >
                 All
               </button>
@@ -260,7 +260,7 @@ export function FeedDirectory({
                 }`}
               >
                 <span
-                  className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${categoryBadge[category]}`}
+                  className={`inline-flex items-center px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider rounded border ${categoryBadge[category]}`}
                 >
                   {categoryLabels[category]}
                 </span>
@@ -272,7 +272,7 @@ export function FeedDirectory({
 
         {/* ── Top authorities (clickable to scope) ────────────────── */}
         <div className="rounded-xl border border-siem-border bg-siem-panel px-3 py-3">
-          <div className="mb-2.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-siem-muted">
+          <div className="mb-2.5 flex items-center gap-2 text-2xs uppercase tracking-[0.16em] text-siem-muted">
             <TrendingUp size={11} />
             Top authorities
           </div>
@@ -303,7 +303,7 @@ export function FeedDirectory({
                   }`}
                 >
                   <span className="truncate">{auth.name}</span>
-                  <span className="shrink-0 text-[10px] text-siem-muted" title={likelyCapped ? "May have more (per-source limit)" : undefined}>
+                  <span className="shrink-0 text-2xs text-siem-muted" title={likelyCapped ? "May have more (per-source limit)" : undefined}>
                     {likelyCapped ? `>${auth.count}` : auth.count}
                   </span>
                 </button>
@@ -314,7 +314,7 @@ export function FeedDirectory({
 
         {/* ── Top countries ───────────────────────────────────────── */}
         <div className="rounded-xl border border-siem-border bg-siem-panel px-3 py-3">
-          <div className="mb-2.5 text-[10px] uppercase tracking-[0.16em] text-siem-muted">
+          <div className="mb-2.5 text-2xs uppercase tracking-[0.16em] text-siem-muted">
             Top countries
           </div>
           <div className="space-y-1">
@@ -343,10 +343,10 @@ export function FeedDirectory({
 
       {snapshotStatus && (
         <div className="border-t border-siem-border/80 px-4 py-2.5">
-          <div className={`text-[10px] uppercase tracking-[0.16em] ${snapshotStatus.tone}`}>
+          <div className={`text-2xs uppercase tracking-[0.16em] ${snapshotStatus.tone}`}>
             Data snapshot: {snapshotStatus.relative}
           </div>
-          <div className="mt-1 text-[11px] text-siem-muted">
+          <div className="mt-1 text-xxs text-siem-muted">
             Last collector update: {snapshotStatus.exact}
           </div>
         </div>

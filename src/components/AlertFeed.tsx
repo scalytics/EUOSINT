@@ -300,29 +300,29 @@ export function AlertFeed({
         <div className="flex items-center justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-1.5">
             <span
-              className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${
+              className={`inline-flex items-center px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider rounded border ${
                 severityBg[alert.severity]
               } ${alert.severity === "critical" ? "animate-critical-badge" : ""}`}
             >
               {severityLabel[alert.severity]}
             </span>
             {isNew && (
-              <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] uppercase tracking-wider rounded border border-siem-accent/35 text-siem-accent bg-siem-accent/12">
+              <span className="inline-flex items-center px-1.5 py-0.5 text-2xs uppercase tracking-wider rounded border border-siem-accent/35 text-siem-accent bg-siem-accent/12">
                 New
               </span>
             )}
             {typeof alert.triage?.relevance_score === "number" && (
-              <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] uppercase tracking-wider rounded border border-siem-border text-siem-muted bg-white/5">
+              <span className="inline-flex items-center px-1.5 py-0.5 text-2xs uppercase tracking-wider rounded border border-siem-border text-siem-muted bg-white/5">
                 Rel {Math.round(alert.triage.relevance_score * 100)}
               </span>
             )}
           </div>
-          <span className="text-[10px] text-siem-muted font-mono uppercase tracking-wider">
+          <span className="text-2xs text-siem-muted font-mono uppercase tracking-wider">
             {queueLabel} #{position + 1}
           </span>
         </div>
         <p className="text-sm text-siem-text leading-snug line-clamp-2 mb-2">{alert.title}</p>
-        <div className="flex items-center justify-between gap-2 text-[10px] text-siem-muted font-mono uppercase tracking-wide">
+        <div className="flex items-center justify-between gap-2 text-2xs text-siem-muted font-mono uppercase tracking-wide">
           <span className="flex items-center gap-1 min-w-0">
             <Building2 size={10} />
             <span className="truncate">{alert.source.authority_name}</span>
@@ -332,7 +332,7 @@ export function AlertFeed({
             {freshnessLabel(alert.freshness_hours)}
           </span>
         </div>
-        <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
+        <div className="mt-1.5 flex items-center gap-1.5 text-2xs">
           <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-siem-accent/10 text-siem-accent border border-siem-accent/20">
             <Globe size={9} />
             {alert.source.region}
@@ -361,10 +361,10 @@ export function AlertFeed({
     <div className="flex h-full min-h-0 flex-col">
       <div className="px-3 py-3 border-b border-siem-border bg-siem-panel/95 space-y-2.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-siem-muted">
+          <h2 className="text-xxs font-bold uppercase tracking-[0.18em] text-siem-muted">
             Intelligence Queue
           </h2>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-siem-muted">
+          <div className="text-2xs uppercase tracking-[0.18em] text-siem-muted">
             {regionFilter === "all"
               ? "Global scope"
               : regionFilter.startsWith("country:")
@@ -372,7 +372,7 @@ export function AlertFeed({
                 : `${regionFilter} scope`}
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-[10px] font-mono uppercase tracking-wide">
+        <div className="grid grid-cols-3 gap-2 text-2xs font-mono uppercase tracking-wide">
           <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
             <span className="text-siem-muted">Active</span>{" "}
             <span className="text-siem-text">{alerts.filter((a) => a.status === "active").length}</span>
@@ -446,7 +446,7 @@ export function AlertFeed({
             <button
               type="button"
               onClick={() => setActionableOnly((prev) => !prev)}
-              className={`shrink-0 rounded-md border px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+              className={`shrink-0 rounded-md border px-2 py-1.5 text-2xs font-bold uppercase tracking-wider transition-colors ${
                 actionableOnly
                   ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
                   : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
@@ -470,7 +470,7 @@ export function AlertFeed({
               key={mode}
               type="button"
               onClick={() => setViewMode(mode)}
-              className={`rounded border px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+              className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
                 viewMode === mode
                   ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
                   : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
@@ -482,7 +482,7 @@ export function AlertFeed({
         </div>
         {viewMode === "navigator" && (
           <>
-            <div className="grid grid-cols-3 gap-2 text-[10px] font-mono uppercase tracking-wide">
+            <div className="grid grid-cols-3 gap-2 text-2xs font-mono uppercase tracking-wide">
               <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
                 <span className="text-siem-muted">Cases</span>{" "}
                 <span className="text-siem-text">{facetFiltered.length}</span>
@@ -502,7 +502,7 @@ export function AlertFeed({
             </div>
             {navigatorGroups.length > 0 && (
               <section className="rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
-                <div className="px-3 py-2 border-b border-siem-border bg-siem-panel/70 text-[10px] font-mono uppercase tracking-wider text-siem-muted">
+                <div className="px-3 py-2 border-b border-siem-border bg-siem-panel/70 text-2xs font-mono uppercase tracking-wider text-siem-muted">
                   Region + category navigation
                 </div>
                 <div className="max-h-44 overflow-y-auto p-2 space-y-1.5">
@@ -518,19 +518,19 @@ export function AlertFeed({
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] text-siem-text uppercase tracking-wide truncate">
+                        <span className="text-2xs text-siem-text uppercase tracking-wide truncate">
                           {group.region}
                         </span>
-                        <span className="text-[10px] text-siem-muted font-mono">{group.total}</span>
+                        <span className="text-2xs text-siem-muted font-mono">{group.total}</span>
                       </div>
                       <div className="mt-1 flex items-center justify-between gap-2">
                         <span
-                          className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${categoryBadge[group.category]}`}
+                          className={`inline-flex items-center px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider rounded border ${categoryBadge[group.category]}`}
                         >
                           {categoryLabels[group.category]}
                         </span>
                         {group.critical > 0 && (
-                          <span className="text-[10px] text-red-300 font-mono">
+                          <span className="text-2xs text-red-300 font-mono">
                             {group.critical} critical
                           </span>
                         )}
@@ -554,13 +554,13 @@ export function AlertFeed({
               <section className="flex min-h-0 flex-1 flex-col rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
                 <div className="px-3 py-2 border-b border-siem-border bg-siem-panel/70 flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-siem-muted">Alerts</p>
+                    <p className="text-2xs uppercase tracking-wider text-siem-muted">Alerts</p>
                     <p className="text-xs text-siem-text truncate">
                       {activeNavigatorGroup.region} •{" "}
                       {categoryLabels[activeNavigatorGroup.category]}
                     </p>
                   </div>
-                  <span className="text-[10px] text-siem-muted font-mono">
+                  <span className="text-2xs text-siem-muted font-mono">
                     {activeNavigatorGroup.total}
                   </span>
                 </div>
@@ -598,12 +598,12 @@ export function AlertFeed({
                       <ChevronDown size={12} className="text-siem-muted" />
                     )}
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded border ${categoryBadge[group.category]}`}
+                      className={`inline-flex items-center px-2 py-0.5 text-2xs font-bold uppercase tracking-wider rounded border ${categoryBadge[group.category]}`}
                     >
                       {categoryLabels[group.category]}
                     </span>
                   </div>
-                  <span className="text-[10px] text-siem-muted font-mono uppercase tracking-wide">
+                  <span className="text-2xs text-siem-muted font-mono uppercase tracking-wide">
                     {group.alerts.length}
                   </span>
                 </button>
@@ -627,7 +627,7 @@ export function AlertFeed({
             )}
             {briefingGroups.map((group) => (
               <section key={group.label}>
-                <div className="px-1 pb-1.5 text-[10px] font-mono uppercase tracking-wider text-siem-muted">
+                <div className="px-1 pb-1.5 text-2xs font-mono uppercase tracking-wider text-siem-muted">
                   {group.label}
                 </div>
                 <div className="space-y-1.5">
@@ -642,11 +642,11 @@ export function AlertFeed({
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="flex items-center gap-1 text-[10px] text-siem-muted font-mono min-w-0">
+                        <span className="flex items-center gap-1 text-2xs text-siem-muted font-mono min-w-0">
                           <Building2 size={10} className="shrink-0" />
                           <span className="truncate">{alert.source.authority_name}</span>
                         </span>
-                        <span className="flex items-center gap-1 text-[10px] text-siem-muted font-mono shrink-0">
+                        <span className="flex items-center gap-1 text-2xs text-siem-muted font-mono shrink-0">
                           <Clock size={10} />
                           {freshnessLabel(alert.freshness_hours)}
                         </span>
@@ -656,11 +656,11 @@ export function AlertFeed({
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5">
                         <span
-                          className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded border ${categoryBadge[alert.category]}`}
+                          className={`inline-flex items-center px-1.5 py-0.5 text-3xs font-bold uppercase tracking-wider rounded border ${categoryBadge[alert.category]}`}
                         >
                           {categoryLabels[alert.category]}
                         </span>
-                        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] bg-siem-accent/10 text-siem-accent border border-siem-accent/20">
+                        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-3xs bg-siem-accent/10 text-siem-accent border border-siem-accent/20">
                           <Globe size={8} />
                           {alert.source.region}
                         </span>
@@ -682,7 +682,7 @@ export function AlertFeed({
                 setSeverityFilter("all");
                 onRegionChange("all");
               }}
-              className="rounded border border-siem-border bg-white/5 px-2 py-1 text-[10px] text-siem-muted hover:bg-siem-accent/10 hover:text-siem-accent mb-2"
+              className="rounded border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-muted hover:bg-siem-accent/10 hover:text-siem-accent mb-2"
             >
               Reset filters
             </button>
