@@ -113,8 +113,47 @@ func TestDecompressBodyIdentity(t *testing.T) {
 	}
 }
 
+func TestStealthRoundTripperFallsBackToHTTP11AfterHTTP2PeerError(t *testing.T) {
+	rt := &stealthRoundTripper{
+		dual: &dualProtoTransport{
+			protoByHost: map[string]string{"https://collector.test": "h2"},
+			roundTripH2: func(req *http.Request) (*http.Response, error) {
+				return nil, roundTripError("stream error: stream ID 3; INTERNAL_ERROR; received from peer")
+			},
+			roundTripH1: func(req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader("ok")),
+					Header:     make(http.Header),
+				}, nil
+			},
+		},
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://collector.test/feed", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := rt.RoundTrip(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != "ok" {
+		t.Fatalf("unexpected body %q", string(body))
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return fn(req)
 }
+
+type roundTripError string
+
+func (e roundTripError) Error() string { return string(e) }
