@@ -45,7 +45,7 @@ export const categoryLabels: Record<AlertCategory, string> = {
   humanitarian_tasking: "Humanitarian Tasking",
   conflict_monitoring: "Conflict Monitoring",
   humanitarian_security: "Humanitarian Security",
-  terrorism_tip: "Terrorism Tip",
+  terrorism_tip: "Terrorism Activity",
   fraud_alert: "Fraud Alert",
   public_safety: "Public Safety",
   private_sector: "Private Sector",
