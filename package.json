@@ -26,24 +26,22 @@
     "docker:run": "sh -c 'if command -v docker-compose >/dev/null 2>&1; then docker-compose up --build; else docker compose up --build; fi'"
   },
   "dependencies": {
-    "@types/three": "^0.182.0",
     "clsx": "^2.1.1",
+    "leaflet": "^1.9.4",
+    "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-globe.gl": "^2.37.0",
-    "tailwind-merge": "^3.4.0",
-    "three": "^0.182.0",
-    "topojson-client": "^3.1.0"
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@tailwindcss/vite": "^4.1.18",
+    "@types/leaflet": "^1.9.21",
+    "@types/leaflet.markercluster": "^1.5.6",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-    "@types/topojson-client": "^3.1.5",
-    "@types/topojson-specification": "^1.0.5",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

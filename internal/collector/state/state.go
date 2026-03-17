@@ -25,7 +25,33 @@ func Read(path string) []model.Alert {
 	return alerts
 }
 
-func Reconcile(cfg config.Config, active []model.Alert, filtered []model.Alert, previous []model.Alert, now time.Time) ([]model.Alert, []model.Alert, []model.Alert) {
+// Cursors tracks the resume page for paginated sources that accumulate.
+type Cursors map[string]int // sourceID → next page to fetch
+
+func ReadCursors(path string) Cursors {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return Cursors{}
+	}
+	var c Cursors
+	if err := json.Unmarshal(data, &c); err != nil {
+		return Cursors{}
+	}
+	return c
+}
+
+func WriteCursors(path string, c Cursors) error {
+	data, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0644)
+}
+
+// Reconcile merges current fetch results with previous state.
+// accumulateSources lists source IDs where alerts carry forward across runs
+// (paginated APIs like Interpol where each run only fetches a window).
+func Reconcile(cfg config.Config, active []model.Alert, filtered []model.Alert, previous []model.Alert, now time.Time, accumulateSources map[string]bool) ([]model.Alert, []model.Alert, []model.Alert) {
 	nowISO := now.UTC().Format(time.RFC3339)
 	retentionCutoff := now.Add(-time.Duration(cfg.RemovedRetentionDays) * 24 * time.Hour)
 	previousByID := map[string]model.Alert{}
@@ -60,6 +86,12 @@ func Reconcile(cfg config.Config, active []model.Alert, filtered []model.Alert, 
 	removed := []model.Alert{}
 	for _, prev := range previous {
 		if _, ok := presentByID[prev.AlertID]; ok {
+			continue
+		}
+		// Accumulating sources: carry forward active alerts not in this batch.
+		if accumulateSources[prev.SourceID] && prev.Status == "active" {
+			currentActive = append(currentActive, prev)
+			presentByID[prev.AlertID] = struct{}{}
 			continue
 		}
 		if prev.Status == "removed" {

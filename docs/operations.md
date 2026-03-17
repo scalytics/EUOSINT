@@ -33,7 +33,7 @@ Default local behavior:
 
 - HTTP on `http://localhost:8080`
 - HTTPS listener mapped to `https://localhost:8443` but not used unless `EUOSINT_SITE_ADDRESS` is changed to a hostname that enables TLS
-- The collector seeds the shared feed volume with bundled JSON snapshots if the volume is empty, so the UI has data immediately while the first live refresh runs
+- The collector initializes empty JSON outputs on a fresh shared feed volume, then replaces them with live collector output on the first successful run
 
 ## Domain Setup For A VM
 
@@ -74,6 +74,10 @@ If the VM only has `docker-compose`, adjust the unit commands accordingly.
 ## Operational Notes
 
 - The collector writes feed output into the `feed-data` volume shared with the web container.
+- The UI footer freshness line is derived from `source-health.json.generated_at` and shows the age of the current collector snapshot. It is normal below 20 minutes, warning from 20 to 60 minutes, and stale above 60 minutes.
+- Discovery intake lives in [registry/source_candidates.json](/Users/alo/Development/scalytics/EUOSINT/registry/source_candidates.json).
+- Dead sources are written to the terminal DLQ in `source_dead_letter.json` and are not crawled again.
+- LLM-assisted source vetting is documented in [docs/source-vetting.md](/Users/alo/Development/scalytics/EUOSINT/docs/source-vetting.md).
 - TLS state and certificates persist in the `caddy-data` volume.
 - Caddy runtime state persists in the `caddy-config` volume.
 - Scheduled refreshes, Docker runtime, and local collection commands all run through the Go collector.

@@ -14,6 +14,33 @@ var anchorRe = regexp.MustCompile(`(?is)<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s
 var tagStripRe = regexp.MustCompile(`(?is)<[^>]+>`)
 var scriptStripRe = regexp.MustCompile(`(?is)<script[\s\S]*?</script>|<style[\s\S]*?</style>`)
 
+// junkTitles are navigation / boilerplate link texts that should never
+// become alerts. Checked case-insensitively against the stripped title.
+var junkTitles = []string{
+	"load more", "read more", "see more", "show more", "ver más",
+	"cookie", "cookies", "privacy policy", "terms of use",
+	"terms of service", "legal notice", "aviso legal",
+	"log in", "sign in", "register", "iniciar sesión",
+	"contact us", "about us", "home", "back to top",
+	"next", "previous", "page", "skip to content",
+	"accept", "decline", "configuración de cookies",
+	"mozilla firefox", "google chrome", "microsoft edge",
+	"reset filters",
+}
+
+func isJunkTitle(title string) bool {
+	lower := strings.ToLower(title)
+	if strings.Contains(lower, "${") || strings.Contains(lower, "{{") {
+		return true
+	}
+	for _, junk := range junkTitles {
+		if lower == junk || strings.TrimSpace(lower) == junk {
+			return true
+		}
+	}
+	return false
+}
+
 func ParseHTMLAnchors(body string, baseURL string) []FeedItem {
 	matches := anchorRe.FindAllStringSubmatch(body, -1)
 	seen := make(map[string]struct{}, len(matches))
@@ -34,8 +61,8 @@ func ParseHTMLAnchors(body string, baseURL string) []FeedItem {
 		if err != nil {
 			continue
 		}
-		title := stripHTML(match[2])
-		if len(title) < 8 {
+		title := StripHTML(match[2])
+		if len(title) < 8 || isJunkTitle(title) {
 			continue
 		}
 		finalURL := resolved.ResolveReference(link).String()
@@ -48,7 +75,9 @@ func ParseHTMLAnchors(body string, baseURL string) []FeedItem {
 	return out
 }
 
-func stripHTML(value string) string {
+// StripHTML removes script/style tags, strips remaining HTML tags,
+// unescapes entities, and normalizes whitespace.
+func StripHTML(value string) string {
 	value = scriptStripRe.ReplaceAllString(value, " ")
 	value = tagStripRe.ReplaceAllString(value, " ")
 	value = html.UnescapeString(value)

@@ -26,11 +26,12 @@ func TestRunWritesOutputs(t *testing.T) {
 		"--filtered-output", filepath.Join(dir, "filtered.json"),
 		"--state-output", filepath.Join(dir, "state.json"),
 		"--source-health-output", filepath.Join(dir, "health.json"),
+		"--replacement-queue", filepath.Join(dir, "replacement.json"),
 	}, io.Discard, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range []string{"alerts.json", "filtered.json", "state.json", "health.json"} {
+	for _, path := range []string{"alerts.json", "filtered.json", "state.json", "health.json", "replacement.json"} {
 		if _, err := os.Stat(filepath.Join(dir, path)); err != nil {
 			t.Fatalf("expected %s to be written: %v", path, err)
 		}

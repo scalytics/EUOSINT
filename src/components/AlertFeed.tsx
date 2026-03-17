@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Alert, AlertCategory, Severity } from "@/types/alert";
 import {
-  severityColors,
+  severityColor,
   severityBg,
   severityLabel,
   categoryLabels,
@@ -22,24 +22,27 @@ interface Props {
   alerts: Alert[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  categoryFilter: AlertCategory | "all";
+  onCategoryChange: (category: AlertCategory | "all") => void;
   regionFilter: string;
   onRegionChange: (region: string) => void;
+  onNavigatorSelect?: (region: string, category: AlertCategory) => void;
   onVisibleAlertIdsChange: (ids: string[]) => void;
-  onHideDesktop?: () => void;
 }
 
 export function AlertFeed({
   alerts,
   selectedId,
   onSelect,
+  categoryFilter,
+  onCategoryChange,
   regionFilter,
   onRegionChange,
+  onNavigatorSelect,
   onVisibleAlertIdsChange,
-  onHideDesktop,
 }: Props) {
   const [viewMode, setViewMode] = useState<"navigator" | "timeline">("navigator");
   const [actionableOnly, setActionableOnly] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState<AlertCategory | "all">("all");
   const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
   const [activeNavigatorGroupKey, setActiveNavigatorGroupKey] = useState<string | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -57,6 +60,22 @@ export function AlertFeed({
       set.set(r, (set.get(r) ?? 0) + 1);
     });
     return [...set.entries()].sort((a, b) => b[1] - a[1]);
+  }, [alerts]);
+
+  const countries = useMemo(() => {
+    const set = new Map<string, { name: string; count: number }>();
+    alerts.forEach((a) => {
+      const key = a.source.country_code;
+      const existing = set.get(key);
+      if (existing) {
+        existing.count++;
+      } else {
+        set.set(key, { name: a.source.country, count: 1 });
+      }
+    });
+    return [...set.entries()]
+      .map(([code, { name, count }]) => ({ code, name, count }))
+      .sort((a, b) => b.count - a.count);
   }, [alerts]);
 
   const regionFiltered =
@@ -135,6 +154,11 @@ export function AlertFeed({
       });
   }, [facetFiltered]);
 
+  // Reset navigator selection when region or category filter changes.
+  useEffect(() => {
+    setActiveNavigatorGroupKey(null);
+  }, [regionFilter, categoryFilter]);
+
   useEffect(() => {
     if (navigatorGroups.length === 0) {
       setActiveNavigatorGroupKey(null);
@@ -152,6 +176,15 @@ export function AlertFeed({
   const activeNavigatorGroup =
     navigatorGroups.find((group) => group.key === activeNavigatorGroupKey) ?? null;
 
+  const handleNavigatorGroupSelect = (groupKey: string) => {
+    setActiveNavigatorGroupKey(groupKey);
+    const group = navigatorGroups.find((entry) => entry.key === groupKey);
+    if (!group) {
+      return;
+    }
+    onNavigatorSelect?.(group.region, group.category);
+  };
+
   // Keep globe visibility aligned with current filters, not only the active navigator bucket.
   const visibleAlertIds = useMemo(
     () => facetFiltered.map((a) => a.alert_id),
@@ -159,11 +192,12 @@ export function AlertFeed({
   );
 
   useEffect(() => {
+    const glowTimeouts = glowTimeoutsRef.current;
     return () => {
       if (refreshTimeoutRef.current) {
         window.clearTimeout(refreshTimeoutRef.current);
       }
-      glowTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
+      glowTimeouts.forEach((id) => window.clearTimeout(id));
     };
   }, []);
 
@@ -206,13 +240,7 @@ export function AlertFeed({
     knownAlertIdsRef.current = currentIds;
   }, [alerts]);
 
-  const severityRail: Record<Alert["severity"], string> = {
-    critical: severityColors.critical,
-    high: severityColors.high,
-    medium: severityColors.medium,
-    low: severityColors.low,
-    info: severityColors.info,
-  };
+  const severityRail = (s: Severity) => severityColor(s);
 
   useEffect(() => {
     const sig = visibleAlertIds.join("|");
@@ -235,7 +263,7 @@ export function AlertFeed({
       >
         <span
           className="absolute left-0 top-0 h-full w-1 rounded-l-lg opacity-90"
-          style={{ backgroundColor: severityRail[alert.severity] }}
+          style={{ backgroundColor: severityRail(alert.severity) }}
           aria-hidden
         />
         <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -299,19 +327,19 @@ export function AlertFeed({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="px-3 py-3 border-b border-siem-border bg-siem-panel/95 space-y-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-siem-muted">
-            SOC Alert Stack
+            Intelligence Queue
           </h2>
-          <button
-            type="button"
-            onClick={() => onHideDesktop?.()}
-            className="hidden md:inline-flex px-2 py-0.5 rounded border border-siem-accent/30 bg-siem-accent/12 text-[10px] text-siem-accent font-mono uppercase tracking-wider hover:bg-siem-accent/20 transition-colors"
-          >
-            Hide
-          </button>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-siem-muted">
+            {regionFilter === "all"
+              ? "Global scope"
+              : regionFilter.startsWith("country:")
+                ? `${countries.find((c) => c.code === regionFilter.slice(8))?.name ?? regionFilter.slice(8)} scope`
+                : `${regionFilter} scope`}
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-2 text-[10px] font-mono uppercase tracking-wide">
           <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
@@ -333,10 +361,18 @@ export function AlertFeed({
               onChange={(e) => onRegionChange(e.target.value)}
               className="w-full appearance-none bg-white/5 border border-siem-border rounded-md pl-7 pr-8 py-1.5 text-xs text-siem-text cursor-pointer hover:bg-siem-accent/10 transition-colors focus:outline-none focus:ring-1 focus:ring-siem-accent"
             >
-              <option value="all">All Regions ({alerts.length})</option>
+              <option value="all">Global ({alerts.length})</option>
               {regions.map(([region, count]) => (
                 <option key={region} value={region}>
                   {region} ({count})
+                </option>
+              ))}
+              {countries.length > 0 && (
+                <option disabled>── Countries ──</option>
+              )}
+              {countries.map((c) => (
+                <option key={c.code} value={`country:${c.code}`}>
+                  {c.name} ({c.count})
                 </option>
               ))}
             </select>
@@ -345,7 +381,7 @@ export function AlertFeed({
           <div className="relative">
             <select
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value as AlertCategory | "all")}
+              onChange={(e) => onCategoryChange(e.target.value as AlertCategory | "all")}
               className="w-full appearance-none bg-white/5 border border-siem-border rounded-md px-2.5 pr-8 py-1.5 text-xs text-siem-text cursor-pointer hover:bg-siem-accent/10 transition-colors focus:outline-none focus:ring-1 focus:ring-siem-accent"
             >
               <option value="all">All Categories</option>
@@ -382,16 +418,12 @@ export function AlertFeed({
                   : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
               }`}
             >
-              Actionable
+              Reporting
             </button>
           </div>
         </div>
       </div>
-      <div
-        className={`flex-1 overflow-y-auto px-3 py-3 space-y-3 ${
-          isRefreshingList ? "animate-alert-list-refresh" : ""
-        }`}
-      >
+      <div className="border-b border-siem-border bg-siem-panel/95 px-3 py-3 space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -402,7 +434,7 @@ export function AlertFeed({
                 : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
             }`}
           >
-            Case Navigator
+            Navigator
           </button>
           <button
             type="button"
@@ -413,10 +445,10 @@ export function AlertFeed({
                 : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
             }`}
           >
-            Timeline
+            Queue
           </button>
         </div>
-        {viewMode === "navigator" ? (
+        {viewMode === "navigator" && (
           <>
             <div className="grid grid-cols-3 gap-2 text-[10px] font-mono uppercase tracking-wide">
               <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
@@ -439,14 +471,14 @@ export function AlertFeed({
             {navigatorGroups.length > 0 && (
               <section className="rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
                 <div className="px-3 py-2 border-b border-siem-border bg-siem-panel/70 text-[10px] font-mono uppercase tracking-wider text-siem-muted">
-                  Navigate By Region + Case Type
+                  Region + category navigation
                 </div>
-                <div className="p-2 space-y-1.5 max-h-[200px] overflow-y-auto">
+                <div className="max-h-44 overflow-y-auto p-2 space-y-1.5">
                   {navigatorGroups.map((group) => (
                     <button
                       key={group.key}
                       type="button"
-                      onClick={() => setActiveNavigatorGroupKey(group.key)}
+                      onClick={() => handleNavigatorGroupSelect(group.key)}
                       className={`w-full text-left rounded border px-2 py-1.5 transition-colors ${
                         activeNavigatorGroupKey === group.key
                           ? "bg-siem-accent/12 border-siem-accent/35"
@@ -476,8 +508,18 @@ export function AlertFeed({
                 </div>
               </section>
             )}
+          </>
+        )}
+      </div>
+      <div
+        className={`min-h-0 flex-1 px-3 py-3 ${
+          isRefreshingList ? "animate-alert-list-refresh" : ""
+        }`}
+      >
+        {viewMode === "navigator" ? (
+          <div className="flex h-full min-h-0 flex-col">
             {activeNavigatorGroup && (
-              <section className="rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
+              <section className="flex min-h-0 flex-1 flex-col rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
                 <div className="px-3 py-2 border-b border-siem-border bg-siem-panel/70 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-siem-muted">Case Queue</p>
@@ -490,16 +532,23 @@ export function AlertFeed({
                     {activeNavigatorGroup.total}
                   </span>
                 </div>
-                <div className="p-2 space-y-2">
+                <div className="min-h-0 flex-1 overflow-y-auto p-2 space-y-2">
                   {activeNavigatorGroup.alerts.map((alert, idx) =>
                     renderAlertCard(alert, "Case", idx)
                   )}
                 </div>
               </section>
             )}
-          </>
+            {!activeNavigatorGroup && (
+              <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
+                <p className="text-xs text-siem-muted uppercase tracking-wider">
+                  Select a region/category bucket to inspect its case queue
+                </p>
+              </div>
+            )}
+          </div>
         ) : (
-          <>
+          <div className="h-full overflow-y-auto space-y-3">
             {grouped.map((group) => (
               <section
                 key={group.category}
@@ -561,7 +610,7 @@ export function AlertFeed({
                 )}
               </section>
             )}
-          </>
+          </div>
         )}
         {facetFiltered.length === 0 && (
           <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
@@ -569,7 +618,7 @@ export function AlertFeed({
               type="button"
               onClick={() => {
                 setActionableOnly(false);
-                setCategoryFilter("all");
+                onCategoryChange("all");
                 setSeverityFilter("all");
                 onRegionChange("all");
               }}

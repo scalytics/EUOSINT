@@ -4,6 +4,7 @@
 package normalize
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"math"
@@ -49,11 +50,41 @@ var (
 		regexp.MustCompile(`(?i)\b(?:ceremony|speech|statement|newsletter|weekly roundup)\b`),
 		regexp.MustCompile(`(?i)\b(?:partnership|memorandum|mou|initiative|campaign)\b`),
 	}
+	certificationPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(?:certification|certifi(?:ed|cate)|accreditation|compliance audit|standard(?:s)?)\b`),
+		regexp.MustCompile(`(?i)\b(?:NESAS|common criteria|ISO[\s-]?27001|ISO[\s-]?15408|ITSEC|protection profile)\b`),
+		regexp.MustCompile(`(?i)\b(?:evaluation|scheme|approval|conformity|audit report|test report)\b`),
+		regexp.MustCompile(`(?i)\b(?:product certification|vendor certification|zertifizierung|anerkennung)\b`),
+		regexp.MustCompile(`(?i)\b(?:training|course|curriculum|e-learning|online.?training|skill|qualification)\b`),
+	}
 	securityContextPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:cyber|cybersecurity|infosec|information security|it security)\b`),
 		regexp.MustCompile(`(?i)\b(?:security posture|security controls?|threat intelligence)\b`),
 		regexp.MustCompile(`(?i)\b(?:vulnerability|exploit|patch|advisory|defend|defensive)\b`),
 		regexp.MustCompile(`(?i)\b(?:soc|siem|incident response|malware analysis)\b`),
+	}
+	// localCrimePatterns match routine domestic police operations that lack
+	// cross-border or international intelligence significance.
+	localCrimePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(?:operac[aã]o|opera[çc][aã]o|operation)\b.*\b(?:busca|raid|search|apreens[aã]o|seizure)\b`),
+		regexp.MustCompile(`(?i)\b(?:drug bust|drug seizure|narcotics seized|heroin|cocaine|cannabis|marijuana)\b.*\b(?:kg|kilos?|grams?|pounds?|tonnes?)\b`),
+		regexp.MustCompile(`(?i)\b(?:burglary|robbery|theft|shoplifting|pickpocket|break-?in|car theft|vehicle theft)\b`),
+		regexp.MustCompile(`(?i)\b(?:domestic (?:violence|abuse|dispute)|bar fight|pub brawl|assault|gbh|abh)\b`),
+		regexp.MustCompile(`(?i)\b(?:drunk driv|dui|dwi|speeding|traffic (?:offence|offense|violation)|road rage)\b`),
+		regexp.MustCompile(`(?i)\b(?:sentenced to|prison sentence|jail (?:term|sentence)|community service|probation order)\b`),
+		regexp.MustCompile(`(?i)\b(?:mortu[aá]ri[ao]|autopsy|autópsia|post-?mortem|inquest|coroner)\b`),
+		regexp.MustCompile(`(?i)\b(?:local police|polícia local|commissariat|poste de police|comisaría)\b`),
+	}
+	// crossBorderSignals indicate international/strategic significance that
+	// should prevent local-crime downranking.
+	crossBorderSignals = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(?:interpol|europol|eurojust|frontex|five eyes|nato)\b`),
+		regexp.MustCompile(`(?i)\b(?:cross-?border|transnational|international|multi-?country|joint (?:operation|investigation))\b`),
+		regexp.MustCompile(`(?i)\b(?:terror(?:ism|ist)?|extremis[tm]|radicaliz|foreign fighter)\b`),
+		regexp.MustCompile(`(?i)\b(?:cyber.?attack|state-?sponsored|apt|espionage|intelligence)\b`),
+		regexp.MustCompile(`(?i)\b(?:trafficking|smuggling|organized crime|money laundering|sanctions evasion)\b`),
+		regexp.MustCompile(`(?i)\b(?:critical infrastructure|national security|chemical|biological|nuclear|radiological)\b`),
+		regexp.MustCompile(`(?i)\b(?:mass casualty|mass shooting|bombing|explosion|hostage)\b`),
 	}
 	assistancePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:report(?:\s+a)?(?:\s+crime)?|submit (?:a )?tip|tip[-\s]?off)\b`),
@@ -94,8 +125,9 @@ var (
 )
 
 type Context struct {
-	Config config.Config
-	Now    time.Time
+	Config   config.Config
+	Now      time.Time
+	Geocoder *Geocoder // optional; nil falls back to country-level only
 }
 
 type FeedContext struct {
@@ -113,7 +145,7 @@ func RSSItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, item.Title, item.Link, publishedAt)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
 		Author:   item.Author,
@@ -131,7 +163,7 @@ func RSSItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model
 }
 
 func HTMLItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
-	alert := baseAlert(ctx, meta, item.Title, item.Link, ctx.Now)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, ctx.Now)
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
 		Tags:     item.Tags,
@@ -156,7 +188,7 @@ func KEVAlert(ctx Context, meta model.RegistrySource, cveID string, vulnName str
 	if strings.TrimSpace(cveID) != "" {
 		link = "https://nvd.nist.gov/vuln/detail/" + strings.TrimSpace(cveID)
 	}
-	alert := baseAlert(ctx, meta, title, link, publishedAt)
+	alert := baseAlert(ctx, meta, title, link, title+" "+description, publishedAt)
 	if hoursBetween(ctx.Now, publishedAt) <= 72 {
 		alert.Severity = "critical"
 	} else if hoursBetween(ctx.Now, publishedAt) <= 168 {
@@ -174,15 +206,26 @@ func KEVAlert(ctx Context, meta model.RegistrySource, cveID string, vulnName str
 	return &alert
 }
 
-func InterpolAlert(ctx Context, meta model.RegistrySource, title string, link string, countryCode string, summary string, tags []string) *model.Alert {
+func InterpolAlert(ctx Context, meta model.RegistrySource, noticeID string, title string, link string, countryCode string, summary string, tags []string) *model.Alert {
 	if strings.TrimSpace(title) == "" {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, title, firstNonEmpty(link, meta.Source.BaseURL), ctx.Now)
+	alert := baseAlert(ctx, meta, title, firstNonEmpty(link, meta.Source.BaseURL), title+" "+summary, ctx.Now)
 	alert.Severity = "critical"
-	alert.RegionTag = firstNonEmpty(countryCode, alert.RegionTag)
-	if strings.TrimSpace(countryCode) != "" {
-		alert.Source.CountryCode = strings.ToUpper(strings.TrimSpace(countryCode))
+	if id := strings.TrimSpace(noticeID); id != "" {
+		alert.AlertID = meta.Source.SourceID + ":" + id
+	}
+	if code := normalizeCountryCode(countryCode); code != "" {
+		alert.RegionTag = code
+		alert.Source.CountryCode = code
+		if name := countryNameFromCode(code); name != "" {
+			alert.Source.Country = name
+		}
+		// Override lat/lng to the person's nationality country instead of
+		// Interpol HQ (Lyon, France).
+		if gLat, gLng, _, ok := geocodeCountryCode(code); ok {
+			alert.Lat, alert.Lng = jitter(gLat, gLng, meta.Source.SourceID+":"+link, "capital")
+		}
 	}
 	alert.Triage = score(ctx.Config, alert, FeedContext{
 		Summary:  summary,
@@ -190,6 +233,56 @@ func InterpolAlert(ctx Context, meta model.RegistrySource, title string, link st
 		FeedType: meta.Type,
 	})
 	return &alert
+}
+
+func FBIWantedAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
+	publishedAt := parseDate(item.Published)
+	if publishedAt.IsZero() {
+		publishedAt = ctx.Now
+	}
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
+	alert.Severity = "critical"
+	triage := score(ctx.Config, alert, FeedContext{
+		Summary:  item.Summary,
+		Tags:     item.Tags,
+		FeedType: meta.Type,
+	})
+	alert.Triage = triage
+	return &alert
+}
+
+func TravelWarningAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
+	publishedAt := parseDate(item.Published)
+	if publishedAt.IsZero() {
+		publishedAt = ctx.Now
+	}
+	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
+		return nil
+	}
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
+	alert.Severity = inferTravelWarningSeverity(item.Title, item.Summary, item.Tags)
+	triage := score(ctx.Config, alert, FeedContext{
+		Summary:  item.Summary,
+		Author:   item.Author,
+		Tags:     item.Tags,
+		FeedType: meta.Type,
+	})
+	alert.Triage = triage
+	return &alert
+}
+
+func inferTravelWarningSeverity(title, summary string, tags []string) string {
+	text := strings.ToLower(title + " " + summary + " " + strings.Join(tags, " "))
+	switch {
+	case containsAny(text, "do not travel", "reisewarnung", "advise against all travel", "level 4"):
+		return "critical"
+	case containsAny(text, "reconsider travel", "avoid non-essential travel", "advise against all but essential travel", "level 3", "teilreisewarnung"):
+		return "high"
+	case containsAny(text, "exercise increased caution", "exercise a high degree of caution", "level 2"):
+		return "medium"
+	default:
+		return "medium"
+	}
 }
 
 func StaticInterpolEntry(now time.Time) model.Alert {
@@ -217,12 +310,72 @@ func StaticInterpolEntry(now time.Time) model.Alert {
 	}
 }
 
-func baseAlert(ctx Context, meta model.RegistrySource, title string, link string, publishedAt time.Time) model.Alert {
-	lat, lng := jitter(meta.Lat, meta.Lng, meta.Source.SourceID+":"+link)
+func baseAlert(ctx Context, meta model.RegistrySource, title string, link string, geoText string, publishedAt time.Time) model.Alert {
+	title = strings.TrimSpace(title)
+	geoText = strings.TrimSpace(geoText)
+	if geoText == "" {
+		geoText = title
+	}
+	// Fix broken NCMEC-style titles that start with ": Name (State)".
+	if strings.HasPrefix(title, ": ") {
+		title = "Missing" + title
+	}
+
+	baseLat, baseLng := meta.Lat, meta.Lng
+	geoSource := "registry"
+	source := meta.Source
+
+	// Use capital coords instead of geographic centroid for the source's
+	// country — fixes islands (Malta, Cyprus, etc.) landing in the sea.
+	if source.CountryCode != "" && source.CountryCode != "INT" {
+		if capital, ok := capitalCoords[source.CountryCode]; ok {
+			baseLat, baseLng = capital[0], capital[1]
+			geoSource = "capital"
+		}
+	}
+
+	geocoded := false
+
+	// For international sources, try to geocode the alert to the actual
+	// crisis location instead of pinning it to the org's HQ.
+	if meta.RegionTag == "INT" || meta.Source.CountryCode == "INT" {
+		if ctx.Geocoder != nil {
+			// Enhanced geocoding: city DB → Nominatim → country text.
+			if result := ctx.Geocoder.Resolve(context.Background(), geoText, ""); result.CountryCode != "" {
+				baseLat, baseLng = result.Lat, result.Lng
+				geoSource = result.Source
+				geocoded = true
+				if name := countryNameFromCode(result.CountryCode); name != "" {
+					source.Country = name
+					source.CountryCode = result.CountryCode
+				}
+			}
+		}
+		if !geocoded {
+			if gLat, gLng, code, ok := geocodeText(geoText); ok {
+				baseLat, baseLng = gLat, gLng
+				geoSource = "country-text"
+				if name := countryNameFromCode(code); name != "" {
+					source.Country = name
+					source.CountryCode = code
+				}
+			}
+		}
+	} else if ctx.Geocoder != nil {
+		// Non-international source: try city-level geocoding within the
+		// source's country for better pin placement.
+		if result := ctx.Geocoder.Resolve(context.Background(), geoText, source.CountryCode); result.CountryCode != "" &&
+			(result.Source == "city-db" || result.Source == "nominatim" || result.CountryCode == source.CountryCode) {
+			baseLat, baseLng = result.Lat, result.Lng
+			geoSource = result.Source
+		}
+	}
+
+	lat, lng := jitter(baseLat, baseLng, meta.Source.SourceID+":"+link, geoSource)
 	return model.Alert{
 		AlertID:        meta.Source.SourceID + "-" + hashID(link),
 		SourceID:       meta.Source.SourceID,
-		Source:         meta.Source,
+		Source:         source,
 		Title:          strings.TrimSpace(title),
 		CanonicalURL:   strings.TrimSpace(link),
 		FirstSeen:      publishedAt.UTC().Format(time.RFC3339),
@@ -236,6 +389,25 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		FreshnessHours: hoursBetween(ctx.Now, publishedAt),
 		Reporting:      meta.Reporting,
 	}
+}
+
+func normalizeCountryCode(code string) string {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if len(code) == 2 {
+		return code
+	}
+	return ""
+}
+
+func countryNameFromCode(code string) string {
+	code = normalizeCountryCode(code)
+	// Use the geocode table as the canonical source.
+	for i := range geoCountries {
+		if geoCountries[i].Code == code {
+			return geoCountries[i].Name
+		}
+	}
+	return ""
 }
 
 func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage {
@@ -278,6 +450,8 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 		add(0.07, "education and digital capacity category")
 	case "fraud_alert":
 		add(0.07, "fraud incident category")
+	case "travel_warning":
+		add(0.08, "travel warning category")
 	}
 
 	hasTechnical := hasAny(text, technicalSignalPatterns)
@@ -286,6 +460,7 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 	hasSpecificImpact := hasAny(text, impactSpecificityPatterns)
 	hasNarrative := hasAny(text, narrativePatterns)
 	hasGeneral := hasAny(text, generalNewsPatterns)
+	hasCertification := hasAny(text, certificationPatterns)
 	looksLikeBlog := isBlog(alert)
 
 	if hasTechnical {
@@ -308,6 +483,16 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 	}
 	if looksLikeBlog {
 		add(-0.10, "blog-style structure")
+	}
+	if hasCertification && !hasIncident && !hasTechnical {
+		add(-0.22, "certification/training/standards content")
+	}
+	// Downrank routine local crime stories from police feeds unless
+	// they carry cross-border or strategic intelligence significance.
+	hasLocalCrime := hasAny(text, localCrimePatterns)
+	hasCrossBorder := hasAny(text, crossBorderSignals)
+	if hasLocalCrime && !hasCrossBorder && !hasTechnical {
+		add(-0.20, "routine local crime without cross-border significance")
 	}
 	if !hasTechnical && !hasIncident && (hasNarrative || hasGeneral) {
 		add(-0.08, "weak incident evidence relative to narrative cues")
@@ -376,6 +561,12 @@ func defaultSeverity(category string) string {
 		return "critical"
 	case "public_appeal", "humanitarian_tasking", "humanitarian_security", "private_sector":
 		return "high"
+	case "travel_warning":
+		return "high"
+	case "environmental_disaster", "disease_outbreak":
+		return "high"
+	case "emergency_management", "health_emergency":
+		return "high"
 	default:
 		return "medium"
 	}
@@ -384,13 +575,13 @@ func defaultSeverity(category string) string {
 func inferSeverity(title string, fallback string) string {
 	t := strings.ToLower(title)
 	switch {
-	case containsAny(t, "critical", "emergency", "zero-day", "0-day", "ransomware", "actively exploited", "exploitation", "breach", "data leak", "crypto heist", "million stolen", "wanted", "fugitive", "murder", "homicide", "missing", "amber alert", "kidnap"):
+	case containsAny(t, "critical", "kritische", "emergency", "zero-day", "0-day", "ransomware", "actively exploited", "exploitation", "breach", "data leak", "crypto heist", "million stolen", "wanted", "fugitive", "murder", "homicide", "missing", "amber alert", "kidnap", "do not travel", "notfall", "pandemic", "ebola", "plague", "tsunami", "earthquake", "eruption", "nuclear incident", "radiation leak", "oil spill", "explosion"):
 		return "critical"
-	case containsAny(t, "hack", "compromise", "vulnerability", "high", "severe", "urgent", "fatal", "death", "shooting", "fraud", "scam", "phishing"):
+	case containsAny(t, "hack", "compromise", "vulnerability", "schwachstelle", "sicherheitslücke", "high", "severe", "urgent", "dringend", "fatal", "death", "shooting", "fraud", "scam", "phishing", "reconsider travel", "avoid non-essential travel", "warnung", "gefährlich", "outbreak", "epidemic", "cholera", "mpox", "avian influenza", "flood", "wildfire", "cyclone", "hurricane", "typhoon", "drought", "chemical spill", "hazmat"):
 		return "high"
-	case containsAny(t, "arrested", "charged", "sentenced", "medium", "moderate"):
+	case containsAny(t, "arrested", "charged", "sentenced", "medium", "moderate", "festgenommen", "verurteilt"):
 		return "medium"
-	case containsAny(t, "low", "informational"):
+	case containsAny(t, "low", "informational", "infopaket", "infoblatt", "handreichung", "leitfaden", "newsletter"):
 		return "info"
 	default:
 		return fallback
@@ -441,6 +632,9 @@ func inferPublicationType(alert model.Alert, feedType string) string {
 	}
 	if feedType == "kev-json" || feedType == "interpol-red-json" || feedType == "interpol-yellow-json" {
 		return "structured_incident_feed"
+	}
+	if feedType == "travelwarning-json" || feedType == "travelwarning-atom" {
+		return "official_update"
 	}
 	return "official_update"
 }
@@ -505,10 +699,11 @@ func hashID(value string) string {
 	return hex.EncodeToString(sum[:])[:12]
 }
 
-func jitter(lat float64, lng float64, seed string) (float64, float64) {
+func jitter(lat float64, lng float64, seed string, geoSource string) (float64, float64) {
 	sum := sha1.Sum([]byte(seed))
 	angle := float64(sum[0])/255*math.Pi*2 + float64(sum[1])/255
-	radius := 22 + float64(sum[2])/255*55
+	minRadius, maxRadius := jitterRadiusKM(geoSource)
+	radius := minRadius + float64(sum[2])/255*(maxRadius-minRadius)
 	dLat := (radius / 111.32) * math.Cos(angle)
 	cosLat := math.Max(0.2, math.Cos((lat*math.Pi)/180))
 	dLng := (radius / (111.32 * cosLat)) * math.Sin(angle)
@@ -521,6 +716,23 @@ func jitter(lat float64, lng float64, seed string) (float64, float64) {
 		outLng += 360
 	}
 	return round5(outLat), round5(outLng)
+}
+
+func jitterRadiusKM(geoSource string) (float64, float64) {
+	switch geoSource {
+	case "city-db":
+		return 0.4, 1.6
+	case "nominatim":
+		return 0.8, 2.5
+	case "capital":
+		return 1.2, 4
+	case "country-text":
+		return 4, 14
+	case "registry":
+		return 2, 10
+	default:
+		return 2, 10
+	}
 }
 
 func extractDomain(raw string) string {

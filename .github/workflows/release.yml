@@ -71,7 +71,9 @@ jobs:
             type=sha
             type=raw,value=latest
 
-      - name: Build and push image
+      - name: Build and push image (attempt 1)
+        id: build_push_1
+        continue-on-error: true
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -80,8 +82,21 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=release-${{ matrix.image.name }}
+          cache-to: type=gha,mode=max,scope=release-${{ matrix.image.name }}
+
+      - name: Build and push image (attempt 2 on transient failure)
+        if: steps.build_push_1.outcome == 'failure'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./${{ matrix.image.dockerfile }}
+          push: true
+          provenance: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=release-${{ matrix.image.name }}
+          cache-to: type=gha,mode=max,scope=release-${{ matrix.image.name }}
 
       - name: Publish GitHub release
         if: matrix.image.name == 'web'

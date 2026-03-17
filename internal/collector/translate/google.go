@@ -15,6 +15,10 @@ import (
 	"github.com/scalytics/euosint/internal/collector/parse"
 )
 
+// maxTranslateChars is the maximum character count sent to Google Translate
+// per field. The free gtx endpoint returns 413 for payloads above ~5 KB.
+const maxTranslateChars = 2000
+
 var nonLatinRE = regexp.MustCompile(`[\p{Han}\p{Hangul}\p{Cyrillic}\p{Arabic}\p{Thai}]`)
 
 func Batch(ctx context.Context, client *fetch.Client, items []parse.FeedItem) ([]parse.FeedItem, error) {
@@ -40,9 +44,15 @@ func Batch(ctx context.Context, client *fetch.Client, items []parse.FeedItem) ([
 }
 
 func toEnglish(ctx context.Context, client *fetch.Client, text string) (string, error) {
+	// Strip HTML (RSS descriptions often contain full page markup) and truncate
+	// to avoid 413 from the free Google Translate endpoint.
+	text = parse.StripHTML(text)
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return text, nil
+	}
+	if len(text) > maxTranslateChars {
+		text = text[:maxTranslateChars]
 	}
 	endpoint := "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=" + url.QueryEscape(text)
 	body, err := client.Text(ctx, endpoint, true, "application/json")

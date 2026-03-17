@@ -19,12 +19,13 @@ func TestWriteOutputs(t *testing.T) {
 	cfg.FilteredOutputPath = filepath.Join(dir, "filtered.json")
 	cfg.StateOutputPath = filepath.Join(dir, "state.json")
 	cfg.SourceHealthOutputPath = filepath.Join(dir, "health.json")
+	cfg.ReplacementQueuePath = filepath.Join(dir, "replacement.json")
 
-	err := Write(cfg, []model.Alert{{AlertID: "a"}}, []model.Alert{{AlertID: "b"}}, []model.Alert{{AlertID: "c"}}, []model.SourceHealthEntry{{SourceID: "s", Status: "ok"}}, model.DuplicateAudit{})
+	err := Write(cfg, []model.Alert{{AlertID: "a"}}, []model.Alert{{AlertID: "b"}}, []model.Alert{{AlertID: "c"}}, []model.SourceHealthEntry{{SourceID: "s", Status: "ok"}}, model.DuplicateAudit{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range []string{cfg.OutputPath, cfg.FilteredOutputPath, cfg.StateOutputPath, cfg.SourceHealthOutputPath} {
+	for _, path := range []string{cfg.OutputPath, cfg.FilteredOutputPath, cfg.StateOutputPath, cfg.SourceHealthOutputPath, cfg.ReplacementQueuePath} {
 		if _, err := os.Stat(path); err != nil {
 			t.Fatalf("expected output file %s: %v", path, err)
 		}

@@ -4,53 +4,98 @@
  * See NOTICE for provenance and LICENSE for repository-local terms.
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --color-siem-bg: #0a0e17;
-  --color-siem-panel: #111827;
+  /* ── Brand ──────────────────────────────────────────────────────── */
+  --color-siem-bg: #070E1A;
+  --color-siem-panel: #0b1120;
+  --color-siem-panel-strong: #131d2e;
   --color-siem-border: #1e293b;
-  --color-siem-text: #e2e8f0;
-  --color-siem-muted: #64748b;
-  --color-siem-accent: #5f8fa3;
-  --color-siem-neutral: #7f9ca8;
-  --color-siem-critical: #d96464;
-  --color-siem-high: #d98958;
-  --color-siem-medium: #d1b35a;
-  --color-siem-low: #4eaf82;
-  --color-siem-info: #4fa0b1;
+  --color-siem-text: #e6edf5;
+  --color-siem-muted: #5A7B95;
+  --color-siem-accent: #E8630A;
+  --color-siem-accent-strong: #FF8533;
+  --color-siem-neutral: #9ca3af;
+
+  /* ── Severity ───────────────────────────────────────────────────── */
+  --color-siem-critical: #ff5d5d;
+  --color-siem-high: #f29d4b;
+  --color-siem-medium: #e3c867;
+  --color-siem-low: #4ccb8d;
+  --color-siem-info: #60a5fa;
+
+  /* ── Category ───────────────────────────────────────────────────── */
+  --color-cat-informational: #60a5fa;
+  --color-cat-cyber: #3b82f6;
+  --color-cat-education: #4f95a4;
+  --color-cat-humanitarian: #2f8c8c;
+  --color-cat-conflict: #725f95;
+  --color-cat-humsec: #3a7395;
+  --color-cat-wanted: #a14a5b;
+  --color-cat-missing: #aa8b43;
+  --color-cat-appeal: #5577a4;
+  --color-cat-fraud: #338c66;
+  --color-cat-safety: #5b6887;
+  --color-cat-terrorism: #a34c4c;
+  --color-cat-private: #8f6a46;
+  --color-cat-travel: #c27a3a;
+  --color-cat-health: #4ca38c;
+  --color-cat-intel: #7a6eab;
+  --color-cat-emergency: #b85c4a;
+  --color-cat-environment: #4a8b6e;
+  --color-cat-disease: #c45e8a;
+  --color-cat-maritime: #2a7a9b;
+  --color-cat-legislative: #6b7f45;
 }
 
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: var(--color-siem-bg);
-  color: var(--color-siem-text);
-  overflow: hidden;
-  height: 100dvh;
+html,
+body,
+#root {
+  min-height: 100dvh;
 }
 
-#root {
-  height: 100dvh;
+body {
+  margin: 0;
+  font-family: "Montserrat", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--color-siem-accent) 12%, transparent), transparent 32%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-siem-panel) 75%, transparent), transparent 26%),
+    var(--color-siem-bg);
+  color: var(--color-siem-text);
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+select option {
+  background: var(--color-siem-panel);
+  color: var(--color-siem-text);
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--color-siem-bg);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-siem-border);
-  border-radius: 3px;
+  width: 8px;
+  height: 8px;
 }
 
-/* Slide-in animation for detail panel */
+::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--color-siem-panel) 75%, transparent);
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-siem-accent) 25%, transparent);
+  border-radius: 999px;
+}
+
+
 @keyframes slide-in-right {
   from {
     transform: translateX(100%);
@@ -74,94 +119,105 @@ body {
 }
 
 .animate-slide-in {
-  animation: slide-in-right 0.25s ease-out;
-}
-
-.animate-slide-out {
-  animation: slide-out-right 0.25s ease-in forwards;
-}
-
-/* Left panel slide */
-@keyframes slide-in-left {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(0); }
-}
-
-@keyframes slide-out-left {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-100%); }
-}
-
-.feed-panel-open {
-  animation: slide-in-left 0.28s ease-out forwards;
-}
-
-.feed-panel-closed {
-  animation: slide-out-left 0.28s ease-in forwards;
-}
-
-@keyframes alert-list-refresh {
-  from {
-    transform: translateY(8px);
-    opacity: 0.78;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes alert-new-glow {
-  0% {
-    box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.5), 0 0 0 rgba(59, 130, 246, 0);
-    background-color: rgba(59, 130, 246, 0.14);
-  }
-  100% {
-    box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0), 0 0 0 rgba(59, 130, 246, 0);
-    background-color: transparent;
-  }
-}
-
-@keyframes critical-badge-pulse {
-  0% {
-    transform: scale(1);
-    filter: brightness(1);
-  }
-  50% {
-    transform: scale(1.035);
-    filter: brightness(1.15);
-  }
-  100% {
-    transform: scale(1);
-    filter: brightness(1);
-  }
-}
-
-.animate-alert-list-refresh {
-  animation: alert-list-refresh 160ms ease-out;
+  animation: slide-in-right 0.26s ease-out;
 }
 
 .animate-alert-new-glow {
   animation: alert-new-glow 1.8s ease-out forwards;
 }
 
+@keyframes alert-new-glow {
+  0% {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-siem-accent) 55%, transparent), 0 0 24px color-mix(in srgb, var(--color-siem-accent) 16%, transparent);
+  }
+  100% {
+    box-shadow: inset 0 0 0 1px transparent, 0 0 0 transparent;
+  }
+}
+
+@keyframes critical-badge-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .animate-critical-badge {
-  animation: critical-badge-pulse 2.2s ease-in-out infinite;
-  transform-origin: center;
+  animation: critical-badge-pulse 2s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-alert-list-refresh,
+  .animate-slide-in,
   .animate-alert-new-glow,
-  .animate-critical-badge,
-  .feed-panel-open,
-  .feed-panel-closed {
+  .animate-critical-badge {
     animation: none !important;
   }
 }
 
-/* Style the region dropdown options */
-select option {
-  background: #111827;
-  color: #e2e8f0;
+/* ── Leaflet cluster overrides ──────────────────────────────────── */
+
+.siem-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: "Roboto Mono", monospace;
+  font-weight: 600;
+  color: var(--color-siem-text);
+  border: 2px solid color-mix(in srgb, var(--color-siem-accent) 45%, transparent);
+}
+
+.siem-cluster span {
+  line-height: 1;
+}
+
+.siem-cluster-small {
+  font-size: 11px;
+  background: color-mix(in srgb, var(--color-siem-panel) 88%, transparent);
+}
+
+.siem-cluster-medium {
+  font-size: 12px;
+  background: color-mix(in srgb, var(--color-siem-accent) 22%, transparent);
+}
+
+.siem-cluster-large {
+  font-size: 13px;
+  background: color-mix(in srgb, var(--color-siem-high) 28%, transparent);
+  border-color: color-mix(in srgb, var(--color-siem-high) 55%, transparent);
+}
+
+/* ── Leaflet tooltip ────────────────────────────────────────────── */
+
+.siem-tooltip {
+  background: var(--color-siem-panel) !important;
+  border: 1px solid var(--color-siem-border) !important;
+  border-radius: 0.75rem !important;
+  color: var(--color-siem-text) !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+}
+
+.siem-tooltip::before {
+  border-top-color: var(--color-siem-border) !important;
+}
+
+/* Hide default leaflet cluster styles that leak through */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: transparent !important;
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: transparent !important;
 }
