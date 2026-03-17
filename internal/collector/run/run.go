@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/scalytics/euosint/internal/collector/config"
@@ -112,53 +113,85 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 
 	cursors := state.ReadCursors(cfg.CursorsPath)
 
+	// Split sources into fast (RSS/JSON — parallel) and slow (browser/HTML — sequential).
+	var fastSources, slowSources []model.RegistrySource
+	for _, s := range sources {
+		if needsBrowser(s) {
+			slowSources = append(slowSources, s)
+		} else {
+			fastSources = append(fastSources, s)
+		}
+	}
+
 	alerts := []model.Alert{normalize.StaticInterpolEntry(now)}
 	sourceHealth := make([]model.SourceHealthEntry, 0, len(sources))
-	for _, source := range sources {
-		startedAt := time.Now().UTC()
-		fetcher := fetch.FetcherFor(source.FetchMode, client, browser)
-		batch, err := r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary, cursors)
+	var mu sync.Mutex
+	completed := 0
 
-		// Retry once for transient errors (timeout, EOF) after a short backoff.
-		if err != nil {
-			errClass, _, _ := classifySourceError(err)
-			if (errClass == "timeout" || errClass == "eof" || errClass == "transient") && ctx.Err() == nil {
-				fmt.Fprintf(r.stderr, "RETRY %s (transient %s): %v\n", source.Source.AuthorityName, errClass, err)
-				retryDelay := 3 * time.Second
-				select {
-				case <-time.After(retryDelay):
-				case <-ctx.Done():
-				}
-				if ctx.Err() == nil {
-					batch, err = r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary, cursors)
-				}
-			}
-		}
+	// Fast parallel pass — RSS/JSON feeds with short timeout.
+	fastCfg := cfg
+	fastCfg.HTTPTimeoutMS = cfg.FetchTimeoutFastMS
+	if fastCfg.HTTPTimeoutMS <= 0 {
+		fastCfg.HTTPTimeoutMS = 3000
+	}
+	fastClient := r.clientFactory(fastCfg)
+	workers := cfg.FetchWorkers
+	if workers <= 0 {
+		workers = 12
+	}
+	if workers > len(fastSources) && len(fastSources) > 0 {
+		workers = len(fastSources)
+	}
 
-		entry := model.SourceHealthEntry{
-			SourceID:      source.Source.SourceID,
-			AuthorityName: source.Source.AuthorityName,
-			Type:          source.Type,
-			FeedURL:       source.FeedURL,
-			StartedAt:     startedAt.Format(time.RFC3339),
-			FinishedAt:    time.Now().UTC().Format(time.RFC3339),
+	if len(fastSources) > 0 {
+		work := make(chan model.RegistrySource, len(fastSources))
+		for _, s := range fastSources {
+			work <- s
 		}
-		if err != nil {
-			entry.Status = "error"
-			entry.Error = err.Error()
-			entry.ErrorClass, entry.NeedsReplacement, entry.DiscoveryAction = classifySourceError(err)
-			sourceHealth = append(sourceHealth, entry)
-			fmt.Fprintf(r.stderr, "WARN %s: %v\n", source.Source.AuthorityName, err)
-			continue
+		close(work)
+
+		var wg sync.WaitGroup
+		for i := 0; i < workers; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for source := range work {
+					if ctx.Err() != nil {
+						return
+					}
+					batch, entry := r.fetchOneSource(ctx, fastClient, nil, nctx, source, categoryDictionary, cursors)
+					mu.Lock()
+					sourceHealth = append(sourceHealth, entry)
+					alerts = append(alerts, batch...)
+					completed++
+					if completed%25 == 0 || completed == 1 {
+						r.writeProgressSnapshot(cfg, alerts, sourceHealth)
+					}
+					mu.Unlock()
+					if entry.Status == "error" {
+						fmt.Fprintf(r.stderr, "WARN %s: %s\n", source.Source.AuthorityName, entry.Error)
+					}
+				}
+			}()
 		}
-		entry.Status = "ok"
-		entry.FetchedCount = len(batch)
+		wg.Wait()
+		// Snapshot after fast pass completes.
+		r.writeProgressSnapshot(cfg, alerts, sourceHealth)
+	}
+
+	// Slow sequential pass — browser/HTML sources with full timeout.
+	for _, source := range slowSources {
+		if ctx.Err() != nil {
+			break
+		}
+		batch, entry := r.fetchOneSourceSlow(ctx, client, browser, nctx, source, categoryDictionary, cursors)
 		sourceHealth = append(sourceHealth, entry)
 		alerts = append(alerts, batch...)
-
-		// Write periodic progress snapshots so the UI receives fresh alerts
-		// even while long source sweeps are still running.
-		if len(sourceHealth)%25 == 0 || len(sourceHealth) == 1 {
+		completed++
+		if entry.Status == "error" {
+			fmt.Fprintf(r.stderr, "WARN %s: %s\n", source.Source.AuthorityName, entry.Error)
+		}
+		if completed%25 == 0 {
 			r.writeProgressSnapshot(cfg, alerts, sourceHealth)
 		}
 	}
@@ -268,6 +301,109 @@ func prioritizeSources(sources []model.RegistrySource) []model.RegistrySource {
 		return a.Source.SourceID < b.Source.SourceID
 	})
 	return out
+}
+
+// needsBrowser returns true for source types that require a headless browser
+// or need the full HTTP timeout (HTML scraping, Interpol API with WAF, etc.).
+func needsBrowser(s model.RegistrySource) bool {
+	switch s.Type {
+	case "html-list":
+		return true
+	case "interpol-red-json", "interpol-yellow-json":
+		return true // Akamai WAF, needs special headers + browser fallback
+	}
+	return s.FetchMode == "browser"
+}
+
+// fetchOneSource fetches a single source with retry logic, returning the
+// batch of alerts and a health entry. When customFetcher is nil, the
+// defaultClient is used directly.
+func (r Runner) fetchOneSource(ctx context.Context, defaultClient *fetch.Client, customFetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store, cursors state.Cursors) ([]model.Alert, model.SourceHealthEntry) {
+	startedAt := time.Now().UTC()
+
+	var fetcher fetch.Fetcher
+	if customFetcher != nil {
+		fetcher = customFetcher
+	} else {
+		fetcher = defaultClient
+	}
+
+	batch, err := r.fetchSource(ctx, fetcher, nil, nctx, source, categoryDictionary, cursors)
+
+	// Retry once for transient errors after a short backoff.
+	if err != nil {
+		errClass, _, _ := classifySourceError(err)
+		if (errClass == "timeout" || errClass == "eof" || errClass == "transient") && ctx.Err() == nil {
+			fmt.Fprintf(r.stderr, "RETRY %s (transient %s): %v\n", source.Source.AuthorityName, errClass, err)
+			select {
+			case <-time.After(2 * time.Second):
+			case <-ctx.Done():
+			}
+			if ctx.Err() == nil {
+				batch, err = r.fetchSource(ctx, fetcher, nil, nctx, source, categoryDictionary, cursors)
+			}
+		}
+	}
+
+	entry := model.SourceHealthEntry{
+		SourceID:      source.Source.SourceID,
+		AuthorityName: source.Source.AuthorityName,
+		Type:          source.Type,
+		FeedURL:       source.FeedURL,
+		StartedAt:     startedAt.Format(time.RFC3339),
+		FinishedAt:    time.Now().UTC().Format(time.RFC3339),
+	}
+	if err != nil {
+		entry.Status = "error"
+		entry.Error = err.Error()
+		entry.ErrorClass, entry.NeedsReplacement, entry.DiscoveryAction = classifySourceError(err)
+		return nil, entry
+	}
+	entry.Status = "ok"
+	entry.FetchedCount = len(batch)
+	return batch, entry
+}
+
+// fetchOneSourceSlow fetches a source that needs the browser or full timeout.
+// Unlike fetchOneSource, this passes the browser instance through for
+// Interpol and browser-mode sources.
+func (r Runner) fetchOneSourceSlow(ctx context.Context, client *fetch.Client, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store, cursors state.Cursors) ([]model.Alert, model.SourceHealthEntry) {
+	startedAt := time.Now().UTC()
+	fetcher := fetch.FetcherFor(source.FetchMode, client, browser)
+
+	batch, err := r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary, cursors)
+
+	if err != nil {
+		errClass, _, _ := classifySourceError(err)
+		if (errClass == "timeout" || errClass == "eof" || errClass == "transient") && ctx.Err() == nil {
+			fmt.Fprintf(r.stderr, "RETRY %s (transient %s): %v\n", source.Source.AuthorityName, errClass, err)
+			select {
+			case <-time.After(3 * time.Second):
+			case <-ctx.Done():
+			}
+			if ctx.Err() == nil {
+				batch, err = r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary, cursors)
+			}
+		}
+	}
+
+	entry := model.SourceHealthEntry{
+		SourceID:      source.Source.SourceID,
+		AuthorityName: source.Source.AuthorityName,
+		Type:          source.Type,
+		FeedURL:       source.FeedURL,
+		StartedAt:     startedAt.Format(time.RFC3339),
+		FinishedAt:    time.Now().UTC().Format(time.RFC3339),
+	}
+	if err != nil {
+		entry.Status = "error"
+		entry.Error = err.Error()
+		entry.ErrorClass, entry.NeedsReplacement, entry.DiscoveryAction = classifySourceError(err)
+		return nil, entry
+	}
+	entry.Status = "ok"
+	entry.FetchedCount = len(batch)
+	return batch, entry
 }
 
 func statusPriority(status string) int {
