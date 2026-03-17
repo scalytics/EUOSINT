@@ -11,7 +11,7 @@
 import { useEffect, useRef, useMemo, useCallback } from "react";
 import Globe, { type GlobeInstance } from "globe.gl";
 import Supercluster from "supercluster";
-import type { Alert } from "@/types/alert";
+import type { Alert, Severity } from "@/types/alert";
 import { severityHex } from "@/lib/theme";
 import { OVERLAYS, type OverlayId } from "@/lib/map-overlays";
 
@@ -76,6 +76,18 @@ interface ClusterPoint {
   radius: number;
   altitude: number;
 }
+
+type HtmlElementDatum = HtmlMarker | ClusterPoint;
+
+type ClusterFeature =
+  | {
+      geometry: { coordinates: [number, number] };
+      properties: { cluster: true; point_count: number; cluster_id: number };
+    }
+  | {
+      geometry: { coordinates: [number, number] };
+      properties: { id: string; severity: Severity; title: string; text: string };
+    };
 
 // Overlay colors matching map-overlays.ts
 const overlayColors: Record<string, string> = {
@@ -191,14 +203,21 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
     return index;
   }, [alerts]);
 
+  const isOverlayMarker = (d: unknown): d is HtmlMarker =>
+    typeof d === "object" &&
+    d !== null &&
+    "icon" in d &&
+    "size" in d &&
+    !("isCluster" in d);
+
   // Compute clustered points for the current altitude
   const computeClusteredPoints = useCallback(
     (altitude: number): ClusterPoint[] => {
       const zoom = altitudeToZoom(altitude);
-      const clusters = clusterIndex.getClusters([-180, -85, 180, 85], zoom);
-      return clusters.map((c) => {
+      const clusters = clusterIndex.getClusters([-180, -85, 180, 85], zoom) as unknown as ClusterFeature[];
+      return clusters.map((c: ClusterFeature) => {
         const [lng, lat] = c.geometry.coordinates;
-        if (c.properties.cluster) {
+        if ("cluster" in c.properties) {
           const count = c.properties.point_count;
           return {
             lat,
@@ -212,7 +231,7 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
             altitude: 0.015,
           };
         }
-        const props = c.properties as { id: string; severity: string; title: string; text: string };
+        const props = c.properties;
         const selected = props.id === selectedId;
         return {
           lat,
@@ -349,9 +368,7 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
     const clusterPoints = computeClusteredPoints(altitudeRef.current);
 
     // Merge cluster points with overlay HTML markers
-    const existing = (globe.htmlElementsData() as unknown[]).filter(
-      (d) => d && typeof d === "object" && !("isCluster" in d) && !("count" in d),
-    );
+    const existing = (globe.htmlElementsData() as unknown[]).filter(isOverlayMarker);
     globe.htmlElementsData([...existing, ...clusterPoints]);
   }, [computeClusteredPoints]);
 
@@ -369,9 +386,7 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
         lastZoom = zoom;
         const clusterPoints = computeClusteredPoints(pov.altitude);
         // Keep overlay markers, replace cluster points
-        const overlayMarkers = (globe.htmlElementsData() as unknown[]).filter(
-          (d) => d && typeof d === "object" && !("isCluster" in d) && !("count" in d),
-        );
+        const overlayMarkers = (globe.htmlElementsData() as unknown[]).filter(isOverlayMarker);
         globe.htmlElementsData([...overlayMarkers, ...clusterPoints]);
       }
       raf = requestAnimationFrame(tick);
