@@ -327,6 +327,25 @@ export function GlobeView({
               />
             </Suspense>
           )}
+
+          <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2">
+            <div className="flex items-center gap-2 rounded-full border border-siem-border/80 bg-siem-panel/80 px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-siem-muted shadow-[0_10px_24px_rgba(0,0,0,0.24)] backdrop-blur-sm">
+              {(
+                [
+                  ["Critical", "bg-siem-critical"],
+                  ["High", "bg-siem-high"],
+                  ["Medium", "bg-siem-medium"],
+                  ["Low", "bg-siem-low"],
+                  ["Info", "bg-siem-info"],
+                ] as const
+              ).map(([label, bgClass]) => (
+                <span key={label} className="inline-flex items-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full ${bgClass}`} />
+                  <span>{label}</span>
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         <aside className="m-4 ml-0 mt-0 flex flex-col gap-3 overflow-y-auto">
@@ -372,25 +391,6 @@ export function GlobeView({
                   />
                   {overlay.label}
                 </button>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-siem-muted">Legend</div>
-            <div className="mt-3 space-y-2 text-sm text-siem-text">
-              {(
-                [
-                  ["Critical", "bg-siem-critical"],
-                  ["High", "bg-siem-high"],
-                  ["Medium", "bg-siem-medium"],
-                  ["Low", "bg-siem-low"],
-                  ["Info", "bg-siem-info"],
-                ] as const
-              ).map(([label, bgClass]) => (
-                <div key={label} className="flex items-center gap-2">
-                  <span className={`h-2.5 w-2.5 rounded-full ${bgClass}`} />
-                  <span>{label}</span>
-                </div>
               ))}
             </div>
           </div>
