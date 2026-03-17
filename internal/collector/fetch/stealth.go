@@ -34,7 +34,7 @@ import (
 // disables Go's automatic gzip handling).
 func newStealthTransport(dialer *net.Dialer) http.RoundTripper {
 	dt := &dualProtoTransport{
-		dialer:    dialer,
+		dialer:      dialer,
 		protoByHost: make(map[string]string),
 	}
 
@@ -64,7 +64,7 @@ type dualProtoTransport struct {
 	h2     *http2.Transport
 
 	mu          sync.Mutex
-	protoByHost map[string]string // hostname -> "h2" | "h1"
+	protoByHost map[string]string // scheme://hostname -> "h2" | "h1"
 }
 
 func (dt *dualProtoTransport) dialTLS(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -91,19 +91,19 @@ func (dt *dualProtoTransport) dialTLS(ctx context.Context, network, addr string)
 	proto := tlsConn.ConnectionState().NegotiatedProtocol
 	dt.mu.Lock()
 	if proto == "h2" {
-		dt.protoByHost[host] = "h2"
+		dt.protoByHost["https://"+host] = "h2"
 	} else {
-		dt.protoByHost[host] = "h1"
+		dt.protoByHost["https://"+host] = "h1"
 	}
 	dt.mu.Unlock()
 
 	return tlsConn, nil
 }
 
-func (dt *dualProtoTransport) getProto(host string) string {
+func (dt *dualProtoTransport) getProto(scheme string, host string) string {
 	dt.mu.Lock()
 	defer dt.mu.Unlock()
-	return dt.protoByHost[host]
+	return dt.protoByHost[scheme+"://"+host]
 }
 
 // stealthRoundTripper routes requests to the appropriate protocol
@@ -113,8 +113,19 @@ type stealthRoundTripper struct {
 }
 
 func (s *stealthRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.URL.Scheme == "http" {
+		res, err := s.dual.h1.RoundTrip(req)
+		if err != nil {
+			return nil, err
+		}
+		if derr := decompressBody(res); derr != nil {
+			res.Body = io.NopCloser(bufio.NewReader(res.Body))
+		}
+		return res, nil
+	}
+
 	host := req.URL.Hostname()
-	proto := s.dual.getProto(host)
+	proto := s.dual.getProto(req.URL.Scheme, host)
 
 	var res *http.Response
 	var err error
@@ -131,7 +142,7 @@ func (s *stealthRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 		// dialTLS callback caches the negotiated proto regardless, so we
 		// can detect this and retry with the h2 transport.
 		res, err = s.dual.h1.RoundTrip(req)
-		if err != nil && s.dual.getProto(host) == "h2" {
+		if err != nil && s.dual.getProto(req.URL.Scheme, host) == "h2" {
 			res, err = s.dual.h2.RoundTrip(req)
 		}
 	}
