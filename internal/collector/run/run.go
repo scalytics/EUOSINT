@@ -113,6 +113,13 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 
 	cursors := state.ReadCursors(cfg.CursorsPath)
 
+	// Load previous alerts early so progress snapshots include them.
+	// This prevents the dashboard from going blank during a sweep.
+	previousAlerts, err := loadPreviousAlerts(ctx, cfg)
+	if err != nil {
+		fmt.Fprintf(r.stderr, "WARN previous alerts load failed: %v\n", err)
+	}
+
 	// Split sources into fast (RSS/JSON — parallel) and slow (browser/HTML — sequential).
 	var fastSources, slowSources []model.RegistrySource
 	for _, s := range sources {
@@ -165,7 +172,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 					alerts = append(alerts, batch...)
 					completed++
 					if completed%25 == 0 || completed == 1 {
-						r.writeProgressSnapshot(cfg, alerts, sourceHealth)
+						r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
 					}
 					mu.Unlock()
 					if entry.Status == "error" {
@@ -176,7 +183,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		}
 		wg.Wait()
 		// Snapshot after fast pass completes.
-		r.writeProgressSnapshot(cfg, alerts, sourceHealth)
+		r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
 	}
 
 	// Slow sequential pass — browser/HTML sources with full timeout.
@@ -192,7 +199,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 			fmt.Fprintf(r.stderr, "WARN %s: %s\n", source.Source.AuthorityName, entry.Error)
 		}
 		if completed%25 == 0 {
-			r.writeProgressSnapshot(cfg, alerts, sourceHealth)
+			r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
 		}
 	}
 
@@ -207,10 +214,6 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
-	previous, err := loadPreviousAlerts(ctx, cfg)
-	if err != nil {
-		return err
-	}
 	// Purge stale alerts from sources that no longer exist or were rejected.
 	// Include source IDs from both the registry and the current fetch batch
 	// (covers synthetic alerts like the Interpol hub static entry).
@@ -221,7 +224,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	for _, a := range alerts {
 		activeSourceIDs[a.SourceID] = struct{}{}
 	}
-	previous = purgeOrphanAlerts(previous, activeSourceIDs)
+	previousAlerts = purgeOrphanAlerts(previousAlerts, activeSourceIDs)
 
 	accumulateSources := map[string]bool{}
 	for _, s := range sources {
@@ -229,7 +232,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 			accumulateSources[s.Source.SourceID] = true
 		}
 	}
-	currentActive, currentFiltered, fullState := state.Reconcile(cfg, active, filtered, previous, now, accumulateSources)
+	currentActive, currentFiltered, fullState := state.Reconcile(cfg, active, filtered, previousAlerts, now, accumulateSources)
 	replacementQueue := buildReplacementQueue(sourceHealth, sources)
 	if err := deactivateReplacementSources(ctx, cfg.RegistryPath, replacementQueue); err != nil {
 		return err
@@ -244,14 +247,28 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	return err
 }
 
-func (r Runner) writeProgressSnapshot(cfg config.Config, alerts []model.Alert, sourceHealth []model.SourceHealthEntry) {
-	deduped, duplicateAudit := normalize.Deduplicate(alerts)
+func (r Runner) writeProgressSnapshot(cfg config.Config, freshAlerts []model.Alert, previousAlerts []model.Alert, sourceHealth []model.SourceHealthEntry) {
+	// Merge fresh alerts with previous state so the dashboard never goes
+	// blank during a sweep. Previous alerts that aren't in the fresh batch
+	// are carried forward as-is.
+	freshByID := make(map[string]struct{}, len(freshAlerts))
+	for _, a := range freshAlerts {
+		freshByID[a.AlertID] = struct{}{}
+	}
+	merged := make([]model.Alert, 0, len(freshAlerts)+len(previousAlerts))
+	merged = append(merged, freshAlerts...)
+	for _, prev := range previousAlerts {
+		if _, ok := freshByID[prev.AlertID]; !ok {
+			merged = append(merged, prev)
+		}
+	}
+	deduped, duplicateAudit := normalize.Deduplicate(merged)
 	active, filtered := normalize.FilterActive(cfg, deduped)
 	if err := output.Write(cfg, active, filtered, active, sourceHealth, duplicateAudit, nil); err != nil {
 		fmt.Fprintf(r.stderr, "WARN progress snapshot write failed: %v\n", err)
 		return
 	}
-	fmt.Fprintf(r.stdout, "Progress snapshot: %d active alerts after %d sources\n", len(active), len(sourceHealth))
+	fmt.Fprintf(r.stdout, "Progress snapshot: %d active alerts (%d fresh + %d previous) after %d sources\n", len(active), len(freshAlerts), len(previousAlerts), len(sourceHealth))
 }
 
 func prioritizeSources(sources []model.RegistrySource) []model.RegistrySource {
