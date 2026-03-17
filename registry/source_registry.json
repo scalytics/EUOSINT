@@ -5832,5 +5832,390 @@
     "lat": 48.86,
     "lng": 2.32,
     "include_keywords": ["outbreak", "avian", "influenza", "disease", "epidemic", "zoonotic", "virus", "pathogen", "infection", "surveillance", "alert", "emergency"]
+  },
+
+  {"_comment": "═══════════════ MARITIME SECURITY ═══════════════"},
+
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "us-navy-news",
+      "authority_name": "US Navy News",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.navy.mil"
+    },
+    "feed_url": "https://www.navy.mil/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=1&max=10",
+    "category": "maritime_security",
+    "region_tag": "US",
+    "lat": 38.87,
+    "lng": -77.01,
+    "include_keywords": ["piracy", "maritime", "shipping", "vessel", "naval", "fleet", "strait", "gulf", "houthi", "red sea", "patrol", "intercept", "seizure", "smuggling", "freedom of navigation"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cimsec",
+      "authority_name": "CIMSEC",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://cimsec.org"
+    },
+    "feed_url": "https://cimsec.org/feed/",
+    "category": "maritime_security",
+    "region_tag": "INT",
+    "lat": 38.87,
+    "lng": -77.01,
+    "include_keywords": ["piracy", "maritime security", "shipping", "naval", "strait", "chokepoint", "attack", "vessel", "threat", "patrol", "red sea", "gulf", "houthi", "mine", "boarding"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "gcaptain",
+      "authority_name": "gCaptain Maritime News",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "private_sector",
+      "base_url": "https://gcaptain.com"
+    },
+    "feed_url": "https://gcaptain.com/feed/",
+    "category": "maritime_security",
+    "region_tag": "INT",
+    "lat": 37.77,
+    "lng": -122.42,
+    "include_keywords": ["piracy", "attack", "seized", "hijack", "missile", "houthi", "drone strike", "maritime security", "boarding", "smuggling", "sanctions", "detained", "navy", "warship", "patrol", "red sea", "gulf of aden", "strait of hormuz", "malacca"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "hellenicshipping-piracy",
+      "authority_name": "Hellenic Shipping News — Piracy",
+      "country": "Greece",
+      "country_code": "GR",
+      "region": "International",
+      "authority_type": "private_sector",
+      "base_url": "https://www.hellenicshippingnews.com"
+    },
+    "feed_url": "https://www.hellenicshippingnews.com/category/piracy-and-security-news/feed/",
+    "category": "maritime_security",
+    "region_tag": "INT",
+    "lat": 37.94,
+    "lng": 23.65
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "maritime-executive",
+      "authority_name": "Maritime Executive",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "private_sector",
+      "base_url": "https://maritime-executive.com"
+    },
+    "feed_url": "https://maritime-executive.com/feed",
+    "category": "maritime_security",
+    "region_tag": "INT",
+    "lat": 33.77,
+    "lng": -118.19,
+    "include_keywords": ["piracy", "attack", "seized", "hijack", "missile", "houthi", "security", "boarding", "smuggling", "sanctions", "detained", "navy", "warship", "patrol", "collision", "grounding", "sinking", "rescue"]
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "eunavfor",
+      "authority_name": "EU NAVFOR Atalanta",
+      "country": "European Union",
+      "country_code": "EU",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://eunavfor.eu"
+    },
+    "feed_url": "https://eunavfor.eu/news",
+    "category": "maritime_security",
+    "region_tag": "EU",
+    "lat": 11.59,
+    "lng": 43.15,
+    "include_keywords": ["piracy", "operation", "vessel", "patrol", "escort", "maritime", "incident", "seized", "rescue", "suspicious", "attack", "atalanta", "aspides"]
+  },
+  {
+    "type": "html-list",
+    "followRedirects": true,
+    "source": {
+      "source_id": "marad-advisories",
+      "authority_name": "US MARAD Maritime Advisories",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.maritime.dot.gov"
+    },
+    "feed_url": "https://www.maritime.dot.gov/msci-advisories",
+    "category": "maritime_security",
+    "region_tag": "INT",
+    "lat": 38.88,
+    "lng": -77.02,
+    "include_keywords": ["advisory", "threat", "piracy", "attack", "vessel", "maritime", "security", "warning", "alert", "strait", "gulf", "red sea"]
+  },
+
+  {"_comment": "═══════════════ LEGISLATIVE / POLITICAL OSINT ═══════════════"},
+
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eu-parliament-press",
+      "authority_name": "European Parliament Press",
+      "country": "European Union",
+      "country_code": "EU",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.europarl.europa.eu"
+    },
+    "feed_url": "https://www.europarl.europa.eu/rss/doc/press-releases/en",
+    "category": "legislative",
+    "region_tag": "EU",
+    "lat": 48.60,
+    "lng": 7.77,
+    "include_keywords": ["sanction", "defence", "defense", "security", "border", "migration", "terrorism", "cyber", "intelligence", "military", "war", "conflict", "foreign affairs", "resolution", "embargo", "arms", "threat", "crisis", "nato"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eu-council-press",
+      "authority_name": "Council of the EU Press",
+      "country": "European Union",
+      "country_code": "EU",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.consilium.europa.eu"
+    },
+    "feed_url": "https://www.consilium.europa.eu/en/press/press-releases/rss.xml",
+    "category": "legislative",
+    "region_tag": "EU",
+    "lat": 50.84,
+    "lng": 4.37,
+    "include_keywords": ["sanction", "defence", "defense", "security", "border", "migration", "terrorism", "cyber", "intelligence", "military", "war", "conflict", "foreign", "resolution", "embargo", "arms", "threat", "crisis", "restrictive measures"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eeas-press",
+      "authority_name": "EU External Action Service",
+      "country": "European Union",
+      "country_code": "EU",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.eeas.europa.eu"
+    },
+    "feed_url": "https://www.eeas.europa.eu/eeas/press-material_en?f%5B0%5D=press_material_type%3APress+release&_format=rss",
+    "category": "legislative",
+    "region_tag": "EU",
+    "lat": 50.84,
+    "lng": 4.38,
+    "include_keywords": ["sanction", "security", "defence", "defense", "conflict", "military", "war", "crisis", "terrorism", "foreign", "humanitarian", "ceasefire", "peace", "threat", "arms", "embargo", "nato", "statement"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "eu-commission-press",
+      "authority_name": "European Commission Press",
+      "country": "European Union",
+      "country_code": "EU",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://ec.europa.eu"
+    },
+    "feed_url": "https://ec.europa.eu/commission/presscorner/api/rss",
+    "category": "legislative",
+    "region_tag": "EU",
+    "lat": 50.84,
+    "lng": 4.38,
+    "include_keywords": ["sanction", "security", "defence", "defense", "border", "migration", "terrorism", "cyber", "military", "crisis", "threat", "embargo", "arms", "restrictive measures", "disinformation"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "uk-parliament-lords",
+      "authority_name": "UK Parliament — Lords",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.parliament.uk"
+    },
+    "feed_url": "https://lordsbusiness.parliament.uk/ItemOfBusiness/atom",
+    "category": "legislative",
+    "region_tag": "GB",
+    "lat": 51.50,
+    "lng": -0.12,
+    "include_keywords": ["sanction", "security", "defence", "defense", "border", "migration", "terrorism", "cyber", "intelligence", "military", "war", "conflict", "foreign affairs", "arms", "threat", "crisis", "nato"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "us-congress-bills",
+      "authority_name": "US Congress — Bills",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.congress.gov"
+    },
+    "feed_url": "https://www.congress.gov/rss/most-viewed-bills.xml",
+    "category": "legislative",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.01,
+    "include_keywords": ["sanction", "security", "defense", "border", "immigration", "terrorism", "cyber", "intelligence", "military", "war", "conflict", "foreign", "arms", "threat", "national defense", "nato", "maritime"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "us-state-dept-press",
+      "authority_name": "US State Department Press",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.state.gov"
+    },
+    "feed_url": "https://www.state.gov/rss-feed/press-releases/feed/",
+    "category": "legislative",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.05,
+    "include_keywords": ["sanction", "security", "defense", "terrorism", "conflict", "war", "crisis", "ceasefire", "peace", "threat", "arms", "embargo", "nuclear", "nato", "humanitarian", "statement"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "us-dod-press",
+      "authority_name": "US Department of Defense",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.defense.gov"
+    },
+    "feed_url": "https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?max=10&ContentType=1&Site=945",
+    "category": "conflict_monitoring",
+    "region_tag": "US",
+    "lat": 38.87,
+    "lng": -77.06,
+    "include_keywords": ["operation", "strike", "deploy", "missile", "threat", "conflict", "attack", "defense", "military", "patrol", "exercise", "nato", "coalition", "airstrike", "maritime"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "nato-news",
+      "authority_name": "NATO News",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "national_security",
+      "base_url": "https://www.nato.int"
+    },
+    "feed_url": "https://www.nato.int/cps/en/natolive/news.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 50.88,
+    "lng": 4.42,
+    "include_keywords": ["security", "defence", "defense", "military", "operation", "deploy", "threat", "conflict", "exercise", "summit", "alliance", "deterrence", "cyber", "maritime", "air", "nuclear"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "osce-press",
+      "authority_name": "OSCE Press",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.osce.org"
+    },
+    "feed_url": "https://www.osce.org/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 48.21,
+    "lng": 16.37,
+    "include_keywords": ["conflict", "security", "election", "monitoring", "border", "ceasefire", "crisis", "military", "weapons", "arms", "human rights", "detention", "freedom", "threat"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-security-council",
+      "authority_name": "UN Security Council",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://press.un.org"
+    },
+    "feed_url": "https://press.un.org/en/taxonomy/term/10/feed",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97,
+    "include_keywords": ["sanction", "resolution", "conflict", "security", "peace", "ceasefire", "military", "threat", "war", "humanitarian", "arms", "embargo", "nuclear", "terrorism"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "icg-crisiswatch",
+      "authority_name": "International Crisis Group",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.crisisgroup.org"
+    },
+    "feed_url": "https://www.crisisgroup.org/crisiswatch/feed",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 50.84,
+    "lng": 4.36,
+    "include_keywords": ["conflict", "crisis", "war", "violence", "tension", "ceasefire", "peace", "military", "insurgency", "coup", "protest", "clashes", "escalation", "deteriorat"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "de-auswaertiges-amt",
+      "authority_name": "German Foreign Office",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.auswaertiges-amt.de"
+    },
+    "feed_url": "https://www.auswaertiges-amt.de/en/rss/news-feed.xml",
+    "category": "legislative",
+    "region_tag": "DE",
+    "lat": 52.52,
+    "lng": 13.38,
+    "include_keywords": ["sanction", "security", "conflict", "crisis", "military", "war", "terrorism", "defence", "defense", "nato", "humanitarian", "ceasefire", "peace", "threat", "arms", "embargo", "nuclear"]
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fr-diplomatie",
+      "authority_name": "France Diplomatie",
+      "country": "France",
+      "country_code": "FR",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.diplomatie.gouv.fr"
+    },
+    "feed_url": "https://www.diplomatie.gouv.fr/en/rss/",
+    "category": "legislative",
+    "region_tag": "FR",
+    "lat": 48.86,
+    "lng": 2.32,
+    "include_keywords": ["sanction", "security", "conflict", "crisis", "military", "war", "terrorism", "defence", "defense", "nato", "humanitarian", "ceasefire", "peace", "threat", "arms"]
   }
 ]

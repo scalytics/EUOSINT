@@ -32,6 +32,9 @@ var expandedCategories = []string{
 	"travel_warning",
 	"intelligence_report",
 	"fraud_alert",
+	"legislative",
+	"conflict_monitoring",
+	"maritime_security",
 }
 
 // targetCountries lists all countries the system should cover with at least
@@ -287,6 +290,12 @@ func gapAuthorityLabel(country string, category string) string {
 		return country + " financial regulator or central bank"
 	case "wanted_suspect":
 		return country + " wanted persons"
+	case "legislative":
+		return country + " parliament or foreign affairs ministry"
+	case "conflict_monitoring":
+		return country + " defense ministry or armed forces"
+	case "maritime_security":
+		return country + " coast guard or maritime authority"
 	default:
 		return country + " " + strings.ReplaceAll(category, "_", " ")
 	}
@@ -304,6 +313,12 @@ func gapAuthorityType(category string) string {
 		return "national_security"
 	case "fraud_alert":
 		return "regulatory"
+	case "legislative":
+		return "regulatory"
+	case "conflict_monitoring":
+		return "national_security"
+	case "maritime_security":
+		return "national_security"
 	default:
 		return "government"
 	}
