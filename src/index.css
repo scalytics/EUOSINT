@@ -9,6 +9,7 @@
 
 @theme {
   /* ── Relative type scale (scales with html font-size) ──────────── */
+  --font-size-4xs: 0.615rem;   /* ~8px at 13px root  */
   --font-size-3xs: 0.692rem;   /* ~9px at 13px root  */
   --font-size-2xs: 0.77rem;    /* ~10px at 13px root */
   --font-size-xxs: 0.846rem;   /* ~11px at 13px root */

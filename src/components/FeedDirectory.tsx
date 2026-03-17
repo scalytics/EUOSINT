@@ -91,7 +91,8 @@ export function FeedDirectory({
     }
     return categoryOrder
       .filter((cat) => cat !== "informational" && (counts[cat] ?? 0) > 0)
-      .map((cat) => ({ category: cat, count: counts[cat]! }));
+      .map((cat) => ({ category: cat, count: counts[cat]! }))
+      .sort((a, b) => b.count - a.count);
   }, [regionAlerts]);
 
   const topAuthorities = useMemo(() => {
@@ -170,12 +171,12 @@ export function FeedDirectory({
       {/* Header */}
       <div className="border-b border-siem-border/80 px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-3xs uppercase tracking-[0.2em] text-siem-muted">
-            <Radar size={10} />
+          <div className="flex items-center gap-1.5 text-4xs uppercase tracking-[0.2em] text-siem-muted">
+            <Radar size={9} />
             {regionFilter === "all" ? "Global Overview" : regionFilter.startsWith("country:") ? regionFilter.slice(8) : regionFilter}
           </div>
           {severityFilter && (
-            <span className="rounded border border-siem-accent/40 bg-siem-accent/10 px-1.5 py-0.5 text-3xs uppercase tracking-[0.14em] text-siem-accent">
+            <span className="rounded border border-siem-accent/40 bg-siem-accent/10 px-1 py-px text-4xs uppercase tracking-[0.14em] text-siem-accent">
               {severityFilter}
             </span>
           )}
@@ -206,29 +207,29 @@ export function FeedDirectory({
                   : "bg-siem-panel-strong hover:bg-siem-accent/8"
               }`}
             >
-              <div className={`text-xs font-bold tabular-nums ${card.tone}`}>{card.value}</div>
-              <div className="text-3xs uppercase tracking-[0.1em] text-siem-muted">{card.label}</div>
+              <div className={`text-2xs font-bold tabular-nums ${card.tone}`}>{card.value}</div>
+              <div className="text-4xs uppercase tracking-[0.1em] text-siem-muted">{card.label}</div>
             </button>
           ))}
           <div className="flex flex-col items-center py-1.5 bg-siem-panel-strong">
-            <div className="text-xs font-bold tabular-nums text-siem-accent">{zoneSummary.countries}</div>
-            <div className="text-3xs uppercase tracking-[0.1em] text-siem-muted">Ctry</div>
+            <div className="text-2xs font-bold tabular-nums text-siem-accent">{zoneSummary.countries}</div>
+            <div className="text-4xs uppercase tracking-[0.1em] text-siem-muted">Ctry</div>
           </div>
           <div className="flex flex-col items-center py-1.5 bg-siem-panel-strong">
-            <div className="text-xs font-bold tabular-nums text-emerald-300">{zoneSummary.feeds}</div>
-            <div className="text-3xs uppercase tracking-[0.1em] text-siem-muted">Feeds</div>
+            <div className="text-2xs font-bold tabular-nums text-emerald-300">{zoneSummary.feeds}</div>
+            <div className="text-4xs uppercase tracking-[0.1em] text-siem-muted">Feeds</div>
           </div>
         </div>
 
         {/* ── Category breakdown ──────────────────────────────────── */}
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-3xs uppercase tracking-[0.16em] text-siem-muted">Categories</span>
+            <span className="text-4xs uppercase tracking-[0.16em] text-siem-muted">Categories</span>
             {categoryFilter !== "all" && (
               <button
                 type="button"
                 onClick={() => onSelectCategory("all")}
-                className="text-3xs uppercase tracking-[0.12em] text-siem-accent hover:text-siem-text transition-colors"
+                className="text-4xs uppercase tracking-[0.12em] text-siem-accent hover:text-siem-text transition-colors"
               >
                 Clear
               </button>
@@ -247,11 +248,11 @@ export function FeedDirectory({
                 }`}
               >
                 <span
-                  className={`inline-flex items-center px-1 py-px text-3xs font-semibold uppercase tracking-wider rounded border leading-tight ${categoryBadge[category]}`}
+                  className={`inline-flex items-center px-0.5 text-4xs font-semibold uppercase tracking-wider rounded border leading-tight ${categoryBadge[category]}`}
                 >
                   {categoryLabels[category]}
                 </span>
-                <span className="text-3xs tabular-nums text-siem-muted">{count}</span>
+                <span className="text-4xs tabular-nums text-siem-muted">{count}</span>
               </button>
             ))}
           </div>
@@ -259,14 +260,14 @@ export function FeedDirectory({
 
         {/* ── Top authorities ──────────────────────────────────────── */}
         <div>
-          <div className="mb-1 flex items-center gap-1 text-3xs uppercase tracking-[0.16em] text-siem-muted">
-            <TrendingUp size={8} />
+          <div className="mb-1 flex items-center gap-1 text-4xs uppercase tracking-[0.16em] text-siem-muted">
+            <TrendingUp size={7} />
             Authorities
             {selectedSourceIds.length > 0 && (
               <button
                 type="button"
                 onClick={() => onSelectSourceIdsChange([])}
-                className="ml-auto text-3xs uppercase tracking-[0.12em] text-siem-accent hover:text-siem-text transition-colors"
+                className="ml-auto text-4xs uppercase tracking-[0.12em] text-siem-accent hover:text-siem-text transition-colors"
               >
                 Clear
               </button>
@@ -281,7 +282,7 @@ export function FeedDirectory({
                   key={auth.sourceId}
                   type="button"
                   onClick={() => toggleSource(auth.sourceId)}
-                  className={`w-full flex items-center justify-between gap-1.5 rounded px-1.5 py-[3px] text-left text-3xs transition-colors ${
+                  className={`w-full flex items-center justify-between gap-1.5 rounded px-1.5 py-[3px] text-left text-4xs transition-colors ${
                     selectedSourceIds.includes(auth.sourceId)
                       ? "bg-siem-accent/14 text-siem-text"
                       : "text-siem-text hover:bg-siem-accent/8"
@@ -299,14 +300,14 @@ export function FeedDirectory({
 
         {/* ── Top countries ───────────────────────────────────────── */}
         <div>
-          <div className="mb-1 text-3xs uppercase tracking-[0.16em] text-siem-muted">Countries</div>
+          <div className="mb-1 text-4xs uppercase tracking-[0.16em] text-siem-muted">Countries</div>
           <div className="space-y-px">
             {countryCounts.map((c) => (
               <button
                 key={c.code}
                 type="button"
                 onClick={() => onSelectCountry(c.code)}
-                className={`flex w-full items-center justify-between gap-1.5 rounded px-1.5 py-[3px] text-left text-3xs transition-colors ${
+                className={`flex w-full items-center justify-between gap-1.5 rounded px-1.5 py-[3px] text-left text-4xs transition-colors ${
                   regionFilter === `country:${c.code}`
                     ? "bg-siem-accent/14 text-siem-text"
                     : "text-siem-text hover:bg-siem-accent/8"
@@ -325,10 +326,10 @@ export function FeedDirectory({
 
       {snapshotStatus && (
         <div className="border-t border-siem-border/80 px-3 py-2">
-          <div className={`text-3xs uppercase tracking-[0.16em] ${snapshotStatus.tone}`}>
+          <div className={`text-4xs uppercase tracking-[0.16em] ${snapshotStatus.tone}`}>
             Data snapshot: {snapshotStatus.relative}
           </div>
-          <div className="mt-0.5 text-3xs text-siem-muted">
+          <div className="mt-0.5 text-4xs text-siem-muted">
             Last collector update: {snapshotStatus.exact}
           </div>
         </div>
