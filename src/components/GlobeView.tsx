@@ -239,6 +239,23 @@ export function GlobeView({
     map.flyTo(vp.center, vp.zoom, { duration: 0.8 });
   }, [regionFilter, visibleAlerts]);
 
+  /* ── Ensure Leaflet redraws after 3D -> 2D toggle ─────────────── */
+
+  useEffect(() => {
+    if (view3d) return;
+    const map = mapRef.current;
+    if (!map) return;
+
+    // When the 2D container transitions from opacity-0 back to visible,
+    // Leaflet can keep a stale zero-sized viewport until invalidateSize().
+    const t1 = window.setTimeout(() => map.invalidateSize(), 0);
+    const t2 = window.setTimeout(() => map.invalidateSize(), 180);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [view3d]);
+
   /* ── Stats for sidebar ────────────────────────────────────────── */
 
   const topClusters = useMemo(() => {
