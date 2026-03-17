@@ -170,3 +170,43 @@ func TestRSSItemUsesSummaryForCityPlacement(t *testing.T) {
 		t.Fatalf("expected alert to stay near Valletta, got (%f, %f)", alert.Lat, alert.Lng)
 	}
 }
+
+func TestRSSItemSkipsDynamicGeocodingForCyberAdvisory(t *testing.T) {
+	cfg := config.Default()
+	ctx := Context{
+		Config: cfg,
+		Now:    time.Date(2026, 3, 17, 0, 0, 0, 0, time.UTC),
+		Geocoder: NewGeocoder(&mockCityLookup{cities: map[string]CityLookupResult{
+			"Berlin|MT": {Name: "Berlin", CountryCode: "DE", Lat: 52.52, Lng: 13.41, Population: 3700000},
+			"Berlin":    {Name: "Berlin", CountryCode: "DE", Lat: 52.52, Lng: 13.41, Population: 3700000},
+		}}, nil),
+	}
+	meta := model.RegistrySource{
+		Type:     "rss",
+		Category: "cyber_advisory",
+		Source: model.SourceMetadata{
+			SourceID:      "mt-cert",
+			AuthorityName: "Malta CERT",
+			Country:       "Malta",
+			CountryCode:   "MT",
+			Region:        "Europe",
+			AuthorityType: "cert",
+			BaseURL:       "https://example.test",
+		},
+	}
+	item := parse.FeedItem{
+		Title:     "Security advisory",
+		Summary:   "Berlin malware campaign observed in enterprise endpoints",
+		Link:      "https://example.test/advisory",
+		Published: "2026-03-16T10:00:00Z",
+	}
+	alert := RSSItem(ctx, meta, item)
+	if alert == nil {
+		t.Fatal("expected alert")
+	}
+	// Cyber advisory should stay pinned to source country capital (Valletta),
+	// not dynamic city matches from prose.
+	if alert.Lat < 35.5 || alert.Lat > 36.5 || alert.Lng < 14.0 || alert.Lng > 15.0 {
+		t.Fatalf("expected advisory to stay near Valletta, got (%f, %f)", alert.Lat, alert.Lng)
+	}
+}
