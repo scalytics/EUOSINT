@@ -168,6 +168,18 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
+	// Purge stale alerts from sources that no longer exist or were rejected.
+	// Include source IDs from both the registry and the current fetch batch
+	// (covers synthetic alerts like the Interpol hub static entry).
+	activeSourceIDs := map[string]struct{}{}
+	for _, s := range sources {
+		activeSourceIDs[s.Source.SourceID] = struct{}{}
+	}
+	for _, a := range alerts {
+		activeSourceIDs[a.SourceID] = struct{}{}
+	}
+	previous = purgeOrphanAlerts(previous, activeSourceIDs)
+
 	accumulateSources := map[string]bool{}
 	for _, s := range sources {
 		if s.Accumulate {
@@ -187,6 +199,19 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 	_, err = fmt.Fprintf(r.stdout, "Wrote %d active alerts -> %s (%d filtered in %s)\n", len(currentActive), cfg.OutputPath, len(currentFiltered), cfg.FilteredOutputPath)
 	return err
+}
+
+// purgeOrphanAlerts removes alerts whose source_id is no longer in the
+// active registry. This cleans up zombie alerts from rejected or removed
+// sources that would otherwise persist in the state file indefinitely.
+func purgeOrphanAlerts(alerts []model.Alert, activeSourceIDs map[string]struct{}) []model.Alert {
+	out := make([]model.Alert, 0, len(alerts))
+	for _, a := range alerts {
+		if _, ok := activeSourceIDs[a.SourceID]; ok {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store, cursors state.Cursors) ([]model.Alert, error) {
