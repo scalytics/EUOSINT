@@ -149,6 +149,21 @@ CREATE INDEX IF NOT EXISTS idx_agency_category_coverage_category ON agency_categ
 CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status);
 CREATE INDEX IF NOT EXISTS idx_alerts_source_id ON alerts(source_id);
 
+CREATE TABLE IF NOT EXISTS cities (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  name_lower TEXT NOT NULL,
+  ascii_name TEXT NOT NULL,
+  ascii_lower TEXT NOT NULL,
+  country_code TEXT NOT NULL,
+  lat REAL NOT NULL,
+  lng REAL NOT NULL,
+  population INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_cities_name_lower ON cities(name_lower);
+CREATE INDEX IF NOT EXISTS idx_cities_ascii_lower ON cities(ascii_lower);
+CREATE INDEX IF NOT EXISTS idx_cities_country_code ON cities(country_code);
+
 CREATE VIRTUAL TABLE IF NOT EXISTS agencies_fts USING fts5(
   agency_id UNINDEXED,
   authority_name,

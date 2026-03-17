@@ -99,7 +99,8 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 
 	now := time.Now().UTC()
-	nctx := normalize.Context{Config: cfg, Now: now}
+	geocoder := r.initGeocoder(ctx, cfg)
+	nctx := normalize.Context{Config: cfg, Now: now, Geocoder: geocoder}
 	categoryDictionary, err := dictionary.Load(cfg.CategoryDictionaryPath)
 	if err != nil {
 		fmt.Fprintf(r.stderr, "WARN category dictionary load failed (falling back to legacy filters): %v\n", err)
@@ -783,6 +784,62 @@ func (r Runner) mergeRegistry(ctx context.Context, cfg config.Config) error {
 	}
 	defer db.Close()
 	return db.MergeRegistry(ctx, cfg.RegistrySeedPath)
+}
+
+// cityLookupAdapter wraps sourcedb.DB to satisfy normalize.CityLookup.
+type cityLookupAdapter struct {
+	db *sourcedb.DB
+}
+
+func (a *cityLookupAdapter) LookupCity(ctx context.Context, name string, countryCode string) (normalize.CityLookupResult, bool) {
+	r, ok := a.db.LookupCity(ctx, name, countryCode)
+	if !ok {
+		return normalize.CityLookupResult{}, false
+	}
+	return normalize.CityLookupResult{
+		Name:        r.Name,
+		CountryCode: r.CountryCode,
+		Lat:         r.Lat,
+		Lng:         r.Lng,
+		Population:  r.Population,
+	}, true
+}
+
+func (r Runner) initGeocoder(ctx context.Context, cfg config.Config) *normalize.Geocoder {
+	var cities normalize.CityLookup
+	var nominatim *normalize.NominatimClient
+
+	// Try to open the source DB for city lookups.
+	if isSQLitePath(cfg.RegistryPath) {
+		db, err := sourcedb.Open(cfg.RegistryPath)
+		if err == nil {
+			// Import GeoNames if the cities table is empty and the file exists.
+			if !db.HasCities(ctx) && cfg.GeoNamesPath != "" {
+				if err := db.ImportGeoNames(ctx, cfg.GeoNamesPath); err != nil {
+					fmt.Fprintf(r.stderr, "WARN geonames import: %v\n", err)
+				}
+			}
+			if db.HasCities(ctx) {
+				cities = &cityLookupAdapter{db: db}
+				// NOTE: we intentionally don't defer db.Close() here because
+				// the geocoder is used throughout the run. The DB handle is
+				// safe for concurrent reads.
+			} else {
+				db.Close()
+			}
+		} else {
+			fmt.Fprintf(r.stderr, "WARN geocoder DB open: %v\n", err)
+		}
+	}
+
+	if cfg.NominatimEnabled {
+		nominatim = normalize.NewNominatimClient(cfg.NominatimBaseURL, cfg.WikimediaUserAgent)
+	}
+
+	if cities == nil && nominatim == nil {
+		return nil
+	}
+	return normalize.NewGeocoder(cities, nominatim)
 }
 
 func (r Runner) runDiscoveryLoop(ctx context.Context, cfg config.Config) {
