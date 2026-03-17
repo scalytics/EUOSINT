@@ -69,6 +69,32 @@ func (f *flexFloat) UnmarshalJSON(data []byte) error {
 		*f = 0
 		return nil
 	}
+	switch strings.ToLower(asString) {
+	case "very low":
+		*f = 0.1
+		return nil
+	case "low":
+		*f = 0.25
+		return nil
+	case "medium":
+		*f = 0.5
+		return nil
+	case "high":
+		*f = 0.8
+		return nil
+	case "very high":
+		*f = 0.95
+		return nil
+	}
+	if strings.HasSuffix(asString, "%") {
+		asString = strings.TrimSuffix(asString, "%")
+		num, err := strconv.ParseFloat(strings.TrimSpace(asString), 64)
+		if err != nil {
+			return err
+		}
+		*f = flexFloat(num / 100)
+		return nil
+	}
 	num, err := strconv.ParseFloat(asString, 64)
 	if err != nil {
 		return err
