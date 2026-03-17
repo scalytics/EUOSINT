@@ -90,7 +90,7 @@ export function FeedDirectory({
       counts[a.category] = (counts[a.category] ?? 0) + 1;
     }
     return categoryOrder
-      .filter((cat) => (counts[cat] ?? 0) > 0)
+      .filter((cat) => cat !== "informational" && (counts[cat] ?? 0) > 0)
       .map((cat) => ({ category: cat, count: counts[cat]! }));
   }, [regionAlerts]);
 
