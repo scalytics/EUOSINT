@@ -145,7 +145,7 @@ func RSSItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, item.Title, item.Link, publishedAt)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
 		Author:   item.Author,
@@ -163,7 +163,7 @@ func RSSItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model
 }
 
 func HTMLItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
-	alert := baseAlert(ctx, meta, item.Title, item.Link, ctx.Now)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, ctx.Now)
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
 		Tags:     item.Tags,
@@ -188,7 +188,7 @@ func KEVAlert(ctx Context, meta model.RegistrySource, cveID string, vulnName str
 	if strings.TrimSpace(cveID) != "" {
 		link = "https://nvd.nist.gov/vuln/detail/" + strings.TrimSpace(cveID)
 	}
-	alert := baseAlert(ctx, meta, title, link, publishedAt)
+	alert := baseAlert(ctx, meta, title, link, title+" "+description, publishedAt)
 	if hoursBetween(ctx.Now, publishedAt) <= 72 {
 		alert.Severity = "critical"
 	} else if hoursBetween(ctx.Now, publishedAt) <= 168 {
@@ -210,7 +210,7 @@ func InterpolAlert(ctx Context, meta model.RegistrySource, noticeID string, titl
 	if strings.TrimSpace(title) == "" {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, title, firstNonEmpty(link, meta.Source.BaseURL), ctx.Now)
+	alert := baseAlert(ctx, meta, title, firstNonEmpty(link, meta.Source.BaseURL), title+" "+summary, ctx.Now)
 	alert.Severity = "critical"
 	if id := strings.TrimSpace(noticeID); id != "" {
 		alert.AlertID = meta.Source.SourceID + ":" + id
@@ -224,7 +224,7 @@ func InterpolAlert(ctx Context, meta model.RegistrySource, noticeID string, titl
 		// Override lat/lng to the person's nationality country instead of
 		// Interpol HQ (Lyon, France).
 		if gLat, gLng, _, ok := geocodeCountryCode(code); ok {
-			alert.Lat, alert.Lng = jitter(gLat, gLng, meta.Source.SourceID+":"+link)
+			alert.Lat, alert.Lng = jitter(gLat, gLng, meta.Source.SourceID+":"+link, "capital")
 		}
 	}
 	alert.Triage = score(ctx.Config, alert, FeedContext{
@@ -240,7 +240,7 @@ func FBIWantedAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem)
 	if publishedAt.IsZero() {
 		publishedAt = ctx.Now
 	}
-	alert := baseAlert(ctx, meta, item.Title, item.Link, publishedAt)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
 	alert.Severity = "critical"
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
@@ -259,7 +259,7 @@ func TravelWarningAlert(ctx Context, meta model.RegistrySource, item parse.FeedI
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, item.Title, item.Link, publishedAt)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
 	alert.Severity = inferTravelWarningSeverity(item.Title, item.Summary, item.Tags)
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
@@ -310,14 +310,19 @@ func StaticInterpolEntry(now time.Time) model.Alert {
 	}
 }
 
-func baseAlert(ctx Context, meta model.RegistrySource, title string, link string, publishedAt time.Time) model.Alert {
+func baseAlert(ctx Context, meta model.RegistrySource, title string, link string, geoText string, publishedAt time.Time) model.Alert {
 	title = strings.TrimSpace(title)
+	geoText = strings.TrimSpace(geoText)
+	if geoText == "" {
+		geoText = title
+	}
 	// Fix broken NCMEC-style titles that start with ": Name (State)".
 	if strings.HasPrefix(title, ": ") {
 		title = "Missing" + title
 	}
 
 	baseLat, baseLng := meta.Lat, meta.Lng
+	geoSource := "registry"
 	source := meta.Source
 
 	// Use capital coords instead of geographic centroid for the source's
@@ -325,6 +330,7 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	if source.CountryCode != "" && source.CountryCode != "INT" {
 		if capital, ok := capitalCoords[source.CountryCode]; ok {
 			baseLat, baseLng = capital[0], capital[1]
+			geoSource = "capital"
 		}
 	}
 
@@ -335,8 +341,9 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	if meta.RegionTag == "INT" || meta.Source.CountryCode == "INT" {
 		if ctx.Geocoder != nil {
 			// Enhanced geocoding: city DB → Nominatim → country text.
-			if result := ctx.Geocoder.Resolve(context.Background(), title, ""); result.CountryCode != "" {
+			if result := ctx.Geocoder.Resolve(context.Background(), geoText, ""); result.CountryCode != "" {
 				baseLat, baseLng = result.Lat, result.Lng
+				geoSource = result.Source
 				geocoded = true
 				if name := countryNameFromCode(result.CountryCode); name != "" {
 					source.Country = name
@@ -345,8 +352,9 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 			}
 		}
 		if !geocoded {
-			if gLat, gLng, code, ok := geocodeText(title); ok {
+			if gLat, gLng, code, ok := geocodeText(geoText); ok {
 				baseLat, baseLng = gLat, gLng
+				geoSource = "country-text"
 				if name := countryNameFromCode(code); name != "" {
 					source.Country = name
 					source.CountryCode = code
@@ -356,12 +364,14 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	} else if ctx.Geocoder != nil {
 		// Non-international source: try city-level geocoding within the
 		// source's country for better pin placement.
-		if result := ctx.Geocoder.Resolve(context.Background(), title, source.CountryCode); result.Source == "city-db" || result.Source == "nominatim" {
+		if result := ctx.Geocoder.Resolve(context.Background(), geoText, source.CountryCode); result.CountryCode != "" &&
+			(result.Source == "city-db" || result.Source == "nominatim" || result.CountryCode == source.CountryCode) {
 			baseLat, baseLng = result.Lat, result.Lng
+			geoSource = result.Source
 		}
 	}
 
-	lat, lng := jitter(baseLat, baseLng, meta.Source.SourceID+":"+link)
+	lat, lng := jitter(baseLat, baseLng, meta.Source.SourceID+":"+link, geoSource)
 	return model.Alert{
 		AlertID:        meta.Source.SourceID + "-" + hashID(link),
 		SourceID:       meta.Source.SourceID,
@@ -689,10 +699,11 @@ func hashID(value string) string {
 	return hex.EncodeToString(sum[:])[:12]
 }
 
-func jitter(lat float64, lng float64, seed string) (float64, float64) {
+func jitter(lat float64, lng float64, seed string, geoSource string) (float64, float64) {
 	sum := sha1.Sum([]byte(seed))
 	angle := float64(sum[0])/255*math.Pi*2 + float64(sum[1])/255
-	radius := 22 + float64(sum[2])/255*55
+	minRadius, maxRadius := jitterRadiusKM(geoSource)
+	radius := minRadius + float64(sum[2])/255*(maxRadius-minRadius)
 	dLat := (radius / 111.32) * math.Cos(angle)
 	cosLat := math.Max(0.2, math.Cos((lat*math.Pi)/180))
 	dLng := (radius / (111.32 * cosLat)) * math.Sin(angle)
@@ -705,6 +716,23 @@ func jitter(lat float64, lng float64, seed string) (float64, float64) {
 		outLng += 360
 	}
 	return round5(outLat), round5(outLng)
+}
+
+func jitterRadiusKM(geoSource string) (float64, float64) {
+	switch geoSource {
+	case "city-db":
+		return 0.4, 1.6
+	case "nominatim":
+		return 0.8, 2.5
+	case "capital":
+		return 1.2, 4
+	case "country-text":
+		return 4, 14
+	case "registry":
+		return 2, 10
+	default:
+		return 2, 10
+	}
 }
 
 func extractDomain(raw string) string {
