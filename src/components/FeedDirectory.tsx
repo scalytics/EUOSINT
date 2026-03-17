@@ -227,7 +227,7 @@ export function FeedDirectory({
               <Radar size={14} className="text-emerald-300" />
               <span className="text-xl font-semibold text-siem-text">{zoneSummary.feeds}</span>
             </div>
-            <div className="text-[10px] uppercase tracking-[0.16em] text-siem-muted">Feeds</div>
+            <div className="text-[10px] uppercase tracking-[0.16em] text-siem-muted">Streams</div>
           </div>
         </div>
 

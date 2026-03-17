@@ -301,10 +301,10 @@ export default function App() {
         </span>
         <span className="hidden md:inline">
           {selectedSourceIds.length > 0
-            ? `Scoped to ${selectedSourceIds.length} feeds`
+            ? `Scoped to ${selectedSourceIds.length} streams`
             : categoryFilter !== "all"
               ? `Scoped to ${categoryFilter}`
-              : "All live feeds"}
+              : "All live streams"}
           {" // "}
           <a href="https://www.scalytics.io/contact?utm_source=euosint&utm_medium=footer&utm_campaign=osint_console" target="_blank" rel="noopener" className="hover:text-siem-accent transition-colors">Build your intelligence pipeline — Contact us</a>
         </span>
