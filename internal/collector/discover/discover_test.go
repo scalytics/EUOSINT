@@ -67,12 +67,12 @@ func TestCommonPressReleasePathsNotEmpty(t *testing.T) {
 }
 
 func TestPoliceAgencyQueryNotEmpty(t *testing.T) {
-	query := buildPoliceAgencyQuery(policeAgencyTypeIDs[:2])
+	query := buildPoliceAgencyQuery(policeAgencyTypeIDs[0])
 	if strings.TrimSpace(query) == "" {
 		t.Fatal("SPARQL query should not be empty")
 	}
 	// Basic sanity — query must select the fields we parse.
-	for _, field := range []string{"agencyLabel", "website", "countryLabel", "countryCode"} {
+	for _, field := range []string{"website", "countryCode"} {
 		if !strings.Contains(query, field) {
 			t.Errorf("SPARQL query missing field %q", field)
 		}
