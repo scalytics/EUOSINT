@@ -182,14 +182,14 @@ export function FeedDirectory({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
-        {/* ── Severity breakdown (clickable) ──────────────────────── */}
-        <div className="grid grid-cols-3 gap-1.5">
+      <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+        {/* ── Stat strip: severity + zone ──────────────────────────── */}
+        <div className="grid grid-cols-5 gap-px rounded-md border border-siem-border bg-siem-border overflow-hidden">
           {([
-            { key: "critical" as SeverityFilter, label: "Critical", value: severityCounts.critical, icon: AlertTriangle, tone: "text-rose-300", border: "border-rose-400/40" },
-            { key: "high" as SeverityFilter, label: "High", value: severityCounts.high, icon: ShieldAlert, tone: "text-amber-300", border: "border-amber-400/40" },
-            { key: null as SeverityFilter, label: "Conflict", value: regionAlerts.filter((a) => a.category === "conflict_monitoring").length, icon: Radar, tone: "text-orange-300", border: "border-orange-400/40" },
-          ]).map((card) => (
+            { key: "critical" as SeverityFilter, label: "Crit", value: severityCounts.critical, icon: AlertTriangle, tone: "text-rose-300" },
+            { key: "high" as SeverityFilter, label: "High", value: severityCounts.high, icon: ShieldAlert, tone: "text-amber-300" },
+            { key: null as SeverityFilter, label: "Confl", value: regionAlerts.filter((a) => a.category === "conflict_monitoring").length, icon: Radar, tone: "text-orange-300" },
+          ] as const).map((card) => (
             <button
               key={card.label}
               type="button"
@@ -200,92 +200,79 @@ export function FeedDirectory({
                   onSelectCategory(categoryFilter === "conflict_monitoring" ? "all" : "conflict_monitoring");
                 }
               }}
-              className={`rounded-lg border px-2.5 py-2 text-left transition-colors cursor-pointer hover:border-siem-accent/40 ${
+              className={`flex flex-col items-center py-1.5 transition-colors ${
                 (severityFilter === card.key && card.key !== null) || (card.key === null && categoryFilter === "conflict_monitoring")
-                  ? `${card.border} bg-siem-accent/14`
-                  : "border-siem-border bg-siem-panel-strong"
+                  ? "bg-siem-accent/14"
+                  : "bg-siem-panel-strong hover:bg-siem-accent/8"
               }`}
             >
-              <card.icon size={11} className={card.tone} />
-              <div className={`mt-0.5 text-xs font-semibold ${card.tone}`}>{card.value}</div>
-              <div className="text-3xs uppercase tracking-[0.16em] text-siem-muted">{card.label}</div>
+              <div className={`text-xs font-bold tabular-nums ${card.tone}`}>{card.value}</div>
+              <div className="text-3xs uppercase tracking-[0.1em] text-siem-muted">{card.label}</div>
             </button>
           ))}
-        </div>
-
-        {/* ── Zone summary stats ──────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-1.5">
-          <div className="rounded-lg border border-siem-border bg-siem-panel-strong px-2.5 py-2">
-            <div className="flex items-center gap-1.5">
-              <Globe2 size={12} className="text-siem-accent" />
-              <span className="text-sm font-semibold text-siem-text">{zoneSummary.countries}</span>
-            </div>
-            <div className="text-3xs uppercase tracking-[0.16em] text-siem-muted">Countries</div>
+          <div className="flex flex-col items-center py-1.5 bg-siem-panel-strong">
+            <div className="text-xs font-bold tabular-nums text-siem-accent">{zoneSummary.countries}</div>
+            <div className="text-3xs uppercase tracking-[0.1em] text-siem-muted">Ctry</div>
           </div>
-          <div className="rounded-lg border border-siem-border bg-siem-panel-strong px-2.5 py-2">
-            <div className="flex items-center gap-1.5">
-              <Radar size={12} className="text-emerald-300" />
-              <span className="text-sm font-semibold text-siem-text">{zoneSummary.feeds}</span>
-            </div>
-            <div className="text-3xs uppercase tracking-[0.16em] text-siem-muted">Streams</div>
+          <div className="flex flex-col items-center py-1.5 bg-siem-panel-strong">
+            <div className="text-xs font-bold tabular-nums text-emerald-300">{zoneSummary.feeds}</div>
+            <div className="text-3xs uppercase tracking-[0.1em] text-siem-muted">Feeds</div>
           </div>
         </div>
 
         {/* ── Category breakdown ──────────────────────────────────── */}
-        <div className="rounded-lg border border-siem-border bg-siem-panel px-2.5 py-2.5">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="text-3xs uppercase tracking-[0.16em] text-siem-muted">
-              Categories
-            </div>
+        <div>
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-3xs uppercase tracking-[0.16em] text-siem-muted">Categories</span>
             {categoryFilter !== "all" && (
               <button
                 type="button"
                 onClick={() => onSelectCategory("all")}
-                className="rounded border border-siem-accent bg-siem-accent/14 px-1 py-px text-3xs uppercase tracking-[0.14em] text-siem-text"
+                className="text-3xs uppercase tracking-[0.12em] text-siem-accent hover:text-siem-text transition-colors"
               >
-                All
+                Clear
               </button>
             )}
           </div>
-          <div className="space-y-1">
+          <div className="space-y-px">
             {categoryCounts.map(({ category, count }) => (
               <button
                 key={category}
                 type="button"
                 onClick={() => onSelectCategory(categoryFilter === category ? "all" : category)}
-                className={`flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1 text-left transition-colors ${
+                className={`flex w-full items-center justify-between gap-1.5 rounded px-1.5 py-[3px] text-left transition-colors ${
                   categoryFilter === category
-                    ? "border-siem-accent bg-siem-accent/14 text-siem-text"
-                    : "border-siem-border bg-siem-panel-strong text-siem-text hover:border-siem-accent/40 hover:bg-siem-accent/8"
+                    ? "bg-siem-accent/14 text-siem-text"
+                    : "text-siem-text hover:bg-siem-accent/8"
                 }`}
               >
                 <span
-                  className={`inline-flex items-center px-1 py-px text-3xs font-bold uppercase tracking-wider rounded border ${categoryBadge[category]}`}
+                  className={`inline-flex items-center px-1 py-px text-3xs font-semibold uppercase tracking-wider rounded border leading-tight ${categoryBadge[category]}`}
                 >
                   {categoryLabels[category]}
                 </span>
-                <span className="text-2xs text-siem-muted">{count}</span>
+                <span className="text-3xs tabular-nums text-siem-muted">{count}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* ── Top authorities (clickable to scope) ────────────────── */}
-        <div className="rounded-lg border border-siem-border bg-siem-panel px-2.5 py-2.5">
-          <div className="mb-2 flex items-center gap-1.5 text-3xs uppercase tracking-[0.16em] text-siem-muted">
-            <TrendingUp size={9} />
-            Top authorities
-          </div>
-          <div className="space-y-0.5">
+        {/* ── Top authorities ──────────────────────────────────────── */}
+        <div>
+          <div className="mb-1 flex items-center gap-1 text-3xs uppercase tracking-[0.16em] text-siem-muted">
+            <TrendingUp size={8} />
+            Authorities
             {selectedSourceIds.length > 0 && (
               <button
                 type="button"
                 onClick={() => onSelectSourceIdsChange([])}
-                className="w-full flex items-center justify-between gap-2 rounded-md border border-siem-accent px-2 py-1 text-left text-2xs bg-siem-accent/14 text-siem-text transition-colors"
+                className="ml-auto text-3xs uppercase tracking-[0.12em] text-siem-accent hover:text-siem-text transition-colors"
               >
-                <span className="truncate">All feeds (clear filter)</span>
+                Clear
               </button>
             )}
+          </div>
+          <div className="space-y-px">
             {topAuthorities.map((auth) => {
               const commonCaps = [15, 20, 40, 60, 80, 100];
               const likelyCapped = commonCaps.includes(auth.count);
@@ -294,14 +281,14 @@ export function FeedDirectory({
                   key={auth.sourceId}
                   type="button"
                   onClick={() => toggleSource(auth.sourceId)}
-                  className={`w-full flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-left text-2xs transition-colors ${
+                  className={`w-full flex items-center justify-between gap-1.5 rounded px-1.5 py-[3px] text-left text-3xs transition-colors ${
                     selectedSourceIds.includes(auth.sourceId)
-                      ? "border-siem-accent bg-siem-accent/14 text-siem-text"
-                      : "border-siem-border bg-siem-panel-strong text-siem-text hover:border-siem-accent/40 hover:bg-siem-accent/8"
+                      ? "bg-siem-accent/14 text-siem-text"
+                      : "text-siem-text hover:bg-siem-accent/8"
                   }`}
                 >
                   <span className="truncate">{auth.name}</span>
-                  <span className="shrink-0 text-3xs text-siem-muted" title={likelyCapped ? "May have more (per-source limit)" : undefined}>
+                  <span className="shrink-0 tabular-nums text-siem-muted" title={likelyCapped ? "May have more (per-source limit)" : undefined}>
                     {likelyCapped ? `>${auth.count}` : auth.count}
                   </span>
                 </button>
@@ -311,27 +298,24 @@ export function FeedDirectory({
         </div>
 
         {/* ── Top countries ───────────────────────────────────────── */}
-        <div className="rounded-lg border border-siem-border bg-siem-panel px-2.5 py-2.5">
-          <div className="mb-2 text-3xs uppercase tracking-[0.16em] text-siem-muted">
-            Top countries
-          </div>
-          <div className="space-y-0.5">
+        <div>
+          <div className="mb-1 text-3xs uppercase tracking-[0.16em] text-siem-muted">Countries</div>
+          <div className="space-y-px">
             {countryCounts.map((c) => (
               <button
                 key={c.code}
                 type="button"
                 onClick={() => onSelectCountry(c.code)}
-                className={`flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1 text-left text-2xs transition-colors ${
+                className={`flex w-full items-center justify-between gap-1.5 rounded px-1.5 py-[3px] text-left text-3xs transition-colors ${
                   regionFilter === `country:${c.code}`
-                    ? "border-siem-accent bg-siem-accent/14 text-siem-text"
-                    : "border-siem-border bg-siem-panel-strong text-siem-text hover:border-siem-accent/40 hover:bg-siem-accent/8"
+                    ? "bg-siem-accent/14 text-siem-text"
+                    : "text-siem-text hover:bg-siem-accent/8"
                 }`}
               >
-                <span className="truncate text-siem-text">
-                  {c.name}{" "}
-                  <span className="text-siem-muted">({c.code})</span>
+                <span className="truncate">
+                  {c.name} <span className="text-siem-muted">{c.code}</span>
                 </span>
-                <span className="shrink-0 text-siem-muted">{c.count}</span>
+                <span className="shrink-0 tabular-nums text-siem-muted">{c.count}</span>
               </button>
             ))}
           </div>
