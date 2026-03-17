@@ -28,17 +28,25 @@ var (
 		regexp.MustCompile(`(?i)\b(?:hash|sha-?256|sha-?1|md5|yara|sigma)\b`),
 		regexp.MustCompile(`(?i)\b(?:ip(?:v4|v6)?|domain|url|hostname|command and control|c2)\b`),
 		regexp.MustCompile(`(?i)\b(?:vulnerability|exploit(?:ation)?|zero-?day|patch|mitigation|workaround)\b`),
+		// German: Schwachstelle (vulnerability), Sicherheitslücke (security flaw),
+		// Handlungsempfehlung (recommended action), Warnstufe/Risikostufe (warning/risk level)
+		regexp.MustCompile(`(?i)\b(?:schwachstelle|sicherheitsl[uü]cke|handlungsempfehlung|warnstufe|risikostufe|bedrohungslage)\b`),
 	}
 	incidentDisclosurePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:breach|data leak|compromis(?:e|ed)|intrusion|unauthori[sz]ed access)\b`),
 		regexp.MustCompile(`(?i)\b(?:ransomware|malware|botnet|ddos|phishing|credential theft)\b`),
 		regexp.MustCompile(`(?i)\b(?:attack|attacked|target(?:ed|ing)|incident response|security incident)\b`),
 		regexp.MustCompile(`(?i)\b(?:arrest(?:ed)?|charged|indicted|wanted|fugitive|missing person|kidnapp(?:ed|ing)|homicide)\b`),
+		// German incident language
+		regexp.MustCompile(`(?i)\b(?:angriff|angegriffen|datenleck|sicherheitsvorfall|erpressung|trojaner|schadsoftware)\b`),
 	}
 	actionablePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:report|submit (?:a )?tip|contact|hotline|phone|email)\b`),
 		regexp.MustCompile(`(?i)\b(?:apply update|upgrade|disable|block|monitor|detect|investigate)\b`),
 		regexp.MustCompile(`(?i)\b(?:advisory|alert|warning|incident notice|public appeal)\b`),
+		// German: Sicherheitswarnung (security warning), Aktualisierung (update),
+		// dringend (urgent), aktualisieren (to update)
+		regexp.MustCompile(`(?i)\b(?:sicherheitswarnung|aktualisier(?:ung|en)|dringend|ma[sß]nahme|sofort)\b`),
 	}
 	narrativePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:opinion|editorial|commentary|analysis|explainer|podcast|interview)\b`),
@@ -722,9 +730,14 @@ func isSecurityInformational(alert model.Alert, feed FeedContext) bool {
 		authorityType == "cert" ||
 		authorityType == "private_sector" ||
 		authorityType == "regulatory"
+	// If the text contains technical indicators (CVE, vulnerability, patch)
+	// or actionable directives (update, warning, advisory) it's a real
+	// security advisory, not an informational update.
 	return sourceIsSecurityRelevant &&
 		hasAny(text, securityContextPatterns) &&
 		!hasAny(text, incidentDisclosurePatterns) &&
+		!hasAny(text, technicalSignalPatterns) &&
+		!hasAny(text, actionablePatterns) &&
 		!hasAny(text, assistancePatterns) &&
 		!hasAny(text, impactSpecificityPatterns) &&
 		(hasAny(text, generalNewsPatterns) || hasAny(text, narrativePatterns) || publicationType == "news_media")
@@ -875,6 +888,7 @@ func firstNonEmpty(values ...string) string {
 }
 
 func Deduplicate(alerts []model.Alert) ([]model.Alert, model.DuplicateAudit) {
+	// Primary dedup: same canonical URL + title → keep highest-scoring.
 	byKey := make(map[string]model.Alert, len(alerts))
 	for _, alert := range alerts {
 		key := strings.ToLower(alert.CanonicalURL + "|" + alert.Title)
@@ -883,8 +897,17 @@ func Deduplicate(alerts []model.Alert) ([]model.Alert, model.DuplicateAudit) {
 			byKey[key] = alert
 		}
 	}
-	deduped := make([]model.Alert, 0, len(byKey))
+	// Secondary dedup: same AlertID (covers pagination overlap within a
+	// source, where URL/title are identical but arrive in separate batches).
+	byID := make(map[string]model.Alert, len(byKey))
 	for _, alert := range byKey {
+		current, ok := byID[alert.AlertID]
+		if !ok || alertScore(alert) > alertScore(current) {
+			byID[alert.AlertID] = alert
+		}
+	}
+	deduped := make([]model.Alert, 0, len(byID))
+	for _, alert := range byID {
 		deduped = append(deduped, alert)
 	}
 	sort.Slice(deduped, func(i, j int) bool { return deduped[i].Title < deduped[j].Title })

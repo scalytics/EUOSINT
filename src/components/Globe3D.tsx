@@ -1,11 +1,16 @@
 /*
  * EUOSINT
  * 3D Globe view using globe.gl with Natural Earth textures.
- * Supports the same overlay layers as the 2D Leaflet map.
+ * Supports the same overlay layers as the 2D Leaflet map:
+ *   - Polygons: conflict zones, sanctions
+ *   - Paths: undersea cables, shipping lanes
+ *   - HTML markers: military bases, nuclear sites, strategic ports
+ *   - Clustered alert points via supercluster
  */
 
 import { useEffect, useRef, useMemo, useCallback } from "react";
 import Globe, { type GlobeInstance } from "globe.gl";
+import Supercluster from "supercluster";
 import type { Alert } from "@/types/alert";
 import { severityHex } from "@/lib/theme";
 import { OVERLAYS, type OverlayId } from "@/lib/map-overlays";
@@ -21,6 +26,14 @@ const REGION_POV: Record<string, { lat: number; lng: number; altitude: number }>
   International: { lat: 20, lng: 0, altitude: 2.5 },
   all: { lat: 20, lng: 0, altitude: 2.5 },
 };
+
+/* Approximate mapping from globe.gl altitude → Leaflet-style zoom level.
+ * globe.gl altitude is distance from globe surface in Earth-radii units.
+ * Lower altitude = closer = higher zoom.  */
+function altitudeToZoom(altitude: number): number {
+  // Empirically: alt 3.0 ≈ zoom 2, alt 1.8 ≈ zoom 3, alt 0.8 ≈ zoom 5, alt 0.3 ≈ zoom 7
+  return Math.round(Math.max(1, Math.min(14, 6.5 - Math.log2(altitude + 0.1))));
+}
 
 interface Props {
   alerts: Alert[];
@@ -43,68 +56,213 @@ interface PathFeature {
   __label: string;
 }
 
-// Colors matching map-overlays.ts
+interface HtmlMarker {
+  lat: number;
+  lng: number;
+  label: string;
+  color: string;
+  icon: string;
+  size: number;
+}
+
+interface ClusterPoint {
+  lat: number;
+  lng: number;
+  color: string;
+  label: string;
+  count: number;
+  isCluster: boolean;
+  id: string;
+  radius: number;
+  altitude: number;
+}
+
+// Overlay colors matching map-overlays.ts
 const overlayColors: Record<string, string> = {
   conflicts: "#ff5d5d",
   cables: "#60a5fa",
   shipping: "#4ccb8d",
   sanctions: "#f87171",
+  ports: "#f29d4b",
+  bases: "#a78bfa",
+  nuclear: "#facc15",
 };
+
+// Icons for point-based overlays
+const baseTypeIcons: Record<string, string> = {
+  air: "\u2708",
+  naval: "\u2693",
+  army: "\u2694",
+  joint: "\u2605",
+  intelligence: "\u25C9",
+};
+const portTypeIcons: Record<string, string> = {
+  container: "\u2693",
+  canal: "\u26F5",
+  military: "\u2694",
+  strategic: "\u25C6",
+};
+
+function buildMarkerEl(marker: HtmlMarker): HTMLDivElement {
+  const el = document.createElement("div");
+  el.style.cssText = `
+    width:${marker.size}px;height:${marker.size}px;border-radius:50%;
+    background:${marker.color};border:1.5px solid rgba(255,255,255,0.5);
+    display:flex;align-items:center;justify-content:center;
+    font-size:${marker.size * 0.55}px;line-height:1;cursor:pointer;
+    box-shadow:0 0 6px ${marker.color}88;pointer-events:auto;
+  `;
+  el.textContent = marker.icon;
+  el.title = marker.label;
+  return el;
+}
+
+function buildClusterEl(point: ClusterPoint): HTMLDivElement {
+  const el = document.createElement("div");
+  if (point.isCluster) {
+    const size = point.count >= 100 ? 36 : point.count >= 30 ? 30 : 24;
+    const bg = point.count >= 100
+      ? "rgba(239,68,68,0.28)"
+      : point.count >= 30
+        ? "rgba(245,158,11,0.22)"
+        : "rgba(15,18,25,0.88)";
+    const border = point.count >= 100
+      ? "rgba(239,68,68,0.55)"
+      : "rgba(245,158,11,0.45)";
+    el.style.cssText = `
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${bg};border:2px solid ${border};
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Roboto Mono',monospace;font-weight:600;
+      font-size:${size * 0.35}px;color:#e6edf5;line-height:1;
+      cursor:pointer;pointer-events:auto;
+      box-shadow:0 0 8px rgba(0,0,0,0.4);
+    `;
+    el.textContent = String(point.count);
+    el.title = `${point.count} alerts`;
+  } else {
+    const size = point.id === "__selected" ? 14 : 8;
+    el.style.cssText = `
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${point.color};
+      border:1.5px solid rgba(255,255,255,0.45);
+      cursor:pointer;pointer-events:auto;
+      box-shadow:0 0 4px ${point.color}88;
+    `;
+    el.title = point.label;
+  }
+  return el;
+}
+
+const TOOLTIP_STYLE = "background:rgba(15,18,25,0.92);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px 10px;font-size:11px;color:#e2e8f0;max-width:220px";
+
+// Min / max camera distances (Earth radii). Prevents scrolling into oblivion.
+const MIN_ALTITUDE = 0.25; // ~ zoom 8, close enough to see individual points
+const MAX_ALTITUDE = 4.5;  // ~ zoom 1, sees the whole globe
 
 export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOverlays }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<GlobeInstance | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const altitudeRef = useRef(2.5);
 
-  const points = useMemo(
-    () =>
-      alerts.map((a) => ({
+  // Build supercluster index from alerts
+  const clusterIndex = useMemo(() => {
+    const index = new Supercluster({
+      radius: 45,
+      maxZoom: 14,
+      minZoom: 0,
+    });
+    const features = alerts.map((a) => ({
+      type: "Feature" as const,
+      properties: {
         id: a.alert_id,
-        lat: a.lat,
-        lng: a.lng,
         severity: a.severity,
-        color: severityHex(a.severity),
         title: a.source.authority_name,
         text: a.title.slice(0, 80),
-        selected: a.alert_id === selectedId,
-      })),
-    [alerts, selectedId],
+      },
+      geometry: {
+        type: "Point" as const,
+        coordinates: [a.lng, a.lat] as [number, number],
+      },
+    }));
+    index.load(features);
+    return index;
+  }, [alerts]);
+
+  // Compute clustered points for the current altitude
+  const computeClusteredPoints = useCallback(
+    (altitude: number): ClusterPoint[] => {
+      const zoom = altitudeToZoom(altitude);
+      const clusters = clusterIndex.getClusters([-180, -85, 180, 85], zoom);
+      return clusters.map((c) => {
+        const [lng, lat] = c.geometry.coordinates;
+        if (c.properties.cluster) {
+          const count = c.properties.point_count;
+          return {
+            lat,
+            lng,
+            color: "#e6edf5",
+            label: `${count} alerts`,
+            count,
+            isCluster: true,
+            id: `cluster-${c.properties.cluster_id}`,
+            radius: 0.3,
+            altitude: 0.015,
+          };
+        }
+        const props = c.properties as { id: string; severity: string; title: string; text: string };
+        const selected = props.id === selectedId;
+        return {
+          lat,
+          lng,
+          color: severityHex(props.severity),
+          label: `${props.title}\n${props.text}`,
+          count: 1,
+          isCluster: false,
+          id: selected ? "__selected" : props.id,
+          radius: selected ? 0.35 : 0.18,
+          altitude: selected ? 0.025 : 0.01,
+        };
+      });
+    },
+    [clusterIndex, selectedId],
   );
 
-  const handlePointClick = useCallback(
+  const handleClusterClick = useCallback(
     (point: object) => {
-      const p = point as { id: string };
-      onSelectRef.current(p.id);
+      const p = point as ClusterPoint;
+      if (p.isCluster) {
+        // Zoom into the cluster
+        const globe = globeRef.current;
+        if (globe) {
+          const newAlt = Math.max(MIN_ALTITUDE, altitudeRef.current * 0.5);
+          globe.pointOfView({ lat: p.lat, lng: p.lng, altitude: newAlt }, 600);
+        }
+      } else {
+        const id = p.id === "__selected" ? selectedId : p.id;
+        if (id) onSelectRef.current(id);
+      }
     },
-    [],
+    [selectedId],
   );
 
   /* Initialise globe once */
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const base = import.meta.env.BASE_URL ?? "/";
     const globe = new Globe(containerRef.current)
-      .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
-      .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
-      .backgroundImageUrl("//unpkg.com/three-globe/example/img/night-sky.png")
+      .globeImageUrl(`${base}textures/earth-topo-bathy.jpg`)
+      .backgroundImageUrl(`${base}textures/night-sky.png`)
       .showAtmosphere(true)
-      .atmosphereColor("#3a7ecf")
-      .atmosphereAltitude(0.15)
+      .atmosphereColor("#4466cc")
+      .atmosphereAltitude(0.18)
+      // Alert points rendered via HTML elements (clustered)
       .pointsData([])
-      .pointLat("lat")
-      .pointLng("lng")
-      .pointColor("color")
-      .pointAltitude((d: object) => (d as { selected: boolean }).selected ? 0.06 : 0.02)
-      .pointRadius((d: object) => (d as { selected: boolean }).selected ? 0.35 : 0.18)
-      .pointLabel(
-        (d: object) => {
-          const p = d as { title: string; text: string };
-          return `<div style="background:rgba(15,18,25,0.92);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px 10px;font-size:11px;color:#e2e8f0;max-width:220px"><strong>${p.title}</strong><br/>${p.text}</div>`;
-        },
-      )
-      .onPointClick(handlePointClick)
       .showGraticules(true)
+      // Polygon layer (conflict zones, sanctions)
       .polygonsData([])
       .polygonCapColor((d: object) => (d as PolygonFeature).__color + "22")
       .polygonSideColor((d: object) => (d as PolygonFeature).__color + "11")
@@ -112,14 +270,29 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
       .polygonAltitude(0.005)
       .polygonLabel((d: object) => {
         const f = d as PolygonFeature;
-        return `<div style="background:rgba(15,18,25,0.92);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px 10px;font-size:11px;color:#e2e8f0">${f.__label}</div>`;
+        return `<div style="${TOOLTIP_STYLE}">${f.__label}</div>`;
       })
+      // Path layer (cables, shipping lanes)
       .pathsData([])
       .pathColor((d: object) => (d as PathFeature).__color)
       .pathStroke(1.5)
       .pathLabel((d: object) => {
         const f = d as PathFeature;
-        return `<div style="background:rgba(15,18,25,0.92);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px 10px;font-size:11px;color:#e2e8f0">${f.__label}</div>`;
+        return `<div style="${TOOLTIP_STYLE}">${f.__label}</div>`;
+      })
+      // HTML marker layer (bases, nuclear, ports + cluster markers)
+      .htmlElementsData([])
+      .htmlLat((d: object) => (d as { lat: number }).lat)
+      .htmlLng((d: object) => (d as { lng: number }).lng)
+      .htmlAltitude((d: object) => {
+        const m = d as { altitude?: number };
+        return m.altitude ?? 0.012;
+      })
+      .htmlElement((d: object) => {
+        if ("isCluster" in (d as object)) {
+          return buildClusterEl(d as ClusterPoint);
+        }
+        return buildMarkerEl(d as HtmlMarker);
       });
 
     // Dim scene lights for dark theme
@@ -128,6 +301,27 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
       if (child.type === "DirectionalLight") child.intensity = 0.6;
       if (child.type === "AmbientLight") child.intensity = 0.8;
     });
+
+    // Constrain camera zoom range — prevent scrolling into oblivion
+    const controls = globe.controls() as {
+      minDistance?: number;
+      maxDistance?: number;
+      addEventListener?: (event: string, cb: () => void) => void;
+    };
+    // globe.gl uses Three.js units where Earth radius = 100
+    controls.minDistance = 100 + MIN_ALTITUDE * 100; // closest
+    controls.maxDistance = 100 + MAX_ALTITUDE * 100; // farthest
+
+    // Track altitude changes for cluster re-computation
+    if (controls.addEventListener) {
+      controls.addEventListener("change", () => {
+        const pov = globe.pointOfView();
+        if (Math.abs(pov.altitude - altitudeRef.current) > 0.1) {
+          altitudeRef.current = pov.altitude;
+          // Re-render will be triggered by the effect watching altitudeRef
+        }
+      });
+    }
 
     globeRef.current = globe;
 
@@ -147,10 +341,44 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* Sync points data */
+  /* Sync clustered alert points */
   useEffect(() => {
-    globeRef.current?.pointsData(points);
-  }, [points]);
+    const globe = globeRef.current;
+    if (!globe) return;
+
+    const clusterPoints = computeClusteredPoints(altitudeRef.current);
+
+    // Merge cluster points with overlay HTML markers
+    const existing = (globe.htmlElementsData() as unknown[]).filter(
+      (d) => d && typeof d === "object" && !("isCluster" in d) && !("count" in d),
+    );
+    globe.htmlElementsData([...existing, ...clusterPoints]);
+  }, [computeClusteredPoints]);
+
+  /* Re-cluster on zoom change — poll altitude via animation frame */
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe) return;
+    let lastZoom = altitudeToZoom(altitudeRef.current);
+    let raf: number;
+    const tick = () => {
+      const pov = globe.pointOfView();
+      altitudeRef.current = pov.altitude;
+      const zoom = altitudeToZoom(pov.altitude);
+      if (zoom !== lastZoom) {
+        lastZoom = zoom;
+        const clusterPoints = computeClusteredPoints(pov.altitude);
+        // Keep overlay markers, replace cluster points
+        const overlayMarkers = (globe.htmlElementsData() as unknown[]).filter(
+          (d) => d && typeof d === "object" && !("isCluster" in d) && !("count" in d),
+        );
+        globe.htmlElementsData([...overlayMarkers, ...clusterPoints]);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [computeClusteredPoints]);
 
   /* Sync overlays */
   useEffect(() => {
@@ -159,6 +387,7 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
 
     const polygons: PolygonFeature[] = [];
     const paths: PathFeature[] = [];
+    const htmlMarkers: HtmlMarker[] = [];
 
     const fetches = Array.from(activeOverlays).map(async (id) => {
       const def = OVERLAYS.find((o) => o.id === id);
@@ -181,15 +410,27 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
               __label: label,
             });
           } else if (gtype === "LineString") {
-            // globe.gl paths: array of [lng, lat] → need [lat, lng, alt]
             paths.push({
               coords: feature.geometry.coordinates.map((c: number[]) => [c[1], c[0]]),
               __color: color,
               __label: label,
             });
+          } else if (gtype === "Point") {
+            const [lng, lat] = feature.geometry.coordinates as [number, number];
+            let icon = "\u25CF";
+            let size = 10;
+            if (id === "bases") {
+              icon = baseTypeIcons[props.type] ?? "\u2605";
+              size = 12;
+            } else if (id === "nuclear") {
+              icon = "\u2622";
+              size = 13;
+            } else if (id === "ports") {
+              icon = portTypeIcons[props.type] ?? "\u2693";
+              size = 11;
+            }
+            htmlMarkers.push({ lat, lng, label: props.name ?? "", color, icon, size });
           }
-          // Points (ports, bases, nuclear) rendered as additional globe points
-          // could be added here but alert points already cover the map
         }
       } catch {
         // overlay fetch failed silently
@@ -204,8 +445,12 @@ export function Globe3D({ alerts, selectedId, onSelect, regionFilter, activeOver
         .pathPoints("coords")
         .pathPointLat((p: unknown) => (p as number[])[0])
         .pathPointLng((p: unknown) => (p as number[])[1]);
+
+      // Merge overlay markers with current cluster points
+      const clusterPoints = computeClusteredPoints(altitudeRef.current);
+      globe.htmlElementsData([...htmlMarkers, ...clusterPoints]);
     });
-  }, [activeOverlays]);
+  }, [activeOverlays, computeClusteredPoints]);
 
   /* Fly to region */
   useEffect(() => {

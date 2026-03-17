@@ -774,6 +774,19 @@ func (r Runner) fetchInterpol(ctx context.Context, fetcher fetch.Fetcher, browse
 	// Advance cursor for next run.
 	cursors[sid] = lastPageFetched + 1
 
+	// Deduplicate by AlertID — Interpol pages shift as new notices are
+	// added, so page 1 and page 2 can overlap.
+	seen := make(map[string]struct{}, len(allNotices))
+	deduped := make([]model.Alert, 0, len(allNotices))
+	for _, a := range allNotices {
+		if _, ok := seen[a.AlertID]; ok {
+			continue
+		}
+		seen[a.AlertID] = struct{}{}
+		deduped = append(deduped, a)
+	}
+	allNotices = deduped
+
 	if len(allNotices) > limit {
 		allNotices = allNotices[:limit]
 	}

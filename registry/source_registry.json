@@ -2266,6 +2266,8 @@
   },
   {
     "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "KRITIS feed is infrastructure-operator guidance, not actionable security alerts",
     "source": {
       "source_id": "bsi-kritis",
       "authority_name": "BSI KRITIS",
@@ -2280,10 +2282,6 @@
     "region_tag": "DE",
     "lat": 50.74,
     "lng": 7.1,
-    "reporting": {
-      "label": "Report to BSI",
-      "url": "https://www.bsi.bund.de/DE/IT-Sicherheitsvorfall/it-sicherheitsvorfall_node.html"
-    },
     "max_items": 15
   },
   {
