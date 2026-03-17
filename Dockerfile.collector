@@ -22,7 +22,21 @@ RUN curl -sL https://download.geonames.org/export/dump/cities500.zip -o /tmp/cit
 
 FROM alpine:3.20
 
-RUN apk add --no-cache ca-certificates chromium
+RUN set -eux; \
+    apk add --no-cache ca-certificates; \
+    i=0; \
+    until [ "$i" -ge 3 ]; do \
+      if apk add --no-cache chromium; then \
+        break; \
+      fi; \
+      i=$((i + 1)); \
+      if [ "$i" -ge 3 ]; then \
+        echo "ERROR: failed to install chromium after 3 attempts" >&2; \
+        exit 1; \
+      fi; \
+      echo "WARN: chromium install failed, retrying in 5s..." >&2; \
+      sleep 5; \
+    done
 ENV CHROME_PATH=/usr/bin/chromium-browser
 
 WORKDIR /app
