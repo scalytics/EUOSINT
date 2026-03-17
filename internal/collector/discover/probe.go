@@ -33,6 +33,31 @@ var feedPaths = []string{
 	"/resources/press-releases/feed",
 	"/newsroom/feed",
 	"/latest/feed",
+	// Government / DOJ / ministry patterns.
+	"/feeds/opa/justice-news.xml",
+	"/feeds/news.xml",
+	"/feeds/press-releases.xml",
+	"/feeds/alerts.xml",
+	"/blog/feed",
+	"/blog/rss",
+	"/updates/feed",
+	"/publications/feed",
+	"/advisories.xml",
+	"/warnings/feed",
+	"/alerts/feed",
+	"/releases/feed",
+	// Multi-language government sites.
+	"/de/feed",
+	"/fr/feed",
+	"/es/feed",
+	"/it/feed",
+	"/nl/feed",
+	"/sv/feed",
+	"/no/feed",
+	"/da/feed",
+	"/fi/feed",
+	"/pl/feed",
+	"/pt/feed",
 }
 
 // ProbedFeed is a single discovered feed from probing.

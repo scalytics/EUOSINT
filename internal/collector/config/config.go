@@ -53,6 +53,9 @@ type Config struct {
 	SearchDiscoveryEnabled          bool
 	SearchDiscoveryMaxTargets       int
 	SearchDiscoveryMaxURLsPerTarget int
+	DDGSearchEnabled                bool
+	DDGSearchMaxQueries             int
+	DDGSearchDelayMS                int
 	WikidataCachePath               string
 	WikidataCacheTTLHours           int
 	VettingEnabled                  bool
@@ -113,6 +116,9 @@ func Default() Config {
 		SearchDiscoveryEnabled:          false,
 		SearchDiscoveryMaxTargets:       4,
 		SearchDiscoveryMaxURLsPerTarget: 3,
+		DDGSearchEnabled:                true,
+		DDGSearchMaxQueries:             10,
+		DDGSearchDelayMS:                8000,
 		WikidataCachePath:               "registry/wikidata_cache",
 		WikidataCacheTTLHours:           24,
 		VettingEnabled:                  false,
@@ -195,6 +201,9 @@ func FromEnv() Config {
 	cfg.CuratedSeedPath = envString("CURATED_SEED_PATH", cfg.CuratedSeedPath)
 	cfg.RegistrySeedPath = envString("REGISTRY_SEED_PATH", cfg.RegistrySeedPath)
 	cfg.CursorsPath = envString("CURSORS_PATH", cfg.CursorsPath)
+	cfg.DDGSearchEnabled = envBool("DDG_SEARCH_ENABLED", cfg.DDGSearchEnabled)
+	cfg.DDGSearchMaxQueries = envInt("DDG_SEARCH_MAX_QUERIES", cfg.DDGSearchMaxQueries)
+	cfg.DDGSearchDelayMS = envInt("DDG_SEARCH_DELAY_MS", cfg.DDGSearchDelayMS)
 	cfg.GeoNamesPath = envString("GEONAMES_PATH", cfg.GeoNamesPath)
 	cfg.NominatimBaseURL = envString("NOMINATIM_BASE_URL", cfg.NominatimBaseURL)
 	cfg.NominatimEnabled = envBool("NOMINATIM_ENABLED", cfg.NominatimEnabled)

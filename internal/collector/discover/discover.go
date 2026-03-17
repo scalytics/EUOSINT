@@ -46,11 +46,21 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	client := fetch.New(discoveryCfg)
 	var searchClient *vet.Client
 	var sourceVetter *vet.Vetter
+	var browser *fetch.BrowserClient
 	if cfg.VettingEnabled {
 		sourceVetter = vet.New(cfg)
 	}
 	if cfg.SearchDiscoveryEnabled {
 		searchClient = vet.NewClient(cfg)
+	}
+	if cfg.DDGSearchEnabled && cfg.BrowserEnabled {
+		b, err := fetch.NewBrowser(cfg.BrowserTimeoutMS)
+		if err != nil {
+			fmt.Fprintf(stderr, "WARN DDG search disabled (browser init failed): %v\n", err)
+		} else {
+			browser = b
+			defer browser.Close()
+		}
 	}
 
 	// Load existing registry for deduplication and gap analysis.
@@ -73,7 +83,7 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	var discovered []DiscoveredSource
 	dead := loadDeadLetterQueue(cfg.ReplacementQueuePath)
 	fmt.Fprintf(stderr, "Dead-letter queue: %d sources will be skipped\n", len(dead))
-	seededCandidates, err := generateAutonomousCandidates(ctx, cfg, client, searchClient, dead, registrySources, stderr)
+	seededCandidates, err := generateAutonomousCandidates(ctx, cfg, client, browser, searchClient, dead, registrySources, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "WARN autonomous candidate discovery failed: %v\n", err)
 	}
@@ -182,7 +192,7 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	return nil
 }
 
-func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client *fetch.Client, searchClient searchCompleter, dead []model.SourceReplacementCandidate, registrySources []model.RegistrySource, stderr io.Writer) ([]model.SourceCandidate, error) {
+func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client *fetch.Client, browser *fetch.BrowserClient, searchClient searchCompleter, dead []model.SourceReplacementCandidate, registrySources []model.RegistrySource, stderr io.Writer) ([]model.SourceCandidate, error) {
 	candidates := make([]model.SourceCandidate, 0)
 	var failures []string
 	var slowSkips []string
@@ -279,12 +289,40 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 		fmt.Fprintf(stderr, "Replacement search targets: %d dead-source metadata entries queued for feed search\n", len(replacementTargets))
 		searchSeeds = append(searchSeeds, replacementTargets...)
 	}
-	llmCandidates, err := llmSearchCandidates(ctx, cfg, searchClient, searchSeeds)
+
+	// DDG search is the first citizen — free, no API key needed.
+	// LLM search is the fallback for targets DDG didn't cover.
+	ddgCandidates, err := ddgSearchCandidates(ctx, cfg, browser, searchSeeds)
 	if err != nil {
-		failures = append(failures, fmt.Sprintf("llm-search: %v", err))
-	} else if len(llmCandidates) > 0 {
-		fmt.Fprintf(stderr, "LLM search discovery: generated %d candidate URLs via %s\n", len(llmCandidates), cfg.VettingProvider)
-		candidates = append(candidates, llmCandidates...)
+		failures = append(failures, fmt.Sprintf("ddg-search: %v", err))
+	} else if len(ddgCandidates) > 0 {
+		fmt.Fprintf(stderr, "DDG search discovery: found %d candidate URLs\n", len(ddgCandidates))
+		candidates = append(candidates, ddgCandidates...)
+	}
+
+	// LLM search only for remaining seeds that DDG didn't find results for.
+	if cfg.SearchDiscoveryEnabled && searchClient != nil {
+		ddgCoveredKeys := map[string]struct{}{}
+		for _, c := range ddgCandidates {
+			key := strings.ToLower(c.AuthorityName) + "|" + strings.ToUpper(c.CountryCode) + "|" + strings.ToLower(c.Category)
+			ddgCoveredKeys[key] = struct{}{}
+		}
+		var llmSeeds []model.SourceCandidate
+		for _, seed := range searchSeeds {
+			key := strings.ToLower(seed.AuthorityName) + "|" + strings.ToUpper(seed.CountryCode) + "|" + strings.ToLower(seed.Category)
+			if _, covered := ddgCoveredKeys[key]; !covered {
+				llmSeeds = append(llmSeeds, seed)
+			}
+		}
+		if len(llmSeeds) > 0 {
+			llmCandidates, err := llmSearchCandidates(ctx, cfg, searchClient, llmSeeds)
+			if err != nil {
+				failures = append(failures, fmt.Sprintf("llm-search: %v", err))
+			} else if len(llmCandidates) > 0 {
+				fmt.Fprintf(stderr, "LLM search discovery (fallback): generated %d candidate URLs via %s\n", len(llmCandidates), cfg.VettingProvider)
+				candidates = append(candidates, llmCandidates...)
+			}
+		}
 	}
 	if len(failures) > 0 {
 		return candidates, fmt.Errorf("%s", strings.Join(failures, " | "))
