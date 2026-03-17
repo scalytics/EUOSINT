@@ -15,3 +15,18 @@ func TestParseHTMLAnchors(t *testing.T) {
 		t.Fatalf("unexpected link %q", items[0].Link)
 	}
 }
+
+func TestParseHTMLAnchorsSkipsTemplateAndFilterNoise(t *testing.T) {
+	body := `<html><body>
+<a href="/projects/1">${item.title} ${item.url}</a>
+<a href="/projects/2">Reset Filters</a>
+<a href="/projects/3">Disaster Response in Sudan</a>
+</body></html>`
+	items := ParseHTMLAnchors(body, "https://agency.example.org/news")
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item after filtering noise, got %d", len(items))
+	}
+	if items[0].Title != "Disaster Response in Sudan" {
+		t.Fatalf("unexpected title %q", items[0].Title)
+	}
+}

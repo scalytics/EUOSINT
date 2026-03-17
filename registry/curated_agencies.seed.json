@@ -1,0 +1,333 @@
+[
+  {
+    "type": "interpol-red-json",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "interpol-notices",
+      "authority_name": "INTERPOL Notices",
+      "country": "France",
+      "country_code": "FR",
+      "region": "International",
+      "authority_type": "police",
+      "base_url": "https://www.interpol.int",
+      "scope": "international",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://ws-public.interpol.int/notices/v1/red?page=1&resultPerPage=160",
+    "category": "wanted_suspect",
+    "region_tag": "INT",
+    "lat": 45.764,
+    "lng": 4.8357,
+    "reporting": {
+      "label": "Browse INTERPOL Notices",
+      "url": "https://www.interpol.int/How-we-work/Notices/View-Red-Notices"
+    }
+  },
+  {
+    "type": "interpol-yellow-json",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "interpol-missing",
+      "authority_name": "INTERPOL Missing Persons",
+      "country": "France",
+      "country_code": "FR",
+      "region": "International",
+      "authority_type": "police",
+      "base_url": "https://www.interpol.int",
+      "scope": "international",
+      "parent_agency_id": "interpol-notices",
+      "jurisdiction_name": "INTERPOL Missing Persons",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://ws-public.interpol.int/notices/v1/yellow?page=1&resultPerPage=160",
+    "category": "missing_person",
+    "region_tag": "INT",
+    "lat": 45.764,
+    "lng": 4.8357,
+    "reporting": {
+      "label": "Browse INTERPOL Yellow Notices",
+      "url": "https://www.interpol.int/How-we-work/Notices/View-Yellow-Notices"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "europol",
+      "authority_name": "Europol",
+      "country": "Netherlands",
+      "country_code": "NL",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.europol.europa.eu",
+      "scope": "supranational",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://www.europol.europa.eu/rss.xml",
+    "category": "public_appeal",
+    "region_tag": "EU",
+    "lat": 52.09,
+    "lng": 4.27,
+    "reporting": {
+      "label": "Report to Europol",
+      "url": "https://www.europol.europa.eu/report-a-crime"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fbi-wanted",
+      "authority_name": "FBI Wanted",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.fbi.gov",
+      "scope": "national",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://www.fbi.gov/wanted",
+    "category": "wanted_suspect",
+    "region_tag": "US",
+    "lat": 38.9,
+    "lng": -77.0,
+    "reporting": {
+      "label": "Submit a Tip to FBI",
+      "url": "https://tips.fbi.gov/"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fbi-seeking-info",
+      "authority_name": "FBI Seeking Information",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.fbi.gov",
+      "scope": "national",
+      "parent_agency_id": "fbi-wanted",
+      "jurisdiction_name": "FBI Public Appeals",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://www.fbi.gov/wanted/seeking-information",
+    "category": "public_appeal",
+    "region_tag": "US",
+    "lat": 38.9,
+    "lng": -77.0,
+    "reporting": {
+      "label": "Submit a Tip to FBI",
+      "url": "https://tips.fbi.gov/"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "dea",
+      "authority_name": "Drug Enforcement Administration",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.dea.gov",
+      "scope": "national",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://www.dea.gov/press-releases/rss.xml",
+    "category": "public_safety",
+    "region_tag": "US",
+    "lat": 38.9072,
+    "lng": -77.0369,
+    "reporting": {
+      "label": "Report to DEA",
+      "url": "https://www.dea.gov/submit-tip"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "doj",
+      "authority_name": "U.S. Department of Justice",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.justice.gov",
+      "scope": "national",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://www.justice.gov/feeds/justice-news.xml",
+    "category": "public_safety",
+    "region_tag": "US",
+    "lat": 38.8951,
+    "lng": -77.0364,
+    "reporting": {
+      "label": "Contact DOJ",
+      "url": "https://www.justice.gov/doj/webform/your-message-department-justice"
+    }
+  },
+  {
+    "type": "kev-json",
+    "source": {
+      "source_id": "cisa-kev",
+      "authority_name": "CISA",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "cert",
+      "base_url": "https://www.cisa.gov",
+      "scope": "national",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+    "category": "cyber_advisory",
+    "region_tag": "US",
+    "lat": 38.88,
+    "lng": -77.02,
+    "reporting": {
+      "label": "Report to CISA",
+      "url": "https://www.cisa.gov/report"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ncmec",
+      "authority_name": "National Center for Missing & Exploited Children",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.missingkids.org",
+      "scope": "national",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://api.missingkids.org/missingkids/servlet/XmlServlet?LanguageCountry=en_US&act=rss&orgPrefix=NCMC",
+    "category": "missing_person",
+    "region_tag": "US",
+    "lat": 39.83,
+    "lng": -98.58,
+    "reporting": {
+      "label": "Report to NCMEC",
+      "url": "https://report.cybertip.org/"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bka",
+      "authority_name": "Bundeskriminalamt",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.bka.de",
+      "scope": "national",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "de"
+    },
+    "feed_url": "https://www.bka.de/SiteGlobals/Functions/RSSFeed/RSSGenerator.xml",
+    "category": "wanted_suspect",
+    "region_tag": "DE",
+    "lat": 50.1109,
+    "lng": 8.6821,
+    "reporting": {
+      "label": "Contact BKA",
+      "url": "https://www.bka.de"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "bnd",
+      "authority_name": "Federal Intelligence Service (BND)",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "intelligence",
+      "base_url": "https://www.bnd.bund.de",
+      "scope": "national",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "de"
+    },
+    "feed_url": "https://www.bnd.bund.de/EN/_rssfeed/rss_node.html",
+    "category": "public_safety",
+    "region_tag": "DE",
+    "lat": 52.52,
+    "lng": 13.405,
+    "reporting": {
+      "label": "Contact BND",
+      "url": "https://www.bnd.bund.de"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "nca-uk",
+      "authority_name": "National Crime Agency",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://nationalcrimeagency.gov.uk",
+      "scope": "national",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://nationalcrimeagency.gov.uk/news?format=feed&type=rss",
+    "category": "public_safety",
+    "region_tag": "GB",
+    "lat": 51.5074,
+    "lng": -0.1278,
+    "reporting": {
+      "label": "Report to NCA",
+      "url": "https://www.nationalcrimeagency.gov.uk/contact-us"
+    }
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ncsc-uk",
+      "authority_name": "NCSC UK",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.ncsc.gov.uk",
+      "scope": "national",
+      "is_curated": true,
+      "is_high_value": true,
+      "language_code": "en"
+    },
+    "feed_url": "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml",
+    "category": "cyber_advisory",
+    "region_tag": "GB",
+    "lat": 51.5,
+    "lng": -0.13,
+    "reporting": {
+      "label": "Report to NCSC",
+      "url": "https://www.ncsc.gov.uk/section/about-this-website/report-scam-website"
+    }
+  }
+]

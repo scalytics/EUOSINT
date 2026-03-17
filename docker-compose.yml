@@ -1,11 +1,19 @@
 services:
   collector:
+    image: "${EUOSINT_COLLECTOR_IMAGE:-ghcr.io/scalytics/euosint-collector:latest}"
     build:
       context: .
       dockerfile: Dockerfile.collector
+    env_file:
+      - .env
     command:
       - --watch
+      - --api
+      - --api-addr
+      - ":3001"
       - --registry
+      - /data/sources.db
+      - --registry-seed
       - /app/registry/source_registry.json
       - --output
       - /data/alerts.json
@@ -15,9 +23,18 @@ services:
       - /data/alerts-state.json
       - --source-health-output
       - /data/source-health.json
+      - --candidate-queue
+      - /data/source_candidates.json
+      - --replacement-queue
+      - /data/source_dead_letter.json
     environment:
+      GEONAMES_PATH: "/app/registry/cities500.txt"
+      NOMINATIM_ENABLED: "1"
+      DDG_SEARCH_ENABLED: "1"
+      DDG_SEARCH_DELAY_MS: "8000"
+      BROWSER_ENABLED: "${BROWSER_ENABLED:-1}"
       INTERVAL_MS: "900000"
-      MAX_PER_SOURCE: "20"
+      MAX_PER_SOURCE: "40"
       MISSING_PERSON_RELEVANCE_THRESHOLD: "0"
       FAIL_ON_CRITICAL_SOURCE_GAP: "0"
       CRITICAL_SOURCE_PREFIXES: "interpol-red,interpol-yellow"
@@ -26,11 +43,14 @@ services:
     restart: unless-stopped
 
   euosint:
+    image: "${EUOSINT_WEB_IMAGE:-ghcr.io/scalytics/euosint-web:latest}"
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
       - collector
+    env_file:
+      - .env
     environment:
       EUOSINT_SITE_ADDRESS: "${EUOSINT_SITE_ADDRESS:-:80}"
     ports:

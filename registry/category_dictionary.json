@@ -1,0 +1,250 @@
+{
+  "categories": {
+    "missing_person": {
+      "default": {
+        "strong": [
+          "missing person",
+          "missing child",
+          "amber alert",
+          "silver alert",
+          "disappeared person",
+          "person missing",
+          "lost child"
+        ],
+        "negative": [
+          "calendar",
+          "history",
+          "institution",
+          "policy",
+          "transparency",
+          "certification",
+          "department",
+          "press room"
+        ],
+        "url_hints": [
+          "/missing",
+          "/missing-person",
+          "/missing-children",
+          "/amber-alert"
+        ]
+      },
+      "languages": {
+        "es": {
+          "strong": ["desaparec", "persona desaparecida", "menor desaparecido", "no localizado", "ubicanos"],
+          "negative": ["calendario", "historia", "institucion", "transparencia", "certificacion", "oficinas"],
+          "url_hints": ["/desaparecid", "/desaparec", "/ubicanos"]
+        },
+        "ca": {
+          "strong": ["persona desapareguda", "desaparegut", "desapareguda", "menor desaparegut"],
+          "negative": ["calendari", "historia", "institucio", "transparencia"],
+          "url_hints": ["/desapareg"]
+        },
+        "fr": {
+          "strong": ["personne disparue", "enfant disparu", "alerte enlèvement", "disparu", "disparue"],
+          "negative": ["calendrier", "historique", "institution", "transparence"],
+          "url_hints": ["/disparu", "/disparue"]
+        },
+        "de": {
+          "strong": ["vermisst", "vermisste person", "vermisstes kind"],
+          "negative": ["kalender", "geschichte", "institution", "transparenz"],
+          "url_hints": ["/vermisst"]
+        },
+        "it": {
+          "strong": ["persona scomparsa", "minore scomparso", "scomparso", "scomparsa"],
+          "negative": ["calendario", "storia", "istituzione", "trasparenza"],
+          "url_hints": ["/scompars"]
+        },
+        "pt": {
+          "strong": ["pessoa desaparecida", "crianca desaparecida", "desaparecido", "desaparecida"],
+          "negative": ["calendario", "historia", "institucional", "transparencia"],
+          "url_hints": ["/desaparecid"]
+        },
+        "nl": {
+          "strong": ["vermiste persoon", "vermist kind", "vermist"],
+          "negative": ["kalender", "geschiedenis", "instelling", "transparantie"],
+          "url_hints": ["/vermist"]
+        },
+        "pl": {
+          "strong": ["osoba zaginiona", "zaginione dziecko", "zaginiony", "zaginiona"],
+          "url_hints": ["/zagin"]
+        },
+        "ru": {
+          "strong": ["пропал", "пропала", "без вести", "разыскивается ребенок"],
+          "url_hints": ["/проп", "/missing"]
+        },
+        "uk": {
+          "strong": ["зниклий", "зникла", "безвісти", "розшук дитини"],
+          "url_hints": ["/зник"]
+        },
+        "ar": {
+          "strong": ["مفقود", "طفل مفقود", "مفقودة"],
+          "url_hints": ["/مفقود"]
+        },
+        "tr": {
+          "strong": ["kayıp kişi", "kayıp çocuk", "kayıp"],
+          "url_hints": ["/kayip", "/kayıp"]
+        },
+        "el": {
+          "strong": ["αγνοούμενος", "αγνοούμενη", "εξαφανισμένος", "εξαφανισμένη"],
+          "url_hints": ["/αγνο"]
+        },
+        "zh": {
+          "strong": ["失踪", "失蹤", "走失", "寻人", "尋人"],
+          "url_hints": ["/missing", "/尋人", "/寻人"]
+        },
+        "ja": {
+          "strong": ["行方不明", "失踪", "捜索願", "捜しています"],
+          "url_hints": ["/missing", "/行方不明"]
+        },
+        "ko": {
+          "strong": ["실종", "실종자", "실종아동"],
+          "url_hints": ["/실종"]
+        },
+        "hi": {
+          "strong": ["लापता", "गुमशुदा", "लापता व्यक्ति", "लापता बच्चा"],
+          "url_hints": ["/missing"]
+        }
+      }
+    },
+    "wanted_suspect": {
+      "default": {
+        "strong": [
+          "wanted",
+          "most wanted",
+          "wanted suspect",
+          "fugitive",
+          "manhunt",
+          "public appeal"
+        ],
+        "negative": [
+          "calendar",
+          "history",
+          "institution",
+          "policy",
+          "transparency",
+          "department"
+        ],
+        "url_hints": [
+          "/wanted",
+          "/fugitive",
+          "/most-wanted"
+        ]
+      },
+      "languages": {
+        "es": {
+          "strong": ["se busca", "buscado", "buscada", "profugo", "prófugo", "persona de interes policial"],
+          "negative": ["calendario", "historia", "institucion", "transparencia"],
+          "url_hints": ["/buscad", "/se-busca", "/interes-policial"]
+        },
+        "ca": {
+          "strong": ["es busca", "buscat", "buscada", "fugitiu"],
+          "url_hints": ["/busca"]
+        },
+        "fr": {
+          "strong": ["recherché", "recherche", "fugitif", "avis de recherche"],
+          "url_hints": ["/recherche", "/recherchee"]
+        },
+        "de": {
+          "strong": ["gesucht", "fahndung", "flüchtig", "fluechtig"],
+          "url_hints": ["/gesucht", "/fahndung"]
+        },
+        "it": {
+          "strong": ["ricercato", "ricercata", "latitante", "ricercati"],
+          "url_hints": ["/ricercat"]
+        },
+        "pt": {
+          "strong": ["procurado", "procurada", "foragido", "suspeito procurado"],
+          "url_hints": ["/procurad", "/foragid"]
+        },
+        "nl": {
+          "strong": ["gezocht", "voortvluchtig", "opgespoord"],
+          "url_hints": ["/gezocht"]
+        },
+        "pl": {
+          "strong": ["poszukiwany", "poszukiwana", "zbieg"],
+          "url_hints": ["/poszukiw"]
+        },
+        "ru": {
+          "strong": ["разыскивается", "в розыске", "беглец"],
+          "url_hints": ["/розыск", "/разыск"]
+        },
+        "uk": {
+          "strong": ["розшукується", "у розшуку", "втікач"],
+          "url_hints": ["/розшук"]
+        },
+        "ar": {
+          "strong": ["مطلوب", "هارب", "مشتبه به مطلوب"],
+          "url_hints": ["/مطلوب"]
+        },
+        "tr": {
+          "strong": ["aranıyor", "aranan", "firari"],
+          "url_hints": ["/aran", "/firari"]
+        },
+        "zh": {
+          "strong": ["通缉", "通緝", "在逃", "追缉", "追緝"],
+          "url_hints": ["/wanted", "/通缉", "/通緝"]
+        },
+        "ja": {
+          "strong": ["指名手配", "逃走中", "公開手配"],
+          "url_hints": ["/wanted", "/指名手配"]
+        },
+        "ko": {
+          "strong": ["지명수배", "수배", "도주범"],
+          "url_hints": ["/wanted", "/수배"]
+        },
+        "hi": {
+          "strong": ["वांछित", "फरार", "मोस्ट वांटेड"],
+          "url_hints": ["/wanted"]
+        }
+      }
+    },
+    "travel_warning": {
+      "default": {
+        "strong": ["travel warning", "do not travel", "reconsider travel", "advisory against travel"],
+        "url_hints": ["/travel", "/advisory"]
+      },
+      "languages": {
+        "es": { "strong": ["aviso de viaje", "no viajar", "evite viajar"], "url_hints": ["/viaje"] },
+        "fr": { "strong": ["conseil aux voyageurs", "ne pas voyager"], "url_hints": ["/voyage"] },
+        "de": { "strong": ["reisewarnung", "nicht reisen"], "url_hints": ["/reise"] },
+        "it": { "strong": ["avviso di viaggio", "non viaggiare"], "url_hints": ["/viaggio"] },
+        "pt": { "strong": ["aviso de viagem", "nao viajar", "não viajar"], "url_hints": ["/viagem"] }
+      }
+    },
+    "fraud_alert": {
+      "default": {
+        "strong": ["fraud alert", "scam alert", "phishing alert", "consumer warning"],
+        "url_hints": ["/fraud", "/scam", "/phishing"]
+      },
+      "languages": {
+        "es": { "strong": ["alerta de fraude", "estafa", "phishing", "fraude"], "url_hints": ["/fraude", "/estafa"] },
+        "fr": { "strong": ["alerte fraude", "escroquerie", "hameconnage"], "url_hints": ["/fraude", "/escroquerie"] },
+        "de": { "strong": ["betrugswarnung", "phishing", "betrug"], "url_hints": ["/betrug", "/phishing"] },
+        "pt": { "strong": ["alerta de fraude", "golpe", "phishing"], "url_hints": ["/fraude", "/golpe"] }
+      }
+    },
+    "cyber_advisory": {
+      "default": {
+        "strong": ["security advisory", "vulnerability", "cve-", "patch", "exploit", "security bulletin"],
+        "url_hints": ["/advisory", "/alert", "/bulletin"]
+      },
+      "languages": {
+        "es": { "strong": ["aviso de seguridad", "vulnerabilidad", "boletin de seguridad", "boletín de seguridad"] },
+        "fr": { "strong": ["avis de securite", "avis de sécurité", "vulnerabilite", "vulnérabilité"] },
+        "de": { "strong": ["sicherheitswarnung", "sicherheitsmeldung", "schwachstelle"] },
+        "pt": { "strong": ["aviso de seguranca", "aviso de segurança", "vulnerabilidade"] }
+      }
+    },
+    "public_appeal": {
+      "default": {
+        "strong": ["public appeal", "seeking information", "help identify", "report information"],
+        "url_hints": ["/appeal", "/seeking-information"]
+      },
+      "languages": {
+        "es": { "strong": ["solicita informacion", "solicita información", "ayude a identificar", "informacion a la ciudadania"], "url_hints": ["/informacion"] },
+        "fr": { "strong": ["appel a temoins", "appel à témoins", "recherche de renseignements"], "url_hints": ["/appel"] },
+        "de": { "strong": ["zeugenaufruf", "hinweise erbeten", "hinweis gesucht"], "url_hints": ["/zeugen"] }
+      }
+    }
+  }
+}
