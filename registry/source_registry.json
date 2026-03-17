@@ -5441,6 +5441,25 @@
   },
   {
     "type": "rss",
+    "promotion_status": "rejected",
+    "rejection_reason": "World Bank education content, not an intelligence source",
+    "source": {
+      "source_id": "worldbank-education-digital",
+      "authority_name": "World Bank Education Digital",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.worldbank.org"
+    },
+    "feed_url": "https://www.worldbank.org/en/topic/edutech/rss.xml",
+    "category": "education_digital_capacity",
+    "region_tag": "INT",
+    "lat": 38.90,
+    "lng": -77.04
+  },
+  {
+    "type": "rss",
     "source": {
       "source_id": "occrp-investigations",
       "authority_name": "OCCRP Investigations",
