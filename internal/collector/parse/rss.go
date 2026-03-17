@@ -7,6 +7,7 @@ import (
 	"html"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 type FeedItem struct {
@@ -21,8 +22,8 @@ type FeedItem struct {
 var (
 	entryRe        = regexp.MustCompile(`(?is)<entry[\s\S]*?</entry>`)
 	itemRe         = regexp.MustCompile(`(?is)<item[\s\S]*?</item>`)
-	tagCache       = map[string]*regexp.Regexp{}
-	tagValuesCache = map[string]*regexp.Regexp{}
+	tagCache       sync.Map
+	tagValuesCache sync.Map
 	atomLinkRe     = regexp.MustCompile(`(?is)<link[^>]*rel=["']alternate["'][^>]*>|<link[^>]*>`)
 	hrefRe         = regexp.MustCompile(`(?i)href=["']([^"']+)["']`)
 	atomAuthorRe   = regexp.MustCompile(`(?is)<author[^>]*>[\s\S]*?<name[^>]*>([\s\S]*?)</name>[\s\S]*?</author>`)
@@ -62,11 +63,12 @@ func ParseFeed(xml string) []FeedItem {
 }
 
 func getTag(block, tag string) string {
-	re, ok := tagCache[tag]
+	cached, ok := tagCache.Load(tag)
 	if !ok {
-		re = regexp.MustCompile(`(?is)<` + regexp.QuoteMeta(tag) + `[^>]*>([\s\S]*?)</` + regexp.QuoteMeta(tag) + `>`)
-		tagCache[tag] = re
+		compiled := regexp.MustCompile(`(?is)<` + regexp.QuoteMeta(tag) + `[^>]*>([\s\S]*?)</` + regexp.QuoteMeta(tag) + `>`)
+		cached, _ = tagCache.LoadOrStore(tag, compiled)
 	}
+	re := cached.(*regexp.Regexp)
 	match := re.FindStringSubmatch(block)
 	if len(match) < 2 {
 		return ""
@@ -75,11 +77,12 @@ func getTag(block, tag string) string {
 }
 
 func getTagValues(block, tag string) []string {
-	re, ok := tagValuesCache[tag]
+	cached, ok := tagValuesCache.Load(tag)
 	if !ok {
-		re = regexp.MustCompile(`(?is)<` + regexp.QuoteMeta(tag) + `[^>]*>([\s\S]*?)</` + regexp.QuoteMeta(tag) + `>`)
-		tagValuesCache[tag] = re
+		compiled := regexp.MustCompile(`(?is)<` + regexp.QuoteMeta(tag) + `[^>]*>([\s\S]*?)</` + regexp.QuoteMeta(tag) + `>`)
+		cached, _ = tagValuesCache.LoadOrStore(tag, compiled)
 	}
+	re := cached.(*regexp.Regexp)
 	matches := re.FindAllStringSubmatch(block, -1)
 	out := make([]string, 0, len(matches))
 	for _, match := range matches {

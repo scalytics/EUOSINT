@@ -170,12 +170,13 @@ export function GlobeView({
     });
     ro.observe(containerRef.current);
 
+    const markers = markerLookup.current;
     return () => {
       ro.disconnect();
       map.remove();
       mapRef.current = null;
       clusterRef.current = null;
-      markerLookup.current.clear();
+      markers.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

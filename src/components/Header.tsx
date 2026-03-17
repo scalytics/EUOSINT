@@ -281,19 +281,6 @@ function SearchBar({
           className="w-full rounded-full border border-siem-border bg-siem-panel-strong pl-10 pr-36 py-3 text-sm text-siem-text outline-none transition-colors placeholder:text-siem-muted/60 focus:border-siem-accent/45"
         />
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
-          {query && (
-            <button
-              type="button"
-              onClick={() => {
-                onQueryChange("");
-                inputRef.current?.focus();
-                setIsOpen(true);
-              }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full text-siem-muted transition-colors hover:bg-siem-accent/12 hover:text-siem-text"
-            >
-              <X size={13} />
-            </button>
-          )}
           <button
             type="submit"
             className="rounded-full border border-siem-accent/35 bg-siem-accent/14 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-siem-text"
