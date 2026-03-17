@@ -25,10 +25,14 @@ var junkTitles = []string{
 	"next", "previous", "page", "skip to content",
 	"accept", "decline", "configuración de cookies",
 	"mozilla firefox", "google chrome", "microsoft edge",
+	"reset filters",
 }
 
 func isJunkTitle(title string) bool {
 	lower := strings.ToLower(title)
+	if strings.Contains(lower, "${") || strings.Contains(lower, "{{") {
+		return true
+	}
 	for _, junk := range junkTitles {
 		if lower == junk || strings.TrimSpace(lower) == junk {
 			return true

@@ -3082,6 +3082,44 @@
     "lng": -73.97
   },
   {
+    "type": "html-list",
+    "promotion_status": "rejected",
+    "rejection_reason": "JS-rendered navigation page, not a stable incident/tasking feed",
+    "source": {
+      "source_id": "hot-tasking",
+      "authority_name": "Humanitarian OpenStreetMap Team",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.hotosm.org"
+    },
+    "feed_url": "https://www.hotosm.org/projects/",
+    "category": "humanitarian_tasking",
+    "region_tag": "INT",
+    "lat": 40.71,
+    "lng": -74.01
+  },
+  {
+    "type": "html-list",
+    "promotion_status": "rejected",
+    "rejection_reason": "Navigation/blog content about mapping events, not operational tasking intelligence",
+    "source": {
+      "source_id": "missing-maps-tasking",
+      "authority_name": "Missing Maps",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.missingmaps.org"
+    },
+    "feed_url": "https://www.missingmaps.org/",
+    "category": "humanitarian_tasking",
+    "region_tag": "INT",
+    "lat": 51.51,
+    "lng": -0.13
+  },
+  {
     "type": "rss",
     "promotion_status": "rejected",
     "rejection_reason": "WFP blocks RSS access (403); no alternative operational feed available",

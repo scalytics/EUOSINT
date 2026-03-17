@@ -286,6 +286,57 @@ func TestMergeRegistryAddsCuratedSeedWithoutReplacingExistingSources(t *testing.
 	}
 }
 
+func TestMergeRegistryRejectsExistingSource(t *testing.T) {
+	dir := t.TempDir()
+	baseRegistryPath := filepath.Join(dir, "base.json")
+	seedRegistryPath := filepath.Join(dir, "seed.json")
+	dbPath := filepath.Join(dir, "sources.db")
+
+	base := `[
+	  {"type":"html-list","feed_url":"https://www.hotosm.org/projects/","category":"humanitarian_tasking","source":{"source_id":"hot-tasking","authority_name":"Humanitarian OpenStreetMap Team","country":"International","country_code":"INT","region":"International","authority_type":"public_safety_program","base_url":"https://www.hotosm.org"}}
+	]`
+	seed := `[
+	  {"type":"html-list","feed_url":"https://www.hotosm.org/projects/","category":"humanitarian_tasking","promotion_status":"rejected","rejection_reason":"JS-rendered navigation page, not a stable incident/tasking feed","source":{"source_id":"hot-tasking","authority_name":"Humanitarian OpenStreetMap Team","country":"International","country_code":"INT","region":"International","authority_type":"public_safety_program","base_url":"https://www.hotosm.org"}}
+	]`
+	if err := os.WriteFile(baseRegistryPath, []byte(base), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(seedRegistryPath, []byte(seed), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := db.ImportRegistry(context.Background(), baseRegistryPath); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.MergeRegistry(context.Background(), seedRegistryPath); err != nil {
+		t.Fatal(err)
+	}
+
+	sources, err := db.LoadActiveSources(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) != 0 {
+		t.Fatalf("expected rejected source to be removed from active load, got %d", len(sources))
+	}
+
+	var promotionStatus, rejectionReason string
+	if err := db.sql.QueryRowContext(context.Background(), `SELECT promotion_status, rejection_reason FROM sources WHERE id = 'hot-tasking'`).Scan(&promotionStatus, &rejectionReason); err != nil {
+		t.Fatal(err)
+	}
+	if promotionStatus != "rejected" {
+		t.Fatalf("expected promotion_status rejected, got %q", promotionStatus)
+	}
+	if rejectionReason == "" {
+		t.Fatal("expected rejection_reason to be persisted")
+	}
+}
+
 func TestSaveAndLoadAlertsReplacesMaterializedStateWithoutDuplicates(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "sources.db")

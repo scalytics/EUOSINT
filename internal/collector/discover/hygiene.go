@@ -48,6 +48,7 @@ var nonOSINTTerms = []string{
 	"zoo", "aquarium", "botanical",
 	"lottery", "casino", "gambling",
 	"dating", "matrimon",
+	"openstreetmap", "missing maps", "mapathon", "tasking manager",
 }
 
 // nonOSINTHosts rejects entire domains that are never OSINT-relevant.
@@ -62,6 +63,7 @@ var nonOSINTHosts = []string{
 	"spotify.com", "netflix.com",
 	"stackoverflow.com", "github.com",
 	"schoolnet.eu", "european-schoolnet",
+	"openstreetmap.org", "hotosm.org", "missingmaps.org",
 }
 
 func passesDiscoveryHygiene(name string, website string, authorityType string) bool {
