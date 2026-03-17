@@ -278,27 +278,29 @@ function SearchBar({
           onChange={(e) => onQueryChange(e.target.value)}
           onFocus={() => setIsOpen(true)}
           placeholder="Search alerts, agencies, countries, categories..."
-          className="w-full rounded-full border border-siem-border bg-siem-panel-strong pl-10 pr-24 py-3 text-sm text-siem-text outline-none transition-colors placeholder:text-siem-muted/60 focus:border-siem-accent/45"
+          className="w-full rounded-full border border-siem-border bg-siem-panel-strong pl-10 pr-36 py-3 text-sm text-siem-text outline-none transition-colors placeholder:text-siem-muted/60 focus:border-siem-accent/45"
         />
-        {query && (
+        <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+          {query && (
+            <button
+              type="button"
+              onClick={() => {
+                onQueryChange("");
+                inputRef.current?.focus();
+                setIsOpen(true);
+              }}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full text-siem-muted transition-colors hover:bg-siem-accent/12 hover:text-siem-text"
+            >
+              <X size={13} />
+            </button>
+          )}
           <button
-            type="button"
-            onClick={() => {
-              onQueryChange("");
-              inputRef.current?.focus();
-              setIsOpen(true);
-            }}
-            className="absolute right-14 top-1/2 -translate-y-1/2 text-siem-muted hover:text-siem-text"
+            type="submit"
+            className="rounded-full border border-siem-accent/35 bg-siem-accent/14 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-siem-text"
           >
-            <X size={13} />
+            Search
           </button>
-        )}
-        <button
-          type="submit"
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-siem-accent/35 bg-siem-accent/14 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-siem-text"
-        >
-          Search
-        </button>
+        </div>
       </form>
 
       {isOpen && filteredHistory.length > 0 && (
