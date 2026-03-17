@@ -323,6 +323,7 @@ export function GlobeView({
                 selectedId={selectedId}
                 onSelect={onSelect}
                 regionFilter={regionFilter}
+                activeOverlays={activeOverlays}
               />
             </Suspense>
           )}
