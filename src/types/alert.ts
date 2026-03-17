@@ -25,7 +25,9 @@ export type AlertCategory =
   | "intelligence_report"
   | "emergency_management"
   | "environmental_disaster"
-  | "disease_outbreak";
+  | "disease_outbreak"
+  | "maritime_security"
+  | "legislative";
 export type AuthorityType =
   | "police"
   | "national_security"

@@ -11,13 +11,13 @@ import (
 )
 
 func TestAnalyzeGaps_FindsMissing(t *testing.T) {
-	// A registry with only Germany cyber_advisory — everything else is a gap.
-	sources := []model.RegistrySource{
-		{Category: "cyber_advisory", Source: model.SourceMetadata{CountryCode: "DE"}},
-		{Category: "public_appeal", Source: model.SourceMetadata{CountryCode: "DE"}},
-		{Category: "travel_warning", Source: model.SourceMetadata{CountryCode: "DE"}},
-		{Category: "intelligence_report", Source: model.SourceMetadata{CountryCode: "DE"}},
-		{Category: "fraud_alert", Source: model.SourceMetadata{CountryCode: "DE"}},
+	// A registry covering all expanded categories for Germany — everything else is a gap.
+	var sources []model.RegistrySource
+	for _, cat := range expandedCategories {
+		sources = append(sources, model.RegistrySource{
+			Category: cat,
+			Source:   model.SourceMetadata{CountryCode: "DE"},
+		})
 	}
 
 	var buf bytes.Buffer

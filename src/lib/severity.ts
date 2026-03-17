@@ -55,6 +55,8 @@ export const categoryLabels: Record<AlertCategory, string> = {
   emergency_management: "Emergency Management",
   environmental_disaster: "Environmental Disaster",
   disease_outbreak: "Disease Outbreak",
+  maritime_security: "Maritime Security",
+  legislative: "Legislative",
 };
 
 export const categoryOrder: AlertCategory[] = [
@@ -77,6 +79,8 @@ export const categoryOrder: AlertCategory[] = [
   "emergency_management",
   "environmental_disaster",
   "disease_outbreak",
+  "maritime_security",
+  "legislative",
 ];
 
 /**
@@ -103,6 +107,8 @@ export const categoryBadge: Record<AlertCategory, string> = {
   emergency_management: "bg-cat-emergency/15 text-cat-emergency border-cat-emergency/30",
   environmental_disaster: "bg-cat-environment/15 text-cat-environment border-cat-environment/30",
   disease_outbreak: "bg-cat-disease/15 text-cat-disease border-cat-disease/30",
+  maritime_security: "bg-cat-maritime/15 text-cat-maritime border-cat-maritime/30",
+  legislative: "bg-cat-legislative/15 text-cat-legislative border-cat-legislative/30",
 };
 
 export const categoryIcons: Record<AlertCategory, string> = {
@@ -125,6 +131,8 @@ export const categoryIcons: Record<AlertCategory, string> = {
   emergency_management: "Siren",
   environmental_disaster: "CloudRain",
   disease_outbreak: "Bug",
+  maritime_security: "Anchor",
+  legislative: "Landmark",
 };
 
 export function freshnessLabel(hours: number): string {
