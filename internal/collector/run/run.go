@@ -913,8 +913,6 @@ func (r Runner) runDiscoveryLoop(ctx context.Context, cfg config.Config) {
 		}
 	}
 
-	runOnce()
-
 	interval := time.Duration(cfg.DiscoverIntervalMS) * time.Millisecond
 	if interval <= 0 {
 		interval = 15 * time.Minute
