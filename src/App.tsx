@@ -295,13 +295,18 @@ export default function App() {
       </div>
 
       <div className="flex items-center justify-between border-t border-siem-border bg-siem-panel/85 px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-siem-muted">
-        <span>Scalytics OSINT // Open Source Intelligence Console</span>
+        <span>
+          <a href="https://www.scalytics.io/streamingintelligence?utm_source=euosint&utm_medium=footer&utm_campaign=osint_console" target="_blank" rel="noopener" className="hover:text-siem-accent transition-colors">Scalytics OSINT</a>
+          {" // Open Source Intelligence Console"}
+        </span>
         <span className="hidden md:inline">
           {selectedSourceIds.length > 0
             ? `Scoped to ${selectedSourceIds.length} feeds`
             : categoryFilter !== "all"
               ? `Scoped to ${categoryFilter}`
               : "All live feeds"}
+          {" // "}
+          <a href="https://www.scalytics.io/contact?utm_source=euosint&utm_medium=footer&utm_campaign=osint_console" target="_blank" rel="noopener" className="hover:text-siem-accent transition-colors">Build your intelligence pipeline — Contact us</a>
         </span>
       </div>
     </div>
