@@ -276,41 +276,43 @@ export function GlobeView({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-siem-border bg-siem-panel p-2 md:grid-cols-4">
-          {["Europe", "all", "Asia", "North America"].map((region) => (
-            <button
-              key={region}
-              type="button"
-              onClick={() => onRegionChange(region)}
-              className={`rounded-lg border px-2.5 py-1.5 text-2xs uppercase tracking-[0.18em] transition-colors ${
-                regionFilter === region
-                  ? "border-siem-accent bg-siem-accent/16 text-siem-text"
-                  : "border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/40 hover:bg-siem-accent/8"
-              }`}
-            >
-              {region === "all" ? "Global" : region}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-4 gap-1 rounded-xl border border-siem-border bg-siem-panel p-1.5 md:grid-cols-7">
-          {OVERLAYS.map((overlay) => (
-            <button
-              key={overlay.id}
-              type="button"
-              onClick={() => toggleOverlay(overlay.id)}
-              className={`flex items-center justify-center gap-1.5 rounded-md border px-1.5 py-1 text-3xs uppercase tracking-[0.14em] transition-colors ${
-                activeOverlays.has(overlay.id)
-                  ? "border-siem-accent/40 bg-siem-accent/12 text-siem-text"
-                  : "border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/30 hover:bg-siem-accent/8"
-              }`}
-            >
-              <span
-                className="h-1.5 w-1.5 rounded-full shrink-0"
-                style={{ backgroundColor: overlay.color, opacity: activeOverlays.has(overlay.id) ? 1 : 0.4 }}
-              />
-              {overlay.label}
-            </button>
-          ))}
+        <div className="rounded-2xl border border-siem-border bg-siem-panel p-2 space-y-1.5">
+          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
+            {["Europe", "all", "Asia", "North America"].map((region) => (
+              <button
+                key={region}
+                type="button"
+                onClick={() => onRegionChange(region)}
+                className={`rounded-lg border px-2.5 py-1.5 text-2xs uppercase tracking-[0.18em] transition-colors ${
+                  regionFilter === region
+                    ? "border-siem-accent bg-siem-accent/16 text-siem-text"
+                    : "border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/40 hover:bg-siem-accent/8"
+                }`}
+              >
+                {region === "all" ? "Global" : region}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-4 gap-1 md:grid-cols-7">
+            {OVERLAYS.map((overlay) => (
+              <button
+                key={overlay.id}
+                type="button"
+                onClick={() => toggleOverlay(overlay.id)}
+                className={`flex items-center justify-center gap-1 rounded-md border px-1 py-0.5 text-3xs uppercase tracking-[0.12em] transition-colors ${
+                  activeOverlays.has(overlay.id)
+                    ? "border-siem-accent/40 bg-siem-accent/12 text-siem-text"
+                    : "border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/30 hover:bg-siem-accent/8"
+                }`}
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: overlay.color, opacity: activeOverlays.has(overlay.id) ? 1 : 0.4 }}
+                />
+                {overlay.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
