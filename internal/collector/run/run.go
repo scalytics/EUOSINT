@@ -677,11 +677,16 @@ func filterKeywords(items []parse.FeedItem, include []string, exclude []string) 
 	exclude = normalizeKeywords(exclude)
 	out := []parse.FeedItem{}
 	for _, item := range items {
-		hay := strings.ToLower(item.Title + " " + item.Link)
-		if len(include) > 0 && !containsKeyword(hay, include) {
+		titleHay := strings.ToLower(item.Title)
+		fullHay := strings.ToLower(item.Title + " " + item.Link)
+		// Include keywords match against title only — matching against the
+		// URL caused false positives when the page URL itself contained a
+		// keyword (e.g. /desaparecidos in the path let every link through).
+		if len(include) > 0 && !containsKeyword(titleHay, include) {
 			continue
 		}
-		if len(exclude) > 0 && containsKeyword(hay, exclude) {
+		// Exclude keywords match against title + URL (conservative).
+		if len(exclude) > 0 && containsKeyword(fullHay, exclude) {
 			continue
 		}
 		out = append(out, item)

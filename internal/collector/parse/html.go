@@ -14,6 +14,29 @@ var anchorRe = regexp.MustCompile(`(?is)<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s
 var tagStripRe = regexp.MustCompile(`(?is)<[^>]+>`)
 var scriptStripRe = regexp.MustCompile(`(?is)<script[\s\S]*?</script>|<style[\s\S]*?</style>`)
 
+// junkTitles are navigation / boilerplate link texts that should never
+// become alerts. Checked case-insensitively against the stripped title.
+var junkTitles = []string{
+	"load more", "read more", "see more", "show more", "ver más",
+	"cookie", "cookies", "privacy policy", "terms of use",
+	"terms of service", "legal notice", "aviso legal",
+	"log in", "sign in", "register", "iniciar sesión",
+	"contact us", "about us", "home", "back to top",
+	"next", "previous", "page", "skip to content",
+	"accept", "decline", "configuración de cookies",
+	"mozilla firefox", "google chrome", "microsoft edge",
+}
+
+func isJunkTitle(title string) bool {
+	lower := strings.ToLower(title)
+	for _, junk := range junkTitles {
+		if lower == junk || strings.TrimSpace(lower) == junk {
+			return true
+		}
+	}
+	return false
+}
+
 func ParseHTMLAnchors(body string, baseURL string) []FeedItem {
 	matches := anchorRe.FindAllStringSubmatch(body, -1)
 	seen := make(map[string]struct{}, len(matches))
@@ -35,7 +58,7 @@ func ParseHTMLAnchors(body string, baseURL string) []FeedItem {
 			continue
 		}
 		title := StripHTML(match[2])
-		if len(title) < 8 {
+		if len(title) < 8 || isJunkTitle(title) {
 			continue
 		}
 		finalURL := resolved.ResolveReference(link).String()
