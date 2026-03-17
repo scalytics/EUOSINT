@@ -15,7 +15,7 @@ REPO_URL="${REPO_URL:-https://github.com/scalytics/EUOSINT.git}"
 REPO_REF="${REPO_REF:-main}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/euosint}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
-INSTALL_MODE="${INSTALL_MODE:-preserve}"
+INSTALL_MODE="${INSTALL_MODE:-update}"
 TLS_MODE="false"
 
 info() { echo "[euosint-install] $*"; }
@@ -71,12 +71,12 @@ prompt_yes_no() {
 prompt_install_mode() {
   local value
   while true; do
-    value="$(read_prompt "Install mode (preserve/fresh) [${INSTALL_MODE}]: ")"
+    value="$(read_prompt "Install mode (update/install) [${INSTALL_MODE}]: ")"
     value="${value:-$INSTALL_MODE}"
     value="$(echo "$value" | tr '[:upper:]' '[:lower:]')"
     case "$value" in
-      preserve|fresh) echo "$value"; return 0 ;;
-      *) echo "Please answer 'preserve' or 'fresh'." ;;
+      update|install) echo "$value"; return 0 ;;
+      *) echo "Please answer 'update' or 'install'." ;;
     esac
   done
 }
@@ -258,7 +258,7 @@ preflight_tls_checks() {
     run_firewall_checks
   fi
 
-  if [[ "$INSTALL_MODE" == "preserve" ]] && container_running_for_service "euosint"; then
+  if [[ "$INSTALL_MODE" == "update" ]] && container_running_for_service "euosint"; then
     info "Existing euosint service is running; skipping strict local port-collision pre-check."
   else
     info "Validating that ports 80 and 443 are free..."
@@ -267,10 +267,23 @@ preflight_tls_checks() {
 }
 
 start_stack() {
+  if [[ "$INSTALL_MODE" == "update" ]]; then
+    info "Update mode selected: leaving repository/.env/volumes untouched; pulling and restarting images only."
+    (
+      cd "$INSTALL_DIR"
+      $COMPOSE_CMD pull
+      $COMPOSE_CMD up -d --no-build
+    )
+    local http_port
+    http_port="$(grep -E '^EUOSINT_HTTP_PORT=' "$INSTALL_DIR/.env" | cut -d= -f2 || echo "8080")"
+    info "EUOSINT updated. HTTP endpoint: http://$(hostname -f 2>/dev/null || hostname):${http_port}"
+    return 0
+  fi
+
   local start_choice
   start_choice="$(prompt_yes_no "Start EUOSINT now with Docker Compose?" "yes")"
   if [[ "$start_choice" != "yes" ]]; then
-    if [[ "$INSTALL_MODE" == "fresh" ]]; then
+    if [[ "$INSTALL_MODE" == "install" ]]; then
       info "Installation complete. Start later with: cd $INSTALL_DIR && $COMPOSE_CMD down -v --remove-orphans && $COMPOSE_CMD pull && $COMPOSE_CMD up -d --no-build"
     else
       info "Installation complete. Start later with: cd $INSTALL_DIR && $COMPOSE_CMD pull && $COMPOSE_CMD up -d --no-build"
@@ -280,14 +293,14 @@ start_stack() {
 
   preflight_tls_checks
 
-  if [[ "$INSTALL_MODE" == "fresh" ]]; then
-    warn "Fresh mode selected: stopping stack and deleting Compose volumes (feed-data/caddy-data/caddy-config)."
+  if [[ "$INSTALL_MODE" == "install" ]]; then
+    warn "Install mode selected: stopping stack and deleting Compose volumes (feed-data/caddy-data/caddy-config)."
     (
       cd "$INSTALL_DIR"
       $COMPOSE_CMD down -v --remove-orphans || true
     )
   else
-    info "Preserve mode selected: keeping existing Docker volumes/data."
+    info "Update mode selected: keeping existing Docker volumes/data."
   fi
 
   info "Pulling latest GHCR images..."
@@ -312,8 +325,14 @@ main() {
   ensure_docker
   INSTALL_MODE="$(prompt_install_mode)"
   info "Selected install mode: ${INSTALL_MODE}"
-  clone_or_update_repo
-  configure_env
+  if [[ "$INSTALL_MODE" == "install" ]]; then
+    clone_or_update_repo
+    configure_env
+  else
+    if [[ ! -d "$INSTALL_DIR" || ! -f "$INSTALL_DIR/docker-compose.yml" ]]; then
+      fatal "Update mode requires an existing install at $INSTALL_DIR (missing docker-compose.yml). Use install mode first."
+    fi
+  fi
   start_stack
 }
 
