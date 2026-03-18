@@ -9,6 +9,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -54,6 +55,12 @@ func Open(path string) (*DB, error) {
 		return nil, fmt.Errorf("set sqlite busy_timeout: %w", err)
 	}
 	return &DB{sql: db}, nil
+}
+
+// RawDB returns the underlying *sql.DB for use by subsystems that manage
+// their own tables (e.g. trend detection).
+func (db *DB) RawDB() *sql.DB {
+	return db.sql
 }
 
 func (db *DB) Close() error {
@@ -595,6 +602,133 @@ FROM alerts a
 		return fmt.Errorf("commit alert save tx: %w", err)
 	}
 	return nil
+}
+
+// CorpusScores computes BM25-based distinctiveness scores for all alerts
+// in the FTS index. Each alert's title is matched against the full corpus
+// — alerts with rare, distinctive terms score higher than those with
+// commonly occurring words. Returns a map of alert_id → normalised score (0–1).
+//
+// Must be called after SaveAlerts (which rebuilds the FTS index).
+func (db *DB) CorpusScores(ctx context.Context) (map[string]float64, error) {
+	// Collect all alert IDs and titles.
+	rows, err := db.sql.QueryContext(ctx, `SELECT alert_id, title FROM alerts WHERE status = 'active'`)
+	if err != nil {
+		return nil, fmt.Errorf("load alerts for corpus scoring: %w", err)
+	}
+	type entry struct {
+		id    string
+		title string
+	}
+	var entries []entry
+	for rows.Next() {
+		var e entry
+		if err := rows.Scan(&e.id, &e.title); err != nil {
+			rows.Close()
+			return nil, fmt.Errorf("scan alert for corpus scoring: %w", err)
+		}
+		entries = append(entries, e)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(entries) == 0 {
+		return map[string]float64{}, nil
+	}
+
+	// Score each alert by matching its title against the corpus.
+	// BM25 returns negative values (more negative = more relevant in FTS5).
+	rawScores := make(map[string]float64, len(entries))
+	var minRaw, maxRaw float64
+	first := true
+
+	for _, e := range entries {
+		// Build FTS5 query from title words. Quote each word for exact matching.
+		query := buildCorpusQuery(e.title)
+		if query == "" {
+			continue
+		}
+		var rank float64
+		err := db.sql.QueryRowContext(ctx, `
+SELECT bm25(alerts_fts, 0, 10.0, 0, 3.0, 0, 2.0, 2.0, 2.0, 1.0)
+FROM alerts_fts
+WHERE alerts_fts MATCH ? AND alert_id = ?
+`, query, e.id).Scan(&rank)
+		if err != nil {
+			// No FTS match (e.g. all stopwords) — skip.
+			continue
+		}
+
+		rawScores[e.id] = rank
+		if first {
+			minRaw = rank
+			maxRaw = rank
+			first = false
+		} else {
+			if rank < minRaw {
+				minRaw = rank
+			}
+			if rank > maxRaw {
+				maxRaw = rank
+			}
+		}
+	}
+
+	// Normalise raw BM25 scores to 0–1.
+	// BM25 in FTS5 is negative (more negative = better match). We invert so
+	// that the most distinctive alerts get the highest score.
+	scores := make(map[string]float64, len(rawScores))
+	spread := maxRaw - minRaw
+	if spread == 0 {
+		// All alerts scored equally — give them all 0.5.
+		for id := range rawScores {
+			scores[id] = 0.5
+		}
+	} else {
+		for id, raw := range rawScores {
+			// Invert: minRaw (best) → 1.0, maxRaw (worst) → 0.0
+			normalised := (maxRaw - raw) / spread
+			scores[id] = math.Round(normalised*1000) / 1000
+		}
+	}
+	return scores, nil
+}
+
+// buildCorpusQuery creates an FTS5 query from a title. Extracts significant
+// words, quotes them, and joins with OR so the query matches any term.
+func buildCorpusQuery(title string) string {
+	words := strings.Fields(strings.ToLower(title))
+	var parts []string
+	seen := map[string]bool{}
+	for _, w := range words {
+		// Strip punctuation from edges.
+		w = strings.Trim(w, ".,;:!?\"'()-–—/\\[]{}|#@$%^&*+=~`<>")
+		if len(w) < 3 || corpusQueryStopwords[w] || seen[w] {
+			continue
+		}
+		seen[w] = true
+		// Escape double quotes inside the word.
+		w = strings.ReplaceAll(w, `"`, `""`)
+		parts = append(parts, `"`+w+`"`)
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.Join(parts, " OR ")
+}
+
+var corpusQueryStopwords = map[string]bool{
+	"the": true, "and": true, "for": true, "are": true, "was": true,
+	"has": true, "its": true, "not": true, "but": true, "all": true,
+	"can": true, "will": true, "had": true, "her": true, "his": true,
+	"our": true, "out": true, "who": true, "how": true, "new": true,
+	"now": true, "this": true, "that": true, "with": true, "from": true,
+	"been": true, "have": true, "more": true, "when": true, "they": true,
+	"than": true, "what": true, "were": true, "also": true, "into": true,
+	"over": true, "such": true, "just": true, "only": true, "very": true,
+	"about": true, "after": true, "which": true, "their": true, "there": true,
+	"other": true, "being": true, "could": true, "would": true, "should": true,
 }
 
 // SearchAlerts performs full-text search against the alerts FTS index.

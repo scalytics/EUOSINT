@@ -443,3 +443,51 @@ func TestUpsertSourceCandidatesDeduplicatesByURL(t *testing.T) {
 		t.Fatalf("unexpected candidate row values: via=%q category=%q authority=%q notes=%q", discoveredVia, category, authorityType, notes)
 	}
 }
+
+func TestCorpusScoresDistinguishesDistinctiveFromCommon(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "sources.db")
+	db, err := Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	ctx := context.Background()
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	// Create a corpus with many similar alerts + one distinctive one.
+	alerts := []model.Alert{
+		{AlertID: "common-1", SourceID: "src", Status: "active", Title: "Security advisory update issued", Category: "cyber_advisory", Severity: "medium", FirstSeen: now, LastSeen: now, Source: model.SourceMetadata{AuthorityName: "CERT", Country: "Germany", CountryCode: "DE"}},
+		{AlertID: "common-2", SourceID: "src", Status: "active", Title: "Security advisory update released", Category: "cyber_advisory", Severity: "medium", FirstSeen: now, LastSeen: now, Source: model.SourceMetadata{AuthorityName: "CERT", Country: "Germany", CountryCode: "DE"}},
+		{AlertID: "common-3", SourceID: "src", Status: "active", Title: "Security advisory update published", Category: "cyber_advisory", Severity: "medium", FirstSeen: now, LastSeen: now, Source: model.SourceMetadata{AuthorityName: "CERT", Country: "Germany", CountryCode: "DE"}},
+		{AlertID: "common-4", SourceID: "src", Status: "active", Title: "Security advisory update notification", Category: "cyber_advisory", Severity: "medium", FirstSeen: now, LastSeen: now, Source: model.SourceMetadata{AuthorityName: "CERT", Country: "Germany", CountryCode: "DE"}},
+		{AlertID: "distinctive-1", SourceID: "src", Status: "active", Title: "Ransomware gang exploits zero-day vulnerability in critical infrastructure", Category: "cyber_advisory", Severity: "critical", FirstSeen: now, LastSeen: now, Source: model.SourceMetadata{AuthorityName: "CERT", Country: "Germany", CountryCode: "DE"}},
+	}
+
+	if err := db.SaveAlerts(ctx, alerts); err != nil {
+		t.Fatal(err)
+	}
+
+	scores, err := db.CorpusScores(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The distinctive alert should score higher than the common ones.
+	distinctiveScore, ok := scores["distinctive-1"]
+	if !ok {
+		t.Fatal("expected distinctive-1 to have a corpus score")
+	}
+
+	for _, id := range []string{"common-1", "common-2", "common-3", "common-4"} {
+		commonScore, ok := scores[id]
+		if !ok {
+			continue // may not have scored if all terms are stopwords
+		}
+		if distinctiveScore < commonScore {
+			t.Errorf("expected distinctive alert (%.3f) to score higher than %s (%.3f)",
+				distinctiveScore, id, commonScore)
+		}
+	}
+}
