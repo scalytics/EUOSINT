@@ -14,12 +14,12 @@ type GDELTResponse struct {
 }
 
 type GDELTArticle struct {
-	URL            string `json:"url"`
-	Title          string `json:"title"`
-	Seendate       string `json:"seendate"`       // "20260318T120000Z"
-	Domain         string `json:"domain"`
-	Language       string `json:"language"`
-	SourceCountry  string `json:"sourcecountry"`  // "United States"
+	URL           string `json:"url"`
+	Title         string `json:"title"`
+	Seendate      string `json:"seendate"` // "20260318T120000Z"
+	Domain        string `json:"domain"`
+	Language      string `json:"language"`
+	SourceCountry string `json:"sourcecountry"` // "United States"
 }
 
 // ParseGDELT parses a GDELT v2 ArtList JSON response.
@@ -75,7 +75,7 @@ func normalizeGDELTDate(s string) string {
 
 // GDELTCountryToISO2 maps common GDELT sourcecountry names to ISO2 codes.
 var gdeltCountryToISO2 = map[string]string{
-	"united states":  "US", "united kingdom": "GB", "france": "FR",
+	"united states": "US", "united kingdom": "GB", "france": "FR",
 	"germany": "DE", "russia": "RU", "china": "CN", "india": "IN",
 	"japan": "JP", "brazil": "BR", "canada": "CA", "australia": "AU",
 	"italy": "IT", "spain": "ES", "turkey": "TR", "iran": "IR",

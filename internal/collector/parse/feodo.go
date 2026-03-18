@@ -11,16 +11,16 @@ import (
 
 // FeodoEntry is a single entry from the Feodo Tracker IP blocklist.
 type FeodoEntry struct {
-	IPAddress   string `json:"ip_address"`
-	Port        int    `json:"port"`
-	Status      string `json:"status"` // "online" or "offline"
-	Hostname    string `json:"hostname"`
-	ASNumber    int    `json:"as_number"`
-	ASName      string `json:"as_name"`
-	Country     string `json:"country"`     // 2-letter country code
-	FirstSeen   string `json:"first_seen"`
-	LastOnline  string `json:"last_online"`
-	Malware     string `json:"malware"`     // e.g. "Dridex", "TrickBot"
+	IPAddress  string `json:"ip_address"`
+	Port       int    `json:"port"`
+	Status     string `json:"status"` // "online" or "offline"
+	Hostname   string `json:"hostname"`
+	ASNumber   int    `json:"as_number"`
+	ASName     string `json:"as_name"`
+	Country    string `json:"country"` // 2-letter country code
+	FirstSeen  string `json:"first_seen"`
+	LastOnline string `json:"last_online"`
+	Malware    string `json:"malware"` // e.g. "Dridex", "TrickBot"
 }
 
 // FeodoItem extends FeedItem with Feodo-specific metadata.

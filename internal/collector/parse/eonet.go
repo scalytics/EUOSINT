@@ -15,12 +15,12 @@ type EONETResponse struct {
 }
 
 type EONETEvent struct {
-	ID         string           `json:"id"`
-	Title      string           `json:"title"`
-	Link       string           `json:"link"`
-	Categories []EONETCategory  `json:"categories"`
-	Sources    []EONETSource    `json:"sources"`
-	Geometry   []EONETGeometry  `json:"geometry"`
+	ID         string          `json:"id"`
+	Title      string          `json:"title"`
+	Link       string          `json:"link"`
+	Categories []EONETCategory `json:"categories"`
+	Sources    []EONETSource   `json:"sources"`
+	Geometry   []EONETGeometry `json:"geometry"`
 }
 
 type EONETCategory struct {

@@ -24,7 +24,6 @@ interface Props {
   selectedId: string | null;
   onSelect: (id: string) => void;
   categoryFilter: AlertCategory | "all";
-  onCategoryChange: (category: AlertCategory | "all") => void;
   regionFilter: string;
   onRegionChange: (region: string) => void;
   onVisibleAlertIdsChange: (ids: string[]) => void;
@@ -35,7 +34,6 @@ export function AlertFeed({
   selectedId,
   onSelect,
   categoryFilter,
-  onCategoryChange,
   regionFilter,
   onRegionChange,
   onVisibleAlertIdsChange,
@@ -100,7 +98,7 @@ export function AlertFeed({
   );
 
   // Split actionable alerts into live (last 48h) and history (older).
-  const now = useMemo(() => Date.now(), [actionableAlerts]);
+  const now = Date.now();
   const liveCutoff = now - LIVE_WINDOW_MS;
 
   const liveAlerts = useMemo(

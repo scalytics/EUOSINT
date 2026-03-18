@@ -24,7 +24,7 @@ type USGSFeature struct {
 type USGSProperties struct {
 	Mag     float64 `json:"mag"`
 	Place   string  `json:"place"`
-	Time    int64   `json:"time"`    // unix ms
+	Time    int64   `json:"time"` // unix ms
 	URL     string  `json:"url"`
 	Title   string  `json:"title"`
 	Alert   string  `json:"alert"`   // green/yellow/orange/red
@@ -39,8 +39,8 @@ type USGSGeometry struct {
 // USGSItem extends FeedItem with earthquake-specific metadata.
 type USGSItem struct {
 	FeedItem
-	Magnitude float64
-	Tsunami   bool
+	Magnitude  float64
+	Tsunami    bool
 	AlertLevel string // green/yellow/orange/red
 }
 

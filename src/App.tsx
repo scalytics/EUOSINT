@@ -252,7 +252,6 @@ export default function App() {
                 selectedId={selectedId}
                 onSelect={setSelectedId}
                 categoryFilter={categoryFilter}
-                onCategoryChange={setCategoryFilter}
                 regionFilter={regionFilter}
                 onRegionChange={handleRegionChange}
                 onVisibleAlertIdsChange={setVisibleAlertIds}
