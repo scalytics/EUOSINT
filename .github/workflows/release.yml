@@ -38,6 +38,8 @@ jobs:
         run: npm ci
 
       - name: Build release bundle
+        env:
+          APP_VERSION: ${{ github.ref_name }}
         run: npm run build
 
       - name: Archive dist
@@ -80,6 +82,8 @@ jobs:
           file: ./${{ matrix.image.dockerfile }}
           push: true
           provenance: false
+          build-args: |
+            APP_VERSION=${{ github.ref_name }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=release-${{ matrix.image.name }}
@@ -93,6 +97,8 @@ jobs:
           file: ./${{ matrix.image.dockerfile }}
           push: true
           provenance: false
+          build-args: |
+            APP_VERSION=${{ github.ref_name }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=release-${{ matrix.image.name }}
