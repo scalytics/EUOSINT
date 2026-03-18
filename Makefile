@@ -22,6 +22,7 @@ BRANCH ?= main
 RELEASE_LEVEL ?= patch
 
 .PHONY: help check check-commit install clean lint typecheck test build ci \
+	npm-install-if-needed \
 	go-fmt go-fmt-check go-test go-race go-cover go-vet go-codeql commit-check \
 	docker-build docker-up docker-down docker-logs docker-shell \
 	dev-start dev-stop dev-restart dev-logs \
@@ -58,6 +59,14 @@ check-commit: ## Validate local toolchain for commit checks
 
 install: ## Install project dependencies
 	npm install
+
+npm-install-if-needed: ## Install npm dependencies when local dev tooling is missing
+	@if [ ! -x node_modules/.bin/eslint ]; then \
+		echo "Installing npm dependencies (eslint not found locally)..."; \
+		npm install; \
+	else \
+		echo "npm dependencies present"; \
+	fi
 
 clean: ## Remove build and temporary artifacts
 	rm -rf dist coverage .tmp
@@ -195,6 +204,7 @@ commit-check: ## Run the same quality gate as GitHub CI
 	@set -euo pipefail; \
 	steps=( \
 		"check-commit:toolchain" \
+		"npm-install-if-needed:npm deps" \
 		"go-fmt:go format (auto-fix)" \
 		"lint:ui lint" \
 		"typecheck:ui typecheck" \
