@@ -269,19 +269,19 @@ export function FeedDirectory({
               }`}
             >
               <div className={`text-2xs font-bold tabular-nums ${card.tone}`}>{card.value}</div>
-              <div className="text-4xs uppercase tracking-[0.1em] text-siem-muted">{card.label}</div>
+              <div className="uppercase tracking-[0.1em] text-siem-muted" style={{ fontSize: "0.6rem" }}>{card.label}</div>
             </button>
           ))}
           <div className="flex flex-col items-center py-1.5 bg-siem-panel-strong">
             <div className="text-2xs font-bold tabular-nums text-siem-accent">{zoneSummary.countries}</div>
-            <div className="text-4xs uppercase tracking-[0.1em] text-siem-muted">Ctry</div>
+            <div className="uppercase tracking-[0.1em] text-siem-muted" style={{ fontSize: "0.6rem" }}>Ctry</div>
           </div>
           <div
             className="flex flex-col items-center py-1.5 bg-siem-panel-strong"
             title={`${zoneSummary.feeds} feeds in current filters${zoneSummary.totalFeeds ? ` (${zoneSummary.totalFeeds} total tracked)` : ""}`}
           >
             <div className="text-2xs font-bold tabular-nums text-emerald-300">{zoneSummary.feeds || "—"}</div>
-            <div className="text-4xs uppercase tracking-[0.1em] text-siem-muted">Feeds</div>
+            <div className="uppercase tracking-[0.1em] text-siem-muted" style={{ fontSize: "0.6rem" }}>Feeds</div>
           </div>
         </div>
 
