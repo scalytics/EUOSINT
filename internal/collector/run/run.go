@@ -1142,6 +1142,20 @@ func downgradeNonActionable(alerts []model.Alert, source model.RegistrySource) [
 		if alerts[i].Severity == "info" || alerts[i].Category == "informational" {
 			continue // already informational
 		}
+		// Explicitly informational titles (conference, training, partnership,
+		// review, etc.) are always downgraded, even if they contain keywords
+		// like "nuclear" or "pandemic".
+		if normalize.IsInformationalTitle(alerts[i].Title) {
+			alerts[i].Severity = "info"
+			alerts[i].Category = "informational"
+			if alerts[i].Triage != nil {
+				alerts[i].Triage.WeakSignals = append(
+					[]string{"downgraded: informational title pattern"},
+					alerts[i].Triage.WeakSignals...,
+				)
+			}
+			continue
+		}
 		if normalize.IsActionableTitle(alerts[i].Title) {
 			continue
 		}
