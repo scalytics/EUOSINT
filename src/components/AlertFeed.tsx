@@ -11,12 +11,13 @@ import {
   severityBg,
   severityLabel,
   categoryLabels,
-  categoryOrder,
   categoryBadge,
   freshnessLabel,
 } from "@/lib/severity";
 import { alertMatchesRegionFilter } from "@/lib/regions";
-import { Clock, Building2, ChevronDown, ChevronRight, Globe } from "lucide-react";
+import { Clock, Building2, ChevronDown, Globe } from "lucide-react";
+
+const LIVE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 interface Props {
   alerts: Alert[];
@@ -26,7 +27,6 @@ interface Props {
   onCategoryChange: (category: AlertCategory | "all") => void;
   regionFilter: string;
   onRegionChange: (region: string) => void;
-  onNavigatorSelect?: (region: string, category: AlertCategory) => void;
   onVisibleAlertIdsChange: (ids: string[]) => void;
 }
 
@@ -38,14 +38,10 @@ export function AlertFeed({
   onCategoryChange,
   regionFilter,
   onRegionChange,
-  onNavigatorSelect,
   onVisibleAlertIdsChange,
 }: Props) {
-  const [viewMode, setViewMode] = useState<"navigator" | "timeline" | "briefing">("navigator");
-  const [actionableOnly, setActionableOnly] = useState(true);
+  const [viewMode, setViewMode] = useState<"live" | "history">("live");
   const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
-  const [activeNavigatorGroupKey, setActiveNavigatorGroupKey] = useState<string | null>(null);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [isRefreshingList, setIsRefreshingList] = useState(false);
   const [newAlertIds, setNewAlertIds] = useState<Set<string>>(new Set());
   const knownAlertIdsRef = useRef<Set<string>>(new Set());
@@ -83,143 +79,66 @@ export function AlertFeed({
       ? alerts
       : alerts.filter((a) => alertMatchesRegionFilter(a, regionFilter));
 
-  const actionable = actionableOnly
-    ? regionFiltered.filter((a) => a.reporting?.url || a.reporting?.phone)
-    : regionFiltered;
-
-  const facetFiltered = actionable.filter((a) => {
+  const facetFiltered = regionFiltered.filter((a) => {
     const categoryMatch = categoryFilter === "all" || a.category === categoryFilter;
     const severityMatch = severityFilter === "all" || a.severity === severityFilter;
     return categoryMatch && severityMatch;
   });
 
-  // Briefing: all informational alerts, only region-filtered (ignores category/severity/actionable filters)
-  const infoAlerts = regionFiltered.filter((a) => a.severity === "info");
-  const primaryAlerts = facetFiltered.filter((a) => a.severity !== "info");
+  // Split alerts into live (last 48h) and history (older).
+  const now = useMemo(() => Date.now(), [facetFiltered]);
+  const liveCutoff = now - LIVE_WINDOW_MS;
 
-  const sorted = [...primaryAlerts].sort((a, b) => {
-    const sev = ["critical", "high", "medium", "low", "info"];
-    const diff = sev.indexOf(a.severity) - sev.indexOf(b.severity);
-    if (diff !== 0) return diff;
-    return new Date(b.first_seen).getTime() - new Date(a.first_seen).getTime();
-  });
+  const liveAlerts = useMemo(
+    () =>
+      facetFiltered
+        .filter((a) => {
+          const t = new Date(a.last_seen).getTime();
+          return t >= liveCutoff;
+        })
+        .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime()),
+    [facetFiltered, liveCutoff],
+  );
 
-  const grouped = categoryOrder
-    .map((category) => ({
-      category,
-      alerts: sorted.filter((alert) => alert.category === category),
-    }))
-    .filter((group) => group.alerts.length > 0);
+  const historyAlerts = useMemo(
+    () =>
+      facetFiltered
+        .filter((a) => {
+          const t = new Date(a.last_seen).getTime();
+          return t < liveCutoff;
+        })
+        .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime()),
+    [facetFiltered, liveCutoff],
+  );
 
-  const navigatorGroups = useMemo(() => {
-    const buckets = new Map<
-      string,
-      {
-        key: string;
-        region: string;
-        category: AlertCategory;
-        alerts: Alert[];
-        total: number;
-        critical: number;
-      }
-    >();
-    primaryAlerts.forEach((alert) => {
-      const key = `${alert.source.region}::${alert.category}`;
-      const existing = buckets.get(key);
-      if (existing) {
-        existing.alerts.push(alert);
-        existing.total += 1;
-        if (alert.severity === "critical") existing.critical += 1;
-        return;
-      }
-      buckets.set(key, {
-        key,
-        region: alert.source.region,
-        category: alert.category,
-        alerts: [alert],
-        total: 1,
-        critical: alert.severity === "critical" ? 1 : 0,
-      });
-    });
-    return [...buckets.values()]
-      .map((group) => ({
-        ...group,
-        alerts: [...group.alerts].sort(
-          (a, b) => new Date(b.first_seen).getTime() - new Date(a.first_seen).getTime()
-        ),
-      }))
-      .sort((a, b) => {
-        const criticalDelta = b.critical - a.critical;
-        if (criticalDelta !== 0) return criticalDelta;
-        return b.total - a.total;
-      });
-  }, [primaryAlerts]);
-
-  /* ── Briefing: time-grouped informational alerts ───────────────── */
-
-  const briefingGroups = useMemo(() => {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterdayStart = new Date(todayStart.getTime() - 86_400_000);
-    const weekStart = new Date(todayStart.getTime() - 7 * 86_400_000);
-
+  // History grouped by day.
+  const historyGroups = useMemo(() => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const dayMs = 86_400_000;
     const buckets: { label: string; alerts: Alert[] }[] = [
-      { label: "Today", alerts: [] },
-      { label: "Yesterday", alerts: [] },
-      { label: "This Week", alerts: [] },
+      { label: "2-3 days ago", alerts: [] },
+      { label: "This week", alerts: [] },
+      { label: "Last week", alerts: [] },
       { label: "Older", alerts: [] },
     ];
 
-    const sortedInfo = [...infoAlerts].sort(
-      (a, b) => new Date(b.first_seen).getTime() - new Date(a.first_seen).getTime()
-    );
-
-    for (const alert of sortedInfo) {
-      const t = new Date(alert.first_seen).getTime();
-      if (t >= todayStart.getTime()) buckets[0].alerts.push(alert);
-      else if (t >= yesterdayStart.getTime()) buckets[1].alerts.push(alert);
-      else if (t >= weekStart.getTime()) buckets[2].alerts.push(alert);
+    for (const alert of historyAlerts) {
+      const t = new Date(alert.last_seen).getTime();
+      const age = todayStart.getTime() - t;
+      if (age < 3 * dayMs) buckets[0].alerts.push(alert);
+      else if (age < 7 * dayMs) buckets[1].alerts.push(alert);
+      else if (age < 14 * dayMs) buckets[2].alerts.push(alert);
       else buckets[3].alerts.push(alert);
     }
 
     return buckets.filter((b) => b.alerts.length > 0);
-  }, [infoAlerts]);
+  }, [historyAlerts]);
 
-  // Reset navigator selection when region or category filter changes.
-  useEffect(() => {
-    setActiveNavigatorGroupKey(null);
-  }, [regionFilter, categoryFilter]);
-
-  useEffect(() => {
-    if (navigatorGroups.length === 0) {
-      setActiveNavigatorGroupKey(null);
-      return;
-    }
-    if (
-      activeNavigatorGroupKey &&
-      navigatorGroups.some((group) => group.key === activeNavigatorGroupKey)
-    ) {
-      return;
-    }
-    setActiveNavigatorGroupKey(navigatorGroups[0].key);
-  }, [activeNavigatorGroupKey, navigatorGroups]);
-
-  const activeNavigatorGroup =
-    navigatorGroups.find((group) => group.key === activeNavigatorGroupKey) ?? null;
-
-  const handleNavigatorGroupSelect = (groupKey: string) => {
-    setActiveNavigatorGroupKey(groupKey);
-    const group = navigatorGroups.find((entry) => entry.key === groupKey);
-    if (!group) {
-      return;
-    }
-    onNavigatorSelect?.(group.region, group.category);
-  };
-
-  // Keep globe visibility aligned with current filters — exclude informational alerts from map.
+  // Keep globe visibility aligned — only live alerts show pins.
   const visibleAlertIds = useMemo(
-    () => facetFiltered.filter((a) => a.severity !== "info").map((a) => a.alert_id),
-    [facetFiltered]
+    () => liveAlerts.filter((a) => a.severity !== "info").map((a) => a.alert_id),
+    [liveAlerts],
   );
 
   useEffect(() => {
@@ -280,15 +199,20 @@ export function AlertFeed({
     onVisibleAlertIdsChange(visibleAlertIds);
   }, [visibleAlertIds, onVisibleAlertIdsChange]);
 
-  const renderAlertCard = (alert: Alert, queueLabel: string, position: number) => {
+  const renderAlertCard = (alert: Alert, position: number) => {
     const isSelected = selectedId === alert.alert_id;
     const isNew = newAlertIds.has(alert.alert_id);
+
+    // Age-based opacity: < 6h full, 6-24h slightly faded, 24-48h faded.
+    const ageMs = now - new Date(alert.last_seen).getTime();
+    const ageOpacity =
+      ageMs < 6 * 3600_000 ? "" : ageMs < 24 * 3600_000 ? "opacity-85" : "opacity-65";
 
     return (
       <button
         key={alert.alert_id}
         onClick={() => onSelect(alert.alert_id)}
-        className={`relative w-full text-left rounded-lg border border-siem-border px-3 py-2.5 pl-4 bg-siem-bg/45 transition-colors hover:bg-siem-accent/8 ${
+        className={`relative w-full text-left rounded-lg border border-siem-border px-3 py-2.5 pl-4 bg-siem-bg/45 transition-colors hover:bg-siem-accent/8 ${ageOpacity} ${
           isSelected ? "bg-siem-accent/10 border-siem-accent/45" : ""
         } ${isNew ? "animate-alert-new-glow" : ""}`}
       >
@@ -318,7 +242,7 @@ export function AlertFeed({
             )}
           </div>
           <span className="text-2xs text-siem-muted font-mono uppercase tracking-wider">
-            {queueLabel} #{position + 1}
+            #{position + 1}
           </span>
         </div>
         <p className="text-sm text-siem-text leading-snug line-clamp-2 mb-2">{alert.title}</p>
@@ -337,70 +261,94 @@ export function AlertFeed({
             <Globe size={9} />
             {alert.source.region}
           </span>
-          <span className="inline-flex items-center rounded px-1.5 py-0.5 bg-white/5 text-siem-muted border border-siem-border">
-            {alert.status}
+          <span
+            className={`inline-flex items-center px-1.5 py-0.5 rounded border ${categoryBadge[alert.category]}`}
+            style={{ fontSize: "0.6rem" }}
+          >
+            {categoryLabels[alert.category]}
           </span>
         </div>
       </button>
     );
   };
 
-  const toggleSection = (key: string) => {
-    setCollapsedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  };
+  const currentAlerts = viewMode === "live" ? liveAlerts : historyAlerts;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="px-3 py-3 border-b border-siem-border bg-siem-panel/95 space-y-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-xxs font-bold uppercase tracking-[0.18em] text-siem-muted">
-            Intelligence Queue
+            Intelligence Feed
           </h2>
           <div className="text-2xs uppercase tracking-[0.18em] text-siem-muted">
             {regionFilter === "all"
-              ? "Global scope"
+              ? "Global"
               : regionFilter.startsWith("country:")
-                ? `${countries.find((c) => c.code === regionFilter.slice(8))?.name ?? regionFilter.slice(8)} scope`
-                : `${regionFilter} scope`}
+                ? countries.find((c) => c.code === regionFilter.slice(8))?.name ?? regionFilter.slice(8)
+                : regionFilter}
           </div>
         </div>
+
+        {/* Live / History tabs */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setViewMode("live")}
+            className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
+              viewMode === "live"
+                ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
+                : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
+            }`}
+          >
+            Live ({liveAlerts.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("history")}
+            className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
+              viewMode === "history"
+                ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
+                : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
+            }`}
+          >
+            History ({historyAlerts.length})
+          </button>
+        </div>
+
+        {/* Compact stat strip */}
         <div className="grid grid-cols-3 gap-2 text-2xs font-mono uppercase tracking-wide">
           <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-            <span className="text-siem-muted">Active</span>{" "}
-            <span className="text-siem-text">{alerts.filter((a) => a.status === "active").length}</span>
+            <span className="text-siem-muted">Total</span>{" "}
+            <span className="text-siem-text">{currentAlerts.length}</span>
           </div>
           <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-            <span className="text-siem-muted">Actionable</span>{" "}
-            <span className="text-siem-text">
-              {alerts.filter((a) => a.reporting?.url || a.reporting?.phone).length}
+            <span className="text-siem-muted">Crit</span>{" "}
+            <span className="text-rose-300">
+              {currentAlerts.filter((a) => a.severity === "critical").length}
             </span>
           </div>
           <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-            <span className="text-siem-muted">Window</span>{" "}
-            <span className="text-siem-text">14d</span>
+            <span className="text-siem-muted">High</span>{" "}
+            <span className="text-amber-300">
+              {currentAlerts.filter((a) => a.severity === "high").length}
+            </span>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-2">
+
+        {/* Filters */}
+        <div className="grid grid-cols-2 gap-2">
           <div className="relative">
             <select
-              value={categoryFilter}
-              onChange={(e) => onCategoryChange(e.target.value as AlertCategory | "all")}
+              value={severityFilter}
+              onChange={(e) => setSeverityFilter(e.target.value as Severity | "all")}
               className="w-full appearance-none bg-white/5 border border-siem-border rounded-md px-2.5 pr-8 py-1.5 text-xs text-siem-text cursor-pointer hover:bg-siem-accent/10 transition-colors focus:outline-none focus:ring-1 focus:ring-siem-accent"
             >
-              <option value="all">All Categories</option>
-              {categoryOrder.map((category) => (
-                <option key={category} value={category}>
-                  {categoryLabels[category]}
-                </option>
-              ))}
+              <option value="all">All Severity</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
             </select>
             <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-siem-muted pointer-events-none" />
           </div>
@@ -428,265 +376,41 @@ export function AlertFeed({
             </select>
             <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-siem-muted pointer-events-none" />
           </div>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <select
-                value={severityFilter}
-                onChange={(e) => setSeverityFilter(e.target.value as Severity | "all")}
-                className="w-full appearance-none bg-white/5 border border-siem-border rounded-md px-2.5 pr-8 py-1.5 text-xs text-siem-text cursor-pointer hover:bg-siem-accent/10 transition-colors focus:outline-none focus:ring-1 focus:ring-siem-accent"
-              >
-                <option value="all">All Severity</option>
-                <option value="critical">Critical</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-              <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-siem-muted pointer-events-none" />
-            </div>
-            <button
-              type="button"
-              onClick={() => setActionableOnly((prev) => !prev)}
-              className={`shrink-0 rounded-md border px-2 py-1.5 text-2xs font-bold uppercase tracking-wider transition-colors ${
-                actionableOnly
-                  ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
-                  : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
-              }`}
-            >
-              Reporting
-            </button>
-          </div>
         </div>
       </div>
-      <div className="border-b border-siem-border bg-siem-panel/95 px-3 py-3 space-y-3">
-        <div className="grid grid-cols-3 gap-2">
-          {(
-            [
-              ["navigator", "Sectors"],
-              ["timeline", "Queue"],
-              ["briefing", "Briefing"],
-            ] as const
-          ).map(([mode, label]) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => setViewMode(mode)}
-              className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
-                viewMode === mode
-                  ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
-                  : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        {viewMode === "navigator" && (
-          <>
-            <div className="grid grid-cols-3 gap-2 text-2xs font-mono uppercase tracking-wide">
-              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-                <span className="text-siem-muted">Cases</span>{" "}
-                <span className="text-siem-text">{facetFiltered.length}</span>
-              </div>
-              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-                <span className="text-siem-muted">Critical</span>{" "}
-                <span className="text-siem-text">
-                  {facetFiltered.filter((a) => a.severity === "critical").length}
-                </span>
-              </div>
-              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-                <span className="text-siem-muted">Countries</span>{" "}
-                <span className="text-siem-text">
-                  {new Set(facetFiltered.map((a) => a.source.country_code)).size}
-                </span>
-              </div>
-            </div>
-            {navigatorGroups.length > 0 && (
-              <section className="rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
-                <div className="px-3 py-2 border-b border-siem-border bg-siem-panel/70 text-2xs font-mono uppercase tracking-wider text-siem-muted">
-                  Region + category navigation
-                </div>
-                <div className="max-h-44 overflow-y-auto p-2 space-y-1.5">
-                  {navigatorGroups.map((group) => (
-                    <button
-                      key={group.key}
-                      type="button"
-                      onClick={() => handleNavigatorGroupSelect(group.key)}
-                      className={`w-full text-left rounded border px-2 py-1.5 transition-colors ${
-                        activeNavigatorGroupKey === group.key
-                          ? "bg-siem-accent/12 border-siem-accent/35"
-                          : "bg-white/5 border-siem-border hover:bg-siem-accent/8"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-2xs text-siem-text uppercase tracking-wide truncate">
-                          {group.region}
-                        </span>
-                        <span className="text-2xs text-siem-muted font-mono">{group.total}</span>
-                      </div>
-                      <div className="mt-1 flex items-center justify-between gap-2">
-                        <span
-                          className={`inline-flex items-center px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider rounded border ${categoryBadge[group.category]}`}
-                        >
-                          {categoryLabels[group.category]}
-                        </span>
-                        {group.critical > 0 && (
-                          <span className="text-2xs text-red-300 font-mono">
-                            {group.critical} critical
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
-          </>
-        )}
-      </div>
+
+      {/* Alert list */}
       <div
-        className={`min-h-0 flex-1 px-3 py-3 ${
+        className={`min-h-0 flex-1 overflow-y-auto px-3 py-3 space-y-2 ${
           isRefreshingList ? "animate-alert-list-refresh" : ""
         }`}
       >
-        {viewMode === "navigator" ? (
-          <div className="flex h-full min-h-0 flex-col">
-            {activeNavigatorGroup && (
-              <section className="flex min-h-0 flex-1 flex-col rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden">
-                <div className="px-3 py-2 border-b border-siem-border bg-siem-panel/70 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-2xs uppercase tracking-wider text-siem-muted">Alerts</p>
-                    <p className="text-xs text-siem-text truncate">
-                      {activeNavigatorGroup.region} •{" "}
-                      {categoryLabels[activeNavigatorGroup.category]}
-                    </p>
-                  </div>
-                  <span className="text-2xs text-siem-muted font-mono">
-                    {activeNavigatorGroup.total}
-                  </span>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-2 space-y-2">
-                  {activeNavigatorGroup.alerts.map((alert, idx) =>
-                    renderAlertCard(alert, "Alert", idx)
-                  )}
-                </div>
-              </section>
-            )}
-            {!activeNavigatorGroup && (
-              <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
-                <p className="text-xs text-siem-muted uppercase tracking-wider">
-                  Select a region/category bucket to inspect its case queue
-                </p>
+        {viewMode === "live" ? (
+          liveAlerts.length > 0 ? (
+            liveAlerts.map((alert, idx) => renderAlertCard(alert, idx))
+          ) : (
+            <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
+              <p className="text-xs text-siem-muted uppercase tracking-wider">
+                No alerts in the last 48 hours matching current filters
+              </p>
+            </div>
+          )
+        ) : historyGroups.length > 0 ? (
+          historyGroups.map((group) => (
+            <section key={group.label}>
+              <div className="sticky top-0 z-10 px-1 pb-1.5 pt-1 text-2xs font-mono uppercase tracking-wider text-siem-muted bg-siem-panel/95 backdrop-blur-sm">
+                {group.label} ({group.alerts.length})
               </div>
-            )}
-          </div>
-        ) : viewMode === "timeline" ? (
-          <div className="h-full overflow-y-auto space-y-3">
-            {grouped.map((group) => (
-              <section
-                key={group.category}
-                className="rounded-lg border border-siem-border bg-siem-panel/35 overflow-hidden"
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleSection(group.category)}
-                  className="w-full flex items-center justify-between px-3 py-2 border-b border-siem-border bg-siem-panel/70 hover:bg-siem-accent/10 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    {collapsedSections.has(group.category) ? (
-                      <ChevronRight size={12} className="text-siem-muted" />
-                    ) : (
-                      <ChevronDown size={12} className="text-siem-muted" />
-                    )}
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 text-2xs font-bold uppercase tracking-wider rounded border ${categoryBadge[group.category]}`}
-                    >
-                      {categoryLabels[group.category]}
-                    </span>
-                  </div>
-                  <span className="text-2xs text-siem-muted font-mono uppercase tracking-wide">
-                    {group.alerts.length}
-                  </span>
-                </button>
-                {!collapsedSections.has(group.category) && (
-                  <div className="p-2 space-y-2">
-                    {group.alerts.map((alert, idx) => renderAlertCard(alert, "Stack", idx))}
-                  </div>
-                )}
-              </section>
-            ))}
-          </div>
+              <div className="space-y-2">
+                {group.alerts.map((alert, idx) => renderAlertCard(alert, idx))}
+              </div>
+            </section>
+          ))
         ) : (
-          /* ── Briefing: compact informational feed ─────────────────── */
-          <div className="h-full overflow-y-auto space-y-3">
-            {briefingGroups.length === 0 && (
-              <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
-                <p className="text-xs text-siem-muted uppercase tracking-wider">
-                  No informational items match current filters
-                </p>
-              </div>
-            )}
-            {briefingGroups.map((group) => (
-              <section key={group.label}>
-                <div className="px-1 pb-1.5 text-2xs font-mono uppercase tracking-wider text-siem-muted">
-                  {group.label}
-                </div>
-                <div className="space-y-1.5">
-                  {group.alerts.map((alert) => (
-                    <button
-                      key={alert.alert_id}
-                      onClick={() => onSelect(alert.alert_id)}
-                      className={`w-full text-left rounded-lg border px-3 py-2 transition-colors hover:bg-siem-accent/8 ${
-                        selectedId === alert.alert_id
-                          ? "bg-siem-accent/10 border-siem-accent/45"
-                          : "border-siem-border bg-siem-bg/45"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="flex items-center gap-1 text-2xs text-siem-muted font-mono min-w-0">
-                          <Building2 size={10} className="shrink-0" />
-                          <span className="truncate">{alert.source.authority_name}</span>
-                        </span>
-                        <span className="flex items-center gap-1 text-2xs text-siem-muted font-mono shrink-0">
-                          <Clock size={10} />
-                          {freshnessLabel(alert.freshness_hours)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-siem-text leading-snug line-clamp-2">
-                        {alert.title}
-                      </p>
-                      <div className="mt-1.5 flex items-center gap-1.5">
-                        <span
-                          className={`inline-flex items-center px-1.5 py-0.5 text-3xs font-bold uppercase tracking-wider rounded border ${categoryBadge[alert.category]}`}
-                        >
-                          {categoryLabels[alert.category]}
-                        </span>
-                        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-3xs bg-siem-accent/10 text-siem-accent border border-siem-accent/20">
-                          <Globe size={8} />
-                          {alert.source.region}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
-        {facetFiltered.length === 0 && (
           <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setActionableOnly(false);
-                onCategoryChange("all");
-                setSeverityFilter("all");
-                onRegionChange("all");
-              }}
-              className="rounded border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-muted hover:bg-siem-accent/10 hover:text-siem-accent mb-2"
-            >
-              Reset filters
-            </button>
-            <p className="text-xs text-siem-muted uppercase tracking-wider">No cases match current filters</p>
+            <p className="text-xs text-siem-muted uppercase tracking-wider">
+              No historical alerts older than 48 hours
+            </p>
           </div>
         )}
       </div>

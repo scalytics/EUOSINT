@@ -66,6 +66,30 @@ func TestExtractCoordinates_Decimal(t *testing.T) {
 	}
 }
 
+func TestExtractCoordinates_BareDecimal(t *testing.T) {
+	tests := []struct {
+		name string
+		text string
+		lat  float64
+		lng  float64
+	}{
+		{"LLM output", "31.5050, 34.4667", 31.5050, 34.4667},
+		{"negative lng", "-33.8688, 151.2093", -33.8688, 151.2093},
+		{"with context", "Location: 48.8566, 2.3522 (Paris)", 48.8566, 2.3522},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lat, lng, ok := ExtractCoordinates(tt.text)
+			if !ok {
+				t.Fatal("expected coordinates to be found")
+			}
+			if math.Abs(lat-tt.lat) > 0.001 || math.Abs(lng-tt.lng) > 0.001 {
+				t.Errorf("got lat=%f lng=%f, want %f %f", lat, lng, tt.lat, tt.lng)
+			}
+		})
+	}
+}
+
 func TestExtractCoordinates_NoMatch(t *testing.T) {
 	texts := []string{
 		"Ship attacked near Strait of Hormuz",

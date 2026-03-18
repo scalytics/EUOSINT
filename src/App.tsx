@@ -158,12 +158,6 @@ export default function App() {
     setSelectedId(null);
   }, []);
 
-  const handleNavigatorSelect = useCallback((nextRegion: string, nextCategory: AlertCategory) => {
-    setRegionFilter(nextRegion);
-    setCategoryFilter(nextCategory);
-    setSelectedSourceIds([]);
-    setSelectedId(null);
-  }, []);
 
   const selectedAlert = selectedId
     ? scopedAlerts.find((a) => a.alert_id === selectedId) ?? alerts.find((a) => a.alert_id === selectedId) ?? null
@@ -261,7 +255,6 @@ export default function App() {
                 onCategoryChange={setCategoryFilter}
                 regionFilter={regionFilter}
                 onRegionChange={handleRegionChange}
-                onNavigatorSelect={handleNavigatorSelect}
                 onVisibleAlertIdsChange={setVisibleAlertIds}
               />
             )}
@@ -310,7 +303,7 @@ export default function App() {
       <div className="flex items-center justify-between border-t border-siem-border bg-siem-panel/85 px-4 py-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
         <span>
           <a href="https://www.scalytics.io/streamingintelligence?utm_source=euosint&utm_medium=footer&utm_campaign=osint_console" target="_blank" rel="noopener" className="hover:text-siem-accent transition-colors">Scalytics OSINT</a>
-          {" // 14-day window"}          
+          {" // Live 48h + History"}          
         </span>
         <span className="font-mono tabular-nums text-siem-muted">{utcTime}</span>
         <span className="hidden md:inline">

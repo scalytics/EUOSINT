@@ -216,7 +216,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 						continue
 					}
 					wm := watermarks[source.Source.SourceID]
-					batch, entry := r.fetchOneSource(ctx, fastClient, nil, nctx, source, categoryDictionary, cursors, wm)
+					batch, entry := r.fetchOneSource(ctx, fastClient, nil, nctx, source, categoryDictionary, cursors, wm, client)
 					mu.Lock()
 					sourceHealth = append(sourceHealth, entry)
 					alerts = append(alerts, batch...)
@@ -549,7 +549,7 @@ func needsBrowser(s model.RegistrySource) bool {
 //
 // As a fallback (no watermark or server doesn't support conditional GET),
 // the content hash from the previous run is compared after parsing.
-func (r Runner) fetchOneSource(ctx context.Context, defaultClient *fetch.Client, customFetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store, cursors state.Cursors, wm *sourcedb.SourceWatermark) ([]model.Alert, model.SourceHealthEntry) {
+func (r Runner) fetchOneSource(ctx context.Context, defaultClient *fetch.Client, customFetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store, cursors state.Cursors, wm *sourcedb.SourceWatermark, retryClient ...*fetch.Client) ([]model.Alert, model.SourceHealthEntry) {
 	startedAt := time.Now().UTC()
 
 	var fetcher fetch.Fetcher
@@ -613,9 +613,14 @@ func (r Runner) fetchOneSource(ctx context.Context, defaultClient *fetch.Client,
 			if ctx.Err() == nil {
 				// Retry with the raw fetcher (not prefetched — body was
 				// already consumed or the request failed).
+				// For timeout retries, use the retry client (full timeout)
+				// if provided — the fast client's 3s may be too short for
+				// Cloudflare-protected feeds.
 				var retryFetcher fetch.Fetcher
 				if customFetcher != nil {
 					retryFetcher = customFetcher
+				} else if errClass == "timeout" && len(retryClient) > 0 && retryClient[0] != nil {
+					retryFetcher = retryClient[0]
 				} else {
 					retryFetcher = defaultClient
 				}
@@ -840,7 +845,7 @@ func (r Runner) fetchHTML(ctx context.Context, fetcher fetch.Fetcher, nctx norma
 	out := make([]model.Alert, 0, len(items))
 	if nctx.Config.AlertLLMEnabled {
 		alertLLM := vet.NewClient(config.Config{
-			HTTPTimeoutMS:      nctx.Config.HTTPTimeoutMS,
+			VettingTimeoutMS:   nctx.Config.VettingTimeoutMS,
 			VettingBaseURL:     nctx.Config.VettingBaseURL,
 			VettingAPIKey:      nctx.Config.VettingAPIKey,
 			VettingProvider:    nctx.Config.VettingProvider,

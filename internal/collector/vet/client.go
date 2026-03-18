@@ -26,9 +26,9 @@ type Client struct {
 }
 
 func NewClient(cfg config.Config) *Client {
-	timeout := time.Duration(cfg.HTTPTimeoutMS) * time.Millisecond
+	timeout := time.Duration(cfg.VettingTimeoutMS) * time.Millisecond
 	if timeout <= 0 {
-		timeout = 30 * time.Second
+		timeout = 45 * time.Second
 	}
 	return &Client{
 		httpClient:  &http.Client{Timeout: timeout},

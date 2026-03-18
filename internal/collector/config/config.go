@@ -76,6 +76,7 @@ type Config struct {
 	VettingAPIKey                   string
 	VettingModel                    string
 	VettingTemperature              float64
+	VettingTimeoutMS                int
 	VettingMaxSampleItems           int
 	AlertLLMEnabled                 bool
 	AlertLLMModel                   string
@@ -147,6 +148,7 @@ func Default() Config {
 		VettingBaseURL:                  "https://api.openai.com/v1",
 		VettingModel:                    "gpt-4.1-mini",
 		VettingTemperature:              0,
+		VettingTimeoutMS:                45000,
 		VettingMaxSampleItems:           6,
 		AlertLLMEnabled:                 false,
 		AlertLLMModel:                   "gpt-4.1-mini",
@@ -215,6 +217,7 @@ func FromEnv() Config {
 	cfg.VettingAPIKey = envString("SOURCE_VETTING_API_KEY", cfg.VettingAPIKey)
 	cfg.VettingModel = envString("SOURCE_VETTING_MODEL", cfg.VettingModel)
 	cfg.VettingTemperature = envFloat("SOURCE_VETTING_TEMPERATURE", cfg.VettingTemperature)
+	cfg.VettingTimeoutMS = envInt("SOURCE_VETTING_TIMEOUT_MS", cfg.VettingTimeoutMS)
 	cfg.VettingMaxSampleItems = envInt("SOURCE_VETTING_MAX_SAMPLE_ITEMS", cfg.VettingMaxSampleItems)
 	cfg.AlertLLMEnabled = envBool("ALERT_LLM_ENABLED", cfg.AlertLLMEnabled)
 	cfg.AlertLLMModel = envString("ALERT_LLM_MODEL", cfg.AlertLLMModel)

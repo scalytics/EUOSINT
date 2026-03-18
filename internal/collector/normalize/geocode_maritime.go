@@ -37,6 +37,11 @@ var coordDecimalRe = regexp.MustCompile(
 var coordDegDirRe = regexp.MustCompile(
 	`(-?\d{1,3}(?:\.\d+)?)\s*°\s*([NSns])\s*[,/\s]+(-?\d{1,3}(?:\.\d+)?)\s*°\s*([EWew])`)
 
+// coordBareDecimalRe matches plain decimal: 31.5050, 34.4667 (no cardinal directions).
+// The latitude must be in [-90,90] and longitude in [-180,180]; validated after capture.
+var coordBareDecimalRe = regexp.MustCompile(
+	`(-?\d{1,3}\.\d{2,})\s*,\s*(-?\d{1,3}\.\d{2,})`)
+
 // ExtractCoordinates tries to find explicit lat/lng coordinates in text.
 // Returns the first valid pair found, or (0,0,false).
 func ExtractCoordinates(text string) (lat, lng float64, ok bool) {
@@ -124,6 +129,15 @@ func ExtractCoordinates(text string) (lat, lng float64, ok bool) {
 				lng = -lng
 			}
 		}
+		if validCoords(lat, lng) {
+			return lat, lng, true
+		}
+	}
+
+	// Bare decimal: 31.5050, 34.4667 (common LLM output format, no cardinal directions)
+	if m := coordBareDecimalRe.FindStringSubmatch(text); m != nil {
+		lat, _ = strconv.ParseFloat(m[1], 64)
+		lng, _ = strconv.ParseFloat(m[2], 64)
 		if validCoords(lat, lng) {
 			return lat, lng, true
 		}

@@ -44,7 +44,7 @@ type GeoResult struct {
 // 3. City gazetteer (GeoNames in SQLite)
 // 4. Nominatim (OSM)
 // 5. Country-level (text scanning + capital coords)
-// 6. LLM fallback (optional, for unresolvable locations)
+// 6. LLM fallback (optional — only for location-centric categories)
 type Geocoder struct {
 	cities    CityLookup       // may be nil
 	nominatim *NominatimClient // may be nil
@@ -65,6 +65,17 @@ func (g *Geocoder) SetLLM(llm GeoLLM) {
 // wordBoundaryRe matches sequences of word characters for tokenizing text
 // into potential city name candidates.
 var wordBoundaryRe = regexp.MustCompile(`[\p{L}\p{N}][\p{L}\p{N}\s'-]{2,30}`)
+
+// ResolveWithoutLLM runs all geocoding tiers except the LLM fallback.
+// Use this for person-centric categories (wanted_suspect, missing_person)
+// where the text describes a person, not a place.
+func (g *Geocoder) ResolveWithoutLLM(ctx context.Context, text string, countryHint string) GeoResult {
+	saved := g.llm
+	g.llm = nil
+	result := g.Resolve(ctx, text, countryHint)
+	g.llm = saved
+	return result
+}
 
 // Resolve geocodes a text string (typically alert title + summary) to
 // the most precise coordinates available. countryHint is the source's

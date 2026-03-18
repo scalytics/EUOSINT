@@ -435,10 +435,19 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	// For international sources and travel warnings, geocode to the actual
 	// target location instead of pinning to the issuing org's HQ.
 	isCrossCountry := meta.RegionTag == "INT" || meta.Source.CountryCode == "INT" || meta.Category == "travel_warning"
+	skipLLMGeo := isPersonCategory(meta.Category)
 	if allowDynamicGeocode && isCrossCountry {
 		if ctx.Geocoder != nil {
 			// Enhanced geocoding: city DB → Nominatim → country text.
-			if result := ctx.Geocoder.Resolve(context.Background(), geoText, ""); result.CountryCode != "" {
+			// Skip LLM fallback for person-centric categories (Interpol, FBI)
+			// where text describes people, not places.
+			var result GeoResult
+			if skipLLMGeo {
+				result = ctx.Geocoder.ResolveWithoutLLM(context.Background(), geoText, "")
+			} else {
+				result = ctx.Geocoder.Resolve(context.Background(), geoText, "")
+			}
+			if result.CountryCode != "" {
 				baseLat, baseLng = result.Lat, result.Lng
 				geoSource = result.Source
 				geocoded = true
@@ -466,7 +475,13 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		// source's country for better pin placement. Only accept results
 		// that match the source's country to prevent cross-country false
 		// positives (e.g. Malta news pinned to Brazil).
-		if result := ctx.Geocoder.Resolve(context.Background(), geoText, source.CountryCode); result.CountryCode != "" &&
+		var result GeoResult
+		if skipLLMGeo {
+			result = ctx.Geocoder.ResolveWithoutLLM(context.Background(), geoText, source.CountryCode)
+		} else {
+			result = ctx.Geocoder.Resolve(context.Background(), geoText, source.CountryCode)
+		}
+		if result.CountryCode != "" &&
 			result.CountryCode == source.CountryCode {
 			baseLat, baseLng = result.Lat, result.Lng
 			geoSource = result.Source
@@ -490,6 +505,19 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		Lng:            lng,
 		FreshnessHours: hoursBetween(ctx.Now, publishedAt),
 		Reporting:      meta.Reporting,
+	}
+}
+
+// isPersonCategory returns true for categories where alert text describes
+// a person (name, nationality, charges) rather than a geographic event.
+// The LLM geo tier is skipped for these — it can't extract location from
+// "John DOE wanted for fraud" and wastes API calls trying.
+func isPersonCategory(category string) bool {
+	switch strings.ToLower(strings.TrimSpace(category)) {
+	case "wanted_suspect", "missing_person", "public_appeal":
+		return true
+	default:
+		return false
 	}
 }
 
