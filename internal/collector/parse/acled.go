@@ -12,8 +12,8 @@ import (
 
 // ACLEDResponse is the top-level response from the ACLED API.
 type ACLEDResponse struct {
-	Status int         `json:"status"`
-	Count  int         `json:"count"`
+	Status int          `json:"status"`
+	Count  int          `json:"count"`
 	Data   []ACLEDEvent `json:"data"`
 }
 

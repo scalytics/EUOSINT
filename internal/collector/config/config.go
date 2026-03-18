@@ -85,7 +85,7 @@ type Config struct {
 	NominatimEnabled                bool
 	APIEnabled                      bool
 	APIAddr                         string
-	ACLEDUsername                    string
+	ACLEDUsername                   string
 	ACLEDPassword                   string
 }
 
