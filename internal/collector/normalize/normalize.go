@@ -926,14 +926,14 @@ type countryCenter struct {
 // but clamp the jitter radius so pins stay within the country.
 var smallCountryJitter = map[string]countryCenter{
 	// Islands / coastal-capital states: override center to interior.
-	"MC": {43.74, 7.42, 0.3, true},   // Monaco — city-state
-	"SG": {1.35, 103.82, 3, true},    // Singapore
-	"BH": {26.07, 50.55, 5, true},    // Bahrain
-	"MT": {35.89, 14.44, 2, true},    // Malta — center of main island
-	"CY": {35.10, 33.40, 10, true},   // Cyprus
-	"JM": {18.15, -77.30, 10, true},  // Jamaica
-	"IE": {53.40, -7.69, 25, true},   // Ireland
-	"QA": {25.35, 51.18, 10, true},   // Qatar — peninsula
+	"MC": {43.74, 7.42, 0.3, true},  // Monaco — city-state
+	"SG": {1.35, 103.82, 3, true},   // Singapore
+	"BH": {26.07, 50.55, 5, true},   // Bahrain
+	"MT": {35.89, 14.44, 2, true},   // Malta — center of main island
+	"CY": {35.10, 33.40, 10, true},  // Cyprus
+	"JM": {18.15, -77.30, 10, true}, // Jamaica
+	"IE": {53.40, -7.69, 25, true},  // Ireland
+	"QA": {25.35, 51.18, 10, true},  // Qatar — peninsula
 	// Continental: keep capital, just clamp radius.
 	"PS": {0, 0, 8, false},
 	"LU": {0, 0, 10, false},
