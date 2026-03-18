@@ -819,7 +819,7 @@ func (r Runner) fetchRSS(ctx context.Context, fetcher fetch.Fetcher, nctx normal
 			fmt.Fprintf(r.stderr, "WARN %s: translate batch failed: %v\n", source.Source.AuthorityName, err)
 		}
 	}
-	items = filterFeedKeywords(items, source.IncludeKeywords, source.ExcludeKeywords)
+	items = filterFeedKeywords(items, source.IncludeKeywords, source.ExcludeKeywords, nctx.Config.StopWords)
 	sortFeedItemsNewest(items)
 	limit := perSourceLimit(nctx.Config, source)
 	if len(items) > limit {
@@ -848,7 +848,7 @@ func (r Runner) fetchHTML(ctx context.Context, fetcher fetch.Fetcher, nctx norma
 		return nil, err
 	}
 	items := parse.ParseHTMLAnchors(string(body), finalURL)
-	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords)
+	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords, nctx.Config.StopWords)
 	items = filterCategoryItems(items, source, categoryDictionary)
 	limit := perSourceLimit(nctx.Config, source)
 	if nctx.Config.AlertLLMEnabled {
@@ -902,7 +902,7 @@ func (r Runner) fetchTelegram(ctx context.Context, fetcher fetch.Fetcher, nctx n
 	}
 	channel := extractTelegramChannel(source.FeedURL)
 	items := parse.ParseTelegram(string(body), channel)
-	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords)
+	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords, nctx.Config.StopWords)
 	sortFeedItemsNewest(items)
 	limit := perSourceLimit(nctx.Config, source)
 	if len(items) > limit {
@@ -1530,7 +1530,7 @@ func (r Runner) fetchGDELT(ctx context.Context, fetcher fetch.Fetcher, nctx norm
 		}
 	}
 
-	allItems = filterFeedKeywords(allItems, source.IncludeKeywords, source.ExcludeKeywords)
+	allItems = filterFeedKeywords(allItems, source.IncludeKeywords, source.ExcludeKeywords, nctx.Config.StopWords)
 	sortFeedItemsNewest(allItems)
 	if len(allItems) > limit {
 		allItems = allItems[:limit]
@@ -1584,9 +1584,12 @@ func fetchWithFallbackURL(ctx context.Context, fetcher fetch.Fetcher, source mod
 	return nil, "", lastErr
 }
 
-func filterKeywords(items []parse.FeedItem, include []string, exclude []string) []parse.FeedItem {
+func filterKeywords(items []parse.FeedItem, include []string, exclude []string, globalExclude ...[]string) []parse.FeedItem {
 	include = normalizeKeywords(include)
 	exclude = normalizeKeywords(exclude)
+	for _, extra := range globalExclude {
+		exclude = append(exclude, normalizeKeywords(extra)...)
+	}
 	out := []parse.FeedItem{}
 	for _, item := range items {
 		titleHay := strings.ToLower(item.Title)
@@ -1606,9 +1609,12 @@ func filterKeywords(items []parse.FeedItem, include []string, exclude []string) 
 	return out
 }
 
-func filterFeedKeywords(items []parse.FeedItem, include []string, exclude []string) []parse.FeedItem {
+func filterFeedKeywords(items []parse.FeedItem, include []string, exclude []string, globalExclude ...[]string) []parse.FeedItem {
 	include = normalizeKeywords(include)
 	exclude = normalizeKeywords(exclude)
+	for _, extra := range globalExclude {
+		exclude = append(exclude, normalizeKeywords(extra)...)
+	}
 	out := []parse.FeedItem{}
 	for _, item := range items {
 		includeHay := strings.ToLower(strings.Join([]string{

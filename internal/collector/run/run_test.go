@@ -281,6 +281,67 @@ func TestFilterFeedKeywordsAppliesToRSSContent(t *testing.T) {
 	}
 }
 
+func TestFilterKeywordsAppliesGlobalStopWords(t *testing.T) {
+	items := []parse.FeedItem{
+		{Title: "CISA advisory on critical vulnerability", Link: "https://example.test/a"},
+		{Title: "Premier League football results", Link: "https://example.test/b"},
+		{Title: "UEFA Champions League draw", Link: "https://example.test/c"},
+		{Title: "Ransomware attack on hospital", Link: "https://example.test/d"},
+	}
+	global := []string{"football", "champions league"}
+	filtered := filterKeywords(items, nil, nil, global)
+	if len(filtered) != 2 {
+		t.Fatalf("expected 2 retained items, got %d", len(filtered))
+	}
+	if filtered[0].Link != "https://example.test/a" || filtered[1].Link != "https://example.test/d" {
+		t.Fatalf("unexpected retained items: %#v", filtered)
+	}
+}
+
+func TestFilterFeedKeywordsAppliesGlobalStopWords(t *testing.T) {
+	items := []parse.FeedItem{
+		{Title: "Security incident report", Summary: "Critical infrastructure breach", Link: "https://example.test/a"},
+		{Title: "Award ceremony", Summary: "Grammy nominees announced", Link: "https://example.test/b"},
+		{Title: "Travel advisory update", Summary: "Celebrity gossip column", Link: "https://example.test/c"},
+	}
+	global := []string{"grammy", "celebrity"}
+	filtered := filterFeedKeywords(items, nil, nil, global)
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 retained item, got %d", len(filtered))
+	}
+	if filtered[0].Link != "https://example.test/a" {
+		t.Fatalf("unexpected retained item: %#v", filtered[0])
+	}
+}
+
+func TestFilterKeywordsGlobalStopWordsMergeWithPerSource(t *testing.T) {
+	items := []parse.FeedItem{
+		{Title: "NBA basketball highlights", Link: "https://example.test/a"},
+		{Title: "Local police budget report", Link: "https://example.test/b"},
+		{Title: "Cyber attack on government", Link: "https://example.test/c"},
+	}
+	perSource := []string{"budget"}
+	global := []string{"basketball"}
+	filtered := filterKeywords(items, nil, perSource, global)
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 retained item, got %d", len(filtered))
+	}
+	if filtered[0].Link != "https://example.test/c" {
+		t.Fatalf("unexpected retained item: %#v", filtered[0])
+	}
+}
+
+func TestFilterKeywordsGlobalStopWordsEmptyPassesAll(t *testing.T) {
+	items := []parse.FeedItem{
+		{Title: "Football match", Link: "https://example.test/a"},
+		{Title: "Cyber alert", Link: "https://example.test/b"},
+	}
+	filtered := filterKeywords(items, nil, nil)
+	if len(filtered) != 2 {
+		t.Fatalf("expected all 2 items with no stop words, got %d", len(filtered))
+	}
+}
+
 func TestRunnerRunOnceUsesSQLiteAlertStateWithoutDuplicatingAlerts(t *testing.T) {
 	dir := t.TempDir()
 	registryPath := filepath.Join(dir, "sources.db")

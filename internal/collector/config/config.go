@@ -4,6 +4,7 @@
 package config
 
 import (
+	"encoding/json"
 	"os"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ const (
 	defaultArchiveDays      = 90
 	defaultRecentPerSource  = 20
 	defaultHTMLScrapeHours  = 24
+	defaultStopWordsPath    = "registry/stop_words.json"
 )
 
 type Config struct {
@@ -98,6 +100,8 @@ type Config struct {
 	APIAddr                         string
 	ACLEDUsername                   string
 	ACLEDPassword                   string
+	StopWordsPath                   string
+	StopWords                       []string
 }
 
 func Default() Config {
@@ -142,7 +146,7 @@ func Default() Config {
 		DDGSearchMaxQueries:             10,
 		DDGSearchDelayMS:                8000,
 		WikidataCachePath:               "registry/wikidata_cache",
-		WikidataCacheTTLHours:           24,
+		WikidataCacheTTLHours:           168,
 		VettingEnabled:                  false,
 		VettingProvider:                 "openai-compatible",
 		VettingBaseURL:                  "https://api.openai.com/v1",
@@ -168,6 +172,7 @@ func Default() Config {
 		NominatimEnabled:                true,
 		APIEnabled:                      false,
 		APIAddr:                         ":3001",
+		StopWordsPath:                   defaultStopWordsPath,
 	}
 }
 
@@ -242,6 +247,11 @@ func FromEnv() Config {
 	cfg.APIAddr = envString("API_ADDR", cfg.APIAddr)
 	cfg.ACLEDUsername = envString("ACLED_USERNAME", cfg.ACLEDUsername)
 	cfg.ACLEDPassword = envString("ACLED_PASSWORD", cfg.ACLEDPassword)
+	cfg.StopWordsPath = envString("STOP_WORDS_PATH", cfg.StopWordsPath)
+	cfg.StopWords = loadStopWords(cfg.StopWordsPath)
+	if extra := envCSV("STOP_WORDS", nil); len(extra) > 0 {
+		cfg.StopWords = append(cfg.StopWords, extra...)
+	}
 	return cfg
 }
 
@@ -299,6 +309,30 @@ func envCSV(key string, fallback []string) []string {
 	}
 	if len(out) == 0 {
 		return fallback
+	}
+	return out
+}
+
+func loadStopWords(path string) []string {
+	if path == "" {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var doc struct {
+		StopWords []string `json:"stop_words"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil
+	}
+	out := make([]string, 0, len(doc.StopWords))
+	for _, w := range doc.StopWords {
+		w = strings.TrimSpace(w)
+		if w != "" {
+			out = append(out, w)
+		}
 	}
 	return out
 }

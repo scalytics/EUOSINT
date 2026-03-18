@@ -118,6 +118,17 @@ To save tokens, disable vetting (`SOURCE_VETTING_ENABLED=false`). Discovery will
 
 Sources that return 404, 410, 403, DNS errors, or TLS failures are moved to the dead-letter queue (`source_dead_letter.json`). Dead sources are skipped on subsequent sweeps and retried once every 7 days. Discovery also skips dead-lettered URLs when evaluating candidates.
 
+## Stop Words (Global Noise Filter)
+
+The file `registry/stop_words.json` ships with default terms that exclude off-topic content (sports, entertainment, lifestyle) from all feeds. The collector loads this file on startup and merges the terms into the existing per-source keyword filter pipeline.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `STOP_WORDS_PATH` | `registry/stop_words.json` | Path to the stop-word JSON file |
+| `STOP_WORDS` | *(empty)* | Comma-separated extra terms added on top of the file |
+
+Edit the JSON file to add or remove terms; restart the collector to apply. The `STOP_WORDS` env var is additive — it never replaces the file contents.
+
 ## Collector Lifecycle And Cadence Variables
 
 - `RECENT_WINDOW_PER_SOURCE` (default `20`): cap per-run fetch window for non-HTML stream sources (Telegram/RSS/Atom/API).

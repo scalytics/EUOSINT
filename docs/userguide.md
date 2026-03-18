@@ -130,6 +130,46 @@ Removed alerts (e.g., a resolved Interpol notice) are retained in state for 14 d
 
 ---
 
+## Stop Words (Global Noise Filter)
+
+EUOSINT ships a global stop-word list at `registry/stop_words.json` that automatically excludes off-topic content from all feeds. Any alert whose title, summary, or tags contain a stop word is dropped before relevance scoring.
+
+The default list filters out sports (football, basketball, cricket, FIFA, UEFA, etc.), entertainment (celebrity, Hollywood, Grammy, Oscar, etc.), lifestyle (recipes, horoscopes, astrology), and other non-OSINT noise.
+
+### Customising the list
+
+Edit `registry/stop_words.json` directly — it is a simple JSON file with a `stop_words` array of case-insensitive substring terms. Restart the collector to pick up changes.
+
+```json
+{
+  "stop_words": [
+    "football",
+    "celebrity",
+    "horoscope"
+  ]
+}
+```
+
+### Adding extra terms via environment
+
+Set `STOP_WORDS` as a comma-separated list to add terms on top of the file:
+
+```bash
+STOP_WORDS="kardashian,tiktok dance,soap opera"
+```
+
+To use a different file path:
+
+```bash
+STOP_WORDS_PATH=/custom/path/stop_words.json
+```
+
+### How it works
+
+Stop words are merged with per-source `exclude_keywords` from the source registry and applied in the same filter pass. Per-source keywords target a single feed; stop words apply globally across all sources. Both use case-insensitive substring matching against the combined title, summary, tags, and URL of each item.
+
+---
+
 ## Regions
 
 The dashboard supports region-scoped views:

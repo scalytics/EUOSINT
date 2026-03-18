@@ -309,18 +309,15 @@ export function GlobeView({
                 key={overlay.id}
                 type="button"
                 onClick={() => toggleOverlay(overlay.id)}
-                className={`flex items-center justify-center gap-1 rounded-md border px-1 py-0.5 uppercase tracking-[0.12em] transition-colors ${
+                className={`flex flex-col items-center justify-center gap-0.5 rounded-md border px-1 py-0.5 uppercase leading-tight tracking-[0.12em] text-center transition-colors ${
                   activeOverlays.has(overlay.id)
-                    ? "border-siem-accent/40 bg-siem-accent/12 text-siem-text"
-                    : "border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/30 hover:bg-siem-accent/8"
+                    ? "border-siem-accent/40 bg-siem-accent/12"
+                    : "border-siem-border bg-siem-panel-strong hover:border-siem-accent/30 hover:bg-siem-accent/8"
                 }`}
-                style={{ fontSize: "10px" }}
+                style={{ fontSize: "10px", color: overlay.color, opacity: activeOverlays.has(overlay.id) ? 1 : 0.5 }}
               >
-                <span
-                  className="h-1.5 w-1.5 rounded-full shrink-0"
-                  style={{ backgroundColor: overlay.color, opacity: activeOverlays.has(overlay.id) ? 1 : 0.4 }}
-                />
-                {overlay.label}
+                <span>{overlay.label.split(" ")[0]}</span>
+                <span>{overlay.label.split(" ").slice(1).join(" ")}</span>
               </button>
             ))}
           </div>
