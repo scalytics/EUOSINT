@@ -33,6 +33,10 @@ var coordDecimalRe = regexp.MustCompile(
 	`([NSns])\s*(-?\d{1,3}(?:\.\d+)?)\s*[,/\s]+([EWew])\s*(-?\d{1,3}(?:\.\d+)?)` +
 		`|(-?\d{1,3}(?:\.\d+)?)\s*([NSns])\s*[,/\s]+(-?\d{1,3}(?:\.\d+)?)\s*([EWew])`)
 
+// coordDegDirRe matches USGS-style: 16.560°N 46.550°W
+var coordDegDirRe = regexp.MustCompile(
+	`(-?\d{1,3}(?:\.\d+)?)\s*°\s*([NSns])\s*[,/\s]+(-?\d{1,3}(?:\.\d+)?)\s*°\s*([EWew])`)
+
 // ExtractCoordinates tries to find explicit lat/lng coordinates in text.
 // Returns the first valid pair found, or (0,0,false).
 func ExtractCoordinates(text string) (lat, lng float64, ok bool) {
@@ -75,6 +79,21 @@ func ExtractCoordinates(text string) (lat, lng float64, ok bool) {
 		lngM, _ := strconv.ParseFloat(m[5], 64)
 		lng = lngD + lngM/60
 		if strings.ToUpper(m[6]) == "W" {
+			lng = -lng
+		}
+		if validCoords(lat, lng) {
+			return lat, lng, true
+		}
+	}
+
+	// Degree-direction: 16.560°N 46.550°W (USGS earthquake feeds)
+	if m := coordDegDirRe.FindStringSubmatch(text); m != nil {
+		lat, _ = strconv.ParseFloat(m[1], 64)
+		if strings.ToUpper(m[2]) == "S" {
+			lat = -lat
+		}
+		lng, _ = strconv.ParseFloat(m[3], 64)
+		if strings.ToUpper(m[4]) == "W" {
 			lng = -lng
 		}
 		if validCoords(lat, lng) {

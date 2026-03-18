@@ -15,6 +15,11 @@ type CityLookup interface {
 	LookupCity(ctx context.Context, name string, countryCode string) (CityLookupResult, bool)
 }
 
+// GeoLLM resolves a location description to coordinates via an LLM.
+type GeoLLM interface {
+	GeoLocate(ctx context.Context, query string) (lat, lng float64, ok bool)
+}
+
 // CityLookupResult mirrors sourcedb.CityResult without creating a dependency.
 type CityLookupResult struct {
 	Name        string
@@ -33,18 +38,28 @@ type GeoResult struct {
 	Source      string // "city-db", "nominatim", "country-text", "capital", "registry"
 }
 
-// Geocoder chains the three geocoding tiers:
-// 1. City gazetteer (GeoNames in SQLite) — fast, local, city-level precision
-// 2. Nominatim (OSM) — external fallback for place names not in the DB
-// 3. Country-level (text scanning + capital coords) — always available
+// Geocoder chains the geocoding tiers:
+// 1. Explicit coordinates in text
+// 2. Maritime region lookup
+// 3. City gazetteer (GeoNames in SQLite)
+// 4. Nominatim (OSM)
+// 5. Country-level (text scanning + capital coords)
+// 6. LLM fallback (optional, for unresolvable locations)
 type Geocoder struct {
 	cities    CityLookup       // may be nil
 	nominatim *NominatimClient // may be nil
+	llm       GeoLLM           // may be nil
 }
 
-// NewGeocoder creates a geocoder. Both deps are optional — pass nil to skip.
+// NewGeocoder creates a geocoder. All deps are optional — pass nil to skip.
 func NewGeocoder(cities CityLookup, nominatim *NominatimClient) *Geocoder {
 	return &Geocoder{cities: cities, nominatim: nominatim}
+}
+
+// SetLLM adds an LLM geocoding fallback for locations that can't be resolved
+// by coordinates, maritime regions, city DB, Nominatim, or country text.
+func (g *Geocoder) SetLLM(llm GeoLLM) {
+	g.llm = llm
 }
 
 // wordBoundaryRe matches sequences of word characters for tokenizing text
@@ -101,6 +116,19 @@ func (g *Geocoder) Resolve(ctx context.Context, text string, countryHint string)
 			return GeoResult{Lat: capital[0], Lng: capital[1], CountryCode: code, Source: "capital"}
 		}
 		return GeoResult{Lat: lat, Lng: lng, CountryCode: code, Source: "country-text"}
+	}
+
+	// ── Tier 4: LLM fallback for unresolvable locations ────────
+	if g.llm != nil {
+		if lat, lng, ok := g.llm.GeoLocate(ctx, text); ok {
+			code := countryHint
+			if code == "" || code == "INT" {
+				if _, _, c, cok := geocodeText(text); cok {
+					code = c
+				}
+			}
+			return GeoResult{Lat: lat, Lng: lng, CountryCode: code, Source: "llm"}
+		}
 	}
 
 	// ── Fallback: use country hint's capital ────────────────────
