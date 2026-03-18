@@ -132,13 +132,13 @@ func TestJitterRadiusKMIsPrecisionAware(t *testing.T) {
 	// alerts from the same country don't stack on a single pixel.
 	for _, src := range []string{"capital", "country-text"} {
 		min, max := jitterRadiusKM(src)
-		if min < 10 || max > 60 {
-			t.Fatalf("expected %s jitter 10-60 km range, got %.1f-%.1f km", src, min, max)
+		if min < 5 || max > 30 {
+			t.Fatalf("expected %s jitter 5-30 km range, got %.1f-%.1f km", src, min, max)
 		}
 	}
 	regMin, regMax := jitterRadiusKM("registry")
-	if regMin < 3 || regMax > 30 {
-		t.Fatalf("expected registry jitter 3-30 km range, got %.1f-%.1f km", regMin, regMax)
+	if regMin < 2 || regMax > 20 {
+		t.Fatalf("expected registry jitter 2-20 km range, got %.1f-%.1f km", regMin, regMax)
 	}
 	_ = cityMin // used above
 }
@@ -246,6 +246,17 @@ func TestInformationalTitleClassification(t *testing.T) {
 		{"Daily Situation Update – Horn of Africa", true},
 		{"Bi-Weekly Intelligence Briefing", true},
 		{"Annual Piracy Overview 2024", true},
+		// Institutional policy/strategy — informational, not alerts.
+		{"Consumer investments priorities: strengthening trust, supporting investors", true},
+		{"Our strategy for improving consumer confidence in financial markets", true},
+		// Regulatory circulars / financial authority guidance — informational.
+		{"Circular to Market Participants on Implementation of Guidelines on MiCA", true},
+		{"ESMA Report on Trends, Risks and Vulnerabilities", true},
+		{"Amendments to the Delegated Regulation on Taxonomy Reporting", true},
+		{"Consultation Paper on Regulatory Technical Standards under MiFID II", true},
+		{"Lapsing of Authorisation - ABC Investment Services Ltd", true},
+		{"ESMA Guidelines on Suitability Requirements under MiFID II", true},
+		{"EBA Opinion on De-risking and its Impact on Access to Financial Services", true},
 		// But bare "report" or "weekly" alone should NOT match.
 		{"Missing persons report filed with authorities", false},
 		{"Reporting from the frontline: explosion in Beirut", false},

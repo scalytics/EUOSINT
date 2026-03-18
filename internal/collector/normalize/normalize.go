@@ -135,6 +135,11 @@ var (
 		regexp.MustCompile(`(?i)\b(?:publication|report release|annual report|yearbook|magazine|newsletter|bulletin)\b`),
 		regexp.MustCompile(`(?i)\b(?:weekly|monthly|bi-?weekly|quarterly|daily|annual)\b.*\b(?:report|review|summary|digest|briefing|roundup|round-up|update|recap|overview|bulletin|wrap-up)\b`),
 		regexp.MustCompile(`(?i)\b(?:strengthen|bolster|enhance|promote|foster|advance|support)\b.*\b(?:global|regional|national|international)\b.*\b(?:defence|defense|capacity|capability|cooperation|preparedness)\b`),
+		regexp.MustCompile(`(?i)\b(?:priorities|strategy|roadmap|vision|principles|objectives|commitments|strategic plan)\b.*\b(?:strengthen|support|protect|trust|confidence|consumer|investor|resilience|compliance|governance)\b`),
+		// Regulatory/financial-authority circulars, guidance, consultations.
+		regexp.MustCompile(`(?i)\b(?:circular|circulars|guidance|consultation|consultation paper|implementation of|amendments? to|delegated regulation|regulatory technical|technical standards|taxonomy)\b.*\b(?:regulation|directive|market|participants|guidelines|standards|reporting|framework|requirements|esas?ma?|mifid|solvency|ucits|aifmd|priips|sfdr|emir)\b`),
+		regexp.MustCompile(`(?i)\b(?:esma|eba|eiopa)\b.*\b(?:report|guidelines|opinion|statement|advice|consultation|peer review|assessment)\b`),
+		regexp.MustCompile(`(?i)\b(?:lapsing|withdrawal|surrender|cancellation|revocation)\b.*\b(?:authori[sz]\w*|licen[cs]\w*|registration|permit)\b`),
 		regexp.MustCompile(`(?i)\b(?:appoint(?:ed|ment|s)?|elected|nomination|inaugurat)\b`),
 	}
 	assistancePatterns = []*regexp.Regexp{
@@ -933,9 +938,9 @@ func jitterRadiusKM(geoSource string) (float64, float64) {
 	case "llm":
 		return 1, 5
 	case "capital", "country-text":
-		return 15, 40
+		return 8, 25
 	case "registry":
-		return 5, 20
+		return 3, 15
 	default:
 		return 0, 0
 	}
