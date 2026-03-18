@@ -19,7 +19,7 @@ export interface SourceHealthEntry {
   source_id: string;
   authority_name: string;
   type: string;
-  status: "ok" | "error";
+  status: "ok" | "error" | "skipped" | "pending";
   fetched_count: number;
   feed_url: string;
   error?: string;

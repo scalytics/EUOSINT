@@ -708,6 +708,47 @@ WHERE source_id = ?
 	return out, true, nil
 }
 
+// GetAllWatermarks loads every source watermark into a map keyed by source ID.
+// Used at sweep start so each fetch can check whether content has changed.
+func (db *DB) GetAllWatermarks(ctx context.Context) (map[string]*SourceWatermark, error) {
+	if err := db.Init(ctx); err != nil {
+		return nil, err
+	}
+	rows, err := db.sql.QueryContext(ctx, `
+SELECT source_id, last_run_started_at, last_run_finished_at, last_status, last_http_status,
+       last_fetched_count, last_content_hash, last_etag, last_modified, last_success_at
+FROM source_watermarks
+`)
+	if err != nil {
+		return nil, fmt.Errorf("query all watermarks: %w", err)
+	}
+	defer rows.Close()
+	out := make(map[string]*SourceWatermark)
+	for rows.Next() {
+		var wm SourceWatermark
+		var httpStatus sql.NullInt64
+		if err := rows.Scan(
+			&wm.SourceID,
+			&wm.LastRunStartedAt,
+			&wm.LastRunFinishedAt,
+			&wm.LastStatus,
+			&httpStatus,
+			&wm.LastFetchedCount,
+			&wm.LastContentHash,
+			&wm.LastETag,
+			&wm.LastModified,
+			&wm.LastSuccessAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan watermark row: %w", err)
+		}
+		if httpStatus.Valid {
+			wm.LastHTTPStatus = int(httpStatus.Int64)
+		}
+		out[wm.SourceID] = &wm
+	}
+	return out, rows.Err()
+}
+
 func (db *DB) SaveAlerts(ctx context.Context, alerts []model.Alert) error {
 	if err := db.Init(ctx); err != nil {
 		return err

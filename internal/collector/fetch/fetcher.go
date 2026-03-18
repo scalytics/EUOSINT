@@ -20,3 +20,23 @@ func FetcherFor(mode string, client *Client, browser *BrowserClient) Fetcher {
 	}
 	return client
 }
+
+// PrefetchedFetcher wraps a Fetcher and returns a pre-fetched body for
+// the first Text() call that matches the cached URL. Subsequent calls or
+// calls for different URLs pass through to the inner Fetcher.
+// This avoids double-fetching when a conditional GET already retrieved
+// the full response body.
+type PrefetchedFetcher struct {
+	Inner    Fetcher
+	URL      string
+	Body     []byte
+	consumed bool
+}
+
+func (f *PrefetchedFetcher) Text(ctx context.Context, url string, followRedirects bool, accept string) ([]byte, error) {
+	if !f.consumed && f.Body != nil && url == f.URL {
+		f.consumed = true
+		return f.Body, nil
+	}
+	return f.Inner.Text(ctx, url, followRedirects, accept)
+}

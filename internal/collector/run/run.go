@@ -63,17 +63,20 @@ func (r Runner) Run(ctx context.Context, cfg config.Config) error {
 }
 
 func (r Runner) watch(ctx context.Context, cfg config.Config) error {
+	// Discovery is fully independent — start it immediately on boot
+	// instead of waiting for the first collection sweep to finish.
+	// It only appends new sources into the registry; the collector
+	// picks them up on its next cycle via registry.Load().
+	if cfg.DiscoverBackground {
+		go r.runDiscoveryLoop(ctx, cfg)
+	}
+
 	ticker := time.NewTicker(time.Duration(cfg.IntervalMS) * time.Millisecond)
 	defer ticker.Stop()
-	discoveryStarted := false
 
 	for {
 		if err := r.runOnce(ctx, cfg); err != nil {
 			fmt.Fprintf(r.stderr, "collector run failed: %v\n", err)
-		}
-		if cfg.DiscoverBackground && !discoveryStarted {
-			go r.runDiscoveryLoop(ctx, cfg)
-			discoveryStarted = true
 		}
 		select {
 		case <-ctx.Done():
@@ -137,6 +140,15 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		fmt.Fprintf(r.stderr, "WARN previous alerts load failed: %v\n", err)
 	}
+	// Load previous source health so progress snapshots can carry forward
+	// entries for sources not yet fetched this cycle. Without this, the UI
+	// sees a shrinking total_sources count during each sweep.
+	previousSourceHealth := loadPreviousSourceHealth(cfg)
+
+	// Load watermarks so working feeds can use conditional GET (ETag /
+	// Last-Modified / content-hash). Unchanged feeds get a cheap 304 and
+	// carry forward their previous alerts without re-parsing.
+	watermarks := loadAllWatermarks(ctx, runStore)
 
 	// Split sources into fast (RSS/JSON — parallel) and slow (browser/HTML — sequential).
 	var fastSources, slowSources []model.RegistrySource
@@ -203,7 +215,8 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 						recordSourceRun(ctx, runStore, source, entry, nil, 0, map[string]any{"reason": "dlq"})
 						continue
 					}
-					batch, entry := r.fetchOneSource(ctx, fastClient, nil, nctx, source, categoryDictionary, cursors)
+					wm := watermarks[source.Source.SourceID]
+					batch, entry := r.fetchOneSource(ctx, fastClient, nil, nctx, source, categoryDictionary, cursors, wm)
 					mu.Lock()
 					sourceHealth = append(sourceHealth, entry)
 					alerts = append(alerts, batch...)
@@ -216,10 +229,14 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 						dlq.Remove(source.Source.SourceID)
 					}
 					if completed%25 == 0 || completed == 1 {
-						r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
+						r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth, previousSourceHealth, len(sources))
 					}
 					mu.Unlock()
-					recordSourceRun(ctx, runStore, source, entry, batch, inferHTTPStatus(entry), nil)
+					var runMeta map[string]any
+					if entry.ErrorClass == "not_modified" {
+						runMeta = map[string]any{"not_modified": true}
+					}
+					recordSourceRun(ctx, runStore, source, entry, batch, inferHTTPStatus(entry), runMeta)
 					if entry.Status == "error" && entry.DiscoveryAction == "dead_letter" {
 						fmt.Fprintf(r.stderr, "WARN %s: %s (added to DLQ)\n", source.Source.AuthorityName, entry.Error)
 					} else if entry.Status == "error" {
@@ -230,7 +247,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		}
 		wg.Wait()
 		// Snapshot after fast pass completes.
-		r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
+		r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth, previousSourceHealth, len(sources))
 	}
 
 	// Slow sequential pass — browser/HTML sources with full timeout.
@@ -292,7 +309,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 			dlq.Remove(source.Source.SourceID)
 		}
 		if completed%25 == 0 {
-			r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
+			r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth, previousSourceHealth, len(sources))
 		}
 	}
 
@@ -368,7 +385,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	return err
 }
 
-func (r Runner) writeProgressSnapshot(cfg config.Config, freshAlerts []model.Alert, previousAlerts []model.Alert, sourceHealth []model.SourceHealthEntry) {
+func (r Runner) writeProgressSnapshot(cfg config.Config, freshAlerts []model.Alert, previousAlerts []model.Alert, sourceHealth []model.SourceHealthEntry, previousSourceHealth []model.SourceHealthEntry, totalRegistrySources int) {
 	// Merge fresh alerts with previous state so the dashboard never goes
 	// blank during a sweep. Previous alerts that aren't in the fresh batch
 	// are carried forward as-is — but only for sources that haven't been
@@ -395,13 +412,68 @@ func (r Runner) writeProgressSnapshot(cfg config.Config, freshAlerts []model.Ale
 		}
 		merged = append(merged, prev)
 	}
+	// Merge source health: carry forward previous entries for sources not
+	// yet fetched this cycle so the UI always sees the full feed list.
+	mergedHealth := mergeSourceHealth(sourceHealth, previousSourceHealth)
 	deduped, duplicateAudit := normalize.Deduplicate(merged)
 	active, filtered := normalize.FilterActive(cfg, deduped)
-	if err := output.Write(cfg, active, filtered, active, sourceHealth, duplicateAudit, nil); err != nil {
+	if err := output.WriteWithTotal(cfg, active, filtered, active, mergedHealth, duplicateAudit, nil, totalRegistrySources); err != nil {
 		fmt.Fprintf(r.stderr, "WARN progress snapshot write failed: %v\n", err)
 		return
 	}
-	fmt.Fprintf(r.stdout, "Progress snapshot: %d active alerts (%d fresh + %d previous) after %d sources\n", len(active), len(freshAlerts), len(previousAlerts), len(sourceHealth))
+	fmt.Fprintf(r.stdout, "Progress snapshot: %d active alerts (%d fresh + %d previous) after %d/%d sources\n", len(active), len(freshAlerts), len(previousAlerts), len(sourceHealth), totalRegistrySources)
+}
+
+// mergeSourceHealth carries forward previous-run health entries for sources
+// not yet fetched in the current sweep. This keeps the UI feed list stable.
+func mergeSourceHealth(current []model.SourceHealthEntry, previous []model.SourceHealthEntry) []model.SourceHealthEntry {
+	if len(previous) == 0 {
+		return current
+	}
+	seen := make(map[string]struct{}, len(current))
+	for _, e := range current {
+		seen[e.SourceID] = struct{}{}
+	}
+	merged := make([]model.SourceHealthEntry, 0, len(current)+len(previous))
+	merged = append(merged, current...)
+	for _, prev := range previous {
+		if _, ok := seen[prev.SourceID]; ok {
+			continue
+		}
+		// Mark as pending so the UI can distinguish stale-from-previous-run.
+		prev.Status = "pending"
+		prev.Error = ""
+		prev.ErrorClass = ""
+		merged = append(merged, prev)
+	}
+	return merged
+}
+
+// loadPreviousSourceHealth reads the last-written source-health.json so that
+// progress snapshots can carry forward entries for sources not yet fetched.
+func loadPreviousSourceHealth(cfg config.Config) []model.SourceHealthEntry {
+	data, err := os.ReadFile(cfg.SourceHealthOutputPath)
+	if err != nil {
+		return nil
+	}
+	var doc model.SourceHealthDocument
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil
+	}
+	return doc.Sources
+}
+
+// loadAllWatermarks loads every source watermark from the DB into a map.
+// Returns an empty map when the DB is unavailable.
+func loadAllWatermarks(ctx context.Context, store *sourcedb.DB) map[string]*sourcedb.SourceWatermark {
+	if store == nil {
+		return map[string]*sourcedb.SourceWatermark{}
+	}
+	wms, err := store.GetAllWatermarks(ctx)
+	if err != nil {
+		return map[string]*sourcedb.SourceWatermark{}
+	}
+	return wms
 }
 
 func prioritizeSources(sources []model.RegistrySource) []model.RegistrySource {
@@ -467,8 +539,17 @@ func needsBrowser(s model.RegistrySource) bool {
 
 // fetchOneSource fetches a single source with retry logic, returning the
 // batch of alerts and a health entry. When customFetcher is nil, the
-// defaultClient is used directly.
-func (r Runner) fetchOneSource(ctx context.Context, defaultClient *fetch.Client, customFetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store, cursors state.Cursors) ([]model.Alert, model.SourceHealthEntry) {
+// defaultClient is used directly. When a watermark with ETag/Last-Modified
+// is available, a conditional GET is tried first:
+//
+//   - 304 Not Modified → no new content, return empty (reconciler carries
+//     forward previous alerts). Cost: ~100 bytes, ~50-200ms.
+//   - 200 OK → body is fed through the parse pipeline via PrefetchedFetcher
+//     so there is no double-fetch.
+//
+// As a fallback (no watermark or server doesn't support conditional GET),
+// the content hash from the previous run is compared after parsing.
+func (r Runner) fetchOneSource(ctx context.Context, defaultClient *fetch.Client, customFetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store, cursors state.Cursors, wm *sourcedb.SourceWatermark) ([]model.Alert, model.SourceHealthEntry) {
 	startedAt := time.Now().UTC()
 
 	var fetcher fetch.Fetcher
@@ -476,6 +557,46 @@ func (r Runner) fetchOneSource(ctx context.Context, defaultClient *fetch.Client,
 		fetcher = customFetcher
 	} else {
 		fetcher = defaultClient
+	}
+
+	// ── Conditional GET fast-path ────────────────────────────────────
+	// For known-working sources with cached ETag/Last-Modified, ask the
+	// server whether anything changed. A 304 costs almost nothing.
+	// A 200 gives us the body which we feed into the normal parse chain
+	// via PrefetchedFetcher — zero wasted requests.
+	var respETag, respLastModified string
+	if wm != nil && wm.LastStatus == "ok" && (wm.LastETag != "" || wm.LastModified != "") {
+		if client, ok := fetcher.(*fetch.Client); ok {
+			accept := acceptForType(source.Type)
+			result, err := client.TextConditional(ctx, source.FeedURL, source.FollowRedirects, accept, wm.LastETag, wm.LastModified)
+			if err == nil && result.NotModified {
+				return nil, model.SourceHealthEntry{
+					SourceID:         source.Source.SourceID,
+					AuthorityName:    source.Source.AuthorityName,
+					Type:             source.Type,
+					FeedURL:          source.FeedURL,
+					Status:           "ok",
+					ErrorClass:       "not_modified",
+					FetchedCount:     0,
+					StartedAt:        startedAt.Format(time.RFC3339),
+					FinishedAt:       time.Now().UTC().Format(time.RFC3339),
+					RespETag:         wm.LastETag,
+					RespLastModified: wm.LastModified,
+				}
+			}
+			if err == nil && len(result.Body) > 0 {
+				// Got a 200 with new content — wrap the body so
+				// fetchSource uses it instead of re-requesting.
+				fetcher = &fetch.PrefetchedFetcher{
+					Inner: fetcher,
+					URL:   source.FeedURL,
+					Body:  result.Body,
+				}
+				respETag = result.ETag
+				respLastModified = result.LastModified
+			}
+			// On error, fall through to normal fetch.
+		}
 	}
 
 	batch, err := r.fetchSource(ctx, fetcher, nil, nctx, source, categoryDictionary, cursors)
@@ -490,28 +611,67 @@ func (r Runner) fetchOneSource(ctx context.Context, defaultClient *fetch.Client,
 			case <-ctx.Done():
 			}
 			if ctx.Err() == nil {
-				batch, err = r.fetchSource(ctx, fetcher, nil, nctx, source, categoryDictionary, cursors)
+				// Retry with the raw fetcher (not prefetched — body was
+				// already consumed or the request failed).
+				var retryFetcher fetch.Fetcher
+				if customFetcher != nil {
+					retryFetcher = customFetcher
+				} else {
+					retryFetcher = defaultClient
+				}
+				batch, err = r.fetchSource(ctx, retryFetcher, nil, nctx, source, categoryDictionary, cursors)
 			}
 		}
 	}
 
 	entry := model.SourceHealthEntry{
-		SourceID:      source.Source.SourceID,
-		AuthorityName: source.Source.AuthorityName,
-		Type:          source.Type,
-		FeedURL:       source.FeedURL,
-		StartedAt:     startedAt.Format(time.RFC3339),
-		FinishedAt:    time.Now().UTC().Format(time.RFC3339),
+		SourceID:         source.Source.SourceID,
+		AuthorityName:    source.Source.AuthorityName,
+		Type:             source.Type,
+		FeedURL:          source.FeedURL,
+		StartedAt:        startedAt.Format(time.RFC3339),
+		FinishedAt:       time.Now().UTC().Format(time.RFC3339),
+		RespETag:         respETag,
+		RespLastModified: respLastModified,
 	}
+
 	if err != nil {
 		entry.Status = "error"
 		entry.Error = err.Error()
 		entry.ErrorClass, entry.NeedsReplacement, entry.DiscoveryAction = classifySourceError(err)
 		return nil, entry
 	}
+
+	// Content-hash gate (fallback for servers without ETag/Last-Modified):
+	// if the parsed alerts produce the same hash as last run, the feed
+	// hasn't changed — return empty so the reconciler carries forward.
+	if wm != nil && wm.LastStatus == "ok" && wm.LastContentHash != "" && len(batch) > 0 {
+		hash := batchContentHash(batch)
+		if hash == wm.LastContentHash {
+			entry.Status = "ok"
+			entry.ErrorClass = "not_modified"
+			entry.FetchedCount = 0
+			return nil, entry
+		}
+	}
+
 	entry.Status = "ok"
 	entry.FetchedCount = len(batch)
 	return batch, entry
+}
+
+// acceptForType returns the Accept header value appropriate for the source type.
+func acceptForType(sourceType string) string {
+	switch sourceType {
+	case "rss":
+		return "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8"
+	case "kev-json", "fbi-wanted-json", "travelwarning-json", "acled-json":
+		return "application/json"
+	case "travelwarning-atom":
+		return "application/atom+xml, application/xml;q=0.9, */*;q=0.8"
+	default:
+		return "text/html,application/xhtml+xml,*/*;q=0.8"
+	}
 }
 
 // fetchOneSourceSlow fetches a source that needs the browser or full timeout.
@@ -1548,6 +1708,8 @@ func recordSourceRun(ctx context.Context, store *sourcedb.DB, source model.Regis
 		Error:         entry.Error,
 		ErrorClass:    entry.ErrorClass,
 		ContentHash:   batchContentHash(batch),
+		ETag:          entry.RespETag,
+		LastModified:  entry.RespLastModified,
 		Metadata:      meta,
 	}
 	_ = store.RecordSourceRun(ctx, in)

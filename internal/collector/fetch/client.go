@@ -70,14 +70,48 @@ func NewWithHTTPClient(cfg config.Config, httpClient *http.Client) *Client {
 	}
 }
 
+// FetchResult contains the response body and cache-related headers
+// returned by conditional GET requests.
+type FetchResult struct {
+	Body         []byte
+	ETag         string
+	LastModified string
+	NotModified  bool // true when server returned 304
+}
+
+// ErrNotModified is returned when a conditional GET receives 304.
+var ErrNotModified = errors.New("not modified")
+
 func (c *Client) Text(ctx context.Context, url string, followRedirects bool, accept string) ([]byte, error) {
 	return c.TextWithHeaders(ctx, url, followRedirects, accept, nil)
 }
 
+// TextConditional performs a GET with If-None-Match / If-Modified-Since
+// headers when etag or lastModified are non-empty. Returns a FetchResult
+// with NotModified=true on 304.
+func (c *Client) TextConditional(ctx context.Context, url string, followRedirects bool, accept string, etag string, lastModified string) (FetchResult, error) {
+	headers := make(map[string]string)
+	if strings.TrimSpace(etag) != "" {
+		headers["If-None-Match"] = etag
+	}
+	if strings.TrimSpace(lastModified) != "" {
+		headers["If-Modified-Since"] = lastModified
+	}
+	return c.doFetch(ctx, url, followRedirects, accept, headers)
+}
+
 func (c *Client) TextWithHeaders(ctx context.Context, url string, followRedirects bool, accept string, extraHeaders map[string]string) ([]byte, error) {
+	result, err := c.doFetch(ctx, url, followRedirects, accept, extraHeaders)
+	if err != nil {
+		return nil, err
+	}
+	return result.Body, nil
+}
+
+func (c *Client) doFetch(ctx context.Context, url string, followRedirects bool, accept string, extraHeaders map[string]string) (FetchResult, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("build request %s: %w", url, err)
+		return FetchResult{}, fmt.Errorf("build request %s: %w", url, err)
 	}
 	req.Header.Set("User-Agent", c.userAgent)
 	if strings.TrimSpace(accept) != "" {
@@ -107,23 +141,35 @@ func (c *Client) TextWithHeaders(ctx context.Context, url string, followRedirect
 
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetch %s: %w", url, err)
+		return FetchResult{}, fmt.Errorf("fetch %s: %w", url, err)
 	}
 	defer res.Body.Close()
 
+	if res.StatusCode == http.StatusNotModified {
+		return FetchResult{
+			ETag:         res.Header.Get("ETag"),
+			LastModified: res.Header.Get("Last-Modified"),
+			NotModified:  true,
+		}, nil
+	}
+
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, fmt.Errorf("fetch %s: status %d", url, res.StatusCode)
+		return FetchResult{}, fmt.Errorf("fetch %s: status %d", url, res.StatusCode)
 	}
 
 	body, err := readBody(res, c.maxBodyBytes)
 	if err != nil {
-		return nil, fmt.Errorf("read %s: %w", url, err)
+		return FetchResult{}, fmt.Errorf("read %s: %w", url, err)
 	}
 	if int64(len(body)) > c.maxBodyBytes {
-		return nil, fmt.Errorf("response too large for %s", url)
+		return FetchResult{}, fmt.Errorf("response too large for %s", url)
 	}
 
-	return body, nil
+	return FetchResult{
+		Body:         body,
+		ETag:         res.Header.Get("ETag"),
+		LastModified: res.Header.Get("Last-Modified"),
+	}, nil
 }
 
 // HeadStatus performs a lightweight HEAD probe and returns the resulting HTTP

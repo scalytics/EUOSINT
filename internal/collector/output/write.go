@@ -15,6 +15,14 @@ import (
 )
 
 func Write(cfg config.Config, active []model.Alert, filtered []model.Alert, state []model.Alert, sourceHealth []model.SourceHealthEntry, duplicateAudit model.DuplicateAudit, replacementQueue []model.SourceReplacementCandidate) error {
+	return WriteWithTotal(cfg, active, filtered, state, sourceHealth, duplicateAudit, replacementQueue, 0)
+}
+
+// WriteWithTotal is like Write but accepts an explicit totalRegistrySources
+// override. When > 0, total_sources in source-health.json reflects the full
+// registry count rather than len(sourceHealth) — keeping the UI stable during
+// progress snapshots mid-sweep.
+func WriteWithTotal(cfg config.Config, active []model.Alert, filtered []model.Alert, state []model.Alert, sourceHealth []model.SourceHealthEntry, duplicateAudit model.DuplicateAudit, replacementQueue []model.SourceReplacementCandidate, totalRegistrySources int) error {
 	paths := []string{cfg.OutputPath, cfg.FilteredOutputPath, cfg.StateOutputPath, cfg.SourceHealthOutputPath}
 	for _, path := range paths {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -30,11 +38,15 @@ func Write(cfg config.Config, active []model.Alert, filtered []model.Alert, stat
 	if err := writeJSON(cfg.StateOutputPath, state); err != nil {
 		return err
 	}
+	totalSources := len(sourceHealth)
+	if totalRegistrySources > totalSources {
+		totalSources = totalRegistrySources
+	}
 	doc := model.SourceHealthDocument{
 		GeneratedAt:             time.Now().UTC().Format(time.RFC3339),
 		CriticalSourcePrefixes:  cfg.CriticalSourcePrefixes,
 		FailOnCriticalSourceGap: cfg.FailOnCriticalSourceGap,
-		TotalSources:            len(sourceHealth),
+		TotalSources:            totalSources,
 		SourcesOK:               countStatus(sourceHealth, "ok"),
 		SourcesError:            countStatus(sourceHealth, "error"),
 		DuplicateAudit:          duplicateAudit,

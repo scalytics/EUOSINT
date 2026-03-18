@@ -64,6 +64,10 @@ type SourceHealthEntry struct {
 	FinishedAt       string `json:"finished_at"`
 	ActiveCount      int    `json:"active_count,omitempty"`
 	FilteredCount    int    `json:"filtered_count,omitempty"`
+	// Cache metadata — not serialised to JSON, used internally to
+	// populate source_watermarks so the next cycle can do conditional GET.
+	RespETag         string `json:"-"`
+	RespLastModified string `json:"-"`
 }
 
 type SourceReplacementCandidate struct {
