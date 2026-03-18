@@ -40,9 +40,9 @@ Government-issued travel advisories and consular warnings. Covers security situa
 **Sources:** US State Department, UK FCDO, German Auswaertiges Amt, and other foreign ministry travel advisory feeds.
 
 ### Conflict Monitoring
-Armed conflict tracking, ceasefire violations, military operations, and peace process updates from conflict zones worldwide.
+Armed conflict tracking, ceasefire violations, military operations, and peace process updates from conflict zones worldwide. Includes structured event data with precise geo-coordinates for battles, explosions, and violence against civilians.
 
-**Sources:** UN Peace & Security, SIPRI conflict data, OSCE monitoring missions, peacekeeping operation feeds.
+**Sources:** ACLED (Armed Conflict Location & Event Data), UN Peace & Security, SIPRI conflict data, OSCE monitoring missions, peacekeeping operation feeds.
 
 ### Humanitarian Security
 Security incidents affecting humanitarian operations — aid worker safety, access restrictions, and operational environment assessments in crisis zones.

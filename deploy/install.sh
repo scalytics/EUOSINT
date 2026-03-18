@@ -198,6 +198,27 @@ configure_env() {
   else
     upsert_env "$env_file" "ALERT_LLM_ENABLED" "false"
   fi
+
+  configure_acled "$env_file"
+}
+
+configure_acled() {
+  local env_file="$1"
+  local acled_choice
+  acled_choice="$(prompt_yes_no "Enable ACLED conflict data (battles, military movements, protests)?" "no")"
+  if [[ "$acled_choice" == "yes" ]]; then
+    local username password
+    info "Note: API access requires an institutional email. Gmail/public email = web export only."
+    username="$(prompt "ACLED username (institutional email)" "")"
+    password="$(prompt "ACLED password" "")"
+    if [[ -z "$username" || -z "$password" ]]; then
+      warn "ACLED credentials empty — skipping. Register at https://acleddata.com/register/"
+      return 0
+    fi
+    upsert_env "$env_file" "ACLED_USERNAME" "$username"
+    upsert_env "$env_file" "ACLED_PASSWORD" "$password"
+    info "ACLED conflict data enabled."
+  fi
 }
 
 container_running_for_service() {
@@ -323,6 +344,51 @@ start_stack() {
   info "EUOSINT started. HTTP endpoint: http://$(hostname -f 2>/dev/null || hostname):${http_port}"
 }
 
+check_new_env_vars() {
+  local env_file="$INSTALL_DIR/.env"
+  local example_file="$INSTALL_DIR/.env.example"
+  [[ -f "$example_file" && -f "$env_file" ]] || return 0
+
+  # Collect keys present in .env.example but missing from .env.
+  local new_keys=()
+  while IFS= read -r line; do
+    # Skip comments and empty lines.
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+    local key="${line%%=*}"
+    [[ -z "$key" ]] && continue
+    if ! grep -qE "^${key}=" "$env_file" 2>/dev/null; then
+      new_keys+=("$key")
+    fi
+  done < "$example_file"
+
+  [[ ${#new_keys[@]} -eq 0 ]] && return 0
+
+  info "New configuration options detected since last install:"
+  for key in "${new_keys[@]}"; do
+    echo "  - $key"
+  done
+
+  # Handle known feature blocks interactively.
+  for key in "${new_keys[@]}"; do
+    case "$key" in
+      ACLED_USERNAME)
+        configure_acled "$env_file"
+        ;;
+      ACLED_PASSWORD)
+        # Handled together with ACLED_USERNAME above.
+        ;;
+      *)
+        # For unknown new vars, copy the default from .env.example.
+        local default_val
+        default_val="$(grep -E "^${key}=" "$example_file" | head -1 | cut -d= -f2-)"
+        upsert_env "$env_file" "$key" "$default_val"
+        info "Added $key with default value."
+        ;;
+    esac
+  done
+}
+
 main() {
   require_cmd git
   ensure_docker
@@ -335,6 +401,8 @@ main() {
     if [[ ! -d "$INSTALL_DIR" || ! -f "$INSTALL_DIR/docker-compose.yml" ]]; then
       fatal "Update mode requires an existing install at $INSTALL_DIR (missing docker-compose.yml). Use install mode first."
     fi
+    clone_or_update_repo
+    check_new_env_vars
   fi
   start_stack
 }

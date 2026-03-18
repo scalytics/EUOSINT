@@ -4,7 +4,8 @@
 package model
 
 // Supported source types: rss, html-list, kev-json, interpol-red-json,
-// interpol-yellow-json, fbi-wanted-json, travelwarning-json, travelwarning-atom.
+// interpol-yellow-json, fbi-wanted-json, travelwarning-json, travelwarning-atom,
+// acled-json.
 type RegistrySource struct {
 	Type            string            `json:"type"`
 	FetchMode       string            `json:"fetch_mode,omitempty"` // "stealth" (default) or "browser"
