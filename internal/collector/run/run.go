@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/url"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -26,6 +28,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/registry"
 	"github.com/scalytics/euosint/internal/collector/state"
 	"github.com/scalytics/euosint/internal/collector/translate"
+	"github.com/scalytics/euosint/internal/collector/trends"
 	"github.com/scalytics/euosint/internal/collector/vet"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
@@ -292,6 +295,28 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if err := saveAlertState(ctx, cfg, fullState); err != nil {
 		return err
 	}
+	// ── BM25 corpus relevance scoring ─────────────────────────────────────
+	if boosted, err := r.applyCorpusScores(ctx, cfg, currentActive); err != nil {
+		fmt.Fprintf(r.stderr, "WARN corpus scoring: %v\n", err)
+	} else {
+		currentActive = boosted
+	}
+
+	// ── Trend detection: record term frequencies and emit discovery hints ──
+	if spikes, err := r.recordTrendsAndDetectSpikes(ctx, cfg, currentActive, now); err != nil {
+		fmt.Fprintf(r.stderr, "WARN trend detection: %v\n", err)
+	} else if len(spikes) > 0 {
+		fmt.Fprintf(r.stderr, "Trend spikes detected: %d terms trending\n", len(spikes))
+		hints := trends.BuildHints(spikes)
+		if len(hints) > 0 {
+			if err := r.queueTrendHints(cfg, hints); err != nil {
+				fmt.Fprintf(r.stderr, "WARN trend hint queueing: %v\n", err)
+			} else {
+				fmt.Fprintf(r.stderr, "Queued %d discovery hints from trend spikes\n", len(hints))
+			}
+		}
+	}
+
 	if err := output.Write(cfg, currentActive, currentFiltered, fullState, sourceHealth, duplicateAudit, replacementQueue); err != nil {
 		return err
 	}
@@ -1503,6 +1528,104 @@ func saveAlertState(ctx context.Context, cfg config.Config, alerts []model.Alert
 	return nil
 }
 
+// applyCorpusScores uses BM25 to compute how distinctive each alert's title
+// is against the full corpus. The corpus score is blended into the existing
+// heuristic RelevanceScore: final = 0.7×heuristic + 0.3×corpus.
+func (r Runner) applyCorpusScores(ctx context.Context, cfg config.Config, alerts []model.Alert) ([]model.Alert, error) {
+	if !isSQLiteRegistryPath(cfg.RegistryPath) {
+		return alerts, nil
+	}
+	db, err := sourcedb.Open(cfg.RegistryPath)
+	if err != nil {
+		return alerts, fmt.Errorf("open DB for corpus scoring: %w", err)
+	}
+	defer db.Close()
+
+	scores, err := db.CorpusScores(ctx)
+	if err != nil {
+		return alerts, err
+	}
+	if len(scores) == 0 {
+		return alerts, nil
+	}
+
+	const heuristicWeight = 0.7
+	const corpusWeight = 0.3
+	boosted := 0
+
+	for i := range alerts {
+		corpusScore, ok := scores[alerts[i].AlertID]
+		if !ok || alerts[i].Triage == nil {
+			continue
+		}
+		original := alerts[i].Triage.RelevanceScore
+		blended := heuristicWeight*original + corpusWeight*corpusScore
+		// Round to 3 decimal places.
+		blended = math.Round(blended*1000) / 1000
+		if blended != original {
+			alerts[i].Triage.RelevanceScore = blended
+			alerts[i].Triage.WeakSignals = append(alerts[i].Triage.WeakSignals,
+				fmt.Sprintf("corpus-bm25=%.3f (blended %.3f→%.3f)", corpusScore, original, blended))
+			boosted++
+		}
+	}
+	if boosted > 0 {
+		fmt.Fprintf(r.stderr, "Corpus BM25 scoring: adjusted %d/%d alerts\n", boosted, len(alerts))
+	}
+	return alerts, nil
+}
+
+// recordTrendsAndDetectSpikes records term frequencies from the current
+// cycle's alerts and returns any detected spikes.
+func (r Runner) recordTrendsAndDetectSpikes(ctx context.Context, cfg config.Config, alerts []model.Alert, now time.Time) ([]trends.Spike, error) {
+	if !isSQLiteRegistryPath(cfg.RegistryPath) {
+		return nil, nil
+	}
+	db, err := sourcedb.Open(cfg.RegistryPath)
+	if err != nil {
+		return nil, fmt.Errorf("open DB for trends: %w", err)
+	}
+	defer db.Close()
+
+	detector := trends.New(db.RawDB())
+	if err := detector.Init(ctx); err != nil {
+		return nil, err
+	}
+	if err := detector.Record(ctx, alerts, now); err != nil {
+		return nil, err
+	}
+	// Prune old trend data (keep 30 days).
+	if err := detector.Prune(ctx, now, 30); err != nil {
+		fmt.Fprintf(r.stderr, "WARN trend prune: %v\n", err)
+	}
+	spikes, err := detector.DetectSpikes(ctx, now, 7, 3.0, 3)
+	if err != nil {
+		return nil, err
+	}
+	if len(spikes) > 0 {
+		trends.AnnotateSpikesWithSamples(spikes, alerts)
+		for _, s := range spikes {
+			fmt.Fprintf(r.stderr, "  TREND: %q (%s/%s) %dx today vs %.1f avg [%s]\n",
+				s.Term, s.Category, s.Region, s.TodayCount, s.AvgCount, s.SampleTitle)
+		}
+	}
+	return spikes, nil
+}
+
+// queueTrendHints converts trend spikes into discovery candidates and
+// appends them to the candidate queue for the next discovery cycle.
+func (r Runner) queueTrendHints(cfg config.Config, hints []trends.DiscoveryHint) error {
+	candidates := trends.HintsToCandidates(hints)
+	if len(candidates) == 0 {
+		return nil
+	}
+
+	// Load existing candidate queue, merge, and write back.
+	existing := loadCandidateQueueJSON(cfg.CandidateQueuePath)
+	merged := trends.MergeCandidateQueue(existing, candidates)
+	return writeCandidateQueueJSON(cfg.CandidateQueuePath, merged)
+}
+
 func isSQLiteRegistryPath(path string) bool {
 	switch strings.ToLower(filepath.Ext(strings.TrimSpace(path))) {
 	case ".db", ".sqlite", ".sqlite3":
@@ -1510,4 +1633,30 @@ func isSQLiteRegistryPath(path string) bool {
 	default:
 		return false
 	}
+}
+
+func loadCandidateQueueJSON(path string) []model.SourceCandidate {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var doc model.SourceCandidateDocument
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return nil
+	}
+	return doc.Sources
+}
+
+func writeCandidateQueueJSON(path string, candidates []model.SourceCandidate) error {
+	doc := model.SourceCandidateDocument{
+		Sources: candidates,
+	}
+	if doc.Sources == nil {
+		doc.Sources = []model.SourceCandidate{}
+	}
+	raw, err := json.MarshalIndent(doc, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal candidate queue: %w", err)
+	}
+	return os.WriteFile(path, raw, 0644)
 }
