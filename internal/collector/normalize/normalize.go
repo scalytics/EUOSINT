@@ -396,9 +396,12 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 			}
 		}
 		if !geocoded {
-			if gLat, gLng, code, ok := geocodeText(geoText); ok {
-				baseLat, baseLng = gLat, gLng
-				geoSource = "country-text"
+			if _, _, code, ok := geocodeText(geoText); ok {
+				// Use capital coords instead of centroid to avoid water/desert.
+				if capital, cok := capitalCoords[code]; cok {
+					baseLat, baseLng = capital[0], capital[1]
+				}
+				geoSource = "capital"
 				if name := countryNameFromCode(code); name != "" {
 					source.Country = name
 					source.CountryCode = code
@@ -801,7 +804,7 @@ func jitter(lat float64, lng float64, seed string, geoSource string) (float64, f
 
 func jitterRadiusKM(geoSource string) (float64, float64) {
 	switch geoSource {
-	case "coordinates":
+	case "coordinates", "georss":
 		return 0.2, 0.8
 	case "maritime-region":
 		return 5, 25
@@ -809,8 +812,12 @@ func jitterRadiusKM(geoSource string) (float64, float64) {
 		return 0.4, 1.6
 	case "nominatim":
 		return 0.8, 2.5
-	case "capital", "country-text", "registry":
-		return 0, 0
+	case "llm":
+		return 1, 5
+	case "capital", "country-text":
+		return 15, 40
+	case "registry":
+		return 5, 20
 	default:
 		return 0, 0
 	}
