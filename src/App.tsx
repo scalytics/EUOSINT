@@ -223,6 +223,7 @@ export default function App() {
             onSelectCountry={handleCountrySelect}
             severityFilter={severityFilter}
             onSeverityFilterChange={setSeverityFilter}
+            onSearchTerm={setSearchQuery}
           />
         </div>
 
