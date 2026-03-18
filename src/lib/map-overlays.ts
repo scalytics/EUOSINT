@@ -1,6 +1,6 @@
 import L from "leaflet";
 
-export type OverlayId = "cables" | "shipping" | "ports" | "conflicts" | "bases" | "nuclear" | "sanctions";
+export type OverlayId = "cables" | "shipping" | "ports" | "conflicts" | "bases" | "nuclear" | "sanctions" | "piracy" | "terrorism";
 
 export interface OverlayDef {
   id: OverlayId;
@@ -17,6 +17,8 @@ export const OVERLAYS: OverlayDef[] = [
   { id: "bases", label: "Military Bases", color: "#a78bfa", url: "/geo/military-bases.geojson" },
   { id: "nuclear", label: "Nuclear Sites", color: "#facc15", url: "/geo/nuclear-sites.geojson" },
   { id: "sanctions", label: "Sanctions Zones", color: "#f87171", url: "/geo/sanctions-zones.geojson" },
+  { id: "piracy", label: "Piracy Zones", color: "#38bdf8", url: "/geo/piracy-zones.geojson" },
+  { id: "terrorism", label: "Terror Zones", color: "#e879f9", url: "/geo/terrorism-zones.geojson" },
 ];
 
 const conflictTypeColors: Record<string, string> = {
@@ -47,6 +49,18 @@ const sanctionTypeColors: Record<string, string> = {
   comprehensive: "#f87171",
   sectoral: "#fb923c",
   targeted: "#fbbf24",
+};
+
+const piracyTypeColors: Record<string, string> = {
+  high_risk: "#ef4444",
+  elevated: "#f59e0b",
+  moderate: "#38bdf8",
+};
+
+const terrorismTypeColors: Record<string, string> = {
+  active: "#e879f9",
+  degraded: "#a78bfa",
+  elevated: "#f472b6",
 };
 
 export async function loadOverlay(
@@ -155,6 +169,46 @@ export async function loadOverlay(
         const p = feature.properties;
         layer.bindTooltip(
           `<strong>${p.name}</strong><br/>${p.regime} — ${p.type} since ${p.since}`,
+          { className: "siem-tooltip", direction: "top" },
+        );
+      },
+    }).addTo(group);
+  } else if (def.id === "piracy") {
+    L.geoJSON(geojson, {
+      style: (feature) => {
+        const type = feature?.properties?.type ?? "elevated";
+        return {
+          color: piracyTypeColors[type] ?? "#38bdf8",
+          fillColor: piracyTypeColors[type] ?? "#38bdf8",
+          fillOpacity: 0.10,
+          weight: 1.5,
+          dashArray: type === "moderate" ? "6,4" : undefined,
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties;
+        layer.bindTooltip(
+          `\u2620 <strong>${p.name}</strong><br/>${p.type?.replace(/_/g, " ")} — ${p.threat}`,
+          { className: "siem-tooltip", direction: "top" },
+        );
+      },
+    }).addTo(group);
+  } else if (def.id === "terrorism") {
+    L.geoJSON(geojson, {
+      style: (feature) => {
+        const type = feature?.properties?.type ?? "active";
+        return {
+          color: terrorismTypeColors[type] ?? "#e879f9",
+          fillColor: terrorismTypeColors[type] ?? "#e879f9",
+          fillOpacity: 0.10,
+          weight: 1.5,
+          dashArray: type === "degraded" ? "6,4" : undefined,
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties;
+        layer.bindTooltip(
+          `\u26A0 <strong>${p.name}</strong><br/>${p.type} — ${p.threat}`,
           { className: "siem-tooltip", direction: "top" },
         );
       },

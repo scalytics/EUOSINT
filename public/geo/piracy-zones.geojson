@@ -1,0 +1,17 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"name":"Gulf of Aden / Somali Basin","type":"high_risk","threat":"Somali piracy, Houthi attacks","since":"2008"},"geometry":{"type":"Polygon","coordinates":[[[43,10],[41,12],[42,15],[45,15],[50,14],[52,12],[51,8],[48,5],[43,5],[43,10]]]}},
+    {"type":"Feature","properties":{"name":"Red Sea / Bab el-Mandeb","type":"high_risk","threat":"Houthi missile & drone attacks on shipping","since":"2023"},"geometry":{"type":"Polygon","coordinates":[[[38,12],[38,16],[40,20],[43,20],[44,16],[43,12],[38,12]]]}},
+    {"type":"Feature","properties":{"name":"Strait of Hormuz","type":"elevated","threat":"Iranian seizures, tanker harassment","since":"2019"},"geometry":{"type":"Polygon","coordinates":[[[54,24],[54,27],[56,27],[57,26],[57,24],[54,24]]]}},
+    {"type":"Feature","properties":{"name":"Gulf of Guinea","type":"high_risk","threat":"Armed robbery, kidnap-for-ransom","since":"2015"},"geometry":{"type":"Polygon","coordinates":[[[-2,2],[0,6],[4,7],[8,6],[10,4],[10,1],[7,-1],[3,0],[-2,2]]]}},
+    {"type":"Feature","properties":{"name":"Strait of Malacca","type":"elevated","threat":"Armed robbery, petty piracy","since":"2010"},"geometry":{"type":"Polygon","coordinates":[[[96,-1],[98,2],[100,4],[102,4],[104,2],[104,0],[100,-2],[96,-1]]]}},
+    {"type":"Feature","properties":{"name":"Singapore Strait","type":"moderate","threat":"Armed robbery, theft","since":"2015"},"geometry":{"type":"Polygon","coordinates":[[[103,0.8],[103,1.6],[104.5,1.6],[104.5,0.8],[103,0.8]]]}},
+    {"type":"Feature","properties":{"name":"Sulu-Celebes Sea","type":"high_risk","threat":"Abu Sayyaf kidnapping, armed robbery","since":"2016"},"geometry":{"type":"Polygon","coordinates":[[[117,4],[117,8],[120,10],[124,10],[126,7],[124,4],[117,4]]]}},
+    {"type":"Feature","properties":{"name":"South China Sea (piracy corridor)","type":"elevated","threat":"Armed robbery, fishing vessel attacks","since":"2018"},"geometry":{"type":"Polygon","coordinates":[[[108,5],[106,10],[108,15],[113,18],[117,14],[115,5],[108,5]]]}},
+    {"type":"Feature","properties":{"name":"Caribbean (Venezuela-Trinidad corridor)","type":"moderate","threat":"Fishing vessel piracy, narco-trafficking","since":"2020"},"geometry":{"type":"Polygon","coordinates":[[[-64,9],[-64,12],[-60,12],[-59,10],[-60,9],[-64,9]]]}},
+    {"type":"Feature","properties":{"name":"Indian Ocean (Mozambique Channel)","type":"moderate","threat":"Small vessel piracy, illegal fishing","since":"2019"},"geometry":{"type":"Polygon","coordinates":[[[36,-26],[36,-14],[42,-12],[46,-16],[44,-26],[36,-26]]]}},
+    {"type":"Feature","properties":{"name":"West African Coast (Senegal-Guinea)","type":"elevated","threat":"Fishing vessel attacks, armed robbery","since":"2020"},"geometry":{"type":"Polygon","coordinates":[[[-18,8],[-18,14],[-14,15],[-12,12],[-13,8],[-18,8]]]}},
+    {"type":"Feature","properties":{"name":"Black Sea","type":"elevated","threat":"War-related mine risk, vessel seizures","since":"2022"},"geometry":{"type":"Polygon","coordinates":[[[28,41],[28,44],[32,46],[36,46],[40,44],[42,42],[40,41],[28,41]]]}}
+  ]
+}

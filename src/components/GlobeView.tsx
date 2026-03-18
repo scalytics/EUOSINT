@@ -198,10 +198,10 @@ export function GlobeView({
       const selected = alert.alert_id === selectedId;
       const text = textHex();
       const marker = L.circleMarker([alert.lat, alert.lng], {
-        radius: selected ? 8 : 5,
+        radius: selected ? 11 : 7,
         fillColor: severityHex(alert.severity),
         color: selected ? text : `${text}59`,
-        weight: selected ? 2 : 0.6,
+        weight: selected ? 2.5 : 1,
         fillOpacity: 0.85,
       });
 
@@ -220,9 +220,17 @@ export function GlobeView({
 
   /* ── Fly to region on filter change ───────────────────────────── */
 
+  // Track the last region filter so we only fly when the *filter* changes,
+  // not when alert data updates (which was causing the zoom-back bug).
+  const lastRegionRef = useRef(regionFilter);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+
+    // Only fly when the region filter actually changed.
+    if (lastRegionRef.current === regionFilter) return;
+    lastRegionRef.current = regionFilter;
 
     // For country filters, fit map bounds to visible markers.
     if (regionFilter.startsWith("country:") && visibleAlerts.length > 0) {
@@ -295,7 +303,7 @@ export function GlobeView({
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-4 gap-1 md:grid-cols-7">
+          <div className="grid grid-cols-5 gap-1 md:grid-cols-9">
             {OVERLAYS.map((overlay) => (
               <button
                 key={overlay.id}

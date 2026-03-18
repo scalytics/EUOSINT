@@ -5809,7 +5809,7 @@
     "type": "gdelt-json",
     "source": {
       "source_id": "gdelt-conflict",
-      "authority_name": "GDELT Global Conflict Monitor",
+      "authority_name": "GDELT Military & Conflict Monitor",
       "country": "United States",
       "country_code": "US",
       "region": "International",
@@ -5817,8 +5817,8 @@
       "base_url": "https://www.gdeltproject.org"
     },
     "feed_urls": [
-      "https://api.gdeltproject.org/api/v2/doc/doc?query=%22military%20conflict%22%20OR%20%22armed%20forces%22%20OR%20%22troops%20deployed%22&mode=ArtList&maxrecords=20&format=json",
-      "https://api.gdeltproject.org/api/v2/doc/doc?query=%22sanctions%20imposed%22%20OR%20%22trade%20embargo%22%20OR%20%22economic%20sanctions%22&mode=ArtList&maxrecords=20&format=json"
+      "https://api.gdeltproject.org/api/v2/doc/doc?query=%22military%20conflict%22%20OR%20%22armed%20forces%22%20OR%20%22troops%20deployed%22%20OR%20%22military%20escalation%22&mode=ArtList&maxrecords=20&format=json",
+      "https://api.gdeltproject.org/api/v2/doc/doc?query=%22airstrike%22%20OR%20%22missile%20strike%22%20OR%20%22military%20offensive%22%20OR%20%22combat%20operations%22&mode=ArtList&maxrecords=20&format=json"
     ],
     "feed_url": "https://api.gdeltproject.org/api/v2/doc/doc?query=%22military%20conflict%22%20OR%20%22armed%20forces%22&mode=ArtList&maxrecords=20&format=json",
     "category": "conflict_monitoring",
@@ -5826,7 +5826,53 @@
     "lat": 38.88,
     "lng": -77.02,
     "max_items": 20,
-    "include_keywords": ["military", "conflict", "sanctions", "troops", "strike", "missile", "attack", "invasion", "war", "combat", "airstrike", "ceasefire", "embargo"]
+    "include_keywords": ["military", "conflict", "troops", "strike", "missile", "attack", "invasion", "war", "combat", "airstrike", "ceasefire", "offensive", "deployed", "escalation"]
+  },
+  {
+    "type": "gdelt-json",
+    "source": {
+      "source_id": "gdelt-terrorism-piracy",
+      "authority_name": "GDELT Terrorism & Maritime Piracy Monitor",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.gdeltproject.org"
+    },
+    "feed_urls": [
+      "https://api.gdeltproject.org/api/v2/doc/doc?query=%22terrorist%20attack%22%20OR%20%22suicide%20bombing%22%20OR%20%22insurgent%20attack%22%20OR%20%22extremist%22&mode=ArtList&maxrecords=20&format=json",
+      "https://api.gdeltproject.org/api/v2/doc/doc?query=%22piracy%22%20OR%20%22hijacked%20vessel%22%20OR%20%22maritime%20attack%22%20OR%20%22Houthi%20attack%22%20OR%20%22Red%20Sea%20shipping%22&mode=ArtList&maxrecords=20&format=json"
+    ],
+    "feed_url": "https://api.gdeltproject.org/api/v2/doc/doc?query=%22terrorist%20attack%22%20OR%20%22piracy%22&mode=ArtList&maxrecords=20&format=json",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 38.88,
+    "lng": -77.02,
+    "max_items": 20,
+    "include_keywords": ["terrorist", "terrorism", "bombing", "insurgent", "extremist", "piracy", "hijack", "maritime attack", "Houthi", "militia", "hostage", "kidnap"]
+  },
+  {
+    "type": "gdelt-json",
+    "source": {
+      "source_id": "gdelt-sanctions",
+      "authority_name": "GDELT Sanctions & Threat Escalation Monitor",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.gdeltproject.org"
+    },
+    "feed_urls": [
+      "https://api.gdeltproject.org/api/v2/doc/doc?query=%22sanctions%20imposed%22%20OR%20%22trade%20embargo%22%20OR%20%22economic%20sanctions%22%20OR%20%22asset%20freeze%22&mode=ArtList&maxrecords=20&format=json",
+      "https://api.gdeltproject.org/api/v2/doc/doc?query=%22nuclear%20alert%22%20OR%20%22DEFCON%22%20OR%20%22military%20mobilization%22%20OR%20%22threat%20level%20raised%22&mode=ArtList&maxrecords=20&format=json"
+    ],
+    "feed_url": "https://api.gdeltproject.org/api/v2/doc/doc?query=%22sanctions%22%20OR%20%22embargo%22&mode=ArtList&maxrecords=20&format=json",
+    "category": "intelligence_report",
+    "region_tag": "INT",
+    "lat": 38.88,
+    "lng": -77.02,
+    "max_items": 15,
+    "include_keywords": ["sanctions", "embargo", "asset freeze", "blacklist", "DEFCON", "nuclear", "mobilization", "threat level", "escalation", "no-fly zone", "blockade"]
   },
   {
     "type": "rss",
