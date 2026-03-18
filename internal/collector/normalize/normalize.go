@@ -386,6 +386,116 @@ func inferTravelWarningSeverity(title, summary string, tags []string) string {
 	}
 }
 
+func USGSAlert(ctx Context, meta model.RegistrySource, ev parse.USGSItem) *model.Alert {
+	publishedAt := parseDate(ev.Published)
+	if publishedAt.IsZero() {
+		publishedAt = ctx.Now
+	}
+	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
+		return nil
+	}
+	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+" "+ev.Summary, publishedAt)
+	alert.Category = "public_safety"
+	alert.Severity = parse.USGSSeverity(ev.Magnitude, ev.AlertLevel)
+	// Use GeoJSON coordinates directly (precise epicenter).
+	if ev.Lat != 0 || ev.Lng != 0 {
+		alert.Lat = ev.Lat
+		alert.Lng = ev.Lng
+	}
+	triage := score(ctx.Config, alert, FeedContext{
+		Summary:  ev.Summary,
+		Tags:     ev.Tags,
+		FeedType: meta.Type,
+	})
+	alert.Triage = triage
+	return &alert
+}
+
+func EONETAlert(ctx Context, meta model.RegistrySource, ev parse.EONETItem) *model.Alert {
+	publishedAt := parseDate(ev.Published)
+	if publishedAt.IsZero() {
+		publishedAt = ctx.Now
+	}
+	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
+		return nil
+	}
+	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+" "+ev.Summary, publishedAt)
+	alert.Category = "public_safety"
+	alert.Severity = parse.EONETSeverity(ev.CategoryID)
+	if ev.Lat != 0 || ev.Lng != 0 {
+		alert.Lat = ev.Lat
+		alert.Lng = ev.Lng
+	}
+	triage := score(ctx.Config, alert, FeedContext{
+		Summary:  ev.Summary,
+		Tags:     ev.Tags,
+		FeedType: meta.Type,
+	})
+	alert.Triage = triage
+	return &alert
+}
+
+func GDELTAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem, sourceCountry string) *model.Alert {
+	publishedAt := parseDate(item.Published)
+	if publishedAt.IsZero() {
+		publishedAt = ctx.Now
+	}
+	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
+		return nil
+	}
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
+	// Pin to country capital when we have a source country.
+	if iso2 := parse.GDELTCountryISO2(sourceCountry); iso2 != "" {
+		if gLat, gLng, _, ok := geocodeCountryCode(iso2); ok {
+			alert.Lat, alert.Lng = jitterCC(gLat, gLng, meta.Source.SourceID+":"+item.Link, "capital", iso2)
+		}
+		alert.Source.CountryCode = iso2
+		if name := countryNameFromCode(iso2); name != "" {
+			alert.Source.Country = name
+		}
+		alert.RegionTag = iso2
+	}
+	triage := score(ctx.Config, alert, FeedContext{
+		Summary:  item.Summary,
+		Author:   item.Author,
+		Tags:     item.Tags,
+		FeedType: meta.Type,
+	})
+	alert.Triage = triage
+	return &alert
+}
+
+func FeodoAlert(ctx Context, meta model.RegistrySource, ev parse.FeodoItem) *model.Alert {
+	publishedAt := parseDate(ev.Published)
+	if publishedAt.IsZero() {
+		publishedAt = ctx.Now
+	}
+	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
+		return nil
+	}
+	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+" "+ev.Summary, publishedAt)
+	alert.Category = "cyber_advisory"
+	alert.Severity = "high"
+	// Pin to country capital using the 2-letter country code from Feodo.
+	if code := normalizeCountryCode(ev.Country); code != "" {
+		if gLat, gLng, _, ok := geocodeCountryCode(code); ok {
+			alert.Lat, alert.Lng = jitterCC(gLat, gLng, meta.Source.SourceID+":"+ev.IPAddress, "capital", code)
+		}
+		alert.Source.CountryCode = code
+		if name := countryNameFromCode(code); name != "" {
+			alert.Source.Country = name
+		}
+		alert.RegionTag = code
+	}
+	triage := score(ctx.Config, alert, FeedContext{
+		Summary:  ev.Summary,
+		Tags:     ev.Tags,
+		FeedType: meta.Type,
+	})
+	alert.Triage = triage
+	return &alert
+}
+
 func StaticInterpolEntry(now time.Time) model.Alert {
 	return model.Alert{
 		AlertID:        "interpol-hub-static",

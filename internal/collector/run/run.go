@@ -676,7 +676,8 @@ func acceptForType(sourceType string) string {
 	switch sourceType {
 	case "rss":
 		return "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8"
-	case "kev-json", "fbi-wanted-json", "travelwarning-json", "acled-json":
+	case "kev-json", "fbi-wanted-json", "travelwarning-json", "acled-json",
+		"usgs-geojson", "eonet-json", "gdelt-json", "feodo-json":
 		return "application/json"
 	case "travelwarning-atom":
 		return "application/atom+xml, application/xml;q=0.9, */*;q=0.8"
@@ -746,6 +747,8 @@ func typePriority(kind string) int {
 		return 5
 	case "interpol-red-json", "interpol-yellow-json", "fbi-wanted-json", "travelwarning-json", "travelwarning-atom":
 		return 4
+	case "usgs-geojson", "eonet-json", "feodo-json", "gdelt-json":
+		return 4
 	case "rss":
 		return 3
 	case "html-list", "telegram":
@@ -788,6 +791,14 @@ func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser 
 		return r.fetchTravelWarningAtom(ctx, fetcher, nctx, source)
 	case "telegram":
 		return r.fetchTelegram(ctx, fetcher, nctx, source)
+	case "usgs-geojson":
+		return r.fetchUSGSGeoJSON(ctx, fetcher, nctx, source)
+	case "eonet-json":
+		return r.fetchEONET(ctx, fetcher, nctx, source)
+	case "feodo-json":
+		return r.fetchFeodo(ctx, fetcher, nctx, source)
+	case "gdelt-json":
+		return r.fetchGDELT(ctx, fetcher, nctx, source)
 	default:
 		return nil, fmt.Errorf("unsupported source type %s", source.Type)
 	}
@@ -1404,6 +1415,141 @@ func (r Runner) fetchTravelWarningAtom(ctx context.Context, fetcher fetch.Fetche
 			continue
 		}
 		alert := normalize.TravelWarningAlert(nctx, source, item)
+		if alert != nil {
+			out = append(out, *alert)
+		}
+	}
+	return out, nil
+}
+
+func (r Runner) fetchUSGSGeoJSON(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	body, err := fetcher.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
+	if err != nil {
+		return nil, err
+	}
+	items, err := parse.ParseUSGSGeoJSON(body)
+	if err != nil {
+		return nil, err
+	}
+	limit := perSourceLimit(nctx.Config, source)
+	out := make([]model.Alert, 0, limit)
+	for _, item := range items {
+		if len(out) == limit {
+			break
+		}
+		alert := normalize.USGSAlert(nctx, source, item)
+		if alert != nil {
+			out = append(out, *alert)
+		}
+	}
+	return out, nil
+}
+
+func (r Runner) fetchEONET(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	body, err := fetcher.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
+	if err != nil {
+		return nil, err
+	}
+	items, err := parse.ParseEONET(body)
+	if err != nil {
+		return nil, err
+	}
+	limit := perSourceLimit(nctx.Config, source)
+	out := make([]model.Alert, 0, limit)
+	for _, item := range items {
+		if len(out) == limit {
+			break
+		}
+		alert := normalize.EONETAlert(nctx, source, item)
+		if alert != nil {
+			out = append(out, *alert)
+		}
+	}
+	return out, nil
+}
+
+func (r Runner) fetchFeodo(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	body, err := fetcher.Text(ctx, source.FeedURL, source.FollowRedirects, "application/json")
+	if err != nil {
+		return nil, err
+	}
+	items, err := parse.ParseFeodo(body)
+	if err != nil {
+		return nil, err
+	}
+	limit := perSourceLimit(nctx.Config, source)
+	out := make([]model.Alert, 0, limit)
+	for _, item := range items {
+		if len(out) == limit {
+			break
+		}
+		alert := normalize.FeodoAlert(nctx, source, item)
+		if alert != nil {
+			out = append(out, *alert)
+		}
+	}
+	return out, nil
+}
+
+func (r Runner) fetchGDELT(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	// GDELT supports multiple query URLs via feed_urls for multi-query merge.
+	urls := source.FeedURLs
+	if len(urls) == 0 && source.FeedURL != "" {
+		urls = []string{source.FeedURL}
+	}
+
+	limit := perSourceLimit(nctx.Config, source)
+	var allItems []parse.FeedItem
+	seen := make(map[string]struct{})
+
+	for _, qURL := range urls {
+		body, err := fetcher.Text(ctx, qURL, source.FollowRedirects, "application/json")
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN %s: GDELT query failed: %v\n", source.Source.AuthorityName, err)
+			continue
+		}
+		items, err := parse.ParseGDELT(body)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN %s: GDELT parse failed: %v\n", source.Source.AuthorityName, err)
+			continue
+		}
+		for _, item := range items {
+			if _, dup := seen[item.Link]; dup {
+				continue
+			}
+			seen[item.Link] = struct{}{}
+			allItems = append(allItems, item)
+		}
+		// Brief pause between queries to be polite.
+		if len(urls) > 1 {
+			select {
+			case <-time.After(500 * time.Millisecond):
+			case <-ctx.Done():
+				break
+			}
+		}
+	}
+
+	allItems = filterFeedKeywords(allItems, source.IncludeKeywords, source.ExcludeKeywords)
+	sortFeedItemsNewest(allItems)
+	if len(allItems) > limit {
+		allItems = allItems[:limit]
+	}
+
+	out := make([]model.Alert, 0, limit)
+	for _, item := range allItems {
+		if len(out) == limit {
+			break
+		}
+		// Extract source country from tags (first non-"gdelt" tag is the country).
+		var sourceCountry string
+		for _, tag := range item.Tags {
+			if tag != "gdelt" {
+				sourceCountry = tag
+				break
+			}
+		}
+		alert := normalize.GDELTAlert(nctx, source, item, sourceCountry)
 		if alert != nil {
 			out = append(out, *alert)
 		}

@@ -416,6 +416,58 @@
     "max_items": 15
   },
   {
+    "type": "rss",
+    "source": {
+      "source_id": "cisa-ics",
+      "authority_name": "CISA ICS-CERT",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "cert",
+      "base_url": "https://www.cisa.gov"
+    },
+    "feed_url": "https://www.cisa.gov/uscert/ics/advisories/advisories.xml",
+    "category": "cyber_advisory",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.03,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cert-eu-advisories",
+      "authority_name": "CERT-EU Security Advisories",
+      "country": "Belgium",
+      "country_code": "BE",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://cert.europa.eu"
+    },
+    "feed_url": "https://cert.europa.eu/publications/security-advisories-rss",
+    "category": "cyber_advisory",
+    "region_tag": "EU",
+    "lat": 50.85,
+    "lng": 4.35
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "cert-eu-threatintel",
+      "authority_name": "CERT-EU Threat Intelligence",
+      "country": "Belgium",
+      "country_code": "BE",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://cert.europa.eu"
+    },
+    "feed_url": "https://cert.europa.eu/publications/threat-intelligence-rss",
+    "category": "cyber_advisory",
+    "region_tag": "EU",
+    "lat": 50.85,
+    "lng": 4.35
+  },
+  {
     "type": "html-list",
     "fetch_mode": "browser",
     "followRedirects": true,
@@ -3479,21 +3531,22 @@
     "lng": 4.38
   },
   {
-    "type": "rss",
+    "type": "usgs-geojson",
     "source": {
-      "source_id": "usgs-earthquake",
-      "authority_name": "USGS Earthquake Alerts",
+      "source_id": "usgs-earthquake-geojson",
+      "authority_name": "USGS Earthquake Hazards (GeoJSON)",
       "country": "United States",
       "country_code": "US",
       "region": "International",
       "authority_type": "public_safety_program",
       "base_url": "https://earthquake.usgs.gov"
     },
-    "feed_url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_week.atom",
-    "category": "emergency_management",
+    "feed_url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson",
+    "category": "public_safety",
     "region_tag": "INT",
-    "lat": 37.77,
-    "lng": -122.42
+    "lat": 38.95,
+    "lng": -77.37,
+    "max_items": 50
   },
   {
     "type": "rss",
@@ -5717,22 +5770,63 @@
     "max_items": 50
   },
   {
-    "type": "rss",
+    "type": "eonet-json",
     "source": {
-      "source_id": "usgs-earthquakes",
-      "authority_name": "USGS Significant Earthquakes",
+      "source_id": "eonet-disasters",
+      "authority_name": "NASA EONET Natural Disasters",
       "country": "United States",
       "country_code": "US",
       "region": "International",
       "authority_type": "public_safety_program",
-      "base_url": "https://earthquake.usgs.gov"
+      "base_url": "https://eonet.gsfc.nasa.gov"
     },
-    "feed_url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.atom",
-    "category": "environmental_disaster",
+    "feed_url": "https://eonet.gsfc.nasa.gov/api/v3/events?days=7&limit=50",
+    "category": "public_safety",
     "region_tag": "INT",
-    "lat": 38.95,
-    "lng": -77.37,
-    "max_items": 40
+    "lat": 38.88,
+    "lng": -77.02,
+    "max_items": 50
+  },
+  {
+    "type": "feodo-json",
+    "source": {
+      "source_id": "feodo-botnet",
+      "authority_name": "Feodo Tracker C2 Blocklist",
+      "country": "Switzerland",
+      "country_code": "CH",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://feodotracker.abuse.ch"
+    },
+    "feed_url": "https://feodotracker.abuse.ch/downloads/ipblocklist.json",
+    "category": "cyber_advisory",
+    "region_tag": "INT",
+    "lat": 46.95,
+    "lng": 7.45,
+    "max_items": 30
+  },
+  {
+    "type": "gdelt-json",
+    "source": {
+      "source_id": "gdelt-conflict",
+      "authority_name": "GDELT Global Conflict Monitor",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.gdeltproject.org"
+    },
+    "feed_urls": [
+      "https://api.gdeltproject.org/api/v2/doc/doc?query=%22military%20conflict%22%20OR%20%22armed%20forces%22%20OR%20%22troops%20deployed%22&mode=ArtList&maxrecords=20&format=json",
+      "https://api.gdeltproject.org/api/v2/doc/doc?query=%22sanctions%20imposed%22%20OR%20%22trade%20embargo%22%20OR%20%22economic%20sanctions%22&mode=ArtList&maxrecords=20&format=json"
+    ],
+    "feed_url": "https://api.gdeltproject.org/api/v2/doc/doc?query=%22military%20conflict%22%20OR%20%22armed%20forces%22&mode=ArtList&maxrecords=20&format=json",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 38.88,
+    "lng": -77.02,
+    "max_items": 20,
+    "include_keywords": ["military", "conflict", "sanctions", "troops", "strike", "missile", "attack", "invasion", "war", "combat", "airstrike", "ceasefire", "embargo"]
   },
   {
     "type": "rss",
@@ -6710,6 +6804,23 @@
   {
     "type": "rss",
     "source": {
+      "source_id": "us-state-dipsec",
+      "authority_name": "US State Dept — Diplomatic Security",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "national_security",
+      "base_url": "https://www.state.gov"
+    },
+    "feed_url": "https://www.state.gov/rss-feed/diplomatic-security/feed/",
+    "category": "public_safety",
+    "region_tag": "INT",
+    "lat": 38.89,
+    "lng": -77.05
+  },
+  {
+    "type": "rss",
+    "source": {
       "source_id": "us-nctc-alerts",
       "authority_name": "US NCTC / ODNI Press",
       "country": "United States",
@@ -7022,5 +7133,147 @@
     "region_tag": "UA",
     "lat": 50.45,
     "lng": 30.52
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-bnonews",
+      "authority_name": "BNO News",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/BNONews"
+    },
+    "feed_url": "https://t.me/s/BNONews",
+    "category": "public_safety",
+    "region_tag": "INT",
+    "lat": 50.85,
+    "lng": 4.35
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-auroraintel",
+      "authority_name": "Aurora Intel",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/AuroraIntel"
+    },
+    "feed_url": "https://t.me/s/AuroraIntel",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 50.0,
+    "lng": 36.0
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-osintdefender",
+      "authority_name": "OSINT Defender",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/OSINTdefender"
+    },
+    "feed_url": "https://t.me/s/OSINTdefender",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 48.0,
+    "lng": 35.0
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-spectatorindex",
+      "authority_name": "The Spectator Index",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/spectatorindex"
+    },
+    "feed_url": "https://t.me/s/spectatorindex",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 51.5,
+    "lng": -0.12
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-clashreport",
+      "authority_name": "Clash Report",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/ClashReport"
+    },
+    "feed_url": "https://t.me/s/ClashReport",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 36.0,
+    "lng": 38.0
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "gnews-terrorism-eu",
+      "authority_name": "Google News — Terrorism EU",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Europe",
+      "authority_type": "news_aggregator",
+      "base_url": "https://news.google.com"
+    },
+    "feed_url": "https://news.google.com/rss/search?q=%22terrorist+attack%22+OR+%22bomb+explosion%22+OR+%22hostage%22+OR+%22mass+shooting%22+Europe&hl=en&gl=US&ceid=US:en",
+    "category": "terrorism_tip",
+    "region_tag": "EU",
+    "lat": 50.85,
+    "lng": 4.35,
+    "include_keywords": ["attack", "bomb", "explosion", "killed", "hostage", "shooting", "terrorist", "arrested", "suspect"],
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "gnews-disaster-eu",
+      "authority_name": "Google News — Natural Disasters EU",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Europe",
+      "authority_type": "news_aggregator",
+      "base_url": "https://news.google.com"
+    },
+    "feed_url": "https://news.google.com/rss/search?q=%22earthquake%22+OR+%22tsunami%22+OR+%22flood%22+OR+%22wildfire%22+OR+%22volcanic+eruption%22+Europe&hl=en&gl=US&ceid=US:en",
+    "category": "public_safety",
+    "region_tag": "EU",
+    "lat": 50.85,
+    "lng": 4.35,
+    "include_keywords": ["earthquake", "tsunami", "flood", "wildfire", "eruption", "evacuation", "casualties", "magnitude", "destroyed"],
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "gnews-conflict-global",
+      "authority_name": "Google News — Armed Conflict",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "news_aggregator",
+      "base_url": "https://news.google.com"
+    },
+    "feed_url": "https://news.google.com/rss/search?q=%22airstrike%22+OR+%22military+operation%22+OR+%22armed+conflict%22+OR+%22ceasefire%22+OR+%22shelling%22&hl=en&gl=US&ceid=US:en",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 35.0,
+    "lng": 39.0,
+    "include_keywords": ["airstrike", "strike", "military", "conflict", "ceasefire", "shelling", "troops", "offensive", "casualties", "killed", "wounded"],
+    "max_items": 10
   }
 ]
