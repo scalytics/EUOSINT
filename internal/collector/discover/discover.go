@@ -197,7 +197,7 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 	var failures []string
 	var slowSkips []string
 
-	teams, err := FetchFIRSTTeams(ctx, client)
+	teams, err := FetchFIRSTTeams(ctx, cfg, client)
 	if err != nil {
 		if isDiscoveryTimeout(err) {
 			slowSkips = append(slowSkips, "FIRST.org")
@@ -205,7 +205,7 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 			failures = append(failures, fmt.Sprintf("FIRST.org: %v", err))
 		}
 	} else {
-		fmt.Fprintf(stderr, "FIRST.org: fetched %d teams for candidate seeding\n", len(teams))
+		fmt.Fprintf(stderr, "FIRST.org: %d teams for candidate seeding\n", len(teams))
 		for _, team := range teams {
 			candidates = append(candidates, model.SourceCandidate{
 				URL:           team.Website,

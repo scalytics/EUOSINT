@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/fetch"
 )
 
@@ -52,8 +53,8 @@ func (f *firstWebsiteField) UnmarshalJSON(data []byte) error {
 
 // FetchFIRSTTeams fetches all CSIRT teams from the FIRST.org API,
 // paginating through all results. Returns teams that have a non-empty
-// website URL.
-func FetchFIRSTTeams(ctx context.Context, client *fetch.Client) ([]FIRSTTeam, error) {
+// website URL. Results are cached via the Wikidata/discovery cache.
+func FetchFIRSTTeams(ctx context.Context, cfg config.Config, client *fetch.Client) ([]FIRSTTeam, error) {
 	var allTeams []FIRSTTeam
 	offset := 0
 	for {
@@ -61,7 +62,7 @@ func FetchFIRSTTeams(ctx context.Context, client *fetch.Client) ([]FIRSTTeam, er
 			return allTeams, ctx.Err()
 		}
 		url := fmt.Sprintf("%s?limit=%d&offset=%d", firstAPIBase, firstPageLimit, offset)
-		body, err := fetchTextWithRetry(ctx, client, url, "application/json")
+		body, err := fetchWikidataTextWithCache(ctx, cfg, client, url, "application/json")
 		if err != nil {
 			return allTeams, fmt.Errorf("FIRST.org API page offset=%d: %w", offset, err)
 		}

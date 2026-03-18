@@ -53,9 +53,13 @@ func fetchWikidataTextWithCache(ctx context.Context, cfg config.Config, client *
 	if body, ok := readWikidataCache(cfg, url); ok {
 		return body, nil
 	}
-	headers := map[string]string{
-		"User-Agent":     cfg.WikimediaUserAgent,
-		"Api-User-Agent": cfg.WikimediaUserAgent,
+	// Use Wikimedia-specific headers only for Wikidata/Wikimedia URLs.
+	var headers map[string]string
+	if strings.Contains(url, "wikidata.org") || strings.Contains(url, "wikimedia.org") {
+		headers = map[string]string{
+			"User-Agent":     cfg.WikimediaUserAgent,
+			"Api-User-Agent": cfg.WikimediaUserAgent,
+		}
 	}
 	var lastErr error
 	for attempt := 0; attempt < 2; attempt++ {
@@ -64,7 +68,13 @@ func fetchWikidataTextWithCache(ctx context.Context, cfg config.Config, client *
 		if _, ok := ctx.Deadline(); !ok {
 			attemptCtx, cancel = context.WithTimeout(ctx, 45*time.Second)
 		}
-		body, err := client.TextWithHeaders(attemptCtx, url, true, accept, headers)
+		var body []byte
+		var err error
+		if headers != nil {
+			body, err = client.TextWithHeaders(attemptCtx, url, true, accept, headers)
+		} else {
+			body, err = client.Text(attemptCtx, url, true, accept)
+		}
 		cancel()
 		if err == nil {
 			writeWikidataCache(cfg, url, body)
