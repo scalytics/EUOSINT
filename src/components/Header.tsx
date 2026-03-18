@@ -1,7 +1,7 @@
 /*
  * EUOSINT
- * Portions derived from novatechflow/osint-siem and cyberdude88/osint-siem.
- * See NOTICE for provenance and LICENSE for repository-local terms.
+ * Open-source OSINT pipeline distribution.
+ * See LICENSE for repository-local terms.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
