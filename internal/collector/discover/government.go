@@ -34,17 +34,17 @@ var governmentTypeIDs = []struct {
 	category      string
 }{
 	// ── Legislative / Parliament ─────────────────────────────────
-	{"Q11204", "legislative", "legislative"},         // parliament
-	{"Q35749", "legislative", "legislative"},          // legislature
-	{"Q637846", "legislative", "legislative"},         // unicameral legislature
-	{"Q187997", "legislative", "legislative"},         // bicameral legislature
-	{"Q1752346", "government", "legislative"},         // head of government office
+	{"Q11204", "legislative", "legislative"},  // parliament
+	{"Q35749", "legislative", "legislative"},  // legislature
+	{"Q637846", "legislative", "legislative"}, // unicameral legislature
+	{"Q187997", "legislative", "legislative"}, // bicameral legislature
+	{"Q1752346", "government", "legislative"}, // head of government office
 	// ── Executive / Government ──────────────────────────────────
-	{"Q35798", "government", "legislative"},           // executive body of government
-	{"Q2659904", "government", "legislative"},         // government agency
+	{"Q35798", "government", "legislative"},   // executive body of government
+	{"Q2659904", "government", "legislative"}, // government agency
 	// ── Foreign Affairs / Diplomatic ────────────────────────────
-	{"Q192350", "government", "travel_warning"},       // ministry of foreign affairs
-	{"Q3917681", "diplomatic", "travel_warning"},      // embassy (filtered to major countries)
+	{"Q192350", "government", "travel_warning"},  // ministry of foreign affairs
+	{"Q3917681", "diplomatic", "travel_warning"}, // embassy (filtered to major countries)
 	// ── Defence / Military ──────────────────────────────────────
 	{"Q691583", "national_security", "conflict_monitoring"}, // ministry of defence
 	{"Q176799", "national_security", "conflict_monitoring"}, // military organization

@@ -171,9 +171,9 @@ func (s *Server) handleDigest(w http.ResponseWriter, r *http.Request) {
 		digests = []trends.CountryDigest{}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"days":     days,
-		"count":    len(digests),
-		"digests":  digests,
+		"days":    days,
+		"count":   len(digests),
+		"digests": digests,
 	})
 }
 

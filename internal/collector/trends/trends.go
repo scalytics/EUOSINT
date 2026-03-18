@@ -300,10 +300,10 @@ func (d *Detector) Prune(ctx context.Context, now time.Time, retentionDays int) 
 type DigestTerm struct {
 	Term        string  `json:"term"`
 	Count       int     `json:"count"`
-	Weight      float64 `json:"weight"`       // trust-weighted count
-	AvgCount    float64 `json:"avg_count"`     // baseline daily average
-	Ratio       float64 `json:"ratio"`         // today / avg (0 if new)
-	Category    string  `json:"category"`      // dominant category
+	Weight      float64 `json:"weight"`    // trust-weighted count
+	AvgCount    float64 `json:"avg_count"` // baseline daily average
+	Ratio       float64 `json:"ratio"`     // today / avg (0 if new)
+	Category    string  `json:"category"`  // dominant category
 	SampleTitle string  `json:"sample_title,omitempty"`
 	SampleURL   string  `json:"sample_url,omitempty"`
 }
