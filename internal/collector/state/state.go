@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/scalytics/euosint/internal/collector/config"
@@ -55,6 +56,7 @@ func WriteCursors(path string, c Cursors) error {
 // Discovery uses the same file to find replacement feeds.
 type DLQ struct {
 	entries map[string]model.SourceReplacementCandidate
+	mu      sync.RWMutex
 }
 
 // DLQRetryInterval is how often DLQ sources are re-probed (once per day).
@@ -80,10 +82,12 @@ func (d *DLQ) Write(path string) error {
 	if dir := filepath.Dir(path); dir != "" && dir != "." {
 		_ = os.MkdirAll(dir, 0o755)
 	}
+	d.mu.RLock()
 	sources := make([]model.SourceReplacementCandidate, 0, len(d.entries))
 	for _, entry := range d.entries {
 		sources = append(sources, entry)
 	}
+	d.mu.RUnlock()
 	doc := model.SourceReplacementDocument{
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 		Sources:     sources,
@@ -99,7 +103,9 @@ func (d *DLQ) Write(path string) error {
 // ShouldSkip returns true if the source is in the DLQ and not yet due
 // for its daily re-probe.
 func (d *DLQ) ShouldSkip(sourceID string, now time.Time) bool {
+	d.mu.RLock()
 	entry, ok := d.entries[sourceID]
+	d.mu.RUnlock()
 	if !ok {
 		return false
 	}
@@ -116,7 +122,9 @@ func (d *DLQ) ShouldSkip(sourceID string, now time.Time) bool {
 // DueForRetry returns true if the source is in the DLQ but its retry
 // interval has elapsed so it should be probed this cycle.
 func (d *DLQ) DueForRetry(sourceID string, now time.Time) bool {
+	d.mu.RLock()
 	entry, ok := d.entries[sourceID]
+	d.mu.RUnlock()
 	if !ok {
 		return false
 	}
@@ -133,16 +141,22 @@ func (d *DLQ) DueForRetry(sourceID string, now time.Time) bool {
 // Add places a source into the DLQ.
 func (d *DLQ) Add(entry model.SourceReplacementCandidate) {
 	entry.LastAttemptAt = time.Now().UTC().Format(time.RFC3339)
+	d.mu.Lock()
 	d.entries[entry.SourceID] = entry
+	d.mu.Unlock()
 }
 
 // Remove takes a source out of the DLQ (it came back).
 func (d *DLQ) Remove(sourceID string) {
+	d.mu.Lock()
 	delete(d.entries, sourceID)
+	d.mu.Unlock()
 }
 
 // UpdateAttempt refreshes LastAttemptAt after a failed re-probe.
 func (d *DLQ) UpdateAttempt(sourceID string, now time.Time) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	if entry, ok := d.entries[sourceID]; ok {
 		entry.LastAttemptAt = now.UTC().Format(time.RFC3339)
 		d.entries[sourceID] = entry
@@ -150,10 +164,16 @@ func (d *DLQ) UpdateAttempt(sourceID string, now time.Time) {
 }
 
 // Len returns the number of sources in the DLQ.
-func (d *DLQ) Len() int { return len(d.entries) }
+func (d *DLQ) Len() int {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return len(d.entries)
+}
 
 // Entries returns all DLQ entries for reporting.
 func (d *DLQ) Entries() []model.SourceReplacementCandidate {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 	out := make([]model.SourceReplacementCandidate, 0, len(d.entries))
 	for _, entry := range d.entries {
 		out = append(out, entry)
@@ -163,6 +183,8 @@ func (d *DLQ) Entries() []model.SourceReplacementCandidate {
 
 // Has returns true if the source is in the DLQ.
 func (d *DLQ) Has(sourceID string) bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 	_, ok := d.entries[sourceID]
 	return ok
 }
