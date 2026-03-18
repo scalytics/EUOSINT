@@ -314,7 +314,7 @@ export function GlobeView({
                     ? "border-siem-accent/40 bg-siem-accent/12 text-siem-text"
                     : "border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/30 hover:bg-siem-accent/8"
                 }`}
-                style={{ fontSize: "0.6rem" }}
+                style={{ fontSize: "10px" }}
               >
                 <span
                   className="h-1.5 w-1.5 rounded-full shrink-0"
