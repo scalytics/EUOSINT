@@ -5,6 +5,8 @@ package run
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -95,6 +98,16 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 	sources = prioritizeSources(sources)
 	client := r.clientFactory(cfg)
+	var runStore *sourcedb.DB
+	if isSQLiteRegistryPath(cfg.RegistryPath) {
+		db, err := sourcedb.Open(cfg.RegistryPath)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN source-run DB open failed: %v\n", err)
+		} else {
+			runStore = db
+			defer runStore.Close()
+		}
+	}
 
 	var browser *fetch.BrowserClient
 	if cfg.BrowserEnabled && r.browserFactory != nil {
@@ -172,8 +185,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 						return
 					}
 					if dlq.ShouldSkip(source.Source.SourceID, now) {
-						mu.Lock()
-						sourceHealth = append(sourceHealth, model.SourceHealthEntry{
+						entry := model.SourceHealthEntry{
 							SourceID:      source.Source.SourceID,
 							AuthorityName: source.Source.AuthorityName,
 							Type:          source.Type,
@@ -181,9 +193,14 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 							Status:        "skipped",
 							Error:         "dead letter queue",
 							ErrorClass:    "dlq",
-						})
+							StartedAt:     now.Format(time.RFC3339),
+							FinishedAt:    time.Now().UTC().Format(time.RFC3339),
+						}
+						mu.Lock()
+						sourceHealth = append(sourceHealth, entry)
 						completed++
 						mu.Unlock()
+						recordSourceRun(ctx, runStore, source, entry, nil, 0, map[string]any{"reason": "dlq"})
 						continue
 					}
 					batch, entry := r.fetchOneSource(ctx, fastClient, nil, nctx, source, categoryDictionary, cursors)
@@ -202,6 +219,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 						r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth)
 					}
 					mu.Unlock()
+					recordSourceRun(ctx, runStore, source, entry, batch, inferHTTPStatus(entry), nil)
 					if entry.Status == "error" && entry.DiscoveryAction == "dead_letter" {
 						fmt.Fprintf(r.stderr, "WARN %s: %s (added to DLQ)\n", source.Source.AuthorityName, entry.Error)
 					} else if entry.Status == "error" {
@@ -221,7 +239,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 			break
 		}
 		if dlq.ShouldSkip(source.Source.SourceID, now) {
-			sourceHealth = append(sourceHealth, model.SourceHealthEntry{
+			entry := model.SourceHealthEntry{
 				SourceID:      source.Source.SourceID,
 				AuthorityName: source.Source.AuthorityName,
 				Type:          source.Type,
@@ -229,14 +247,39 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 				Status:        "skipped",
 				Error:         "dead letter queue",
 				ErrorClass:    "dlq",
-			})
+				StartedAt:     now.Format(time.RFC3339),
+				FinishedAt:    time.Now().UTC().Format(time.RFC3339),
+			}
+			sourceHealth = append(sourceHealth, entry)
 			completed++
+			recordSourceRun(ctx, runStore, source, entry, nil, 0, map[string]any{"reason": "dlq"})
 			continue
+		}
+		if source.Type == "html-list" && runStore != nil {
+			shouldSkip, probeStatus, reason := r.shouldSkipHTMLScrape(ctx, cfg, client, runStore, source, now)
+			if shouldSkip {
+				entry := model.SourceHealthEntry{
+					SourceID:      source.Source.SourceID,
+					AuthorityName: source.Source.AuthorityName,
+					Type:          source.Type,
+					FeedURL:       source.FeedURL,
+					Status:        "skipped",
+					Error:         reason,
+					ErrorClass:    "cadence",
+					StartedAt:     now.Format(time.RFC3339),
+					FinishedAt:    time.Now().UTC().Format(time.RFC3339),
+				}
+				sourceHealth = append(sourceHealth, entry)
+				completed++
+				recordSourceRun(ctx, runStore, source, entry, nil, probeStatus, map[string]any{"reason": reason, "probe_only": true})
+				continue
+			}
 		}
 		batch, entry := r.fetchOneSourceSlow(ctx, client, browser, nctx, source, categoryDictionary, cursors)
 		sourceHealth = append(sourceHealth, entry)
 		alerts = append(alerts, batch...)
 		completed++
+		recordSourceRun(ctx, runStore, source, entry, batch, inferHTTPStatus(entry), nil)
 		if entry.Status == "error" && entry.DiscoveryAction == "dead_letter" {
 			dlq.Add(buildDLQEntry(entry, source))
 			fmt.Fprintf(r.stderr, "WARN %s: %s (added to DLQ)\n", source.Source.AuthorityName, entry.Error)
@@ -595,6 +638,7 @@ func (r Runner) fetchRSS(ctx context.Context, fetcher fetch.Fetcher, nctx normal
 		}
 	}
 	items = filterFeedKeywords(items, source.IncludeKeywords, source.ExcludeKeywords)
+	sortFeedItemsNewest(items)
 	limit := perSourceLimit(nctx.Config, source)
 	if len(items) > limit {
 		items = items[:limit]
@@ -677,6 +721,7 @@ func (r Runner) fetchTelegram(ctx context.Context, fetcher fetch.Fetcher, nctx n
 	channel := extractTelegramChannel(source.FeedURL)
 	items := parse.ParseTelegram(string(body), channel)
 	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords)
+	sortFeedItemsNewest(items)
 	limit := perSourceLimit(nctx.Config, source)
 	if len(items) > limit {
 		items = items[:limit]
@@ -1392,10 +1437,146 @@ func assertCriticalSourceCoverage(cfg config.Config, entries []model.SourceHealt
 }
 
 func perSourceLimit(cfg config.Config, source model.RegistrySource) int {
+	limit := cfg.MaxPerSource
 	if source.MaxItems > 0 {
-		return source.MaxItems
+		limit = source.MaxItems
 	}
-	return cfg.MaxPerSource
+	if limit <= 0 {
+		limit = 20
+	}
+	// Stream-like sources should stay in a small rolling window per run.
+	if strings.ToLower(strings.TrimSpace(source.Type)) != "html-list" && cfg.RecentWindowPerSource > 0 && limit > cfg.RecentWindowPerSource {
+		limit = cfg.RecentWindowPerSource
+	}
+	return limit
+}
+
+func sortFeedItemsNewest(items []parse.FeedItem) {
+	sort.SliceStable(items, func(i, j int) bool {
+		ti := parseFeedPublished(items[i].Published)
+		tj := parseFeedPublished(items[j].Published)
+		if ti.IsZero() && tj.IsZero() {
+			return i < j
+		}
+		if ti.IsZero() {
+			return false
+		}
+		if tj.IsZero() {
+			return true
+		}
+		return ti.After(tj)
+	})
+}
+
+func parseFeedPublished(raw string) time.Time {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}
+	}
+	formats := []string{
+		time.RFC3339,
+		time.RFC3339Nano,
+		time.RFC1123Z,
+		time.RFC1123,
+		time.RFC822Z,
+		time.RFC822,
+		time.ANSIC,
+		"2006-01-02",
+	}
+	for _, format := range formats {
+		if parsed, err := time.Parse(format, raw); err == nil {
+			return parsed.UTC()
+		}
+	}
+	return time.Time{}
+}
+
+func inferHTTPStatus(entry model.SourceHealthEntry) int {
+	if entry.Status == "ok" {
+		return http.StatusOK
+	}
+	if entry.Error == "" {
+		return 0
+	}
+	const marker = "status "
+	i := strings.Index(strings.ToLower(entry.Error), marker)
+	if i < 0 {
+		return 0
+	}
+	start := i + len(marker)
+	end := start
+	for end < len(entry.Error) && entry.Error[end] >= '0' && entry.Error[end] <= '9' {
+		end++
+	}
+	if end == start {
+		return 0
+	}
+	code, err := strconv.Atoi(entry.Error[start:end])
+	if err != nil {
+		return 0
+	}
+	return code
+}
+
+func batchContentHash(batch []model.Alert) string {
+	if len(batch) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(batch))
+	for _, alert := range batch {
+		parts = append(parts, alert.AlertID+"|"+alert.CanonicalURL+"|"+alert.Title)
+	}
+	sort.Strings(parts)
+	sum := sha1.Sum([]byte(strings.Join(parts, "\n")))
+	return hex.EncodeToString(sum[:])
+}
+
+func recordSourceRun(ctx context.Context, store *sourcedb.DB, source model.RegistrySource, entry model.SourceHealthEntry, batch []model.Alert, httpStatus int, meta map[string]any) {
+	if store == nil {
+		return
+	}
+	if httpStatus == 0 {
+		httpStatus = inferHTTPStatus(entry)
+	}
+	in := sourcedb.SourceRunInput{
+		SourceID:      source.Source.SourceID,
+		RunStartedAt:  entry.StartedAt,
+		RunFinishedAt: entry.FinishedAt,
+		Status:        entry.Status,
+		HTTPStatus:    httpStatus,
+		FetchedCount:  entry.FetchedCount,
+		Error:         entry.Error,
+		ErrorClass:    entry.ErrorClass,
+		ContentHash:   batchContentHash(batch),
+		Metadata:      meta,
+	}
+	_ = store.RecordSourceRun(ctx, in)
+}
+
+func (r Runner) shouldSkipHTMLScrape(ctx context.Context, cfg config.Config, client *fetch.Client, store *sourcedb.DB, source model.RegistrySource, now time.Time) (bool, int, string) {
+	if cfg.HTMLScrapeIntervalHours <= 0 {
+		return false, 0, ""
+	}
+	probeStatus, err := client.HeadStatus(ctx, source.FeedURL, source.FollowRedirects)
+	if err != nil {
+		return false, 0, ""
+	}
+	wm, ok, err := store.GetSourceWatermark(ctx, source.Source.SourceID)
+	if err != nil || !ok {
+		return false, probeStatus, ""
+	}
+	if probeStatus < 200 || probeStatus >= 300 {
+		return false, probeStatus, ""
+	}
+	lastSuccess, err := time.Parse(time.RFC3339, strings.TrimSpace(wm.LastSuccessAt))
+	if err != nil || lastSuccess.IsZero() {
+		return false, probeStatus, ""
+	}
+	nextDue := lastSuccess.Add(time.Duration(cfg.HTMLScrapeIntervalHours) * time.Hour)
+	if now.Before(nextDue) {
+		return true, probeStatus, fmt.Sprintf("html cadence gate (%dh)", cfg.HTMLScrapeIntervalHours)
+	}
+	return false, probeStatus, ""
 }
 
 func firstNonEmpty(values ...string) string {

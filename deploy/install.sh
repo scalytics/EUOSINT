@@ -114,6 +114,92 @@ clone_or_update_repo() {
   fi
 }
 
+repo_slug() {
+  local url="$REPO_URL"
+  url="${url#https://github.com/}"
+  url="${url#http://github.com/}"
+  url="${url#git@github.com:}"
+  url="${url%.git}"
+  echo "$url"
+}
+
+fetch_repo_file() {
+  local path="$1"
+  local out="$2"
+  local slug
+  local raw_url
+  slug="$(repo_slug)"
+  raw_url="https://raw.githubusercontent.com/${slug}/${REPO_REF}/${path}"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$raw_url" -o "$out"
+    return 0
+  fi
+  if command -v wget >/dev/null 2>&1; then
+    wget -qO "$out" "$raw_url"
+    return 0
+  fi
+  fatal "Need curl or wget to fetch ${path} from ${raw_url}"
+}
+
+refresh_compose_yaml_direct() {
+  local compose_file="$INSTALL_DIR/docker-compose.yml"
+  local tmp_file
+  local backup_file
+
+  [[ "$INSTALL_MODE" == "update" ]] || return 0
+  [[ -d "$INSTALL_DIR" ]] || fatal "Update mode requires existing install dir: $INSTALL_DIR"
+  [[ -f "$compose_file" ]] || fatal "Update mode requires existing docker-compose.yml at $compose_file"
+
+  tmp_file="$(mktemp)"
+  fetch_repo_file "docker-compose.yml" "$tmp_file"
+
+  backup_file="$compose_file.preupdate.$(date +%Y%m%d%H%M%S).bak"
+  cp "$compose_file" "$backup_file"
+  mv "$tmp_file" "$compose_file"
+  info "Refreshed docker-compose.yml from repository ref '$REPO_REF' (backup: $backup_file)."
+}
+
+refresh_env_example_direct() {
+  local env_example="$INSTALL_DIR/.env.example"
+  local tmp_file
+  local backup_file
+
+  [[ "$INSTALL_MODE" == "update" ]] || return 0
+  [[ -d "$INSTALL_DIR" ]] || fatal "Update mode requires existing install dir: $INSTALL_DIR"
+
+  tmp_file="$(mktemp)"
+  fetch_repo_file ".env.example" "$tmp_file"
+
+  if [[ -f "$env_example" ]]; then
+    backup_file="$env_example.preupdate.$(date +%Y%m%d%H%M%S).bak"
+    cp "$env_example" "$backup_file"
+    info "Backed up .env.example -> $backup_file"
+  fi
+  mv "$tmp_file" "$env_example"
+  info "Refreshed .env.example from repository ref '$REPO_REF'."
+}
+
+refresh_web_runtime_files_direct() {
+  local caddyfile="$INSTALL_DIR/docker/Caddyfile"
+  local tmp_file
+  local backup_file
+
+  [[ "$INSTALL_MODE" == "update" ]] || return 0
+
+  tmp_file="$(mktemp)"
+  fetch_repo_file "docker/Caddyfile" "$tmp_file"
+
+  if [[ -f "$caddyfile" ]]; then
+    backup_file="$caddyfile.preupdate.$(date +%Y%m%d%H%M%S).bak"
+    cp "$caddyfile" "$backup_file"
+    info "Backed up docker/Caddyfile -> $backup_file"
+  fi
+  mkdir -p "$(dirname "$caddyfile")"
+  mv "$tmp_file" "$caddyfile"
+  info "Refreshed docker/Caddyfile from repository ref '$REPO_REF'."
+}
+
 upsert_env() {
   local file="$1"
   local key="$2"
@@ -390,18 +476,20 @@ check_new_env_vars() {
 }
 
 main() {
-  require_cmd git
   ensure_docker
   INSTALL_MODE="$(prompt_install_mode)"
   info "Selected install mode: ${INSTALL_MODE}"
   if [[ "$INSTALL_MODE" == "install" ]]; then
+    require_cmd git
     clone_or_update_repo
     configure_env
   else
     if [[ ! -d "$INSTALL_DIR" || ! -f "$INSTALL_DIR/docker-compose.yml" ]]; then
       fatal "Update mode requires an existing install at $INSTALL_DIR (missing docker-compose.yml). Use install mode first."
     fi
-    clone_or_update_repo
+    refresh_compose_yaml_direct
+    refresh_env_example_direct
+    refresh_web_runtime_files_direct
     check_new_env_vars
   fi
   start_stack

@@ -102,11 +102,7 @@ func (c *Client) TextWithHeaders(ctx context.Context, url string, followRedirect
 
 	client := c.httpClient
 	if !followRedirects {
-		copyClient := *c.httpClient
-		copyClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		}
-		client = &copyClient
+		client = noRedirectClient(c.httpClient)
 	}
 
 	res, err := client.Do(req)
@@ -130,10 +126,43 @@ func (c *Client) TextWithHeaders(ctx context.Context, url string, followRedirect
 	return body, nil
 }
 
+// HeadStatus performs a lightweight HEAD probe and returns the resulting HTTP
+// status code (or an error when the probe failed).
+func (c *Client) HeadStatus(ctx context.Context, url string, followRedirects bool) (int, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+	if err != nil {
+		return 0, fmt.Errorf("build request %s: %w", url, err)
+	}
+	req.Header.Set("User-Agent", c.userAgent)
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Pragma", "no-cache")
+
+	client := c.httpClient
+	if !followRedirects {
+		client = noRedirectClient(c.httpClient)
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("probe %s: %w", url, err)
+	}
+	defer res.Body.Close()
+	return res.StatusCode, nil
+}
+
 // readBody reads the response body, handling gzip/br/deflate transparently.
 // The stealth transport configures decompression, but if a test transport is
 // injected the body may already be plain text.
 func readBody(res *http.Response, limit int64) ([]byte, error) {
 	reader := io.LimitReader(res.Body, limit+1)
 	return io.ReadAll(reader)
+}
+
+func noRedirectClient(base *http.Client) *http.Client {
+	copyClient := *base
+	copyClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	return &copyClient
 }

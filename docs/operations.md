@@ -82,3 +82,17 @@ If the VM only has `docker-compose`, adjust the unit commands accordingly.
 - TLS state and certificates persist in the `caddy-data` volume.
 - Caddy runtime state persists in the `caddy-config` volume.
 - Scheduled refreshes, Docker runtime, and local collection commands all run through the Go collector.
+
+## Collector Lifecycle And Cadence Variables
+
+- `RECENT_WINDOW_PER_SOURCE` (default `20`): cap per-run fetch window for non-HTML stream sources (Telegram/RSS/Atom/API).
+- `HTML_SCRAPE_INTERVAL_HOURS` (default `24`): minimum interval between successful HTML full scrapes when probe status is `200`.
+- `ALERT_COOLDOWN_HOURS` (default `24`): missing alerts move from `active` to `cooldown` after this horizon.
+- `ALERT_STALE_DAYS` (default `14`): missing alerts move from `cooldown` to `stale` after this horizon.
+- `ALERT_ARCHIVE_DAYS` (default `90`): missing alerts move from `stale` to `archived` after this horizon.
+
+Alert lifecycle notes:
+
+- Alerts are no longer dropped on first miss.
+- `alerts.json` keeps currently visible lifecycle states from reconciliation.
+- Long-tail history remains in `alerts-state.json`, including archived records until archive horizon expiry.

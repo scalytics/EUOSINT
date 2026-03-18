@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	_ "modernc.org/sqlite"
 
@@ -40,6 +41,34 @@ type CandidateInput struct {
 	Country       string
 	CountryCode   string
 	Notes         string
+}
+
+type SourceRunInput struct {
+	SourceID      string
+	RunStartedAt  string
+	RunFinishedAt string
+	Status        string
+	HTTPStatus    int
+	FetchedCount  int
+	Error         string
+	ErrorClass    string
+	ContentHash   string
+	ETag          string
+	LastModified  string
+	Metadata      map[string]any
+}
+
+type SourceWatermark struct {
+	SourceID          string
+	LastRunStartedAt  string
+	LastRunFinishedAt string
+	LastStatus        string
+	LastHTTPStatus    int
+	LastFetchedCount  int
+	LastContentHash   string
+	LastETag          string
+	LastModified      string
+	LastSuccessAt     string
 }
 
 func Open(path string) (*DB, error) {
@@ -537,6 +566,146 @@ ON CONFLICT(discovered_url) DO UPDATE SET
 		return fmt.Errorf("commit candidate upsert tx: %w", err)
 	}
 	return nil
+}
+
+func (db *DB) RecordSourceRun(ctx context.Context, in SourceRunInput) error {
+	if err := db.Init(ctx); err != nil {
+		return err
+	}
+	sourceID := strings.TrimSpace(in.SourceID)
+	if sourceID == "" {
+		return nil
+	}
+	startedAt := strings.TrimSpace(in.RunStartedAt)
+	if startedAt == "" {
+		startedAt = nowRFC3339()
+	}
+	finishedAt := strings.TrimSpace(in.RunFinishedAt)
+	if finishedAt == "" {
+		finishedAt = startedAt
+	}
+	status := strings.TrimSpace(in.Status)
+	if status == "" {
+		status = "unknown"
+	}
+	if in.FetchedCount < 0 {
+		in.FetchedCount = 0
+	}
+	metaJSON := "{}"
+	if len(in.Metadata) > 0 {
+		if raw, err := json.Marshal(in.Metadata); err == nil {
+			metaJSON = string(raw)
+		}
+	}
+
+	tx, err := db.sql.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin source run tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO source_runs (
+  source_id, run_started_at, run_finished_at, status, http_status, fetched_count,
+  error, error_class, content_hash, etag, last_modified, metadata_json
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`, sourceID, startedAt, finishedAt, status, nullableInt(in.HTTPStatus), in.FetchedCount, strings.TrimSpace(in.Error), strings.TrimSpace(in.ErrorClass), strings.TrimSpace(in.ContentHash), strings.TrimSpace(in.ETag), strings.TrimSpace(in.LastModified), metaJSON); err != nil {
+		return fmt.Errorf("insert source run %s: %w", sourceID, err)
+	}
+
+	lastSuccessAt := ""
+	if status == "ok" || (in.HTTPStatus >= 200 && in.HTTPStatus < 300) {
+		lastSuccessAt = finishedAt
+	}
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO source_watermarks (
+  source_id, last_run_started_at, last_run_finished_at, last_status, last_http_status,
+  last_fetched_count, last_content_hash, last_etag, last_modified, last_success_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(source_id) DO UPDATE SET
+  last_run_started_at = excluded.last_run_started_at,
+  last_run_finished_at = excluded.last_run_finished_at,
+  last_status = excluded.last_status,
+  last_http_status = excluded.last_http_status,
+  last_fetched_count = excluded.last_fetched_count,
+  last_content_hash = excluded.last_content_hash,
+  last_etag = excluded.last_etag,
+  last_modified = excluded.last_modified,
+  last_success_at = CASE
+    WHEN excluded.last_success_at != '' THEN excluded.last_success_at
+    ELSE source_watermarks.last_success_at
+  END,
+  updated_at = CURRENT_TIMESTAMP
+`, sourceID, startedAt, finishedAt, status, nullableInt(in.HTTPStatus), in.FetchedCount, strings.TrimSpace(in.ContentHash), strings.TrimSpace(in.ETag), strings.TrimSpace(in.LastModified), lastSuccessAt); err != nil {
+		return fmt.Errorf("upsert source watermark %s: %w", sourceID, err)
+	}
+
+	lastErr := strings.TrimSpace(in.Error)
+	lastErrClass := strings.TrimSpace(in.ErrorClass)
+	lastOKAt := ""
+	if lastSuccessAt != "" {
+		lastOKAt = lastSuccessAt
+		lastErr = ""
+		lastErrClass = ""
+	}
+	if _, err := tx.ExecContext(ctx, `
+UPDATE sources
+SET last_http_status = ?,
+    last_ok_at = CASE
+      WHEN ? != '' THEN ?
+      ELSE last_ok_at
+    END,
+    last_error = ?,
+    last_error_class = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+`, nullableInt(in.HTTPStatus), lastOKAt, lastOKAt, lastErr, lastErrClass, sourceID); err != nil {
+		return fmt.Errorf("update source run fields %s: %w", sourceID, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit source run tx: %w", err)
+	}
+	return nil
+}
+
+func (db *DB) GetSourceWatermark(ctx context.Context, sourceID string) (SourceWatermark, bool, error) {
+	if err := db.Init(ctx); err != nil {
+		return SourceWatermark{}, false, err
+	}
+	sourceID = strings.TrimSpace(sourceID)
+	if sourceID == "" {
+		return SourceWatermark{}, false, nil
+	}
+	var out SourceWatermark
+	var httpStatus sql.NullInt64
+	err := db.sql.QueryRowContext(ctx, `
+SELECT source_id, last_run_started_at, last_run_finished_at, last_status, last_http_status,
+       last_fetched_count, last_content_hash, last_etag, last_modified, last_success_at
+FROM source_watermarks
+WHERE source_id = ?
+`, sourceID).Scan(
+		&out.SourceID,
+		&out.LastRunStartedAt,
+		&out.LastRunFinishedAt,
+		&out.LastStatus,
+		&httpStatus,
+		&out.LastFetchedCount,
+		&out.LastContentHash,
+		&out.LastETag,
+		&out.LastModified,
+		&out.LastSuccessAt,
+	)
+	if err == sql.ErrNoRows {
+		return SourceWatermark{}, false, nil
+	}
+	if err != nil {
+		return SourceWatermark{}, false, fmt.Errorf("query source watermark %s: %w", sourceID, err)
+	}
+	if httpStatus.Valid {
+		out.LastHTTPStatus = int(httpStatus.Int64)
+	}
+	return out, true, nil
 }
 
 func (db *DB) SaveAlerts(ctx context.Context, alerts []model.Alert) error {
@@ -1364,4 +1533,15 @@ func loadRegistryJSON(path string) ([]model.RegistrySource, error) {
 		return nil, fmt.Errorf("decode registry %s: %w", path, err)
 	}
 	return raw, nil
+}
+
+func nullableInt(value int) any {
+	if value <= 0 {
+		return nil
+	}
+	return value
+}
+
+func nowRFC3339() string {
+	return time.Now().UTC().Format(time.RFC3339)
 }

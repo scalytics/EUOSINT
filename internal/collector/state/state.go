@@ -194,7 +194,10 @@ func (d *DLQ) Has(sourceID string) bool {
 // (paginated APIs like Interpol where each run only fetches a window).
 func Reconcile(cfg config.Config, active []model.Alert, filtered []model.Alert, previous []model.Alert, now time.Time, accumulateSources map[string]bool) ([]model.Alert, []model.Alert, []model.Alert) {
 	nowISO := now.UTC().Format(time.RFC3339)
-	retentionCutoff := now.Add(-time.Duration(cfg.RemovedRetentionDays) * 24 * time.Hour)
+	cooldownCutoff := now.Add(-time.Duration(cfg.AlertCooldownHours) * time.Hour)
+	staleCutoff := now.Add(-time.Duration(cfg.AlertStaleDays) * 24 * time.Hour)
+	archiveCutoff := now.Add(-time.Duration(cfg.AlertArchiveDays) * 24 * time.Hour)
+	legacyRetentionCutoff := now.Add(-time.Duration(cfg.RemovedRetentionDays) * 24 * time.Hour)
 	previousByID := map[string]model.Alert{}
 	presentByID := map[string]struct{}{}
 	for _, alert := range previous {
@@ -224,7 +227,7 @@ func Reconcile(cfg config.Config, active []model.Alert, filtered []model.Alert, 
 		currentFiltered = append(currentFiltered, alert)
 	}
 
-	removed := []model.Alert{}
+	nonActive := []model.Alert{}
 	for _, prev := range previous {
 		if _, ok := presentByID[prev.AlertID]; ok {
 			continue
@@ -235,42 +238,43 @@ func Reconcile(cfg config.Config, active []model.Alert, filtered []model.Alert, 
 			presentByID[prev.AlertID] = struct{}{}
 			continue
 		}
-		// Keep recently seen active alerts in the active set even when they're
-		// absent from the current fetch batch. Feeds publish rolling windows, so
-		// first miss should not immediately demote alert visibility.
-		if prev.Status == "active" && shouldCarryForwardActive(prev, retentionCutoff) {
+		lastSeen := parseAlertTimestamp(prev.LastSeen)
+		if lastSeen.IsZero() {
+			lastSeen = parseAlertTimestamp(prev.FirstSeen)
+		}
+		// Unknown timestamps: preserve as stale instead of dropping.
+		if lastSeen.IsZero() {
+			prev.Status = "stale"
+			nonActive = append(nonActive, prev)
+			continue
+		}
+
+		// Backward-compat: keep old removed entries for legacy retention period.
+		if prev.Status == "removed" && !lastSeen.Before(legacyRetentionCutoff) {
+			nonActive = append(nonActive, prev)
+			continue
+		}
+
+		switch {
+		case !lastSeen.Before(cooldownCutoff):
+			prev.Status = "cooldown"
 			currentActive = append(currentActive, prev)
 			presentByID[prev.AlertID] = struct{}{}
-			continue
+		case !lastSeen.Before(staleCutoff):
+			prev.Status = "stale"
+			currentActive = append(currentActive, prev)
+			presentByID[prev.AlertID] = struct{}{}
+		case !lastSeen.Before(archiveCutoff):
+			prev.Status = "archived"
+			nonActive = append(nonActive, prev)
+		default:
+			// Drop only beyond archive horizon.
 		}
-		if prev.Status == "removed" {
-			lastSeen, err := time.Parse(time.RFC3339, prev.LastSeen)
-			if err == nil && !lastSeen.Before(retentionCutoff) {
-				removed = append(removed, prev)
-			}
-			continue
-		}
-		if prev.Status == "filtered" {
-			continue
-		}
-		prev.Status = "removed"
-		prev.LastSeen = nowISO
-		removed = append(removed, prev)
 	}
 
-	fullState := append(append(append([]model.Alert{}, currentActive...), currentFiltered...), removed...)
+	fullState := append(append(append([]model.Alert{}, currentActive...), currentFiltered...), nonActive...)
 	sort.Slice(fullState, func(i, j int) bool { return fullState[i].LastSeen > fullState[j].LastSeen })
 	return currentActive, currentFiltered, fullState
-}
-
-func shouldCarryForwardActive(alert model.Alert, cutoff time.Time) bool {
-	if ts := parseAlertTimestamp(alert.LastSeen); !ts.IsZero() {
-		return !ts.Before(cutoff)
-	}
-	if ts := parseAlertTimestamp(alert.FirstSeen); !ts.IsZero() {
-		return !ts.Before(cutoff)
-	}
-	return false
 }
 
 func parseAlertTimestamp(raw string) time.Time {

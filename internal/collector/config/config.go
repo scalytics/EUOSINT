@@ -21,6 +21,11 @@ const (
 	defaultMaxAgeDays       = 180
 	defaultRemovedDays      = 14
 	defaultMaxBodyBytes     = 2 * 1024 * 1024
+	defaultCooldownHours    = 24
+	defaultStaleDays        = 14
+	defaultArchiveDays      = 90
+	defaultRecentPerSource  = 20
+	defaultHTMLScrapeHours  = 24
 )
 
 type Config struct {
@@ -32,6 +37,11 @@ type Config struct {
 	MaxPerSource                    int
 	MaxAgeDays                      int
 	RemovedRetentionDays            int
+	AlertCooldownHours              int
+	AlertStaleDays                  int
+	AlertArchiveDays                int
+	RecentWindowPerSource           int
+	HTMLScrapeIntervalHours         int
 	IncidentRelevanceThreshold      float64
 	MissingPersonRelevanceThreshold float64
 	FailOnCriticalSourceGap         bool
@@ -99,6 +109,11 @@ func Default() Config {
 		MaxPerSource:                    defaultMaxPerSource,
 		MaxAgeDays:                      defaultMaxAgeDays,
 		RemovedRetentionDays:            defaultRemovedDays,
+		AlertCooldownHours:              defaultCooldownHours,
+		AlertStaleDays:                  defaultStaleDays,
+		AlertArchiveDays:                defaultArchiveDays,
+		RecentWindowPerSource:           defaultRecentPerSource,
+		HTMLScrapeIntervalHours:         defaultHTMLScrapeHours,
 		IncidentRelevanceThreshold:      0.42,
 		MissingPersonRelevanceThreshold: 0,
 		FailOnCriticalSourceGap:         false,
@@ -164,6 +179,11 @@ func FromEnv() Config {
 	cfg.MaxPerSource = envInt("MAX_PER_SOURCE", cfg.MaxPerSource)
 	cfg.MaxAgeDays = envInt("MAX_AGE_DAYS", cfg.MaxAgeDays)
 	cfg.RemovedRetentionDays = envInt("REMOVED_RETENTION_DAYS", cfg.RemovedRetentionDays)
+	cfg.AlertCooldownHours = envInt("ALERT_COOLDOWN_HOURS", cfg.AlertCooldownHours)
+	cfg.AlertStaleDays = envInt("ALERT_STALE_DAYS", cfg.AlertStaleDays)
+	cfg.AlertArchiveDays = envInt("ALERT_ARCHIVE_DAYS", cfg.AlertArchiveDays)
+	cfg.RecentWindowPerSource = envInt("RECENT_WINDOW_PER_SOURCE", cfg.RecentWindowPerSource)
+	cfg.HTMLScrapeIntervalHours = envInt("HTML_SCRAPE_INTERVAL_HOURS", cfg.HTMLScrapeIntervalHours)
 	cfg.IncidentRelevanceThreshold = envFloat("INCIDENT_RELEVANCE_THRESHOLD", cfg.IncidentRelevanceThreshold)
 	cfg.MissingPersonRelevanceThreshold = envFloat("MISSING_PERSON_RELEVANCE_THRESHOLD", cfg.MissingPersonRelevanceThreshold)
 	cfg.FailOnCriticalSourceGap = envBool("FAIL_ON_CRITICAL_SOURCE_GAP", cfg.FailOnCriticalSourceGap)

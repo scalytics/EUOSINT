@@ -90,6 +90,39 @@ CREATE TABLE IF NOT EXISTS source_checks (
   FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS source_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_id TEXT NOT NULL,
+  run_started_at TEXT NOT NULL,
+  run_finished_at TEXT NOT NULL,
+  status TEXT NOT NULL,
+  http_status INTEGER,
+  fetched_count INTEGER NOT NULL DEFAULT 0,
+  error TEXT NOT NULL DEFAULT '',
+  error_class TEXT NOT NULL DEFAULT '',
+  content_hash TEXT NOT NULL DEFAULT '',
+  etag TEXT NOT NULL DEFAULT '',
+  last_modified TEXT NOT NULL DEFAULT '',
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS source_watermarks (
+  source_id TEXT PRIMARY KEY,
+  last_run_started_at TEXT NOT NULL DEFAULT '',
+  last_run_finished_at TEXT NOT NULL DEFAULT '',
+  last_status TEXT NOT NULL DEFAULT '',
+  last_http_status INTEGER,
+  last_fetched_count INTEGER NOT NULL DEFAULT 0,
+  last_content_hash TEXT NOT NULL DEFAULT '',
+  last_etag TEXT NOT NULL DEFAULT '',
+  last_modified TEXT NOT NULL DEFAULT '',
+  last_success_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS source_candidates (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   agency_id TEXT,
@@ -142,6 +175,7 @@ CREATE INDEX IF NOT EXISTS idx_sources_agency_id ON sources(agency_id);
 CREATE INDEX IF NOT EXISTS idx_sources_status ON sources(status);
 CREATE INDEX IF NOT EXISTS idx_sources_feed_url ON sources(feed_url);
 CREATE INDEX IF NOT EXISTS idx_source_checks_source_id_checked_at ON source_checks(source_id, checked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_source_runs_source_id_started_at ON source_runs(source_id, run_started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_source_candidates_status ON source_candidates(status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_source_candidates_discovered_url ON source_candidates(discovered_url);
 CREATE INDEX IF NOT EXISTS idx_source_term_overrides_source_id ON source_term_overrides(source_id);

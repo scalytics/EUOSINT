@@ -72,7 +72,16 @@ Tuning examples:
 
 ```bash
 INTERVAL_MS=120000 MAX_PER_SOURCE=80 npm run collector:run
+INTERVAL_MS=120000 RECENT_WINDOW_PER_SOURCE=20 ALERT_STALE_DAYS=14 npm run collector:run
 ```
+
+Key collector variables:
+
+- `RECENT_WINDOW_PER_SOURCE`: rolling max items per non-HTML source per run (default `20`)
+- `HTML_SCRAPE_INTERVAL_HOURS`: minimum hours between successful HTML full scrapes (default `24`)
+- `ALERT_COOLDOWN_HOURS`: first lifecycle step for missing alerts before stale (default `24`)
+- `ALERT_STALE_DAYS`: days before missing alerts become stale (default `14`)
+- `ALERT_ARCHIVE_DAYS`: days before stale alerts move to archived history (default `90`)
 
 ## Operations
 
