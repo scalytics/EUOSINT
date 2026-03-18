@@ -59,11 +59,19 @@ export function FeedDirectory({
   onSearchTerm,
 }: Props) {
   const [now, setNow] = useState(() => Date.now());
+  const [stableTotalSources, setStableTotalSources] = useState(0);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const total = sourceHealth?.total_sources ?? 0;
+    if (total > 0) {
+      setStableTotalSources((current) => Math.max(current, total));
+    }
+  }, [sourceHealth?.total_sources]);
 
   /* ── Country digest (trending terms) ────────────────────────────── */
   const [digestTerms, setDigestTerms] = useState<DigestTerm[]>([]);
@@ -143,22 +151,38 @@ export function FeedDirectory({
     return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 12);
   }, [regionAlerts, categoryFilter]);
 
+  const summaryAlerts = useMemo(() => {
+    let filtered = regionAlerts;
+    if (selectedSourceIds.length > 0) {
+      const selectedSet = new Set(selectedSourceIds);
+      filtered = filtered.filter((a) => selectedSet.has(a.source_id));
+    }
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter((a) => a.category === categoryFilter);
+    }
+    if (severityFilter) {
+      filtered = filtered.filter((a) => a.severity === severityFilter);
+    }
+    return filtered;
+  }, [regionAlerts, selectedSourceIds, categoryFilter, severityFilter]);
+
   /* ── Zone summary stats ─────────────────────────────────────────── */
   const zoneSummary = useMemo(() => {
-    const uniqueCountries = new Set(regionAlerts.map((a) => a.source.country_code));
-    const uniqueFeeds = new Set(regionAlerts.map((a) => a.source_id));
-    // Use the health document's total_sources as the authoritative registry
-    // count — it's stable and includes errored/empty sources. Only fall back
-    // to alert-derived count when health hasn't loaded yet.
+    const uniqueCountries = new Set(summaryAlerts.map((a) => a.source.country_code));
+    const uniqueFeeds = new Set(summaryAlerts.map((a) => a.source_id));
     const totalRegistered = sourceHealth?.total_sources ?? 0;
-    const feedCount = totalRegistered > 0 ? totalRegistered : uniqueFeeds.size;
+    const totalFeeds = stableTotalSources > 0
+      ? stableTotalSources
+      : totalRegistered > 0
+        ? totalRegistered
+        : uniqueFeeds.size;
     return {
-      alerts: regionAlerts.length,
+      alerts: summaryAlerts.length,
       countries: uniqueCountries.size,
-      feeds: feedCount,
-      activeFeedsInView: uniqueFeeds.size,
+      feeds: uniqueFeeds.size,
+      totalFeeds,
     };
-  }, [regionAlerts, sourceHealth]);
+  }, [summaryAlerts, sourceHealth, stableTotalSources]);
 
   const toggleSource = (sourceId: string) => {
     if (selectedSourceIds.includes(sourceId)) {
@@ -252,7 +276,10 @@ export function FeedDirectory({
             <div className="text-2xs font-bold tabular-nums text-siem-accent">{zoneSummary.countries}</div>
             <div className="text-4xs uppercase tracking-[0.1em] text-siem-muted">Ctry</div>
           </div>
-          <div className="flex flex-col items-center py-1.5 bg-siem-panel-strong" title={`${zoneSummary.activeFeedsInView} active in view`}>
+          <div
+            className="flex flex-col items-center py-1.5 bg-siem-panel-strong"
+            title={`${zoneSummary.feeds} feeds in current filters${zoneSummary.totalFeeds ? ` (${zoneSummary.totalFeeds} total tracked)` : ""}`}
+          >
             <div className="text-2xs font-bold tabular-nums text-emerald-300">{zoneSummary.feeds || "—"}</div>
             <div className="text-4xs uppercase tracking-[0.1em] text-siem-muted">Feeds</div>
           </div>

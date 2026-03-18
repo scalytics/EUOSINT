@@ -19,6 +19,7 @@ func TestReconcileCarriesForwardAndRemoves(t *testing.T) {
 	previous := []model.Alert{
 		{AlertID: "a", FirstSeen: now.Add(-24 * time.Hour).Format(time.RFC3339), Status: "active", LastSeen: now.Add(-time.Hour).Format(time.RFC3339)},
 		{AlertID: "c", FirstSeen: now.Add(-24 * time.Hour).Format(time.RFC3339), Status: "active", LastSeen: now.Add(-time.Hour).Format(time.RFC3339)},
+		{AlertID: "d", FirstSeen: now.Add(-40 * 24 * time.Hour).Format(time.RFC3339), Status: "active", LastSeen: now.Add(-30 * 24 * time.Hour).Format(time.RFC3339)},
 	}
 
 	currentActive, currentFiltered, fullState := Reconcile(cfg, active, filtered, previous, now, nil)
@@ -28,14 +29,21 @@ func TestReconcileCarriesForwardAndRemoves(t *testing.T) {
 	if currentFiltered[0].Status != "filtered" {
 		t.Fatalf("expected filtered status, got %q", currentFiltered[0].Status)
 	}
-	foundRemoved := false
+	foundCActive := false
+	foundDRemoved := false
 	for _, alert := range fullState {
-		if alert.AlertID == "c" && alert.Status == "removed" {
-			foundRemoved = true
+		if alert.AlertID == "c" && alert.Status == "active" {
+			foundCActive = true
+		}
+		if alert.AlertID == "d" && alert.Status == "removed" {
+			foundDRemoved = true
 		}
 	}
-	if !foundRemoved {
-		t.Fatalf("expected removed alert in state %#v", fullState)
+	if !foundCActive {
+		t.Fatalf("expected recent missing alert 'c' to stay active in state %#v", fullState)
+	}
+	if !foundDRemoved {
+		t.Fatalf("expected stale missing alert 'd' to be removed in state %#v", fullState)
 	}
 }
 
@@ -47,7 +55,7 @@ func TestReconcileAccumulateCarriesForward(t *testing.T) {
 	// Previous state has "b" from an earlier run — should carry forward.
 	previous := []model.Alert{
 		{AlertID: "b", SourceID: "interpol-red", Status: "active", FirstSeen: "2026-01-01T00:00:00Z", LastSeen: "2026-01-01T12:00:00Z"},
-		{AlertID: "c", SourceID: "other-source", Status: "active", FirstSeen: "2026-01-01T00:00:00Z", LastSeen: "2026-01-01T12:00:00Z"},
+		{AlertID: "c", SourceID: "other-source", Status: "active", FirstSeen: "2025-12-01T00:00:00Z", LastSeen: "2025-12-01T12:00:00Z"},
 	}
 	acc := map[string]bool{"interpol-red": true}
 

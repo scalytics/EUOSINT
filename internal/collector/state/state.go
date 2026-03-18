@@ -235,6 +235,14 @@ func Reconcile(cfg config.Config, active []model.Alert, filtered []model.Alert, 
 			presentByID[prev.AlertID] = struct{}{}
 			continue
 		}
+		// Keep recently seen active alerts in the active set even when they're
+		// absent from the current fetch batch. Feeds publish rolling windows, so
+		// first miss should not immediately demote alert visibility.
+		if prev.Status == "active" && shouldCarryForwardActive(prev, retentionCutoff) {
+			currentActive = append(currentActive, prev)
+			presentByID[prev.AlertID] = struct{}{}
+			continue
+		}
 		if prev.Status == "removed" {
 			lastSeen, err := time.Parse(time.RFC3339, prev.LastSeen)
 			if err == nil && !lastSeen.Before(retentionCutoff) {
@@ -253,4 +261,25 @@ func Reconcile(cfg config.Config, active []model.Alert, filtered []model.Alert, 
 	fullState := append(append(append([]model.Alert{}, currentActive...), currentFiltered...), removed...)
 	sort.Slice(fullState, func(i, j int) bool { return fullState[i].LastSeen > fullState[j].LastSeen })
 	return currentActive, currentFiltered, fullState
+}
+
+func shouldCarryForwardActive(alert model.Alert, cutoff time.Time) bool {
+	if ts := parseAlertTimestamp(alert.LastSeen); !ts.IsZero() {
+		return !ts.Before(cutoff)
+	}
+	if ts := parseAlertTimestamp(alert.FirstSeen); !ts.IsZero() {
+		return !ts.Before(cutoff)
+	}
+	return false
+}
+
+func parseAlertTimestamp(raw string) time.Time {
+	if raw == "" {
+		return time.Time{}
+	}
+	ts, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		return time.Time{}
+	}
+	return ts
 }

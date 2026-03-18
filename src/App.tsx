@@ -70,7 +70,11 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const availableSourceIds = new Set(alerts.map((alert) => alert.source_id));
+    const healthSources = sourceHealth?.sources;
+    if (!healthSources || healthSources.length === 0) {
+      return;
+    }
+    const availableSourceIds = new Set(healthSources.map((entry) => entry.source_id));
     setSelectedSourceIds((current) => {
       const next = current.filter((sourceId) => availableSourceIds.has(sourceId));
       if (next.length !== current.length) {
@@ -78,7 +82,7 @@ export default function App() {
       }
       return next;
     });
-  }, [alerts]);
+  }, [sourceHealth]);
 
   useEffect(() => {
     writeSelectedSources(selectedSourceIds);
