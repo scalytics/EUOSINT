@@ -191,14 +191,15 @@ go-codeql: ## Run CodeQL CLI locally for Go
 code-ql-summary: ## Summarize the local CodeQL SARIF output
 	python3 scripts/codeql_summary.py $(CODEQL_JS_OUT)
 
-commit-check: ## Run the full local quality gate with auto-formatting
+commit-check: ## Run the same quality gate as GitHub CI
 	@set -euo pipefail; \
 	steps=( \
 		"check-commit:toolchain" \
-		"go-fmt:go format" \
+		"go-fmt:go format (auto-fix)" \
 		"lint:ui lint" \
 		"typecheck:ui typecheck" \
 		"build:ui build" \
+		"go-fmt-check:go format check" \
 		"go-test:go test" \
 		"go-race:go race" \
 		"go-cover:go coverage" \

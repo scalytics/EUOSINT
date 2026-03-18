@@ -38,6 +38,7 @@ const REGIONS = [
 ];
 
 const SEARCH_HISTORY_COOKIE = "euosint_search_history";
+const REPO_URL = "https://github.com/scalytics/EUOSINT";
 
 function readSearchHistory(): string[] {
   if (typeof document === "undefined") return [];
@@ -493,7 +494,16 @@ export function Header({
             </div>
             <div>
               <div className="text-xxs uppercase tracking-[0.22em] text-siem-muted">
-                Scalytics OSINT
+                Scalytics OSINT{" "}
+                <a
+                  href={REPO_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-siem-accent hover:text-siem-text transition-colors"
+                  title="Open repository"
+                >
+                  {`v. ${__APP_VERSION__}`}
+                </a>
               </div>
               <div className="mt-1 text-xl font-semibold tracking-[0.02em] text-siem-text">
                 Open Source Intelligence Console
