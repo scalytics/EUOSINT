@@ -6852,5 +6852,175 @@
     "lat": 0,
     "lng": 0,
     "max_items": 100
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-africanconflicts",
+      "authority_name": "African Conflicts",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/african_conflicts"
+    },
+    "feed_url": "https://t.me/s/african_conflicts",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 2.0,
+    "lng": 20.0
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-maborninlight",
+      "authority_name": "Myanmar OSINT",
+      "country": "Myanmar",
+      "country_code": "MM",
+      "region": "Asia",
+      "authority_type": "osint",
+      "base_url": "https://t.me/maborninlight"
+    },
+    "feed_url": "https://t.me/s/maborninlight",
+    "category": "conflict_monitoring",
+    "region_tag": "MM",
+    "lat": 19.76,
+    "lng": 96.07
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-caucasuswarreport",
+      "authority_name": "Caucasus War Report",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/Caucasus_war_report"
+    },
+    "feed_url": "https://t.me/s/Caucasus_war_report",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 42.0,
+    "lng": 44.0
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-gazanow",
+      "authority_name": "Gaza Now",
+      "country": "Palestine",
+      "country_code": "PS",
+      "region": "Middle East",
+      "authority_type": "osint",
+      "base_url": "https://t.me/GazaNow2"
+    },
+    "feed_url": "https://t.me/s/GazaNow2",
+    "category": "conflict_monitoring",
+    "region_tag": "PS",
+    "lat": 31.5,
+    "lng": 34.47
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-yaborninlight",
+      "authority_name": "Yemen OSINT",
+      "country": "Yemen",
+      "country_code": "YE",
+      "region": "Middle East",
+      "authority_type": "osint",
+      "base_url": "https://t.me/yaborninlight"
+    },
+    "feed_url": "https://t.me/s/yaborninlight",
+    "category": "conflict_monitoring",
+    "region_tag": "YE",
+    "lat": 15.35,
+    "lng": 44.2
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-warshipcam",
+      "authority_name": "Warship Cam",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/warshipcam"
+    },
+    "feed_url": "https://t.me/s/warshipcam",
+    "category": "maritime_security",
+    "region_tag": "INT",
+    "lat": 36.0,
+    "lng": 25.0
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-araborninlight",
+      "authority_name": "Arms OSINT",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/araborninlight"
+    },
+    "feed_url": "https://t.me/s/araborninlight",
+    "category": "intelligence_report",
+    "region_tag": "INT",
+    "lat": 48.85,
+    "lng": 2.35
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-latamconflict",
+      "authority_name": "LatAm Military",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://t.me/LatamMilitary"
+    },
+    "feed_url": "https://t.me/s/LatamMilitary",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": -15.0,
+    "lng": -60.0
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-saaborninlight",
+      "authority_name": "South Africa OSINT",
+      "country": "South Africa",
+      "country_code": "ZA",
+      "region": "Africa",
+      "authority_type": "osint",
+      "base_url": "https://t.me/saaborninlight"
+    },
+    "feed_url": "https://t.me/s/saaborninlight",
+    "category": "conflict_monitoring",
+    "region_tag": "ZA",
+    "lat": -30.56,
+    "lng": 22.94
+  },
+  {
+    "type": "telegram",
+    "source": {
+      "source_id": "tg-kaborninlight",
+      "authority_name": "Ukraine Air Force Command",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "Europe",
+      "authority_type": "osint",
+      "base_url": "https://t.me/kaborninlight"
+    },
+    "feed_url": "https://t.me/s/kaborninlight",
+    "category": "conflict_monitoring",
+    "region_tag": "UA",
+    "lat": 50.45,
+    "lng": 30.52
   }
 ]

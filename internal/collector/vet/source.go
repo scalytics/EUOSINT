@@ -70,6 +70,9 @@ func (f *flexFloat) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	switch strings.ToLower(asString) {
+	case "none", "n/a", "null", "unknown":
+		*f = 0
+		return nil
 	case "very low":
 		*f = 0.1
 		return nil

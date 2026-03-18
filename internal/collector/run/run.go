@@ -133,6 +133,9 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 
 	cursors := state.ReadCursors(cfg.CursorsPath)
 	dlq := state.ReadDLQ(cfg.ReplacementQueuePath)
+	if dlq.Len() > 0 {
+		fmt.Fprintf(r.stderr, "DLQ loaded: %d dead sources will be skipped\n", dlq.Len())
+	}
 
 	// Load previous alerts early so progress snapshots include them.
 	// This prevents the dashboard from going blank during a sweep.
@@ -230,6 +233,8 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 					}
 					if completed%25 == 0 || completed == 1 {
 						r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth, previousSourceHealth, len(sources))
+						// Flush DLQ so background discovery can see dead sources early.
+						_ = dlq.Write(cfg.ReplacementQueuePath)
 					}
 					mu.Unlock()
 					var runMeta map[string]any
@@ -310,6 +315,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		}
 		if completed%25 == 0 {
 			r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth, previousSourceHealth, len(sources))
+			_ = dlq.Write(cfg.ReplacementQueuePath)
 		}
 	}
 

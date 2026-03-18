@@ -40,7 +40,7 @@ export function AlertFeed({
   onRegionChange,
   onVisibleAlertIdsChange,
 }: Props) {
-  const [viewMode, setViewMode] = useState<"live" | "history">("live");
+  const [viewMode, setViewMode] = useState<"live" | "history" | "briefing">("live");
   const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
   const [isRefreshingList, setIsRefreshingList] = useState(false);
   const [newAlertIds, setNewAlertIds] = useState<Set<string>>(new Set());
@@ -85,30 +85,44 @@ export function AlertFeed({
     return categoryMatch && severityMatch;
   });
 
-  // Split alerts into live (last 48h) and history (older).
-  const now = useMemo(() => Date.now(), [facetFiltered]);
+  // Separate briefing (info severity) from actionable alerts.
+  const actionableAlerts = useMemo(
+    () => facetFiltered.filter((a) => a.severity !== "info"),
+    [facetFiltered],
+  );
+
+  const briefingAlerts = useMemo(
+    () =>
+      facetFiltered
+        .filter((a) => a.severity === "info")
+        .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime()),
+    [facetFiltered],
+  );
+
+  // Split actionable alerts into live (last 48h) and history (older).
+  const now = useMemo(() => Date.now(), [actionableAlerts]);
   const liveCutoff = now - LIVE_WINDOW_MS;
 
   const liveAlerts = useMemo(
     () =>
-      facetFiltered
+      actionableAlerts
         .filter((a) => {
           const t = new Date(a.last_seen).getTime();
           return t >= liveCutoff;
         })
         .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime()),
-    [facetFiltered, liveCutoff],
+    [actionableAlerts, liveCutoff],
   );
 
   const historyAlerts = useMemo(
     () =>
-      facetFiltered
+      actionableAlerts
         .filter((a) => {
           const t = new Date(a.last_seen).getTime();
           return t < liveCutoff;
         })
         .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime()),
-    [facetFiltered, liveCutoff],
+    [actionableAlerts, liveCutoff],
   );
 
   // History grouped by day.
@@ -272,7 +286,7 @@ export function AlertFeed({
     );
   };
 
-  const currentAlerts = viewMode === "live" ? liveAlerts : historyAlerts;
+  const currentAlerts = viewMode === "live" ? liveAlerts : viewMode === "history" ? historyAlerts : briefingAlerts;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -290,7 +304,7 @@ export function AlertFeed({
           </div>
         </div>
 
-        {/* Live / History tabs */}
+        {/* Live / History / Briefing tabs */}
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -314,6 +328,18 @@ export function AlertFeed({
           >
             History ({historyAlerts.length})
           </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("briefing")}
+            className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
+              viewMode === "briefing"
+                ? "bg-sky-500/18 text-sky-300 border-sky-500/35"
+                : "bg-white/5 text-siem-muted border-siem-border hover:bg-sky-500/10 hover:text-sky-300"
+            }`}
+          >
+            Briefing ({briefingAlerts.length})
+          </button>
+          <div className="rounded border border-siem-border/50 bg-white/3 px-2 py-1.5" />
         </div>
 
         {/* Compact stat strip */}
@@ -322,18 +348,37 @@ export function AlertFeed({
             <span className="text-siem-muted">Total</span>{" "}
             <span className="text-siem-text">{currentAlerts.length}</span>
           </div>
-          <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-            <span className="text-siem-muted">Crit</span>{" "}
-            <span className="text-rose-300">
-              {currentAlerts.filter((a) => a.severity === "critical").length}
-            </span>
-          </div>
-          <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-            <span className="text-siem-muted">High</span>{" "}
-            <span className="text-amber-300">
-              {currentAlerts.filter((a) => a.severity === "high").length}
-            </span>
-          </div>
+          {viewMode === "briefing" ? (
+            <>
+              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+                <span className="text-siem-muted">Sources</span>{" "}
+                <span className="text-sky-300">
+                  {new Set(currentAlerts.map((a) => a.source_id)).size}
+                </span>
+              </div>
+              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+                <span className="text-siem-muted">Mapped</span>{" "}
+                <span className="text-sky-300">
+                  {currentAlerts.filter((a) => a.lat !== 0 || a.lng !== 0).length}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+                <span className="text-siem-muted">Crit</span>{" "}
+                <span className="text-rose-300">
+                  {currentAlerts.filter((a) => a.severity === "critical").length}
+                </span>
+              </div>
+              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+                <span className="text-siem-muted">High</span>{" "}
+                <span className="text-amber-300">
+                  {currentAlerts.filter((a) => a.severity === "high").length}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Filters */}
@@ -395,21 +440,31 @@ export function AlertFeed({
               </p>
             </div>
           )
-        ) : historyGroups.length > 0 ? (
-          historyGroups.map((group) => (
-            <section key={group.label}>
-              <div className="sticky top-0 z-10 px-1 pb-1.5 pt-1 text-2xs font-mono uppercase tracking-wider text-siem-muted bg-siem-panel/95 backdrop-blur-sm">
-                {group.label} ({group.alerts.length})
-              </div>
-              <div className="space-y-2">
-                {group.alerts.map((alert, idx) => renderAlertCard(alert, idx))}
-              </div>
-            </section>
-          ))
+        ) : viewMode === "history" ? (
+          historyGroups.length > 0 ? (
+            historyGroups.map((group) => (
+              <section key={group.label}>
+                <div className="sticky top-0 z-10 px-1 pb-1.5 pt-1 text-2xs font-mono uppercase tracking-wider text-siem-muted bg-siem-panel/95 backdrop-blur-sm">
+                  {group.label} ({group.alerts.length})
+                </div>
+                <div className="space-y-2">
+                  {group.alerts.map((alert, idx) => renderAlertCard(alert, idx))}
+                </div>
+              </section>
+            ))
+          ) : (
+            <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
+              <p className="text-xs text-siem-muted uppercase tracking-wider">
+                No historical alerts older than 48 hours
+              </p>
+            </div>
+          )
+        ) : briefingAlerts.length > 0 ? (
+          briefingAlerts.map((alert, idx) => renderAlertCard(alert, idx))
         ) : (
           <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
             <p className="text-xs text-siem-muted uppercase tracking-wider">
-              No historical alerts older than 48 hours
+              No briefing items matching current filters
             </p>
           </div>
         )}

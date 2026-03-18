@@ -39,35 +39,6 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || fatal "Missing required command: $1"
 }
 
-prompt() {
-  local label="$1"
-  local default_value="${2:-}"
-  local value
-  if [[ -n "${default_value}" ]]; then
-    value="$(read_prompt "$label [$default_value]: ")"
-    echo "${value:-$default_value}"
-  else
-    value="$(read_prompt "$label: ")"
-    echo "$value"
-  fi
-}
-
-prompt_yes_no() {
-  local label="$1"
-  local default_value="$2"
-  local value
-  while true; do
-    value="$(read_prompt "$label [$default_value]: ")"
-    value="${value:-$default_value}"
-    value="$(echo "$value" | tr '[:upper:]' '[:lower:]')"
-    case "$value" in
-      y|yes) echo "yes"; return 0 ;;
-      n|no) echo "no"; return 0 ;;
-      *) echo "Please answer yes or no." ;;
-    esac
-  done
-}
-
 prompt_install_mode() {
   local value
   while true; do
@@ -218,93 +189,85 @@ configure_env() {
   [[ -f "$example_file" ]] || fatal "Missing .env.example in repository."
 
   if [[ -f "$env_file" ]]; then
-    cp "$env_file" "$env_file.preinstall.$(date +%Y%m%d%H%M%S).bak"
+    cp "$env_file" "$env_file.backup.$(date +%Y%m%d%H%M%S).bak"
     info "Existing .env backed up."
   else
     cp "$example_file" "$env_file"
     info "Created .env from .env.example."
   fi
 
-  local image_tag
-  image_tag="$(prompt "GHCR image tag to deploy" "$IMAGE_TAG")"
-  upsert_env "$env_file" "EUOSINT_WEB_IMAGE" "ghcr.io/scalytics/euosint-web:${image_tag}"
-  upsert_env "$env_file" "EUOSINT_COLLECTOR_IMAGE" "ghcr.io/scalytics/euosint-collector:${image_tag}"
-  info "Configured GHCR images with tag '${image_tag}'."
+  info "Review configuration — press Enter to keep current value, or type a new one."
+  echo ""
 
-  local domain
-  domain="$(prompt "Domain for public access (blank for localhost dev mode)" "")"
+  local last_comment=""
+  while IFS= read -r line; do
+    # Print comment lines as section headers.
+    if [[ "$line" =~ ^[[:space:]]*# ]]; then
+      last_comment="$line"
+      continue
+    fi
+    [[ "$line" =~ ^[[:space:]]*$ ]] && continue
 
-  if [[ -n "$domain" ]]; then
+    local key="${line%%=*}"
+    [[ -z "$key" ]] && continue
+    local example_val="${line#*=}"
+
+    # Ports are auto-derived from EUOSINT_SITE_ADDRESS — skip.
+    case "$key" in
+      EUOSINT_HTTP_PORT|EUOSINT_HTTPS_PORT) continue ;;
+    esac
+
+    # Current value from .env if present, otherwise .env.example default.
+    local current_val
+    if grep -qE "^${key}=" "$env_file" 2>/dev/null; then
+      current_val="$(grep -E "^${key}=" "$env_file" | head -1 | cut -d= -f2-)"
+    else
+      current_val="$example_val"
+    fi
+
+    # Print section comment once before its first key.
+    if [[ -n "$last_comment" ]]; then
+      echo "$last_comment"
+      last_comment=""
+    fi
+
+    # Mask secrets in the display but keep the real value as default.
+    local display_val="$current_val"
+    case "$key" in
+      *API_KEY*|*PASSWORD*|*SECRET*)
+        if [[ -n "$current_val" ]]; then
+          display_val="****${current_val: -4}"
+        fi
+        ;;
+    esac
+
+    local new_val
+    new_val="$(read_prompt "  $key [$display_val]: ")"
+    if [[ -n "$new_val" ]]; then
+      upsert_env "$env_file" "$key" "$new_val"
+    else
+      upsert_env "$env_file" "$key" "$current_val"
+    fi
+  done < "$example_file"
+
+  # Auto-configure ports based on site address.
+  local site_addr
+  site_addr="$(grep -E '^EUOSINT_SITE_ADDRESS=' "$env_file" | head -1 | cut -d= -f2-)"
+  if [[ -n "$site_addr" && "$site_addr" != ":80" && "$site_addr" != ":8080" ]]; then
     TLS_MODE="true"
-    upsert_env "$env_file" "EUOSINT_SITE_ADDRESS" "$domain"
     upsert_env "$env_file" "EUOSINT_HTTP_PORT" "80"
     upsert_env "$env_file" "EUOSINT_HTTPS_PORT" "443"
-    info "Configured domain '$domain' with ports 80/443."
+    info "Domain '$site_addr' detected — ports set to 80/443 for automatic TLS."
     warn "Ensure DNS A/AAAA records point to this host and inbound 80/443 are open."
   else
     TLS_MODE="false"
-    upsert_env "$env_file" "EUOSINT_SITE_ADDRESS" ":80"
     upsert_env "$env_file" "EUOSINT_HTTP_PORT" "8080"
     upsert_env "$env_file" "EUOSINT_HTTPS_PORT" "8443"
-    info "Configured localhost mode on 8080/8443."
+    info "Localhost mode — ports set to 8080/8443."
   fi
 
-  local browser_choice
-  browser_choice="$(prompt_yes_no "Enable browser-assisted fetches (higher accuracy, higher resource use)?" "yes")"
-  if [[ "$browser_choice" == "yes" ]]; then
-    upsert_env "$env_file" "BROWSER_ENABLED" "true"
-  else
-    upsert_env "$env_file" "BROWSER_ENABLED" "false"
-  fi
-
-  local vetting_choice
-  vetting_choice="$(prompt_yes_no "Enable LLM source vetting?" "no")"
-  if [[ "$vetting_choice" == "yes" ]]; then
-    local provider base_url model api_key
-    provider="$(prompt "Vetting provider label (openai/xai/mistral/...)" "xai")"
-    base_url="$(prompt "Vetting base URL" "https://api.x.ai/v1")"
-    model="$(prompt "Vetting model" "grok-4-1-fast")"
-    api_key="$(prompt "Vetting API key (required)" "")"
-    [[ -n "$api_key" ]] || fatal "Vetting enabled but API key is empty."
-
-    upsert_env "$env_file" "SOURCE_VETTING_ENABLED" "true"
-    upsert_env "$env_file" "SOURCE_VETTING_PROVIDER" "$provider"
-    upsert_env "$env_file" "SOURCE_VETTING_BASE_URL" "$base_url"
-    upsert_env "$env_file" "SOURCE_VETTING_MODEL" "$model"
-    upsert_env "$env_file" "SOURCE_VETTING_API_KEY" "$api_key"
-  else
-    upsert_env "$env_file" "SOURCE_VETTING_ENABLED" "false"
-    upsert_env "$env_file" "SOURCE_VETTING_API_KEY" ""
-  fi
-
-  local alert_llm_choice
-  alert_llm_choice="$(prompt_yes_no "Enable LLM alert translation/classification?" "no")"
-  if [[ "$alert_llm_choice" == "yes" ]]; then
-    upsert_env "$env_file" "ALERT_LLM_ENABLED" "true"
-  else
-    upsert_env "$env_file" "ALERT_LLM_ENABLED" "false"
-  fi
-
-  configure_acled "$env_file"
-}
-
-configure_acled() {
-  local env_file="$1"
-  local acled_choice
-  acled_choice="$(prompt_yes_no "Enable ACLED conflict data (battles, military movements, protests)?" "no")"
-  if [[ "$acled_choice" == "yes" ]]; then
-    local username password
-    info "Note: API access requires an institutional email. Gmail/public email = web export only."
-    username="$(prompt "ACLED username (institutional email)" "")"
-    password="$(prompt "ACLED password" "")"
-    if [[ -z "$username" || -z "$password" ]]; then
-      warn "ACLED credentials empty — skipping. Register at https://acleddata.com/register/"
-      return 0
-    fi
-    upsert_env "$env_file" "ACLED_USERNAME" "$username"
-    upsert_env "$env_file" "ACLED_PASSWORD" "$password"
-    info "ACLED conflict data enabled."
-  fi
+  echo ""
+  info "Configuration saved to $env_file"
 }
 
 container_running_for_service() {
@@ -360,8 +323,9 @@ preflight_tls_checks() {
 
   info "TLS mode detected (domain set)."
   local firewall_choice
-  firewall_choice="$(prompt_yes_no "Run firewall checks for 80/443 (ufw/firewalld)?" "yes")"
-  if [[ "$firewall_choice" == "yes" ]]; then
+  firewall_choice="$(read_prompt "Run firewall checks for 80/443? [yes]: ")"
+  firewall_choice="${firewall_choice:-yes}"
+  if [[ "$firewall_choice" == "yes" || "$firewall_choice" == "y" ]]; then
     run_firewall_checks
   fi
 
@@ -374,43 +338,25 @@ preflight_tls_checks() {
 }
 
 start_stack() {
-  if [[ "$INSTALL_MODE" == "update" ]]; then
-    info "Update mode selected: leaving repository/.env/volumes untouched; pulling and restarting images only."
-    (
-      cd "$INSTALL_DIR"
-      $COMPOSE_CMD pull
-      $COMPOSE_CMD up -d --no-build
-    )
-    local http_port
-    http_port="$(grep -E '^EUOSINT_HTTP_PORT=' "$INSTALL_DIR/.env" | cut -d= -f2 || echo "8080")"
-    info "EUOSINT updated. HTTP endpoint: http://$(hostname -f 2>/dev/null || hostname):${http_port}"
-    return 0
-  fi
-
   local start_choice
-  start_choice="$(prompt_yes_no "Start EUOSINT now with Docker Compose?" "yes")"
-  if [[ "$start_choice" != "yes" ]]; then
-    if [[ "$INSTALL_MODE" == "install" ]]; then
-      info "Installation complete. Start later with: cd $INSTALL_DIR && $COMPOSE_CMD down --remove-orphans && $COMPOSE_CMD pull && $COMPOSE_CMD up -d --no-build"
-    else
-      info "Installation complete. Start later with: cd $INSTALL_DIR && $COMPOSE_CMD pull && $COMPOSE_CMD up -d --no-build"
-    fi
+  start_choice="$(read_prompt "Start/restart EUOSINT now? [yes]: ")"
+  start_choice="${start_choice:-yes}"
+  start_choice="$(echo "$start_choice" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$start_choice" != "yes" && "$start_choice" != "y" ]]; then
+    info "Skipped. Start later with: cd $INSTALL_DIR && $COMPOSE_CMD pull && $COMPOSE_CMD up -d --no-build"
     return 0
   fi
 
   preflight_tls_checks
 
   if [[ "$INSTALL_MODE" == "install" ]]; then
-    info "Install mode selected: stopping stack (preserving feed-data volume)."
+    info "Install mode: stopping stack (preserving feed-data volume)."
     (
       cd "$INSTALL_DIR"
       $COMPOSE_CMD down --remove-orphans || true
-      # Only remove ephemeral Caddy caches, never feed-data which holds the DB.
       docker volume rm "${COMPOSE_PROJECT_NAME:-euosint}_caddy-data" 2>/dev/null || true
       docker volume rm "${COMPOSE_PROJECT_NAME:-euosint}_caddy-config" 2>/dev/null || true
     )
-  else
-    info "Update mode selected: keeping existing Docker volumes/data."
   fi
 
   info "Pulling latest GHCR images..."
@@ -419,7 +365,7 @@ start_stack() {
     $COMPOSE_CMD pull
   )
 
-  info "Starting stack without local builds..."
+  info "Starting stack..."
   (
     cd "$INSTALL_DIR"
     $COMPOSE_CMD up -d --no-build
@@ -430,59 +376,14 @@ start_stack() {
   info "EUOSINT started. HTTP endpoint: http://$(hostname -f 2>/dev/null || hostname):${http_port}"
 }
 
-check_new_env_vars() {
-  local env_file="$INSTALL_DIR/.env"
-  local example_file="$INSTALL_DIR/.env.example"
-  [[ -f "$example_file" && -f "$env_file" ]] || return 0
-
-  # Collect keys present in .env.example but missing from .env.
-  local new_keys=()
-  while IFS= read -r line; do
-    # Skip comments and empty lines.
-    [[ "$line" =~ ^[[:space:]]*# ]] && continue
-    [[ "$line" =~ ^[[:space:]]*$ ]] && continue
-    local key="${line%%=*}"
-    [[ -z "$key" ]] && continue
-    if ! grep -qE "^${key}=" "$env_file" 2>/dev/null; then
-      new_keys+=("$key")
-    fi
-  done < "$example_file"
-
-  [[ ${#new_keys[@]} -eq 0 ]] && return 0
-
-  info "New configuration options detected since last install:"
-  for key in "${new_keys[@]}"; do
-    echo "  - $key"
-  done
-
-  # Handle known feature blocks interactively.
-  for key in "${new_keys[@]}"; do
-    case "$key" in
-      ACLED_USERNAME)
-        configure_acled "$env_file"
-        ;;
-      ACLED_PASSWORD)
-        # Handled together with ACLED_USERNAME above.
-        ;;
-      *)
-        # For unknown new vars, copy the default from .env.example.
-        local default_val
-        default_val="$(grep -E "^${key}=" "$example_file" | head -1 | cut -d= -f2-)"
-        upsert_env "$env_file" "$key" "$default_val"
-        info "Added $key with default value."
-        ;;
-    esac
-  done
-}
-
 main() {
   ensure_docker
   INSTALL_MODE="$(prompt_install_mode)"
   info "Selected install mode: ${INSTALL_MODE}"
+
   if [[ "$INSTALL_MODE" == "install" ]]; then
     require_cmd git
     clone_or_update_repo
-    configure_env
   else
     if [[ ! -d "$INSTALL_DIR" || ! -f "$INSTALL_DIR/docker-compose.yml" ]]; then
       fatal "Update mode requires an existing install at $INSTALL_DIR (missing docker-compose.yml). Use install mode first."
@@ -490,8 +391,9 @@ main() {
     refresh_compose_yaml_direct
     refresh_env_example_direct
     refresh_web_runtime_files_direct
-    check_new_env_vars
   fi
+
+  configure_env
   start_stack
 }
 

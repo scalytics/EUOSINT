@@ -62,6 +62,20 @@ func TestDecodeVerdictAcceptsPercentScores(t *testing.T) {
 	}
 }
 
+func TestDecodeVerdictAcceptsNoneScores(t *testing.T) {
+	verdict, err := decodeVerdict(`{"approve":true,"promotion_status":"active","level":"national","source_quality":"none","operational_relevance":"n/a","mission_tags":["organized_crime"],"reason":"no numeric score"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verdict.normalize()
+	if float64(verdict.SourceQuality) != 0 {
+		t.Fatalf("expected source_quality 0, got %v", verdict.SourceQuality)
+	}
+	if float64(verdict.OperationalRelevance) != 0 {
+		t.Fatalf("expected operational_relevance 0, got %v", verdict.OperationalRelevance)
+	}
+}
+
 func TestDeterministicRejectsLocalAndMissingSamples(t *testing.T) {
 	if _, reject := deterministicReject(Input{AuthorityName: "City of Valletta Police Department", Samples: []Sample{{Title: "x"}}}); !reject {
 		t.Fatal("expected local police deterministic reject")

@@ -83,6 +83,41 @@ If the VM only has `docker-compose`, adjust the unit commands accordingly.
 - Caddy runtime state persists in the `caddy-config` volume.
 - Scheduled refreshes, Docker runtime, and local collection commands all run through the Go collector.
 
+## Source Discovery
+
+The collector runs a background discovery loop alongside feed collection. Discovery seeds candidate sources from FIRST.org, Wikidata, and gap analysis, then probes them for RSS/Atom feeds or HTML listing pages.
+
+Discovery requires LLM source vetting to promote candidates into the live registry. Without vetting enabled, candidates are discovered and queued but never activated.
+
+### How it works
+
+1. **Seeding** — FIRST.org CSIRT teams, Wikidata police/humanitarian/government orgs, and gap analysis (missing country+category combinations) generate candidate URLs.
+2. **Probing** — Each candidate URL is checked for RSS/Atom feeds or stable HTML listing pages.
+3. **Vetting** — If `SOURCE_VETTING_ENABLED=true`, discovered feeds are sampled and sent to the configured LLM for approval. The LLM scores source quality, operational relevance, and assigns mission tags.
+4. **Promotion** — Approved sources are written into `sources.db` and picked up by the collector on its next sweep.
+
+### Enabling discovery with vetting
+
+Set these in `.env` (the install/update script will prompt for them):
+
+```dotenv
+SOURCE_VETTING_ENABLED=true
+SOURCE_VETTING_PROVIDER=xai
+SOURCE_VETTING_BASE_URL=https://api.x.ai/v1
+SOURCE_VETTING_API_KEY=your-key-here
+SOURCE_VETTING_MODEL=grok-4-1-fast
+```
+
+### Token cost
+
+Discovery vetting is lightweight — each candidate gets a single short prompt with up to 6 sample items. A full discovery cycle with 300+ candidates typically costs under 100k tokens. The cycle runs once per collection interval (default 15 minutes) but most candidates are already deduplicated or filtered by deterministic hygiene before the LLM is called.
+
+To save tokens, disable vetting (`SOURCE_VETTING_ENABLED=false`). Discovery will still run and queue candidates, but they won't be promoted until vetting is re-enabled.
+
+### Dead-letter queue
+
+Sources that return 404, 410, 403, DNS errors, or TLS failures are moved to the dead-letter queue (`source_dead_letter.json`). Dead sources are skipped on subsequent sweeps and retried once every 7 days. Discovery also skips dead-lettered URLs when evaluating candidates.
+
 ## Collector Lifecycle And Cadence Variables
 
 - `RECENT_WINDOW_PER_SOURCE` (default `20`): cap per-run fetch window for non-HTML stream sources (Telegram/RSS/Atom/API).
