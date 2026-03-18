@@ -154,6 +154,25 @@ func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return fn(req)
 }
 
+func TestPunycodeURL(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"https://мвд.рф/news/feed", "https://xn--b1aew.xn--p1ai/news/feed"},
+		{"https://www.example.com/rss", "https://www.example.com/rss"},
+		{"https://例え.jp/feed", "https://xn--r8jz45g.jp/feed"},
+		{"https://мвд.рф:8443/path", "https://xn--b1aew.xn--p1ai:8443/path"},
+		{"not a url", "not a url"},
+	}
+	for _, tt := range tests {
+		got := punycodeURL(tt.input)
+		if got != tt.want {
+			t.Errorf("punycodeURL(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
 type roundTripError string
 
 func (e roundTripError) Error() string { return string(e) }

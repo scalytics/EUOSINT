@@ -133,6 +133,7 @@ var (
 		regexp.MustCompile(`(?i)\b(?:review[sd]?|assess(?:es|ed)?|evaluat(?:es|ed)?)\b.*\b(?:infrastructure|development|progress|readiness|framework|programme|program)\b`),
 		regexp.MustCompile(`(?i)\b(?:awareness|outreach|education|campaign|initiative|celebration|anniversary|ceremony)\b`),
 		regexp.MustCompile(`(?i)\b(?:publication|report release|annual report|yearbook|magazine|newsletter|bulletin)\b`),
+		regexp.MustCompile(`(?i)\b(?:weekly|monthly|bi-?weekly|quarterly|daily|annual)\b.*\b(?:report|review|summary|digest|briefing|roundup|round-up|update|recap|overview|bulletin|wrap-up)\b`),
 		regexp.MustCompile(`(?i)\b(?:strengthen|bolster|enhance|promote|foster|advance|support)\b.*\b(?:global|regional|national|international)\b.*\b(?:defence|defense|capacity|capability|cooperation|preparedness)\b`),
 		regexp.MustCompile(`(?i)\b(?:appoint(?:ed|ment|s)?|elected|nomination|inaugurat)\b`),
 	}
@@ -464,11 +465,19 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 					baseLat, baseLng = capital[0], capital[1]
 				}
 				geoSource = "capital"
+				geocoded = true
 				if name := countryNameFromCode(code); name != "" {
 					source.Country = name
 					source.CountryCode = code
 				}
 			}
+		}
+		if !geocoded {
+			// No location resolved from the alert text — zero out coords
+			// so the map doesn't show a misleading pin at the source's HQ
+			// (e.g. Athens for Hellenic Shipping, NYC for UN sources).
+			baseLat, baseLng = 0, 0
+			geoSource = ""
 		}
 	} else if allowDynamicGeocode && ctx.Geocoder != nil {
 		// Non-international source: try city-level geocoding within the

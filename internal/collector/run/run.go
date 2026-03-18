@@ -1891,10 +1891,13 @@ func classifySourceError(err error) (string, bool, string) {
 	case strings.Contains(msg, "status 522"):
 		// Cloudflare connection timeout at origin; frequently persistent dead feeds.
 		return "origin_unreachable", true, "dead_letter"
+	case strings.Contains(msg, "stopped after 10 redirects"):
+		// Redirect loop — feed URL is broken.
+		return "redirect_loop", true, "dead_letter"
 	case strings.Contains(msg, "status 301"), strings.Contains(msg, "status 302"), strings.Contains(msg, "status 307"), strings.Contains(msg, "status 308"):
 		// Redirects should be followed automatically — if we still see
 		// one here it means the chain exceeded 10 hops.
-		return "redirect", false, "retry"
+		return "redirect", true, "dead_letter"
 	case strings.Contains(msg, "status 403"):
 		return "blocked", true, "dead_letter"
 	case strings.Contains(msg, "response too large"):

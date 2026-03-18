@@ -193,6 +193,8 @@ export function GlobeView({
 
     const markers: L.CircleMarker[] = [];
     for (const alert of visibleAlerts) {
+      // Skip alerts with no resolved location (0,0).
+      if (alert.lat === 0 && alert.lng === 0) continue;
       const selected = alert.alert_id === selectedId;
       const text = textHex();
       const marker = L.circleMarker([alert.lat, alert.lng], {

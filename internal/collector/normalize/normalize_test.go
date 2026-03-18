@@ -239,6 +239,16 @@ func TestInformationalTitleClassification(t *testing.T) {
 		{"Workshop on maritime safety held in Lisbon", true},
 		{"Training course on border security for West African officers", true},
 		{"Partnership agreement signed between IAEA and University of Tokyo", true},
+		// Periodic digest titles — should be informational, not alerts.
+		{"UKMTO Weekly Piracy Report 15 – 21 November 2025", true},
+		{"Monthly Cyber Threat Summary – October 2025", true},
+		{"Quarterly Maritime Security Review Q3 2025", true},
+		{"Daily Situation Update – Horn of Africa", true},
+		{"Bi-Weekly Intelligence Briefing", true},
+		{"Annual Piracy Overview 2024", true},
+		// But bare "report" or "weekly" alone should NOT match.
+		{"Missing persons report filed with authorities", false},
+		{"Reporting from the frontline: explosion in Beirut", false},
 	}
 	for _, tt := range tests {
 		gotInfo := IsInformationalTitle(tt.title)

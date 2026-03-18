@@ -10,10 +10,12 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/scalytics/euosint/internal/collector/config"
+	"golang.org/x/net/idna"
 )
 
 type Client struct {
@@ -108,7 +110,8 @@ func (c *Client) TextWithHeaders(ctx context.Context, url string, followRedirect
 	return result.Body, nil
 }
 
-func (c *Client) doFetch(ctx context.Context, url string, followRedirects bool, accept string, extraHeaders map[string]string) (FetchResult, error) {
+func (c *Client) doFetch(ctx context.Context, rawURL string, followRedirects bool, accept string, extraHeaders map[string]string) (FetchResult, error) {
+	url := punycodeURL(rawURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return FetchResult{}, fmt.Errorf("build request %s: %w", url, err)
@@ -174,7 +177,8 @@ func (c *Client) doFetch(ctx context.Context, url string, followRedirects bool, 
 
 // HeadStatus performs a lightweight HEAD probe and returns the resulting HTTP
 // status code (or an error when the probe failed).
-func (c *Client) HeadStatus(ctx context.Context, url string, followRedirects bool) (int, error) {
+func (c *Client) HeadStatus(ctx context.Context, rawURL string, followRedirects bool) (int, error) {
+	url := punycodeURL(rawURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
 	if err != nil {
 		return 0, fmt.Errorf("build request %s: %w", url, err)
@@ -211,4 +215,26 @@ func noRedirectClient(base *http.Client) *http.Client {
 		return http.ErrUseLastResponse
 	}
 	return &copyClient
+}
+
+// punycodeURL converts IDN (internationalized) hostnames to ASCII punycode
+// so Go's HTTP client can resolve and TLS-connect to them correctly.
+// E.g. "https://мвд.рф/news" → "https://xn--b1aew.xn--p1ai/news"
+func punycodeURL(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	host := u.Hostname()
+	ascii, err := idna.Lookup.ToASCII(host)
+	if err != nil || ascii == host {
+		return rawURL
+	}
+	// Preserve port if present.
+	if port := u.Port(); port != "" {
+		u.Host = ascii + ":" + port
+	} else {
+		u.Host = ascii
+	}
+	return u.String()
 }
