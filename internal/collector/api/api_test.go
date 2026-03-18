@@ -11,8 +11,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/euosint/internal/collector/trends"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
@@ -230,5 +232,59 @@ func TestHealthEndpoint(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
+	}
+}
+
+func TestDigestEndpointReturnsCountryTerms(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+	seedAlerts(t, db)
+
+	// Record trends so the digest has data.
+	detector := trends.New(db.RawDB())
+	if err := detector.Init(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	alerts := []model.Alert{
+		{Title: "Drug trafficking network dismantled", Category: "public_appeal", RegionTag: "EU", Severity: "high",
+			Source: model.SourceMetadata{CountryCode: "NL", AuthorityType: "police"}},
+		{Title: "Ransomware attack on infrastructure", Category: "cyber_advisory", RegionTag: "EU", Severity: "critical",
+			Source: model.SourceMetadata{CountryCode: "NL", AuthorityType: "cert"}},
+	}
+	if err := detector.Record(context.Background(), alerts, time.Now().UTC()); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := New(db, ":0", os.Stderr)
+	handler := srv.srv.Handler
+
+	// Single country digest.
+	req := httptest.NewRequest("GET", "/api/digest?cc=NL&days=7&limit=5", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		CountryCode string              `json:"country_code"`
+		Terms       []trends.DigestTerm `json:"terms"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if resp.CountryCode != "NL" {
+		t.Errorf("expected country_code NL, got %q", resp.CountryCode)
+	}
+	if len(resp.Terms) == 0 {
+		t.Error("expected at least one digest term for NL")
+	}
+
+	// All-countries digest.
+	req2 := httptest.NewRequest("GET", "/api/digest?days=7", nil)
+	w2 := httptest.NewRecorder()
+	handler.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w2.Code)
 	}
 }

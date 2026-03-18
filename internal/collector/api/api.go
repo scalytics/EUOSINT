@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/scalytics/euosint/internal/collector/trends"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
@@ -30,6 +31,7 @@ func New(db *sourcedb.DB, addr string, stderr io.Writer) *Server {
 	s := &Server{db: db, addr: addr, stderr: stderr}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/search", s.handleSearch)
+	mux.HandleFunc("GET /api/digest", s.handleDigest)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	rl := newRateLimiter(30, 5, 10*time.Minute) // 30 requests burst, 5/sec refill
 	s.srv = &http.Server{
@@ -111,6 +113,68 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// handleDigest returns the country intelligence digest — top trending
+// terms per country, ranked by trust-weighted frequency.
+//
+//	GET /api/digest?cc=PT&days=7&limit=10  → single country
+//	GET /api/digest?days=7&limit=10        → all countries
+func (s *Server) handleDigest(w http.ResponseWriter, r *http.Request) {
+	cc := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("cc")))
+	daysStr := strings.TrimSpace(r.URL.Query().Get("days"))
+	limitStr := strings.TrimSpace(r.URL.Query().Get("limit"))
+
+	days := 7
+	if daysStr != "" {
+		if n, err := strconv.Atoi(daysStr); err == nil && n > 0 && n <= 90 {
+			days = n
+		}
+	}
+	limit := 10
+	if limitStr != "" {
+		if n, err := strconv.Atoi(limitStr); err == nil && n > 0 && n <= 50 {
+			limit = n
+		}
+	}
+
+	detector := trends.New(s.db.RawDB())
+	if err := detector.Init(r.Context()); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	now := time.Now().UTC()
+	if cc != "" {
+		terms, err := detector.CountryDigestQuery(r.Context(), cc, now, days, limit)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		if terms == nil {
+			terms = []trends.DigestTerm{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"country_code": cc,
+			"days":         days,
+			"terms":        terms,
+		})
+		return
+	}
+
+	digests, err := detector.AllCountryDigests(r.Context(), now, days, limit)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if digests == nil {
+		digests = []trends.CountryDigest{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"days":     days,
+		"count":    len(digests),
+		"digests":  digests,
+	})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

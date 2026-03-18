@@ -55,41 +55,101 @@ func New(db *sql.DB) *Detector {
 func (d *Detector) Init(ctx context.Context) error {
 	_, err := d.db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS term_trends (
-  term       TEXT NOT NULL,
-  bucket     TEXT NOT NULL,
-  category   TEXT NOT NULL,
-  region     TEXT NOT NULL,
-  count      INTEGER NOT NULL DEFAULT 0,
+  term         TEXT NOT NULL,
+  bucket       TEXT NOT NULL,
+  category     TEXT NOT NULL,
+  region       TEXT NOT NULL,
+  count        INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (term, bucket, category, region)
 )`)
 	if err != nil {
 		return fmt.Errorf("create term_trends table: %w", err)
 	}
+	// Country-level term tracking for the country digest feature.
 	_, err = d.db.ExecContext(ctx, `
-CREATE INDEX IF NOT EXISTS idx_term_trends_bucket ON term_trends(bucket)`)
-	return err
+CREATE TABLE IF NOT EXISTS term_country_trends (
+  term         TEXT NOT NULL,
+  bucket       TEXT NOT NULL,
+  country_code TEXT NOT NULL,
+  category     TEXT NOT NULL,
+  weight       REAL NOT NULL DEFAULT 0,
+  count        INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (term, bucket, country_code, category)
+)`)
+	if err != nil {
+		return fmt.Errorf("create term_country_trends table: %w", err)
+	}
+	for _, idx := range []string{
+		`CREATE INDEX IF NOT EXISTS idx_term_trends_bucket ON term_trends(bucket)`,
+		`CREATE INDEX IF NOT EXISTS idx_term_country_trends_bucket ON term_country_trends(bucket)`,
+		`CREATE INDEX IF NOT EXISTS idx_term_country_trends_country ON term_country_trends(country_code, bucket)`,
+	} {
+		if _, err := d.db.ExecContext(ctx, idx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// sourceTrustWeight returns a multiplier for how trustworthy a source type
+// is as a signal. Police/CERT confirmed events weigh more than news blogs.
+func sourceTrustWeight(authorityType string) float64 {
+	switch strings.ToLower(authorityType) {
+	case "police", "gendarmerie":
+		return 2.0 // confirmed events
+	case "cert", "national_security", "intelligence":
+		return 1.8
+	case "coast_guard", "customs", "border_guard":
+		return 1.6
+	case "government", "legislative", "regulatory":
+		return 1.5
+	case "public_safety_program":
+		return 1.3
+	case "diplomatic":
+		return 1.2
+	default:
+		return 1.0
+	}
 }
 
 // Record extracts significant terms from alerts and stores their counts
-// for the given day bucket.
+// for the given day bucket. Also populates country-level term tracking
+// with source trust weighting.
 func (d *Detector) Record(ctx context.Context, alerts []model.Alert, now time.Time) error {
 	bucket := now.UTC().Format("2006-01-02")
 
 	// Aggregate term counts from alert titles.
-	type key struct{ term, category, region string }
-	counts := map[key]int{}
+	type regionKey struct{ term, category, region string }
+	type countryKey struct{ term, countryCode, category string }
+	regionCounts := map[regionKey]int{}
+	countryCounts := map[countryKey]struct {
+		count  int
+		weight float64
+	}{}
+
 	for _, a := range alerts {
 		if a.Severity == "info" || a.Category == "informational" {
 			continue // skip noise
 		}
 		terms := extractSignificantTerms(a.Title)
+		trust := sourceTrustWeight(a.Source.AuthorityType)
+		cc := strings.ToUpper(a.Source.CountryCode)
+
 		for _, t := range terms {
-			k := key{term: t, category: a.Category, region: a.RegionTag}
-			counts[k]++
+			rk := regionKey{term: t, category: a.Category, region: a.RegionTag}
+			regionCounts[rk]++
+
+			if cc != "" && cc != "INT" {
+				ck := countryKey{term: t, countryCode: cc, category: a.Category}
+				entry := countryCounts[ck]
+				entry.count++
+				entry.weight += trust
+				countryCounts[ck] = entry
+			}
 		}
 	}
 
-	if len(counts) == 0 {
+	if len(regionCounts) == 0 && len(countryCounts) == 0 {
 		return nil
 	}
 
@@ -99,21 +159,44 @@ func (d *Detector) Record(ctx context.Context, alerts []model.Alert, now time.Ti
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.PrepareContext(ctx, `
+	// Region-level trends (existing).
+	if len(regionCounts) > 0 {
+		stmt, err := tx.PrepareContext(ctx, `
 INSERT INTO term_trends (term, bucket, category, region, count)
 VALUES (?, ?, ?, ?, ?)
 ON CONFLICT (term, bucket, category, region)
 DO UPDATE SET count = count + excluded.count`)
-	if err != nil {
-		return fmt.Errorf("prepare trend insert: %w", err)
-	}
-	defer stmt.Close()
-
-	for k, count := range counts {
-		if _, err := stmt.ExecContext(ctx, k.term, bucket, k.category, k.region, count); err != nil {
-			return fmt.Errorf("insert trend %q: %w", k.term, err)
+		if err != nil {
+			return fmt.Errorf("prepare trend insert: %w", err)
 		}
+		for k, count := range regionCounts {
+			if _, err := stmt.ExecContext(ctx, k.term, bucket, k.category, k.region, count); err != nil {
+				stmt.Close()
+				return fmt.Errorf("insert trend %q: %w", k.term, err)
+			}
+		}
+		stmt.Close()
 	}
+
+	// Country-level trends with source trust weighting.
+	if len(countryCounts) > 0 {
+		stmt, err := tx.PrepareContext(ctx, `
+INSERT INTO term_country_trends (term, bucket, country_code, category, weight, count)
+VALUES (?, ?, ?, ?, ?, ?)
+ON CONFLICT (term, bucket, country_code, category)
+DO UPDATE SET weight = weight + excluded.weight, count = count + excluded.count`)
+		if err != nil {
+			return fmt.Errorf("prepare country trend insert: %w", err)
+		}
+		for k, v := range countryCounts {
+			if _, err := stmt.ExecContext(ctx, k.term, bucket, k.countryCode, k.category, v.weight, v.count); err != nil {
+				stmt.Close()
+				return fmt.Errorf("insert country trend %q: %w", k.term, err)
+			}
+		}
+		stmt.Close()
+	}
+
 	return tx.Commit()
 }
 
@@ -204,8 +287,148 @@ func (d *Detector) Prune(ctx context.Context, now time.Time, retentionDays int) 
 		retentionDays = 30
 	}
 	cutoff := now.UTC().AddDate(0, 0, -retentionDays).Format("2006-01-02")
-	_, err := d.db.ExecContext(ctx, `DELETE FROM term_trends WHERE bucket < ?`, cutoff)
+	if _, err := d.db.ExecContext(ctx, `DELETE FROM term_trends WHERE bucket < ?`, cutoff); err != nil {
+		return err
+	}
+	_, err := d.db.ExecContext(ctx, `DELETE FROM term_country_trends WHERE bucket < ?`, cutoff)
 	return err
+}
+
+// ── Country digest ──────────────────────────────────────────────────────
+
+// DigestTerm is a single term in a country intelligence digest.
+type DigestTerm struct {
+	Term        string  `json:"term"`
+	Count       int     `json:"count"`
+	Weight      float64 `json:"weight"`       // trust-weighted count
+	AvgCount    float64 `json:"avg_count"`     // baseline daily average
+	Ratio       float64 `json:"ratio"`         // today / avg (0 if new)
+	Category    string  `json:"category"`      // dominant category
+	SampleTitle string  `json:"sample_title,omitempty"`
+	SampleURL   string  `json:"sample_url,omitempty"`
+}
+
+// CountryDigest is the top-terms summary for a single country.
+type CountryDigest struct {
+	CountryCode string       `json:"country_code"`
+	Country     string       `json:"country"`
+	Terms       []DigestTerm `json:"terms"`
+	TotalAlerts int          `json:"total_alerts"`
+}
+
+// CountryDigestQuery returns the top trending terms for a specific country
+// over the given window. Terms are ranked by trust-weighted count, with
+// spike ratio as a tiebreaker. Returns up to `limit` terms.
+func (d *Detector) CountryDigestQuery(ctx context.Context, countryCode string, now time.Time, days int, limit int) ([]DigestTerm, error) {
+	if days < 1 {
+		days = 7
+	}
+	if limit < 1 {
+		limit = 10
+	}
+
+	today := now.UTC().Format("2006-01-02")
+	windowStart := now.UTC().AddDate(0, 0, -days).Format("2006-01-02")
+
+	rows, err := d.db.QueryContext(ctx, `
+SELECT
+  term,
+  category,
+  COALESCE(SUM(count), 0) AS total_count,
+  COALESCE(SUM(weight), 0) AS total_weight,
+  COALESCE(SUM(CASE WHEN bucket = ? THEN count END), 0) AS today_count,
+  COALESCE(AVG(CASE WHEN bucket < ? AND bucket >= ? THEN count END), 0) AS avg_count
+FROM term_country_trends
+WHERE country_code = ? AND bucket >= ?
+GROUP BY term, category
+HAVING total_count >= 1
+ORDER BY total_weight DESC, total_count DESC
+LIMIT ?`,
+		today, today, windowStart, strings.ToUpper(countryCode), windowStart, limit)
+	if err != nil {
+		return nil, fmt.Errorf("country digest query: %w", err)
+	}
+	defer rows.Close()
+
+	var terms []DigestTerm
+	for rows.Next() {
+		var t DigestTerm
+		var todayCount int
+		if err := rows.Scan(&t.Term, &t.Category, &t.Count, &t.Weight, &todayCount, &t.AvgCount); err != nil {
+			return nil, fmt.Errorf("scan digest term: %w", err)
+		}
+		if t.AvgCount > 0 {
+			t.Ratio = math.Round(float64(todayCount)/t.AvgCount*10) / 10
+		}
+		t.Weight = math.Round(t.Weight*10) / 10
+		terms = append(terms, t)
+	}
+	return terms, rows.Err()
+}
+
+// AllCountryDigests returns digests for all countries that have data in
+// the given window. Used for the overview/dashboard.
+func (d *Detector) AllCountryDigests(ctx context.Context, now time.Time, days int, termsPerCountry int) ([]CountryDigest, error) {
+	if days < 1 {
+		days = 7
+	}
+	if termsPerCountry < 1 {
+		termsPerCountry = 10
+	}
+	windowStart := now.UTC().AddDate(0, 0, -days).Format("2006-01-02")
+
+	// Get all country codes with data.
+	rows, err := d.db.QueryContext(ctx, `
+SELECT DISTINCT country_code
+FROM term_country_trends
+WHERE bucket >= ?
+ORDER BY country_code`, windowStart)
+	if err != nil {
+		return nil, fmt.Errorf("list digest countries: %w", err)
+	}
+	var codes []string
+	for rows.Next() {
+		var cc string
+		if err := rows.Scan(&cc); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		codes = append(codes, cc)
+	}
+	rows.Close()
+
+	var digests []CountryDigest
+	for _, cc := range codes {
+		terms, err := d.CountryDigestQuery(ctx, cc, now, days, termsPerCountry)
+		if err != nil {
+			continue
+		}
+		if len(terms) == 0 {
+			continue
+		}
+		digests = append(digests, CountryDigest{
+			CountryCode: cc,
+			Terms:       terms,
+		})
+	}
+	return digests, nil
+}
+
+// AnnotateDigestWithSamples fills in SampleTitle and SampleURL for each
+// digest term by finding a matching alert.
+func AnnotateDigestWithSamples(terms []DigestTerm, alerts []model.Alert, countryCode string) {
+	for i := range terms {
+		for _, a := range alerts {
+			if strings.ToUpper(a.Source.CountryCode) != strings.ToUpper(countryCode) {
+				continue
+			}
+			if strings.Contains(strings.ToLower(a.Title), terms[i].Term) {
+				terms[i].SampleTitle = a.Title
+				terms[i].SampleURL = a.CanonicalURL
+				break
+			}
+		}
+	}
 }
 
 // ── Term extraction ─────────────────────────────────────────────────────
