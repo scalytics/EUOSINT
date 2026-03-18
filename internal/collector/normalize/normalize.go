@@ -285,7 +285,7 @@ func InterpolAlert(ctx Context, meta model.RegistrySource, noticeID string, titl
 		// Override lat/lng to the person's nationality country instead of
 		// Interpol HQ (Lyon, France).
 		if gLat, gLng, _, ok := geocodeCountryCode(code); ok {
-			alert.Lat, alert.Lng = jitter(gLat, gLng, meta.Source.SourceID+":"+link, "capital")
+			alert.Lat, alert.Lng = jitterCC(gLat, gLng, meta.Source.SourceID+":"+link, "capital", code)
 		}
 	}
 	alert.Triage = score(ctx.Config, alert, FeedContext{
@@ -856,10 +856,13 @@ func jitterCC(lat float64, lng float64, seed string, geoSource string, countryCo
 	sum := sha1.Sum([]byte(seed))
 	angle := float64(sum[0])/255*math.Pi*2 + float64(sum[1])/255
 	minRadius, maxRadius := jitterRadiusKM(geoSource)
-	// For country-level pins in small countries, use the landmass center
-	// instead of the capital (which is often coastal) and clamp jitter.
-	if sc, ok := smallCountryCenter[countryCode]; ok && isCountryLevel(geoSource) {
-		lat, lng = sc.lat, sc.lng
+	// For country-level pins in small countries, clamp jitter so pins
+	// stay within the country. For islands, also override center to the
+	// interior so coastal capitals don't scatter pins into the sea.
+	if sc, ok := smallCountryJitter[countryCode]; ok && isCountryLevel(geoSource) {
+		if sc.island {
+			lat, lng = sc.lat, sc.lng
+		}
 		if maxRadius > sc.maxKM {
 			maxRadius = sc.maxKM
 			minRadius = maxRadius * 0.3
@@ -910,44 +913,52 @@ func isCountryLevel(geoSource string) bool {
 type countryCenter struct {
 	lat, lng float64
 	maxKM    float64 // max safe jitter radius
+	island   bool    // true = override center to landmass interior (coastal capital risk)
 }
 
-// smallCountryCenter maps ISO codes to their landmass center and safe jitter
-// radius. Used instead of coastal capitals so pins don't land in water.
-// Coordinates are approximate geographic centers of the main landmass.
-var smallCountryCenter = map[string]countryCenter{
-	"MC": {43.74, 7.42, 0.4},  // Monaco — city-state
-	"SG": {1.35, 103.82, 5},   // Singapore — center of island
-	"BH": {26.07, 50.55, 8},   // Bahrain — center of main island
-	"MT": {35.89, 14.44, 4},   // Malta — center of main island
-	"PS": {31.90, 35.20, 8},   // Palestine
-	"LU": {49.75, 6.17, 12},   // Luxembourg
-	"CY": {35.10, 33.40, 15},  // Cyprus — center of island
-	"LB": {33.87, 35.85, 15},  // Lebanon
-	"QA": {25.35, 51.18, 15},  // Qatar — center of peninsula
-	"KW": {29.31, 47.48, 15},  // Kuwait
-	"IL": {31.50, 34.90, 15},  // Israel — center of landmass
-	"JM": {18.15, -77.30, 15}, // Jamaica — center of island
-	"SI": {46.15, 14.99, 20},  // Slovenia
-	"XK": {42.60, 20.90, 20},  // Kosovo
-	"ME": {42.71, 19.37, 20},  // Montenegro
-	"MK": {41.51, 21.75, 20},  // North Macedonia
-	"AL": {41.00, 20.00, 20},  // Albania — inland center
-	"BE": {50.64, 4.67, 25},   // Belgium
-	"NL": {52.13, 5.29, 25},   // Netherlands
-	"CH": {46.82, 8.23, 25},   // Switzerland
-	"DK": {55.96, 9.50, 25},   // Denmark — Jutland center
-	"EE": {58.60, 25.01, 25},  // Estonia
-	"LV": {56.88, 24.60, 25},  // Latvia
-	"LT": {55.17, 23.88, 25},  // Lithuania
-	"BA": {43.92, 17.68, 25},  // Bosnia
-	"HR": {45.10, 15.20, 25},  // Croatia
-	"SK": {48.67, 19.70, 25},  // Slovakia
-	"HU": {47.16, 19.50, 30},  // Hungary
-	"IE": {53.40, -7.69, 30},  // Ireland — center of island
-	"AT": {47.52, 14.55, 30},  // Austria
-	"CZ": {49.82, 15.47, 30},  // Czech Republic
-	"RS": {44.02, 21.01, 30},  // Serbia
+// smallCountryJitter clamps jitter for small countries.
+//
+// island=true: override center to the interior of the landmass so pins don't
+// scatter into the sea from a coastal capital. Only used for true island
+// nations and peninsulas where the capital is on the coast.
+//
+// island=false: keep the capital/registry coords (where institutions are)
+// but clamp the jitter radius so pins stay within the country.
+var smallCountryJitter = map[string]countryCenter{
+	// Islands / coastal-capital states: override center to interior.
+	"MC": {43.74, 7.42, 0.3, true},   // Monaco — city-state
+	"SG": {1.35, 103.82, 3, true},    // Singapore
+	"BH": {26.07, 50.55, 5, true},    // Bahrain
+	"MT": {35.89, 14.44, 2, true},    // Malta — center of main island
+	"CY": {35.10, 33.40, 10, true},   // Cyprus
+	"JM": {18.15, -77.30, 10, true},  // Jamaica
+	"IE": {53.40, -7.69, 25, true},   // Ireland
+	"QA": {25.35, 51.18, 10, true},   // Qatar — peninsula
+	// Continental: keep capital, just clamp radius.
+	"PS": {0, 0, 8, false},
+	"LU": {0, 0, 10, false},
+	"LB": {0, 0, 12, false},
+	"KW": {0, 0, 12, false},
+	"IL": {0, 0, 15, false},
+	"SI": {0, 0, 15, false},
+	"XK": {0, 0, 15, false},
+	"ME": {0, 0, 15, false},
+	"MK": {0, 0, 15, false},
+	"AL": {0, 0, 15, false},
+	"BE": {0, 0, 20, false},
+	"NL": {0, 0, 20, false},
+	"CH": {0, 0, 20, false},
+	"DK": {0, 0, 20, false},
+	"EE": {0, 0, 20, false},
+	"LV": {0, 0, 20, false},
+	"LT": {0, 0, 20, false},
+	"BA": {0, 0, 20, false},
+	"HR": {0, 0, 20, false},
+	"SK": {0, 0, 20, false},
+	"HU": {0, 0, 25, false},
+	"AT": {0, 0, 25, false},
+	"CZ": {0, 0, 25, false},
+	"RS": {0, 0, 25, false},
 }
 
 func extractDomain(raw string) string {
