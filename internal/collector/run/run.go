@@ -328,17 +328,29 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 func (r Runner) writeProgressSnapshot(cfg config.Config, freshAlerts []model.Alert, previousAlerts []model.Alert, sourceHealth []model.SourceHealthEntry) {
 	// Merge fresh alerts with previous state so the dashboard never goes
 	// blank during a sweep. Previous alerts that aren't in the fresh batch
-	// are carried forward as-is.
+	// are carried forward as-is — but only for sources that haven't been
+	// fetched yet this cycle. Once a source has fresh alerts, its old ones
+	// are dropped so paginated sources (Interpol) don't accumulate beyond
+	// their max_items limit.
 	freshByID := make(map[string]struct{}, len(freshAlerts))
+	freshSourceIDs := make(map[string]struct{})
 	for _, a := range freshAlerts {
 		freshByID[a.AlertID] = struct{}{}
+		freshSourceIDs[a.SourceID] = struct{}{}
 	}
 	merged := make([]model.Alert, 0, len(freshAlerts)+len(previousAlerts))
 	merged = append(merged, freshAlerts...)
 	for _, prev := range previousAlerts {
-		if _, ok := freshByID[prev.AlertID]; !ok {
-			merged = append(merged, prev)
+		if _, ok := freshByID[prev.AlertID]; ok {
+			continue // already in fresh batch
 		}
+		if _, ok := freshSourceIDs[prev.SourceID]; ok {
+			continue // source already fetched this cycle — don't carry forward old alerts
+		}
+		if prev.Status == "removed" || prev.Status == "filtered" {
+			continue // don't resurrect removed/filtered alerts in snapshots
+		}
+		merged = append(merged, prev)
 	}
 	deduped, duplicateAudit := normalize.Deduplicate(merged)
 	active, filtered := normalize.FilterActive(cfg, deduped)
