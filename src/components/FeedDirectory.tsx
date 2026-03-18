@@ -19,6 +19,15 @@ import { alertMatchesRegionFilter } from "@/lib/regions";
 type View = "overview" | "feeds" | "authorities" | "health";
 type SeverityFilter = "critical" | "high" | null;
 
+interface DigestTerm {
+  term: string;
+  count: number;
+  weight: number;
+  avg_count: number;
+  ratio: number;
+  category: string;
+}
+
 interface Props {
   view: View;
   alerts: Alert[];
@@ -32,6 +41,7 @@ interface Props {
   onSelectCountry: (countryCode: string) => void;
   severityFilter: SeverityFilter;
   onSeverityFilterChange: (filter: SeverityFilter) => void;
+  onSearchTerm?: (term: string) => void;
 }
 
 export function FeedDirectory({
@@ -46,14 +56,39 @@ export function FeedDirectory({
   onSelectCountry,
   severityFilter,
   onSeverityFilterChange,
+  onSearchTerm,
 }: Props) {
-  const sources = useMemo(() => sourceHealth?.sources ?? [], [sourceHealth]);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  /* ── Country digest (trending terms) ────────────────────────────── */
+  const [digestTerms, setDigestTerms] = useState<DigestTerm[]>([]);
+  const [digestLoading, setDigestLoading] = useState(false);
+
+  const selectedCountryCode = regionFilter.startsWith("country:") ? regionFilter.slice(8) : null;
+
+  useEffect(() => {
+    if (!selectedCountryCode) {
+      setDigestTerms([]);
+      return;
+    }
+    let cancelled = false;
+    setDigestLoading(true);
+    const url = `${import.meta.env.BASE_URL}api/digest?cc=${encodeURIComponent(selectedCountryCode)}&days=7&limit=10`;
+    fetch(url, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.terms) setDigestTerms(data.terms);
+        else if (!cancelled) setDigestTerms([]);
+      })
+      .catch(() => { if (!cancelled) setDigestTerms([]); })
+      .finally(() => { if (!cancelled) setDigestLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedCountryCode]);
 
   /* ── Region-scoped alerts ──────────────────────────────────────── */
 
@@ -112,18 +147,18 @@ export function FeedDirectory({
   const zoneSummary = useMemo(() => {
     const uniqueCountries = new Set(regionAlerts.map((a) => a.source.country_code));
     const uniqueFeeds = new Set(regionAlerts.map((a) => a.source_id));
-    // For global view, use the health document's total which includes sources
-    // that returned 0 alerts (errors, empty feeds, etc.).
-    const feedCount =
-      regionFilter === "all" && sources.length > 0
-        ? sources.length
-        : uniqueFeeds.size;
+    // Use the health document's total_sources as the authoritative registry
+    // count — it's stable and includes errored/empty sources. Only fall back
+    // to alert-derived count when health hasn't loaded yet.
+    const totalRegistered = sourceHealth?.total_sources ?? 0;
+    const feedCount = totalRegistered > 0 ? totalRegistered : uniqueFeeds.size;
     return {
       alerts: regionAlerts.length,
       countries: uniqueCountries.size,
       feeds: feedCount,
+      activeFeedsInView: uniqueFeeds.size,
     };
-  }, [regionAlerts, regionFilter, sources]);
+  }, [regionAlerts, sourceHealth]);
 
   const toggleSource = (sourceId: string) => {
     if (selectedSourceIds.includes(sourceId)) {
@@ -217,8 +252,8 @@ export function FeedDirectory({
             <div className="text-2xs font-bold tabular-nums text-siem-accent">{zoneSummary.countries}</div>
             <div className="text-4xs uppercase tracking-[0.1em] text-siem-muted">Ctry</div>
           </div>
-          <div className="flex flex-col items-center py-1.5 bg-siem-panel-strong">
-            <div className="text-2xs font-bold tabular-nums text-emerald-300">{zoneSummary.feeds}</div>
+          <div className="flex flex-col items-center py-1.5 bg-siem-panel-strong" title={`${zoneSummary.activeFeedsInView} active in view`}>
+            <div className="text-2xs font-bold tabular-nums text-emerald-300">{zoneSummary.feeds || "—"}</div>
             <div className="text-4xs uppercase tracking-[0.1em] text-siem-muted">Feeds</div>
           </div>
         </div>
@@ -323,6 +358,41 @@ export function FeedDirectory({
             ))}
           </div>
         </div>
+
+        {/* ── Country digest (trending terms) ─────────────────────── */}
+        {selectedCountryCode && (
+          <div>
+            <div className="mb-1 flex items-center gap-1 text-4xs uppercase tracking-[0.16em] text-siem-muted">
+              <TrendingUp size={7} />
+              Intel Digest — {selectedCountryCode}
+            </div>
+            {digestLoading ? (
+              <div className="px-1.5 py-1 text-4xs text-siem-muted">Loading digest...</div>
+            ) : digestTerms.length === 0 ? (
+              <div className="px-1.5 py-1 text-4xs text-siem-muted">No trend data for this country</div>
+            ) : (
+              <div className="space-y-px">
+                {digestTerms.map((dt) => (
+                  <button
+                    key={dt.term}
+                    type="button"
+                    onClick={() => onSearchTerm?.(dt.term)}
+                    className="flex w-full items-center justify-between gap-1.5 rounded px-1.5 py-[3px] text-left text-4xs text-siem-text hover:bg-siem-accent/8 transition-colors"
+                    title={`${dt.count} mentions (weight ${dt.weight.toFixed(1)})${dt.ratio > 1 ? ` — ${dt.ratio.toFixed(1)}x above avg` : ""}`}
+                  >
+                    <span className="truncate">{dt.term}</span>
+                    <span className="flex items-center gap-1 shrink-0">
+                      {dt.ratio >= 2 && (
+                        <span className="text-amber-300">&#9650;</span>
+                      )}
+                      <span className="tabular-nums text-siem-muted">{dt.count}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
 
