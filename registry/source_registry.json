@@ -6832,5 +6832,25 @@
     "lat": 48.86,
     "lng": 2.32,
     "include_keywords": ["terrorisme", "menace", "attentat", "radicalisation", "extremisme", "terrorist", "threat"]
+  },
+  {
+    "type": "acled-json",
+    "source": {
+      "source_id": "acled-conflict",
+      "authority_name": "ACLED — Armed Conflict Location & Event Data",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "research",
+      "base_url": "https://acleddata.com",
+      "scope": "global",
+      "level": "international"
+    },
+    "feed_url": "https://acleddata.com/api/acled/read",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 0,
+    "lng": 0,
+    "max_items": 100
   }
 ]

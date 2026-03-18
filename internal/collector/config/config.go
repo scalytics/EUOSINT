@@ -85,6 +85,8 @@ type Config struct {
 	NominatimEnabled                bool
 	APIEnabled                      bool
 	APIAddr                         string
+	ACLEDUsername                    string
+	ACLEDPassword                   string
 }
 
 func Default() Config {
@@ -215,6 +217,8 @@ func FromEnv() Config {
 	cfg.NominatimEnabled = envBool("NOMINATIM_ENABLED", cfg.NominatimEnabled)
 	cfg.APIEnabled = envBool("API_ENABLED", cfg.APIEnabled)
 	cfg.APIAddr = envString("API_ADDR", cfg.APIAddr)
+	cfg.ACLEDUsername = envString("ACLED_USERNAME", cfg.ACLEDUsername)
+	cfg.ACLEDPassword = envString("ACLED_PASSWORD", cfg.ACLEDPassword)
 	return cfg
 }
 

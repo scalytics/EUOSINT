@@ -78,6 +78,7 @@ If the VM only has `docker-compose`, adjust the unit commands accordingly.
 - Discovery intake lives in [registry/source_candidates.json](/Users/alo/Development/scalytics/EUOSINT/registry/source_candidates.json).
 - Dead sources are written to the terminal DLQ in `source_dead_letter.json` and are not crawled again.
 - LLM-assisted source vetting is documented in [docs/source-vetting.md](/Users/alo/Development/scalytics/EUOSINT/docs/source-vetting.md).
+- ACLED conflict data integration is documented in [docs/acled.md](/Users/alo/Development/scalytics/EUOSINT/docs/acled.md).
 - TLS state and certificates persist in the `caddy-data` volume.
 - Caddy runtime state persists in the `caddy-config` volume.
 - Scheduled refreshes, Docker runtime, and local collection commands all run through the Go collector.

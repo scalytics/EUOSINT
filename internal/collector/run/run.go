@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -553,6 +554,8 @@ func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser 
 		return r.fetchInterpol(ctx, fetcher, browser, nctx, source, cursors)
 	case "fbi-wanted-json":
 		return r.fetchFBIWanted(ctx, fetcher, nctx, source)
+	case "acled-json":
+		return r.fetchACLED(ctx, fetcher, nctx, source)
 	case "travelwarning-json":
 		return r.fetchTravelWarningJSON(ctx, fetcher, nctx, source)
 	case "travelwarning-atom":
@@ -996,6 +999,136 @@ func (r Runner) fetchFBIWanted(ctx context.Context, fetcher fetch.Fetcher, nctx 
 		}
 	}
 	return allAlerts, nil
+}
+
+func (r Runner) fetchACLED(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	if nctx.Config.ACLEDUsername == "" || nctx.Config.ACLEDPassword == "" {
+		return nil, nil // skip silently when credentials not configured
+	}
+
+	// Obtain OAuth access token.
+	token, err := acledOAuthToken(ctx, nctx.Config.ACLEDUsername, nctx.Config.ACLEDPassword)
+	if err != nil {
+		return nil, fmt.Errorf("ACLED OAuth: %w", err)
+	}
+
+	limit := perSourceLimit(nctx.Config, source)
+	pageSize := 500
+	var allAlerts []model.Alert
+
+	// Build date range: last 7 days.
+	now := time.Now().UTC()
+	from := now.AddDate(0, 0, -7).Format("2006-01-02")
+	to := now.Format("2006-01-02")
+
+	for page := 1; len(allAlerts) < limit; page++ {
+		pageURL := fmt.Sprintf("%s?_format=json&event_date=%s|%s&event_date_where=BETWEEN&order=desc&sort=event_date&page=%d&limit=%d",
+			source.FeedURL, from, to, page, pageSize)
+		body, err := acledAuthGet(ctx, pageURL, token)
+		if err != nil {
+			if page == 1 {
+				return nil, err
+			}
+			break
+		}
+		items, total, err := parse.ParseACLED(body)
+		if err != nil {
+			if page == 1 {
+				return nil, err
+			}
+			break
+		}
+		for _, item := range items {
+			if len(allAlerts) >= limit {
+				break
+			}
+			if strings.TrimSpace(item.Title) == "" {
+				continue
+			}
+			alert := normalize.ACLEDAlert(nctx, source, item)
+			if alert != nil {
+				allAlerts = append(allAlerts, *alert)
+			}
+		}
+		if total > 0 && page*pageSize >= total {
+			break
+		}
+		if len(items) < pageSize {
+			break
+		}
+		select {
+		case <-time.After(1 * time.Second):
+		case <-ctx.Done():
+			return allAlerts, nil
+		}
+	}
+	return allAlerts, nil
+}
+
+// acledOAuthToken obtains a Bearer token from ACLED's OAuth endpoint.
+func acledOAuthToken(ctx context.Context, username, password string) (string, error) {
+	data := url.Values{
+		"username":   {username},
+		"password":   {password},
+		"grant_type": {"password"},
+		"client_id":  {"acled"},
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://acleddata.com/oauth/token", strings.NewReader(data.Encode()))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return "", fmt.Errorf("OAuth token request failed (%d): %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResp struct {
+		AccessToken string `json:"access_token"`
+		TokenType   string `json:"token_type"`
+		ExpiresIn   int    `json:"expires_in"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return "", fmt.Errorf("decode token response: %w", err)
+	}
+	if tokenResp.AccessToken == "" {
+		return "", fmt.Errorf("empty access token in response")
+	}
+	return tokenResp.AccessToken, nil
+}
+
+// acledAuthGet performs a GET request with ACLED Bearer token auth.
+func acledAuthGet(ctx context.Context, reqURL, token string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusForbidden {
+		return nil, fmt.Errorf("ACLED API 403: account lacks API access — register at https://developer.acleddata.com/")
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return nil, fmt.Errorf("ACLED API %d: %s", resp.StatusCode, string(body))
+	}
+
+	return io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024)) // 10MB limit
 }
 
 func (r Runner) fetchTravelWarningJSON(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {

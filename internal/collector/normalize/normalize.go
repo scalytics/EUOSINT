@@ -312,6 +312,40 @@ func FBIWantedAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem)
 	return &alert
 }
 
+func ACLEDAlert(ctx Context, meta model.RegistrySource, ev parse.ACLEDItem) *model.Alert {
+	publishedAt := parseDate(ev.Published)
+	if publishedAt.IsZero() {
+		publishedAt = ctx.Now
+	}
+	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
+		return nil
+	}
+	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+" "+ev.Summary, publishedAt)
+	alert.Category = parse.ACLEDEventCategory(ev.EventType)
+	alert.Severity = parse.ACLEDEventSeverity(ev.EventType, ev.Fatalities)
+	// Use ACLED's precise coordinates instead of registry defaults.
+	if ev.Lat != 0 || ev.Lng != 0 {
+		alert.Lat = ev.Lat
+		alert.Lng = ev.Lng
+	}
+	// Override source metadata with per-event country from ACLED.
+	if iso2 := parse.ACLEDISO2(ev.ISO3); iso2 != "" {
+		alert.Source.CountryCode = iso2
+		alert.Source.Country = ev.Country
+		alert.RegionTag = iso2
+	}
+	if ev.Region != "" {
+		alert.Source.Region = ev.Region
+	}
+	triage := score(ctx.Config, alert, FeedContext{
+		Summary:  ev.Summary,
+		Tags:     ev.Tags,
+		FeedType: meta.Type,
+	})
+	alert.Triage = triage
+	return &alert
+}
+
 func TravelWarningAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
 	publishedAt := parseDate(item.Published)
 	if publishedAt.IsZero() {
