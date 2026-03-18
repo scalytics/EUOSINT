@@ -6,6 +6,7 @@ package parse
 import (
 	"html"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -17,6 +18,8 @@ type FeedItem struct {
 	Author    string
 	Summary   string
 	Tags      []string
+	Lat       float64 // from <georss:point> if present
+	Lng       float64 // from <georss:point> if present
 }
 
 var (
@@ -24,6 +27,7 @@ var (
 	itemRe         = regexp.MustCompile(`(?is)<item[\s\S]*?</item>`)
 	tagCache       sync.Map
 	tagValuesCache sync.Map
+	georssPtRe     = regexp.MustCompile(`(?is)<georss:point[^>]*>\s*(-?[\d.]+)\s+(-?[\d.]+)\s*</georss:point>`)
 	atomLinkRe     = regexp.MustCompile(`(?is)<link[^>]*rel=["']alternate["'][^>]*>|<link[^>]*>`)
 	hrefRe         = regexp.MustCompile(`(?i)href=["']([^"']+)["']`)
 	atomAuthorRe   = regexp.MustCompile(`(?is)<author[^>]*>[\s\S]*?<name[^>]*>([\s\S]*?)</name>[\s\S]*?</author>`)
@@ -35,6 +39,7 @@ func ParseFeed(xml string) []FeedItem {
 		entries := entryRe.FindAllString(xml, -1)
 		items := make([]FeedItem, 0, len(entries))
 		for _, entry := range entries {
+			lat, lng := getGeoRSSPoint(entry)
 			items = append(items, FeedItem{
 				Title:     getTag(entry, "title"),
 				Link:      getAtomLink(entry),
@@ -42,6 +47,8 @@ func ParseFeed(xml string) []FeedItem {
 				Author:    getAuthor(entry),
 				Summary:   getSummary(entry),
 				Tags:      getCategories(entry),
+				Lat:       lat,
+				Lng:       lng,
 			})
 		}
 		return items
@@ -50,6 +57,7 @@ func ParseFeed(xml string) []FeedItem {
 	rawItems := itemRe.FindAllString(xml, -1)
 	items := make([]FeedItem, 0, len(rawItems))
 	for _, item := range rawItems {
+		lat, lng := getGeoRSSPoint(item)
 		items = append(items, FeedItem{
 			Title:     getTag(item, "title"),
 			Link:      firstNonEmpty(getTag(item, "link"), getTag(item, "guid")),
@@ -57,6 +65,8 @@ func ParseFeed(xml string) []FeedItem {
 			Author:    getAuthor(item),
 			Summary:   getSummary(item),
 			Tags:      getCategories(item),
+			Lat:       lat,
+			Lng:       lng,
 		})
 	}
 	return items
@@ -151,4 +161,18 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+// getGeoRSSPoint extracts lat/lng from <georss:point>lat lng</georss:point>.
+func getGeoRSSPoint(block string) (lat, lng float64) {
+	m := georssPtRe.FindStringSubmatch(block)
+	if len(m) < 3 {
+		return 0, 0
+	}
+	lat, err1 := strconv.ParseFloat(m[1], 64)
+	lng, err2 := strconv.ParseFloat(m[2], 64)
+	if err1 != nil || err2 != nil {
+		return 0, 0
+	}
+	return lat, lng
 }

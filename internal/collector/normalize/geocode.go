@@ -176,13 +176,18 @@ var geoCountries = []countryGeo{
 var geoAliases = map[string]string{
 	// Adjective forms
 	"afghan":      "Afghanistan",
+	"american":    "United States",
+	"australian":  "Australia",
+	"austrian":    "Austria",
 	"algerian":    "Algeria",
 	"angolan":     "Angola",
 	"argentine":   "Argentina",
 	"armenian":    "Armenia",
 	"azerbaijani": "Azerbaijan",
+	"bahraini":    "Bahrain",
 	"bangladeshi": "Bangladesh",
 	"belarusian":  "Belarus",
+	"belgian":     "Belgium",
 	"bolivian":    "Bolivia",
 	"bosnian":     "Bosnia",
 	"brazilian":   "Brazil",
@@ -191,34 +196,51 @@ var geoAliases = map[string]string{
 	"cambodian":   "Cambodia",
 	"cameroonian": "Cameroon",
 	"chadian":     "Chad",
+	"chilean":     "Chile",
 	"chinese":     "China",
+	"cypriot":     "Cyprus",
+	"czech":       "Czech Republic",
+	"danish":      "Denmark",
+	"dutch":       "Netherlands",
 	"colombian":   "Colombia",
 	"congolese":   "Congo",
 	"cuban":       "Cuba",
 	"ecuadorian":  "Ecuador",
 	"egyptian":    "Egypt",
+	"finnish":     "Finland",
+	"french":      "France",
 	"eritrean":    "Eritrea",
 	"ethiopian":   "Ethiopia",
 	"gambian":     "Gambia",
 	"georgian":    "Georgia",
 	"ghanaian":    "Ghana",
 	"guatemalan":  "Guatemala",
+	"german":      "Germany",
+	"greek":       "Greece",
 	"guinean":     "Guinea",
+	"hungarian":   "Hungary",
 	"haitian":     "Haiti",
 	"honduran":    "Honduras",
+	"indian":      "India",
 	"indonesian":  "Indonesia",
 	"iranian":     "Iran",
 	"iraqi":       "Iraq",
+	"irish":       "Ireland",
 	"israeli":     "Israel",
+	"italian":     "Italy",
+	"jamaican":    "Jamaica",
+	"japanese":    "Japan",
 	"ivorian":     "Ivory Coast",
 	"jordanian":   "Jordan",
 	"kazakh":      "Kazakhstan",
 	"kenyan":      "Kenya",
 	"kosovar":     "Kosovo",
 	"kuwaiti":     "Kuwait",
+	"latvian":     "Latvia",
 	"kyrgyz":      "Kyrgyzstan",
 	"lebanese":    "Lebanon",
 	"libyan":      "Libya",
+	"lithuanian":  "Lithuania",
 	"malagasy":    "Madagascar",
 	"malawian":    "Malawi",
 	"malaysian":   "Malaysia",
@@ -235,12 +257,16 @@ var geoAliases = map[string]string{
 	"nicaraguan":  "Nicaragua",
 	"nigerien":    "Niger",
 	"nigerian":    "Nigeria",
+	"norwegian":   "Norway",
 	"pakistani":   "Pakistan",
 	"palestinian": "Palestine",
 	"panamanian":  "Panama",
 	"paraguayan":  "Paraguay",
 	"peruvian":    "Peru",
 	"philippine":  "Philippines",
+	"polish":      "Poland",
+	"portuguese":  "Portugal",
+	"omani":       "Oman",
 	"qatari":      "Qatar",
 	"romanian":    "Romania",
 	"russian":     "Russia",
@@ -250,8 +276,11 @@ var geoAliases = map[string]string{
 	"senegalese":  "Senegal",
 	"serbian":     "Serbia",
 	"somali":      "Somalia",
+	"spanish":     "Spain",
 	"sri lankan":  "Sri Lanka",
 	"sudanese":    "Sudan",
+	"swedish":     "Sweden",
+	"swiss":       "Switzerland",
 	"syrian":      "Syria",
 	"tajik":       "Tajikistan",
 	"tanzanian":   "Tanzania",
@@ -396,6 +425,11 @@ func geocodeText(text string) (lat, lng float64, code string, ok bool) {
 			continue
 		}
 		endPos := idx + len(key)
+		// Require word boundaries to prevent substring false positives
+		// (e.g. "oman" inside "Romania", "china" inside "Chinaware").
+		if !isWordBoundary(lower, idx, endPos) {
+			continue
+		}
 		if endPos > bestPos || (endPos == bestPos && len(key) > bestLen) {
 			bestPos = endPos
 			bestLen = len(key)
@@ -406,4 +440,23 @@ func geocodeText(text string) (lat, lng float64, code string, ok bool) {
 		return bestGeo.Lat, bestGeo.Lng, bestGeo.Code, true
 	}
 	return 0, 0, "", false
+}
+
+// isWordBoundary checks that the substring at text[start:end] is bounded by
+// non-letter characters (or string edges). Prevents "oman" matching inside
+// "Romania" or "iran" matching inside "Iranians".
+func isWordBoundary(text string, start, end int) bool {
+	if start > 0 {
+		r := rune(text[start-1])
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' {
+			return false
+		}
+	}
+	if end < len(text) {
+		r := rune(text[end])
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' {
+			return false
+		}
+	}
+	return true
 }

@@ -1288,10 +1288,37 @@ func (r Runner) initGeocoder(ctx context.Context, cfg config.Config) *normalize.
 		nominatim = normalize.NewNominatimClient(cfg.NominatimBaseURL, cfg.WikimediaUserAgent)
 	}
 
-	if cities == nil && nominatim == nil {
-		return nil
+	geocoder := normalize.NewGeocoder(cities, nominatim)
+
+	// Wire LLM geocoding fallback if the vetting endpoint is configured.
+	if cfg.VettingAPIKey != "" {
+		client := vet.NewClient(cfg)
+		geocoder.SetLLM(&geoLLMAdapter{client: client, stderr: r.stderr})
 	}
-	return normalize.NewGeocoder(cities, nominatim)
+
+	return geocoder
+}
+
+// geoLLMAdapter wraps vet.Client to implement normalize.GeoLLM.
+type geoLLMAdapter struct {
+	client *vet.Client
+	stderr io.Writer
+}
+
+func (a *geoLLMAdapter) GeoLocate(ctx context.Context, query string) (lat, lng float64, ok bool) {
+	resp, err := a.client.Complete(ctx, []vet.Message{
+		{Role: "user", Content: query + ", geo coords, nothing else"},
+	})
+	if err != nil {
+		fmt.Fprintf(a.stderr, "WARN llm-geo: %v\n", err)
+		return 0, 0, false
+	}
+	resp = strings.TrimSpace(resp)
+	if lat, lng, ok := normalize.ExtractCoordinates(resp); ok {
+		return lat, lng, true
+	}
+	fmt.Fprintf(a.stderr, "WARN llm-geo: could not parse coords from %q\n", resp)
+	return 0, 0, false
 }
 
 func (r Runner) runDiscoveryLoop(ctx context.Context, cfg config.Config) {

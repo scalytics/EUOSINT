@@ -177,6 +177,17 @@ func RSSItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model
 		return nil
 	}
 	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
+	// Feed-provided coordinates (e.g. <georss:point>) override geocoding.
+	if item.Lat != 0 || item.Lng != 0 {
+		alert.Lat, alert.Lng = jitter(item.Lat, item.Lng, meta.Source.SourceID+":"+item.Link, "georss")
+		// Resolve country from text for display, but keep feed coords.
+		if _, _, code, ok := geocodeText(item.Title + " " + item.Summary); ok {
+			if name := countryNameFromCode(code); name != "" {
+				alert.Source.Country = name
+				alert.Source.CountryCode = code
+			}
+		}
+	}
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
 		Author:   item.Author,
