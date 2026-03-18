@@ -219,3 +219,57 @@ func TestRSSItemSkipsDynamicGeocodingForCyberAdvisory(t *testing.T) {
 		t.Fatalf("expected advisory to stay near Valletta, got (%f, %f)", alert.Lat, alert.Lng)
 	}
 }
+
+func TestInformationalTitleClassification(t *testing.T) {
+	tests := []struct {
+		title string
+		info  bool // true = should be classified as informational
+	}{
+		// IAEA informational content — should NOT be alerts.
+		{"Colombia's Coastal and Marine Research Institute (INVEMAR) Designated as IAEA Collaborating Centre", true},
+		{"IAEA Reviews Rwanda's Nuclear Power Infrastructure Development", true},
+		{"IAEA convenes ZODIAC Week in Vienna to strengthen global defences against future pandemics", true},
+		// Real incidents — should stay actionable.
+		{"Nuclear incident at Zaporizhzhia power plant — radiation leak detected", false},
+		{"Earthquake magnitude 6.2 strikes central Turkey", false},
+		{"Ransomware attack disrupts hospital systems across three EU countries", false},
+		{"INTERPOL Red Notice: wanted fugitive arrested in Spain", false},
+		// More informational patterns.
+		{"Annual cybersecurity awareness campaign launched", true},
+		{"Workshop on maritime safety held in Lisbon", true},
+		{"Training course on border security for West African officers", true},
+		{"Partnership agreement signed between IAEA and University of Tokyo", true},
+	}
+	for _, tt := range tests {
+		gotInfo := IsInformationalTitle(tt.title)
+		gotActionable := IsActionableTitle(tt.title)
+		if tt.info && !gotInfo {
+			t.Errorf("expected informational for %q, but IsInformationalTitle=false", tt.title)
+		}
+		if !tt.info && gotInfo {
+			t.Errorf("expected NOT informational for %q, but IsInformationalTitle=true", tt.title)
+		}
+		if tt.info && gotActionable {
+			// Informational titles may still match actionable patterns (e.g. "pandemic"),
+			// but inferSeverity should override to "info".
+			sev := inferSeverity(tt.title, "medium")
+			if sev != "info" {
+				t.Errorf("informational title %q has inferSeverity=%q, want info", tt.title, sev)
+			}
+		}
+	}
+}
+
+func TestInferSeverityInformationalOverride(t *testing.T) {
+	// "pandemics" in title would normally match critical, but informational
+	// pattern should override.
+	sev := inferSeverity("IAEA convenes ZODIAC Week in Vienna to strengthen global defences against future pandemics", "medium")
+	if sev != "info" {
+		t.Fatalf("expected info severity for informational title with pandemic keyword, got %q", sev)
+	}
+	// Real pandemic outbreak should stay critical.
+	sev = inferSeverity("WHO declares pandemic — global emergency response activated", "medium")
+	if sev != "critical" {
+		t.Fatalf("expected critical severity for real pandemic, got %q", sev)
+	}
+}

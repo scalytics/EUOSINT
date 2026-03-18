@@ -95,15 +95,18 @@ export function FeedDirectory({
   }, [regionAlerts]);
 
   const topAuthorities = useMemo(() => {
+    const filtered = categoryFilter === "all"
+      ? regionAlerts
+      : regionAlerts.filter((a) => a.category === categoryFilter);
     const map = new Map<string, { name: string; sourceId: string; count: number; maxItems: number }>();
-    for (const a of regionAlerts) {
+    for (const a of filtered) {
       const key = a.source_id;
       const existing = map.get(key);
       if (existing) existing.count++;
       else map.set(key, { name: a.source.authority_name, sourceId: key, count: 1, maxItems: 0 });
     }
     return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 12);
-  }, [regionAlerts]);
+  }, [regionAlerts, categoryFilter]);
 
   /* ── Zone summary stats ─────────────────────────────────────────── */
   const zoneSummary = useMemo(() => {

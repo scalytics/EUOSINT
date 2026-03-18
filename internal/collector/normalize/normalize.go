@@ -109,13 +109,32 @@ var (
 		regexp.MustCompile(`(?i)\b(?:evacuat(?:ed|ion)|disaster|emergency|crisis|outbreak|epidemic|pandemic)\b`),
 		regexp.MustCompile(`(?i)\b(?:earthquake|tsunami|flood(?:ing)?|hurricane|typhoon|cyclone|wildfire|eruption)\b`),
 		regexp.MustCompile(`(?i)\b(?:piracy|pirate|drone|missile|torpedo|submarine|naval|warship|destroyer|frigate)\b`),
-		regexp.MustCompile(`(?i)\b(?:sanction(?:ed|s)?|blacklist(?:ed)?|designat(?:ed|ion)|banned)\b`),
+		regexp.MustCompile(`(?i)\b(?:sanction(?:ed|s)?|blacklist(?:ed)?|banned)\b`),
+		regexp.MustCompile(`(?i)\bdesignat(?:ed|ion)\b.*\b(?:terrorist|sanction|entity|regime|proliferat)\b`),
 		regexp.MustCompile(`(?i)\b(?:ceasefire|truce|peace (?:deal|agreement|talks)|withdrawal|deploy(?:ed|ment))\b`),
 		regexp.MustCompile(`(?i)\b(?:espionage|spy|intelligence|surveillance|intercept(?:ion)?)\b`),
 		regexp.MustCompile(`(?i)\b(?:coup|uprising|protest|riot|unrest|martial law|state of emergency)\b`),
 		regexp.MustCompile(`(?i)\b(?:travel (?:warning|advisory|ban)|do not travel|reisewarnung)\b`),
 		regexp.MustCompile(`(?i)\b(?:sunk|sinking|grounding|collision|capsiz(?:ed|ing)|adrift|distress|mayday|sos)\b`),
-		regexp.MustCompile(`(?i)\b(?:oil spill|chemical|hazmat|radiation|nuclear|contamination)\b`),
+		regexp.MustCompile(`(?i)\b(?:oil spill|chemical spill|hazmat|contamination)\b`),
+		regexp.MustCompile(`(?i)\b(?:nuclear|radiation)\b.*\b(?:incident|accident|emergency|leak|meltdown|fallout|exposure|alert)\b`),
+	}
+	// informationalTitlePatterns detect titles that are clearly news, PR,
+	// or institutional content — conferences, training, partnerships, etc.
+	// When matched, these override severity even if a keyword like "nuclear"
+	// or "pandemic" appears in the title.
+	informationalTitlePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(?:workshop|seminar|webinar|symposium|colloquium|roundtable)\b`),
+		regexp.MustCompile(`(?i)\b(?:training|course|curriculum|e-learning|fellowship|scholarship|capacity.?building)\b`),
+		regexp.MustCompile(`(?i)\b(?:conference|congress|forum|summit|convention)\b.*\b(?:held|opens?|convene[sd]?|conclude[sd]?|host(?:ed|s)?|attend|week)\b`),
+		regexp.MustCompile(`(?i)\b(?:convene[sd]?|host(?:ed|s)?)\b.*\b(?:week|event|meeting|session|forum)\b`),
+		regexp.MustCompile(`(?i)\b(?:collaborat(?:ing|ion)|partner(?:ship|ing)|cooperation|memorandum|mou)\b.*\b(?:centre|center|agreement|signed|framework)\b`),
+		regexp.MustCompile(`(?i)\bdesignat(?:ed|ion)\b.*\b(?:collaborat|centre|center|partner|member|focal point)\b`),
+		regexp.MustCompile(`(?i)\b(?:review[sd]?|assess(?:es|ed)?|evaluat(?:es|ed)?)\b.*\b(?:infrastructure|development|progress|readiness|framework|programme|program)\b`),
+		regexp.MustCompile(`(?i)\b(?:awareness|outreach|education|campaign|initiative|celebration|anniversary|ceremony)\b`),
+		regexp.MustCompile(`(?i)\b(?:publication|report release|annual report|yearbook|magazine|newsletter|bulletin)\b`),
+		regexp.MustCompile(`(?i)\b(?:strengthen|bolster|enhance|promote|foster|advance|support)\b.*\b(?:global|regional|national|international)\b.*\b(?:defence|defense|capacity|capability|cooperation|preparedness)\b`),
+		regexp.MustCompile(`(?i)\b(?:appoint(?:ed|ment|s)?|elected|nomination|inaugurat)\b`),
 	}
 	assistancePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:report(?:\s+a)?(?:\s+crime)?|submit (?:a )?tip|tip[-\s]?off)\b`),
@@ -642,6 +661,11 @@ func defaultSeverity(category string) string {
 
 func inferSeverity(title string, fallback string) string {
 	t := strings.ToLower(title)
+	// Informational content overrides keyword-based severity — a conference
+	// about pandemics or a review of nuclear infrastructure is not an alert.
+	if IsInformationalTitle(title) {
+		return "info"
+	}
 	switch {
 	case containsAny(t, "critical", "kritische", "emergency", "zero-day", "0-day", "ransomware", "actively exploited", "exploitation", "breach", "data leak", "crypto heist", "million stolen", "wanted", "fugitive", "murder", "homicide", "missing", "amber alert", "kidnap", "do not travel", "notfall", "pandemic", "ebola", "plague", "tsunami", "earthquake", "eruption", "nuclear incident", "radiation leak", "oil spill", "explosion"):
 		return "critical"
@@ -767,6 +791,13 @@ func IsActionableTitle(title string) bool {
 	return hasAny(lower, actionableTitlePatterns) ||
 		hasAny(lower, technicalSignalPatterns) ||
 		hasAny(lower, incidentDisclosurePatterns)
+}
+
+// IsInformationalTitle returns true if the title is clearly institutional,
+// promotional, or educational content that should not be treated as an alert.
+func IsInformationalTitle(title string) bool {
+	lower := strings.ToLower(title)
+	return hasAny(lower, informationalTitlePatterns)
 }
 
 func containsAny(value string, needles ...string) bool {
