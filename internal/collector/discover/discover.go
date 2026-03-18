@@ -271,6 +271,32 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 		}
 	}
 
+	govOrgs, err := FetchGovernmentOrgs(ctx, cfg, client)
+	if err != nil {
+		if isDiscoveryTimeout(err) {
+			slowSkips = append(slowSkips, "Wikidata government")
+		} else {
+			failures = append(failures, fmt.Sprintf("Wikidata government: %v", err))
+		}
+	} else {
+		fmt.Fprintf(stderr, "Wikidata: fetched %d government/legislative/diplomatic orgs for candidate seeding\n", len(govOrgs))
+		for _, org := range govOrgs {
+			if !passesDiscoveryHygiene(org.Name, org.Website, org.AuthorityType) {
+				continue
+			}
+			candidates = append(candidates, model.SourceCandidate{
+				URL:           org.Website,
+				AuthorityName: org.Name,
+				AuthorityType: org.AuthorityType,
+				Category:      org.Category,
+				Country:       org.Country,
+				CountryCode:   org.CountryCode,
+				BaseURL:       org.Website,
+				Notes:         "autonomous seed: wikidata-government",
+			})
+		}
+	}
+
 	if len(failures) > 0 {
 		fmt.Fprintf(stderr, "WARN structured discovery partially failed: %s\n", strings.Join(failures, " | "))
 	}
