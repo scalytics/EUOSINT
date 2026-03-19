@@ -117,6 +117,8 @@ export function GlobeView({
   const markerAlertLookup = useRef<Map<number, Alert>>(new Map());
   const overlayLayers = useRef<Map<OverlayId, L.LayerGroup>>(new Map());
   const clusterListPopupRef = useRef<L.Popup | null>(null);
+  const lastNonCountryRegionRef = useRef<string>("all");
+  const countryTableReturnRegionRef = useRef<string>("all");
   const [overlayDefs, setOverlayDefs] = useState<OverlayDef[]>([]);
   const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set());
   const [activeAreaGroupID, setActiveAreaGroupID] = useState<string>("");
@@ -127,6 +129,12 @@ export function GlobeView({
     [regionFilter],
   );
   const isLargeCountryScope = countryFilterCode !== "" && LARGE_COUNTRY_CODES.has(countryFilterCode);
+
+  useEffect(() => {
+    if (!regionFilter.startsWith("country:")) {
+      lastNonCountryRegionRef.current = regionFilter;
+    }
+  }, [regionFilter]);
 
   const toggleSource = (sourceId: string) => {
     if (!onSelectSourceIdsChange) return;
@@ -492,11 +500,15 @@ export function GlobeView({
               .map((alert: Alert, idx: number) => {
                 const title = escapeHtml(alert.title);
                 const subcategory = escapeHtml(formatSubcategory(alert.subcategory));
+                const link = escapeHtml(alert.canonical_url);
                 const sev = escapeHtml(alert.severity.toUpperCase());
                 const meta = subcategory
                   ? `<div style="font-size:10px;line-height:1.2;color:#94a3b8;margin-top:2px;">${subcategory}</div>`
                   : "";
-                return `<button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:6px 0;cursor:pointer;border-bottom:1px solid rgba(148,163,184,.16);font-size:12px;line-height:1.3;color:#f3f4f6;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;border:1px solid rgba(148,163,184,.35);padding:1px 4px;border-radius:4px;">${sev}</span><span>${idx + 1}. ${title}</span></div>${meta}</button>`;
+                const sourceLink = link
+                  ? `<a href="${link}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:4px;font-size:10px;color:#60a5fa;text-decoration:none;">Open source ↗</a>`
+                  : "";
+                return `<div style="border-bottom:1px solid rgba(148,163,184,.16);padding:6px 0;"><button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;cursor:pointer;font-size:12px;line-height:1.3;color:#f3f4f6;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;border:1px solid rgba(148,163,184,.35);padding:1px 4px;border-radius:4px;">${sev}</span><span>${idx + 1}. ${title}</span></div>${meta}</button>${sourceLink}</div>`;
               })
               .join("");
             return `<div style="margin-bottom:8px;"><div style="display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#cbd5e1;border:1px solid rgba(148,163,184,.35);background:rgba(15,23,42,.45);padding:2px 8px;border-radius:999px;margin:4px 0 6px 0;">${categoryLabel}<span style="color:#94a3b8;">(${items.length})</span></div>${rows}</div>`;
@@ -700,7 +712,18 @@ export function GlobeView({
 
           {regionFilter.startsWith("country:") && areaGroups.length > 0 && (
             <div className="absolute left-3 top-3 z-[1000] w-[32rem] max-w-[calc(100%-6rem)] rounded-xl border border-siem-border/80 bg-siem-panel/95 p-3 text-xs text-siem-text shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm">
-              <div className="text-2xs uppercase tracking-[0.14em] text-siem-muted">Country Alarm Table</div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-2xs uppercase tracking-[0.14em] text-siem-muted">Country Alarm Table</div>
+                <button
+                  type="button"
+                  onClick={() => onRegionChange(countryTableReturnRegionRef.current || "all")}
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/40 hover:bg-siem-accent/10 hover:text-siem-text transition-colors"
+                  aria-label="Close country alarm table"
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {areaGroups.map((group) => (
                   <button
@@ -769,7 +792,12 @@ export function GlobeView({
                   <button
                     key={spike.countryCode}
                     type="button"
-                    onClick={() => onRegionChange(`country:${spike.countryCode}`)}
+                    onClick={() => {
+                      countryTableReturnRegionRef.current = regionFilter.startsWith("country:")
+                        ? lastNonCountryRegionRef.current
+                        : regionFilter;
+                      onRegionChange(`country:${spike.countryCode}`);
+                    }}
                     className="w-full text-left rounded-xl border border-siem-border bg-siem-panel-strong px-3 py-2 hover:border-siem-accent/40 hover:bg-siem-accent/8 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-2">
