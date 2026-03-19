@@ -122,6 +122,46 @@
     "type": "rss",
     "followRedirects": true,
     "source": {
+      "source_id": "fbi-national-press",
+      "authority_name": "FBI National Press Releases",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "police",
+      "base_url": "https://www.fbi.gov"
+    },
+    "feed_url": "https://www.fbi.gov/feeds/national-press-releases/RSS",
+    "category": "public_safety",
+    "region_tag": "US",
+    "lat": 38.9,
+    "lng": -77.03,
+    "include_keywords": [
+      "organized crime",
+      "racketeering",
+      "money laundering",
+      "fraud",
+      "scam",
+      "terror",
+      "terrorism",
+      "extremist",
+      "cartel",
+      "trafficking",
+      "ransomware",
+      "indictment",
+      "convicted"
+    ],
+    "reporting": {
+      "label": "Submit a Tip to FBI",
+      "url": "https://tips.fbi.gov/",
+      "phone": "1-800-CALL-FBI (1-800-225-5324)",
+      "notes": "Use 911 for emergencies."
+    },
+    "max_items": 40
+  },
+  {
+    "type": "rss",
+    "followRedirects": true,
+    "source": {
       "source_id": "europol",
       "authority_name": "Europol",
       "country": "Netherlands",
@@ -131,10 +171,25 @@
       "base_url": "https://www.europol.europa.eu"
     },
     "feed_url": "https://www.europol.europa.eu/cms/api/rss/news",
-    "category": "public_appeal",
+    "category": "public_safety",
     "region_tag": "EU",
     "lat": 52.09,
     "lng": 4.27,
+    "include_keywords": [
+      "organized crime",
+      "terror",
+      "terrorism",
+      "money laundering",
+      "fraud",
+      "trafficking",
+      "drug trafficking",
+      "cartel",
+      "criminal network",
+      "ransomware",
+      "operation",
+      "arrest",
+      "takedown"
+    ],
     "reporting": {
       "label": "Report to Europol",
       "url": "https://www.europol.europa.eu/report-a-crime"
@@ -2858,7 +2913,7 @@
     }
   },
   {
-    "type": "html-list",
+    "type": "rss",
     "followRedirects": true,
     "source": {
       "source_id": "us-state-travel",
@@ -2869,7 +2924,7 @@
       "authority_type": "national_security",
       "base_url": "https://travel.state.gov"
     },
-    "feed_url": "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html",
+    "feed_url": "https://travel.state.gov/_res/rss/TAsTWs.xml",
     "category": "travel_warning",
     "region_tag": "US",
     "lat": 38.9,
@@ -2885,7 +2940,8 @@
       "label": "US State Department Travel Advisories",
       "url": "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html",
       "notes": "Travel advisories for US citizens abroad."
-    }
+    },
+    "max_items": 60
   },
   {
     "type": "interpol-red-json",
@@ -3775,6 +3831,59 @@
     "region_tag": "EU",
     "lat": 52.09,
     "lng": 4.27
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "us-dhs-ntas",
+      "authority_name": "US DHS NTAS (National Terrorism Advisory System)",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.dhs.gov"
+    },
+    "feed_url": "https://www.dhs.gov/ntas/1.1/feed.xml",
+    "category": "terrorism_tip",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.03,
+    "include_keywords": [
+      "national terrorism advisory",
+      "bulletin",
+      "alert",
+      "credible threat",
+      "extremist",
+      "domestic violent extremist",
+      "terrorism"
+    ],
+    "max_items": 30
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "us-dhs-ntas-alerts",
+      "authority_name": "US DHS NTAS Alerts",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.dhs.gov"
+    },
+    "feed_url": "https://www.dhs.gov/ntas/1.1/alerts.xml",
+    "category": "terrorism_tip",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.03,
+    "include_keywords": [
+      "alert",
+      "imminent threat",
+      "elevated threat",
+      "terrorism",
+      "attack",
+      "extremist"
+    ],
+    "max_items": 30
   },
   {
     "type": "rss",
@@ -5370,6 +5479,37 @@
     "region_tag": "US",
     "lat": 38.9,
     "lng": -77.04
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ftc-consumer-protection",
+      "authority_name": "FTC Consumer Protection Press Releases",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.ftc.gov"
+    },
+    "feed_url": "https://www.ftc.gov/feeds/press-release-consumer-protection.xml",
+    "category": "fraud_alert",
+    "region_tag": "US",
+    "lat": 38.89,
+    "lng": -77.03,
+    "include_keywords": [
+      "scam",
+      "fraud",
+      "phishing",
+      "investment",
+      "crypto",
+      "deceptive",
+      "consumer alert",
+      "impersonation",
+      "romance scam",
+      "wire fraud",
+      "money laundering"
+    ],
+    "max_items": 40
   },
   {
     "type": "rss",
