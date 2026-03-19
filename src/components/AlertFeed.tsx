@@ -411,7 +411,7 @@ export function AlertFeed({
           </button>
           <button
             type="button"
-            onClick={() => setViewMode("now_history")}
+            onClick={() => setViewMode((current) => (current === "now_history" ? "now" : "now_history"))}
             className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
               viewMode === "now_history"
                 ? "bg-cyan-500/18 text-cyan-300 border-cyan-500/35"

@@ -74,7 +74,6 @@ export function GlobeView({
   visibleNowAlertIds,
   visibleHistoryAlertIds,
 }: Props) {
-  const HISTORY_CONFIDENCE_THRESHOLD = 0.6;
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
@@ -84,7 +83,6 @@ export function GlobeView({
   const clusterListPopupRef = useRef<L.Popup | null>(null);
   const [overlayDefs, setOverlayDefs] = useState<OverlayDef[]>([]);
   const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set());
-  const [hideLowConfidenceHistory, setHideLowConfidenceHistory] = useState(true);
   const [activeAreaGroupID, setActiveAreaGroupID] = useState<string>("");
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
@@ -181,11 +179,8 @@ export function GlobeView({
   );
 
   const visibleHistoryAlertsRendered = useMemo(
-    () =>
-      hideLowConfidenceHistory
-        ? visibleHistoryAlerts.filter((a) => (a.event_geo_confidence ?? 0) >= HISTORY_CONFIDENCE_THRESHOLD)
-        : visibleHistoryAlerts,
-    [hideLowConfidenceHistory, visibleHistoryAlerts],
+    () => visibleHistoryAlerts,
+    [visibleHistoryAlerts],
   );
 
   const combinedVisibleAlerts = useMemo(
@@ -444,22 +439,20 @@ export function GlobeView({
       const rows = childAlerts
         .slice(0, 16)
         .map((alert: Alert, idx: number) => {
-          const sev = alert.severity.toUpperCase();
           const title = escapeHtml(alert.title);
-          const auth = escapeHtml(alert.source.authority_name);
-          return `<button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:grid;grid-template-columns:58px 1fr;gap:8px;width:100%;text-align:left;background:transparent;border:0;padding:6px 0;cursor:pointer;border-bottom:1px solid rgba(148,163,184,.16);"><span style="font-size:10px;color:#94a3b8;letter-spacing:.08em;text-transform:uppercase;">${sev}</span><span style="font-size:12px;line-height:1.3;color:#e5e7eb;">${idx + 1}. ${title}<span style="display:block;color:#94a3b8;font-size:10px;margin-top:2px;">${auth}</span></span></button>`;
+          return `<button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:6px 0;cursor:pointer;border-bottom:1px solid rgba(148,163,184,.16);font-size:12px;line-height:1.3;color:#f3f4f6;">${idx + 1}. ${title}</button>`;
         })
         .join("");
       const more = childAlerts.length > 16
         ? `<div style="font-size:10px;color:#94a3b8;padding-top:6px;">+${childAlerts.length - 16} more alerts</div>`
         : "";
-      const html = `<div style="min-width:300px;max-width:420px;"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Area Alerts (${childAlerts.length})</div><div style="max-height:260px;overflow:auto;">${rows}${more}</div></div>`;
+      const html = `<div style="min-width:280px;max-width:420px;"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">Area Alerts (${childAlerts.length})</div><div style="max-height:260px;overflow:auto;">${rows}${more}</div></div>`;
 
       const popup = L.popup({
         autoClose: false,
         closeOnClick: false,
         closeButton: true,
-        className: "siem-tooltip",
+        className: "siem-cluster-list-popup",
       })
         .setLatLng(cl.getLatLng())
         .setContent(html)
@@ -642,17 +635,6 @@ export function GlobeView({
                 <span>History (faded)</span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setHideLowConfidenceHistory((v) => !v)}
-              className={`rounded-lg border px-3 py-2 text-2xs uppercase tracking-[0.14em] shadow-[0_10px_24px_rgba(0,0,0,0.24)] backdrop-blur-sm transition-colors ${
-                hideLowConfidenceHistory
-                  ? "border-amber-500/45 bg-amber-500/12 text-amber-300"
-                  : "border-siem-border/80 bg-siem-panel/92 text-siem-muted"
-              }`}
-            >
-              {hideLowConfidenceHistory ? "Hide Low-Confidence History: On" : "Hide Low-Confidence History: Off"}
-            </button>
           </div>
 
           {regionFilter.startsWith("country:") && areaGroups.length > 0 && (
