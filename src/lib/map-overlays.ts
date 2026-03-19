@@ -136,70 +136,25 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "bases") {
-    const canCluster = typeof (L as unknown as { markerClusterGroup?: unknown }).markerClusterGroup === "function";
-    if (!canCluster) {
-      L.geoJSON(geojson, {
-        pointToLayer: (_feature, latlng) => {
-          return L.circleMarker(latlng, {
-            radius: 4,
-            fillColor: def.color,
-            color: `${def.color}99`,
-            weight: 1,
-            fillOpacity: 0.85,
-          });
-        },
-        onEachFeature: (feature, layer) => {
-          const p = feature.properties;
-          const icon = baseTypeIcons[p.type] ?? "\u2605";
-          layer.bindTooltip(
-            `${icon} <strong>${p.name}</strong> (${p.country})<br/>${p.operator} — ${p.type}`,
-            { className: "siem-tooltip", direction: "top" },
-          );
-        },
-      }).addTo(group);
-    } else {
-      const markerClusterGroup = (L as unknown as {
-        markerClusterGroup: (options: Record<string, unknown>) => L.LayerGroup;
-      }).markerClusterGroup;
-      const cluster = markerClusterGroup({
-        maxClusterRadius: 35,
-        spiderfyOnMaxZoom: false,
-        showCoverageOnHover: false,
-        iconCreateFunction: (c: { getChildCount: () => number }) => {
-          const count = c.getChildCount();
-          return L.divIcon({
-            html: `<span style="display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:rgba(15,23,42,.82);border:1px solid ${def.color};color:${def.color};font-size:10px;font-weight:700;">${count}</span>`,
-            className: "overlay-base-cluster",
-            iconSize: L.point(24, 24),
-          });
-        },
-      });
-
-      L.geoJSON(geojson, {
-        pointToLayer: (_feature, latlng) => {
-          return L.marker(latlng, {
-            icon: L.divIcon({
-              html: `<span style="display:block;width:8px;height:8px;border-radius:999px;background:${def.color};box-shadow:0 0 0 1px rgba(15,23,42,.75);"></span>`,
-              className: "overlay-base-dot",
-              iconSize: L.point(8, 8),
-              iconAnchor: L.point(4, 4),
-            }),
-          });
-        },
-        onEachFeature: (feature, layer) => {
-          const p = feature.properties;
-          const icon = baseTypeIcons[p.type] ?? "\u2605";
-          layer.bindTooltip(
-            `${icon} <strong>${p.name}</strong> (${p.country})<br/>${p.operator} — ${p.type}`,
-            { className: "siem-tooltip", direction: "top" },
-          );
-        },
-      }).eachLayer((layer) => {
-        cluster.addLayer(layer);
-      });
-
-      cluster.addTo(group);
-    }
+    L.geoJSON(geojson, {
+      pointToLayer: (_feature, latlng) => {
+        return L.circleMarker(latlng, {
+          radius: 4,
+          fillColor: def.color,
+          color: `${def.color}99`,
+          weight: 1,
+          fillOpacity: 0.85,
+        });
+      },
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties;
+        const icon = baseTypeIcons[p.type] ?? "\u2605";
+        layer.bindTooltip(
+          `${icon} <strong>${p.name}</strong> (${p.country})<br/>${p.operator} — ${p.type}`,
+          { className: "siem-tooltip", direction: "top" },
+        );
+      },
+    }).addTo(group);
   } else if (def.id === "nuclear") {
     L.geoJSON(geojson, {
       pointToLayer: (_feature, latlng) => {
