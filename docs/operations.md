@@ -203,6 +203,7 @@ Alert payloads include `signal_lane`, event-geo fields, and `subcategory` so dow
 - `ALERT_STALE_DAYS` (default `14`): missing alerts move from `cooldown` to `stale` after this horizon.
 - `ALERT_ARCHIVE_DAYS` (default `90`): missing alerts move from `stale` to `archived` after this horizon.
 - `UCDP_ACCESS_TOKEN` (default empty): token sent as `x-ucdp-access-token` for `ucdp-json` sources. If empty, `ucdp-json` sources are skipped silently.
+- `X_SCRAPER_USERNAME` / `X_SCRAPER_PASSWORD` / `X_SCRAPER_EXTRA` (default empty): optional credentials for `type: "x"` source collection through the in-process scraper bridge. If credentials are unset, collector attempts open-account mode.
 - `MILITARY_BASES_ENABLED` (default `true`): enables periodic refresh of static military-bases GeoJSON.
 - `MILITARY_BASES_URL`: source URL for military-bases GeoJSON refresh.
 - `MILITARY_BASES_OUTPUT_PATH` (default `public/geo/military-bases.geojson`): output file consumed by the web layer.

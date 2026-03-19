@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/dictionary"
 	"github.com/scalytics/euosint/internal/collector/discover"
@@ -44,6 +45,7 @@ type Runner struct {
 	clientFactory  func(config.Config) *fetch.Client
 	browserFactory func(config.Config) (*fetch.BrowserClient, error)
 	noiseGate      *noisegate.Engine
+	xFetchFunc     func(context.Context, config.Config, model.RegistrySource, int) ([]parse.FeedItem, error)
 }
 
 func New(stdout io.Writer, stderr io.Writer) Runner {
@@ -54,6 +56,7 @@ func New(stdout io.Writer, stderr io.Writer) Runner {
 		browserFactory: func(cfg config.Config) (*fetch.BrowserClient, error) {
 			return fetch.NewBrowser(cfg.BrowserTimeoutMS)
 		},
+		xFetchFunc: fetchXItemsViaScraper,
 	}
 }
 
@@ -764,6 +767,8 @@ func acceptForType(sourceType string) string {
 	switch sourceType {
 	case "rss":
 		return "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8"
+	case "x":
+		return "application/json, text/html;q=0.9, */*;q=0.8"
 	case "kev-json", "fbi-wanted-json", "travelwarning-json", "acled-json",
 		"usgs-geojson", "eonet-json", "gdelt-json", "feodo-json", "ucdp-json":
 		return "application/json"
@@ -839,6 +844,8 @@ func typePriority(kind string) int {
 		return 4
 	case "rss":
 		return 3
+	case "x":
+		return 3
 	case "html-list", "telegram":
 		return 2
 	default:
@@ -863,6 +870,8 @@ func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser 
 	switch source.Type {
 	case "rss":
 		return r.fetchRSS(ctx, fetcher, nctx, source)
+	case "x":
+		return r.fetchX(ctx, nctx, source, categoryDictionary)
 	case "html-list":
 		return r.fetchHTML(ctx, fetcher, nctx, source, categoryDictionary)
 	case "kev-json":
@@ -1023,6 +1032,153 @@ func (r Runner) fetchTelegram(ctx context.Context, fetcher fetch.Fetcher, nctx n
 	}
 	out = downgradeNonActionable(out, source)
 	return out, nil
+}
+
+func (r Runner) fetchX(ctx context.Context, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store) ([]model.Alert, error) {
+	limit := perSourceLimit(nctx.Config, source)
+	items, err := r.xFetchFunc(ctx, nctx.Config, source, limit)
+	if err != nil {
+		return nil, err
+	}
+	items = filterFeedKeywords(items, source.IncludeKeywords, source.ExcludeKeywords, nctx.Config.StopWords)
+	items = filterCategoryItems(items, source, categoryDictionary)
+	items, decisions := r.applyNoiseGate(source, items)
+	sortFeedItemsNewest(items)
+	if len(items) > limit {
+		items = items[:limit]
+	}
+	out := make([]model.Alert, 0, len(items))
+	for _, item := range items {
+		if strings.TrimSpace(item.Title) == "" || strings.TrimSpace(item.Link) == "" {
+			continue
+		}
+		alert := normalize.RSSItem(nctx, source, item)
+		if alert != nil {
+			if decision, ok := decisions[itemDecisionKey(item)]; ok {
+				applyNoiseDecision(alert, decision)
+			}
+			out = append(out, *alert)
+		}
+	}
+	out = downgradeNonActionable(out, source)
+	return out, nil
+}
+
+func fetchXItemsViaScraper(ctx context.Context, cfg config.Config, source model.RegistrySource, maxItems int) ([]parse.FeedItem, error) {
+	handle := extractXHandle(source.FeedURL)
+	if handle == "" {
+		return nil, fmt.Errorf("x source requires a profile URL or handle: %q", source.FeedURL)
+	}
+	if maxItems <= 0 {
+		maxItems = 20
+	}
+	if maxItems > 50 {
+		maxItems = 50 // frontend endpoint becomes unstable with bigger windows
+	}
+	scraper := twitterscraper.New()
+	if user := strings.TrimSpace(cfg.XScraperUsername); user != "" && strings.TrimSpace(cfg.XScraperPassword) != "" {
+		creds := []string{user, strings.TrimSpace(cfg.XScraperPassword)}
+		if extra := strings.TrimSpace(cfg.XScraperExtra); extra != "" {
+			creds = append(creds, extra)
+		}
+		if err := scraper.Login(creds...); err != nil {
+			if err := scraper.LoginOpenAccount(); err != nil {
+				return nil, fmt.Errorf("x login failed for %s: %w", handle, err)
+			}
+		}
+	} else {
+		if err := scraper.LoginOpenAccount(); err != nil {
+			return nil, fmt.Errorf("x open-account login failed for %s: %w", handle, err)
+		}
+	}
+
+	items := make([]parse.FeedItem, 0, maxItems)
+	seen := map[string]struct{}{}
+	for result := range scraper.GetTweets(ctx, handle, maxItems) {
+		if result == nil {
+			continue
+		}
+		if result.Error != nil {
+			return nil, result.Error
+		}
+		tweet := result.Tweet
+		if strings.TrimSpace(tweet.ID) == "" || strings.TrimSpace(tweet.Text) == "" {
+			continue
+		}
+		if tweet.IsRetweet {
+			continue
+		}
+		link := strings.TrimSpace(tweet.PermanentURL)
+		if link == "" {
+			link = fmt.Sprintf("https://x.com/%s/status/%s", handle, tweet.ID)
+		}
+		if _, exists := seen[link]; exists {
+			continue
+		}
+		seen[link] = struct{}{}
+		published := ""
+		if !tweet.TimeParsed.IsZero() {
+			published = tweet.TimeParsed.UTC().Format(time.RFC3339)
+		}
+		items = append(items, parse.FeedItem{
+			Title:     strings.TrimSpace(tweet.Text),
+			Link:      link,
+			Published: published,
+			Author:    strings.TrimSpace(tweet.Name),
+			Summary:   strings.TrimSpace(tweet.Text),
+			Tags:      append([]string{}, tweet.Hashtags...),
+		})
+		if len(items) >= maxItems {
+			break
+		}
+	}
+	return items, nil
+}
+
+func extractXHandle(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	raw = strings.TrimPrefix(raw, "@")
+	if !strings.Contains(raw, "://") && !strings.Contains(raw, "/") {
+		return sanitizeXHandle(raw)
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	path := strings.Trim(strings.TrimSpace(u.Path), "/")
+	if path == "" {
+		return ""
+	}
+	parts := strings.Split(path, "/")
+	if len(parts) == 0 {
+		return ""
+	}
+	return sanitizeXHandle(parts[0])
+}
+
+func sanitizeXHandle(value string) string {
+	value = strings.TrimSpace(strings.TrimPrefix(value, "@"))
+	if value == "" {
+		return ""
+	}
+	for _, reserved := range []string{"home", "explore", "i", "search", "settings", "compose"} {
+		if strings.EqualFold(value, reserved) {
+			return ""
+		}
+	}
+	var b strings.Builder
+	for _, r := range value {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
+			b.WriteRune(r)
+		}
+	}
+	if b.Len() == 0 {
+		return ""
+	}
+	return b.String()
 }
 
 func extractTelegramChannel(feedURL string) string {

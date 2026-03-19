@@ -109,6 +109,9 @@ type Config struct {
 	ACLEDUsername                    string
 	ACLEDPassword                    string
 	UCDPAccessToken                  string
+	XScraperUsername                 string
+	XScraperPassword                 string
+	XScraperExtra                    string
 	StopWordsPath                    string
 	StopWords                        []string
 	NoisePolicyPath                  string
@@ -198,6 +201,9 @@ func Default() Config {
 		APIEnabled:                       false,
 		APIAddr:                          ":3001",
 		UCDPAccessToken:                  "",
+		XScraperUsername:                 "",
+		XScraperPassword:                 "",
+		XScraperExtra:                    "",
 		StopWordsPath:                    defaultStopWordsPath,
 		NoisePolicyPath:                  "registry/noise_policy.json",
 		NoisePolicyBPath:                 "",
@@ -290,6 +296,9 @@ func FromEnv() Config {
 	cfg.ACLEDUsername = envString("ACLED_USERNAME", cfg.ACLEDUsername)
 	cfg.ACLEDPassword = envString("ACLED_PASSWORD", cfg.ACLEDPassword)
 	cfg.UCDPAccessToken = envString("UCDP_ACCESS_TOKEN", cfg.UCDPAccessToken)
+	cfg.XScraperUsername = envString("X_SCRAPER_USERNAME", cfg.XScraperUsername)
+	cfg.XScraperPassword = envString("X_SCRAPER_PASSWORD", cfg.XScraperPassword)
+	cfg.XScraperExtra = envString("X_SCRAPER_EXTRA", cfg.XScraperExtra)
 	cfg.StopWordsPath = envString("STOP_WORDS_PATH", cfg.StopWordsPath)
 	cfg.StopWords = loadStopWords(cfg.StopWordsPath)
 	if extra := envCSV("STOP_WORDS", nil); len(extra) > 0 {

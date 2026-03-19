@@ -90,6 +90,9 @@ Key collector variables:
 - `OFFICIAL_STATEMENTS_MIN_QUALITY`: stricter vetting minimum for legislative official-statement seeds (default `0.75`)
 - `OFFICIAL_STATEMENTS_MIN_OPERATIONAL_RELEVANCE`: stricter operational relevance minimum for legislative official-statement seeds (default `0.7`)
 - `UCDP_ACCESS_TOKEN`: optional UCDP API token (`x-ucdp-access-token`) for `ucdp-json` conflict ingestion
+- `X_SCRAPER_USERNAME`: optional X account username used by the in-process `x` connector
+- `X_SCRAPER_PASSWORD`: optional X account password used by the in-process `x` connector
+- `X_SCRAPER_EXTRA`: optional X email/2FA code field passed as third login credential
 - `MILITARY_BASES_ENABLED`: enable periodic static military-bases GeoJSON refresh (default `true`)
 - `MILITARY_BASES_URL`: source URL for military-bases GeoJSON refresh
 - `MILITARY_BASES_OUTPUT_PATH`: output path for static military-bases layer (default `public/geo/military-bases.geojson`)

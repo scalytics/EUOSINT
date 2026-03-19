@@ -322,6 +322,80 @@ func TestFetchUCDPSkipsSilentlyWithoutToken(t *testing.T) {
 	}
 }
 
+func TestExtractXHandle(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{in: "https://x.com/IDF", want: "IDF"},
+		{in: "https://x.com/CENTCOM/status/12345", want: "CENTCOM"},
+		{in: "https://twitter.com/StateDept", want: "StateDept"},
+		{in: "@NATO", want: "NATO"},
+		{in: "AuroraIntel", want: "AuroraIntel"},
+		{in: "https://x.com/explore", want: ""},
+		{in: "", want: ""},
+	}
+	for _, tc := range tests {
+		if got := extractXHandle(tc.in); got != tc.want {
+			t.Fatalf("extractXHandle(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestFetchXUsesScraperItemsAndFilters(t *testing.T) {
+	runner := New(io.Discard, io.Discard)
+	runner.xFetchFunc = func(_ context.Context, _ config.Config, source model.RegistrySource, maxItems int) ([]parse.FeedItem, error) {
+		if source.FeedURL != "https://x.com/CENTCOM" {
+			t.Fatalf("unexpected source feed url: %q", source.FeedURL)
+		}
+		if maxItems != 20 {
+			t.Fatalf("expected per-source max items 20, got %d", maxItems)
+		}
+		return []parse.FeedItem{
+			{
+				Title:     "CENTCOM confirms precision strike on militia launch site",
+				Link:      "https://x.com/CENTCOM/status/1",
+				Published: "2026-03-19T10:00:00Z",
+				Summary:   "Operational update",
+			},
+			{
+				Title:     "sports roundup and football highlights",
+				Link:      "https://x.com/CENTCOM/status/2",
+				Published: "2026-03-19T09:00:00Z",
+				Summary:   "noise",
+			},
+		}, nil
+	}
+	cfg := config.Default()
+	cfg.StopWords = []string{"football"}
+	nctx := normalize.Context{Config: cfg, Now: time.Date(2026, 3, 19, 0, 0, 0, 0, time.UTC)}
+	source := model.RegistrySource{
+		Type:     "x",
+		FeedURL:  "https://x.com/CENTCOM",
+		Category: "conflict_monitoring",
+		Source: model.SourceMetadata{
+			SourceID:      "x-centcom",
+			AuthorityName: "US CENTCOM",
+			Country:       "United States",
+			CountryCode:   "US",
+			Region:        "North America",
+			AuthorityType: "military",
+			BaseURL:       "https://x.com/CENTCOM",
+		},
+	}
+
+	alerts, err := runner.fetchX(context.Background(), nctx, source, nil)
+	if err != nil {
+		t.Fatalf("fetchX error: %v", err)
+	}
+	if len(alerts) != 1 {
+		t.Fatalf("expected 1 filtered alert, got %d", len(alerts))
+	}
+	if alerts[0].CanonicalURL != "https://x.com/CENTCOM/status/1" {
+		t.Fatalf("unexpected canonical url: %q", alerts[0].CanonicalURL)
+	}
+}
+
 func TestMergeGeoJSONFeaturesDeduplicatesByIDAndProperties(t *testing.T) {
 	a := []json.RawMessage{
 		json.RawMessage(`{"type":"Feature","id":"base-1","properties":{"name":"Base A"},"geometry":{"type":"Point","coordinates":[1,2]}}`),

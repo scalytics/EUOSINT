@@ -7450,6 +7450,158 @@
     "lng": 38.0
   },
   {
+    "type": "x",
+    "source": {
+      "source_id": "x-idf",
+      "authority_name": "Israel Defense Forces",
+      "country": "Israel",
+      "country_code": "IL",
+      "region": "Middle East",
+      "authority_type": "military",
+      "base_url": "https://x.com/IDF"
+    },
+    "feed_url": "https://x.com/IDF",
+    "category": "conflict_monitoring",
+    "region_tag": "IL",
+    "lat": 31.78,
+    "lng": 35.22,
+    "include_keywords": ["strike", "airstrike", "missile", "operation", "intercept", "attack", "warning", "evacuation", "terror", "rocket"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "source": {
+      "source_id": "x-centcom",
+      "authority_name": "US CENTCOM",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "military",
+      "base_url": "https://x.com/CENTCOM"
+    },
+    "feed_url": "https://x.com/CENTCOM",
+    "category": "conflict_monitoring",
+    "region_tag": "US",
+    "lat": 38.9,
+    "lng": -77.04,
+    "include_keywords": ["strike", "airstrike", "degrade", "military", "operation", "force protection", "threat", "terror", "deterrence"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "source": {
+      "source_id": "x-state-dept",
+      "authority_name": "US State Department",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "foreign_ministry",
+      "base_url": "https://x.com/StateDept"
+    },
+    "feed_url": "https://x.com/StateDept",
+    "category": "official_statement",
+    "region_tag": "US",
+    "lat": 38.9,
+    "lng": -77.04,
+    "include_keywords": ["advisory", "warning", "sanction", "terror", "security", "evacuation", "conflict", "ceasefire", "attack"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "source": {
+      "source_id": "x-nato",
+      "authority_name": "NATO",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "multilateral",
+      "base_url": "https://x.com/NATO"
+    },
+    "feed_url": "https://x.com/NATO",
+    "category": "official_statement",
+    "region_tag": "INT",
+    "lat": 50.85,
+    "lng": 4.35,
+    "include_keywords": ["security", "deterrence", "defence", "defense", "threat", "exercise", "operation", "conflict", "allies"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "source": {
+      "source_id": "x-sentdefender",
+      "authority_name": "OSINTdefender",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://x.com/sentdefender"
+    },
+    "feed_url": "https://x.com/sentdefender",
+    "category": "intelligence_report",
+    "region_tag": "INT",
+    "lat": 35.0,
+    "lng": 38.0,
+    "include_keywords": ["breaking", "strike", "missile", "attack", "explosion", "troops", "drone", "intercept", "terror", "escalation"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "source": {
+      "source_id": "x-osinttechnical",
+      "authority_name": "OSINTtechnical",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://x.com/Osinttechnical"
+    },
+    "feed_url": "https://x.com/Osinttechnical",
+    "category": "intelligence_report",
+    "region_tag": "INT",
+    "lat": 50.0,
+    "lng": 30.5,
+    "include_keywords": ["geolocation", "strike", "missile", "drone", "battlefield", "air defense", "explosion", "verified", "footage"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "source": {
+      "source_id": "x-geoconfirmed",
+      "authority_name": "GeoConfirmed",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://x.com/GeoConfirmed"
+    },
+    "feed_url": "https://x.com/GeoConfirmed",
+    "category": "intelligence_report",
+    "region_tag": "INT",
+    "lat": 52.37,
+    "lng": 4.9,
+    "include_keywords": ["geolocation", "confirmed", "verified", "strike", "impact", "coordinates", "visual evidence"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "source": {
+      "source_id": "x-elintnews",
+      "authority_name": "ELINT News",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://x.com/ELINTNews"
+    },
+    "feed_url": "https://x.com/ELINTNews",
+    "category": "intelligence_report",
+    "region_tag": "INT",
+    "lat": 34.0,
+    "lng": 36.0,
+    "include_keywords": ["air defense", "radar", "missile", "intercept", "drone", "threat", "warning", "strike", "syria", "iran"],
+    "max_items": 20
+  },
+  {
     "type": "rss",
     "source": {
       "source_id": "gnews-terrorism-eu",
