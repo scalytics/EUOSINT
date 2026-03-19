@@ -7,7 +7,9 @@
         "name": "Al Udeid Air Base",
         "country": "QA",
         "operator": "US",
-        "type": "air"
+        "type": "air",
+        "importance_score": 10,
+        "importance_tier": "major"
       },
       "geometry": {
         "type": "Point",
@@ -23,7 +25,9 @@
         "name": "Camp Lemonnier",
         "country": "DJ",
         "operator": "US",
-        "type": "joint"
+        "type": "joint",
+        "importance_score": 6,
+        "importance_tier": "major"
       },
       "geometry": {
         "type": "Point",
@@ -39,7 +43,9 @@
         "name": "Bahrain Naval Base",
         "country": "BH",
         "operator": "US",
-        "type": "naval"
+        "type": "naval",
+        "importance_score": 6,
+        "importance_tier": "major"
       },
       "geometry": {
         "type": "Point",
@@ -52,170 +58,12 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Djibouti PLA Support Base",
-        "country": "DJ",
-        "operator": "CN",
-        "type": "joint"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          43.08,
-          11.59
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Muwaffaq Salti AB",
-        "country": "JO",
-        "operator": "US",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          36.78,
-          32.36
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Prince Sultan AB",
-        "country": "SA",
-        "operator": "US",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          47.58,
-          24.06
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Djibouti (FR Forces)",
-        "country": "DJ",
-        "operator": "FR",
-        "type": "joint"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          43.14,
-          11.55
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Dakar (Éléments français)",
-        "country": "SN",
-        "operator": "FR",
-        "type": "joint"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -17.44,
-          14.69
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Nevatim AB",
-        "country": "IL",
-        "operator": "IL",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          34.98,
-          31.21
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Ramat David AB",
-        "country": "IL",
-        "operator": "IL",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          35.19,
-          32.67
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Berenice Military Base",
-        "country": "EG",
-        "operator": "EG",
-        "type": "joint"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          35.47,
-          23.97
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Palmachim AB",
-        "country": "IL",
-        "operator": "IL",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          34.69,
-          31.9
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Hatzerim AB",
-        "country": "IL",
-        "operator": "IL",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          34.66,
-          31.23
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
         "name": "Haifa Naval Base",
         "country": "IL",
         "operator": "IL",
-        "type": "naval"
+        "type": "naval",
+        "importance_score": 6,
+        "importance_tier": "major"
       },
       "geometry": {
         "type": "Point",
@@ -228,74 +76,12 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Tel Nof AB",
-        "country": "IL",
-        "operator": "IL",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          34.82,
-          31.84
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Ramon AB",
-        "country": "IL",
-        "operator": "IL",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          34.67,
-          30.78
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Al Asad AB",
-        "country": "IQ",
-        "operator": "US/IQ",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          42.44,
-          33.79
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Ain al-Assad",
-        "country": "IQ",
-        "operator": "IQ",
-        "type": "joint"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          42.45,
-          33.78
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
         "name": "Balad AB (Joint Base)",
         "country": "IQ",
         "operator": "IQ",
-        "type": "air"
+        "type": "air",
+        "importance_score": 6,
+        "importance_tier": "major"
       },
       "geometry": {
         "type": "Point",
@@ -308,74 +94,12 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Basra AB",
-        "country": "IQ",
-        "operator": "IQ",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          47.66,
-          30.55
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Al-Jufra AB",
-        "country": "LY",
-        "operator": "RU/LNA",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          16,
-          29.2
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Al-Khadim AB",
-        "country": "LY",
-        "operator": "RU/LNA",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          20.26,
-          31.07
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Cairo West AB",
-        "country": "EG",
-        "operator": "EG",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          30.92,
-          30.12
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
         "name": "Alexandria Naval Base",
         "country": "EG",
         "operator": "EG",
-        "type": "naval"
+        "type": "naval",
+        "importance_score": 6,
+        "importance_tier": "major"
       },
       "geometry": {
         "type": "Point",
@@ -388,26 +112,12 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "King Abdulaziz AB (Dhahran)",
-        "country": "SA",
-        "operator": "SA",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          50.16,
-          26.27
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
         "name": "King Faisal Naval Base (Jeddah)",
         "country": "SA",
         "operator": "SA",
-        "type": "naval"
+        "type": "naval",
+        "importance_score": 6,
+        "importance_tier": "major"
       },
       "geometry": {
         "type": "Point",
@@ -420,42 +130,12 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "King Khalid Military City",
-        "country": "SA",
-        "operator": "SA",
-        "type": "army"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          45.53,
-          27.9
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "King Fahd AB (Taif)",
-        "country": "SA",
-        "operator": "SA",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          40.54,
-          21.48
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
         "name": "Jubail Naval Base",
         "country": "SA",
         "operator": "SA",
-        "type": "naval"
+        "type": "naval",
+        "importance_score": 6,
+        "importance_tier": "major"
       },
       "geometry": {
         "type": "Point",
@@ -468,42 +148,12 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Ali Al Salem AB",
-        "country": "KW",
-        "operator": "US/KW",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          47.52,
-          29.35
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Camp Arifjan",
-        "country": "KW",
-        "operator": "US",
-        "type": "army"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          48.11,
-          29.07
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
         "name": "Casablanca Naval Base",
         "country": "MA",
         "operator": "MA",
-        "type": "naval"
+        "type": "naval",
+        "importance_score": 6,
+        "importance_tier": "major"
       },
       "geometry": {
         "type": "Point",
@@ -519,61 +169,15 @@
         "name": "Abuja Military HQ",
         "country": "NG",
         "operator": "NG",
-        "type": "joint"
+        "type": "joint",
+        "importance_score": 6,
+        "importance_tier": "major"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
           7.49,
           9.06
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Manda Bay (Camp Simba)",
-        "country": "KE",
-        "operator": "US/KE",
-        "type": "joint"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          41.2,
-          -2.27
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Baledogle AB",
-        "country": "SO",
-        "operator": "US/SO",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          44.77,
-          2.33
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Harar Meda AB",
-        "country": "ET",
-        "operator": "ET",
-        "type": "air"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          38.95,
-          8.72
         ]
       }
     },
@@ -595,49 +199,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          50.578968,
-          26.107242
-        ]
-      },
-      "properties": {
-        "name": "Riffa Air Base",
-        "country": "BH",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          50.608078,
-          25.946174
-        ]
-      },
-      "properties": {
-        "name": "Sheik Isa Air Base Helipad",
-        "country": "BH",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -658,28 +222,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "closed",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          9.22321,
-          3.96893
-        ]
-      },
-      "properties": {
-        "name": "Limbé Military Heliport",
-        "country": "CM",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -700,70 +245,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          43.13258,
-          11.57195
-        ]
-      },
-      "properties": {
-        "name": "Djibouti Sudanese Military Hospital Heliport",
-        "country": "DJ",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          43.15745,
-          11.54554
-        ]
-      },
-      "properties": {
-        "name": "Military Helipads (5x)",
-        "country": "DJ",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          43.156668,
-          11.554781
-        ]
-      },
-      "properties": {
-        "name": "Military Helipad",
-        "country": "DJ",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -784,7 +268,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -805,7 +291,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -826,7 +314,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -847,7 +337,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "large_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -868,7 +360,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "closed",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -889,49 +383,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          33.827079,
-          31.144695
-        ]
-      },
-      "properties": {
-        "name": "El Arish Military Hospital Helipad",
-        "country": "EG",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          31.2463,
-          29.969388
-        ]
-      },
-      "properties": {
-        "name": "Maadi Military Hospital Heliport",
-        "country": "EG",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -952,7 +406,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 3,
+        "importance_tier": "major"
       }
     },
     {
@@ -973,196 +429,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          30.885848,
-          30.03825
-        ]
-      },
-      "properties": {
-        "name": "Sheikh Zayed City Military Airstrip",
-        "country": "EG",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          30.893517,
-          30.039018
-        ]
-      },
-      "properties": {
-        "name": "Sheikh Zayed City Military Heliport",
-        "country": "EG",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          25.894004,
-          31.524462
-        ]
-      },
-      "properties": {
-        "name": "Western Military Region Stadium Heliport",
-        "country": "EG",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          29.799986,
-          31.031976
-        ]
-      },
-      "properties": {
-        "name": "RAF El Amiriya",
-        "country": "EG",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "closed",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          28.466477,
-          30.997694
-        ]
-      },
-      "properties": {
-        "name": "RAF El Daba",
-        "country": "EG",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "closed",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          32.412195,
-          30.247667
-        ]
-      },
-      "properties": {
-        "name": "RAF Kasfareet",
-        "country": "EG",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "closed",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          31.16197,
-          29.81049
-        ]
-      },
-      "properties": {
-        "name": "West Cairo Military Hospital Heliport",
-        "country": "EG",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          28.944109,
-          30.842918
-        ]
-      },
-      "properties": {
-        "name": "El Alamein Heliport",
-        "country": "EG",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -14.48609,
-          26.10788
-        ]
-      },
-      "properties": {
-        "name": "Boujdour Military Heliport",
-        "country": "EH",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1183,7 +452,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1204,7 +475,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1225,7 +498,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1246,7 +521,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1267,7 +544,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1288,7 +567,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1309,28 +590,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -14.392744,
-          -7.970179
-        ]
-      },
-      "properties": {
-        "name": "RAF Ascension Island",
-        "country": "SH",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1351,7 +613,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1372,7 +636,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1393,28 +659,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          28.700978,
-          -20.100491
-        ]
-      },
-      "properties": {
-        "name": "RAF Induna",
-        "country": "ZW",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "closed",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1435,7 +682,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1456,7 +705,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1477,7 +728,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1498,28 +751,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -0.185487,
-          5.592844
-        ]
-      },
-      "properties": {
-        "name": "37 Military Hospital Helipad",
-        "country": "GH",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1540,7 +774,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1561,7 +797,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1582,7 +820,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1603,7 +843,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1624,7 +866,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1645,7 +889,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1666,7 +912,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1687,7 +935,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1708,7 +958,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1729,7 +981,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1750,7 +1004,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1771,7 +1027,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1792,7 +1050,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1813,28 +1073,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          36.159193,
-          -0.298419
-        ]
-      },
-      "properties": {
-        "name": "Lanet Military Airstrip",
-        "country": "KE",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1855,7 +1096,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1876,7 +1119,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1897,7 +1142,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1918,7 +1165,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1939,7 +1188,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "large_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1960,7 +1211,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "large_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -1981,7 +1234,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2002,28 +1257,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          34.914894,
-          32.087673
-        ]
-      },
-      "properties": {
-        "name": "RAF Petah Tikva",
-        "country": "IL",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "closed",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2044,7 +1280,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2065,7 +1303,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2086,7 +1326,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "closed",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2107,7 +1349,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2128,7 +1372,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2149,7 +1395,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2170,7 +1418,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2191,7 +1441,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2212,7 +1464,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2233,7 +1487,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2254,7 +1510,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2275,7 +1533,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2296,7 +1556,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2317,7 +1579,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2338,7 +1602,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2359,7 +1625,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2380,7 +1648,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2401,7 +1671,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2422,7 +1694,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2443,7 +1717,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "closed",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2464,7 +1740,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 3,
+        "importance_tier": "major"
       }
     },
     {
@@ -2485,7 +1763,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2506,7 +1786,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2527,175 +1809,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          51.139072,
-          35.309329
-        ]
-      },
-      "properties": {
-        "name": "Amuk-e-pāyin Military Helipad",
-        "country": "IR",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          51.004323,
-          35.529266
-        ]
-      },
-      "properties": {
-        "name": "Military Helipads (2x)",
-        "country": "IR",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          50.976434,
-          35.545758
-        ]
-      },
-      "properties": {
-        "name": "Military Runway",
-        "country": "IR",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          50.880347,
-          35.578874
-        ]
-      },
-      "properties": {
-        "name": "Military Runway",
-        "country": "IR",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          50.934827,
-          35.711762
-        ]
-      },
-      "properties": {
-        "name": "Military Heliport Runway (39x)",
-        "country": "IR",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          51.015551,
-          35.503671
-        ]
-      },
-      "properties": {
-        "name": "Military Helipads (6x)",
-        "country": "IR",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          50.484237,
-          36.049396
-        ]
-      },
-      "properties": {
-        "name": "Qazvin Province Army Airfield",
-        "country": "IR",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          36.219501,
-          31.997999
-        ]
-      },
-      "properties": {
-        "name": "King Abdullah II Air Base",
-        "country": "JO",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2716,7 +1832,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2737,28 +1855,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          35.01945,
-          29.57194
-        ]
-      },
-      "properties": {
-        "name": "Prince Hashem bin Abdullah Military Hospital Heliport",
-        "country": "JO",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2779,7 +1878,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2800,7 +1901,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2821,7 +1924,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2842,7 +1947,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2863,7 +1970,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2884,7 +1993,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2905,7 +2016,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2926,7 +2039,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2947,28 +2062,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          18.573589,
-          30.458143
-        ]
-      },
-      "properties": {
-        "name": "RAF Marble Arch",
-        "country": "LY",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "closed",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -2989,7 +2085,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3010,7 +2108,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3031,7 +2131,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3052,7 +2154,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3073,7 +2177,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3094,28 +2200,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          13.650711,
-          21.951146
-        ]
-      },
-      "properties": {
-        "name": "Madama Military Base",
-        "country": "NE",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3136,7 +2223,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3157,7 +2246,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3178,7 +2269,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3199,7 +2292,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3220,28 +2315,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          46.39120101928711,
-          24.942100524902344
-        ]
-      },
-      "properties": {
-        "name": "King Abdul Aziz Military Academy Airport",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 7,
+        "importance_tier": "major"
       }
     },
     {
@@ -3262,7 +2338,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "large_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3283,7 +2361,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 8,
+        "importance_tier": "major"
       }
     },
     {
@@ -3304,7 +2384,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3325,7 +2407,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3346,7 +2430,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3367,7 +2453,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "closed",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3388,7 +2476,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3409,7 +2499,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3430,7 +2522,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3451,7 +2545,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3472,7 +2568,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3493,7 +2591,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3514,7 +2614,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3535,7 +2637,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3556,7 +2660,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3577,7 +2683,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3598,7 +2706,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 3,
+        "importance_tier": "major"
       }
     },
     {
@@ -3619,7 +2729,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3640,7 +2752,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3661,7 +2775,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3682,7 +2798,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "large_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3703,7 +2821,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3724,7 +2844,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3745,7 +2867,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3766,7 +2890,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3787,7 +2913,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3808,7 +2936,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3829,7 +2959,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3850,7 +2982,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 12,
+        "importance_tier": "major"
       }
     },
     {
@@ -3871,28 +3005,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          34.478874,
-          31.472586
-        ]
-      },
-      "properties": {
-        "name": "RAF Gaza",
-        "country": "PS",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "closed",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3913,70 +3028,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          51.030442,
-          24.895392
-        ]
-      },
-      "properties": {
-        "name": "Military Helipad",
-        "country": "QA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          50.989609,
-          25.005234
-        ]
-      },
-      "properties": {
-        "name": "Military Helipad",
-        "country": "QA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          50.0217,
-          26.31996
-        ]
-      },
-      "properties": {
-        "name": "King Fahd Military Medical City Heliport",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -3997,49 +3051,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          46.871238,
-          24.418148
-        ]
-      },
-      "properties": {
-        "name": "Military Helipad",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          46.920248,
-          24.626854
-        ]
-      },
-      "properties": {
-        "name": "SANG Airbase Helipads (4x)",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -4060,7 +3074,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -4081,154 +3097,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          46.504371,
-          24.898475
-        ]
-      },
-      "properties": {
-        "name": "Military Helipad",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          46.932049,
-          24.890174
-        ]
-      },
-      "properties": {
-        "name": "Military Helipad",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          46.885732,
-          24.870985
-        ]
-      },
-      "properties": {
-        "name": "Military Helipad",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          39.331076,
-          24.720833
-        ]
-      },
-      "properties": {
-        "name": "Military Helipad SSSP7",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          46.944945,
-          24.95615
-        ]
-      },
-      "properties": {
-        "name": "Military Helipad",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          46.890727,
-          24.97324
-        ]
-      },
-      "properties": {
-        "name": "Military Helipad",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          43.759103,
-          26.315632
-        ]
-      },
-      "properties": {
-        "name": "Military Helipads (3x)",
-        "country": "SA",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -4249,7 +3120,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -4270,28 +3143,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "medium_airport",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          32.48534,
-          15.61515
-        ]
-      },
-      "properties": {
-        "name": "Muhandiseen Military Hospital Heliport",
-        "country": "SD",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "heliport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 6,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -4312,7 +3166,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -4333,7 +3189,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -4354,28 +3212,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "closed",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          27.1867847443,
-          -15.072745130299998
-        ]
-      },
-      "properties": {
-        "name": "Mumbwa",
-        "country": "ZM",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "small_airport",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     },
     {
@@ -4396,28 +3235,9 @@
         "confidence": 0.58,
         "inferred_from": "name_or_keywords",
         "airport_type": "closed",
-        "region_hint": "Africa"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          28.76564,
-          -20.13267
-        ]
-      },
-      "properties": {
-        "name": "RAF Heany",
-        "country": "ZW",
-        "type": "air_base",
-        "operator": "Unknown",
-        "source": "ourairports",
-        "confidence": 0.58,
-        "inferred_from": "name_or_keywords",
-        "airport_type": "closed",
-        "region_hint": "Africa"
+        "region_hint": "Africa",
+        "importance_score": 5,
+        "importance_tier": "operational_airfield"
       }
     }
   ]
