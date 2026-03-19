@@ -11,6 +11,7 @@ import { AlertFeed } from "@/components/AlertFeed";
 import { AlertDetail } from "@/components/AlertDetail";
 import { FeedDirectory } from "@/components/FeedDirectory";
 import { useAlerts } from "@/hooks/useAlerts";
+import { useAlertState } from "@/hooks/useAlertState";
 import { useSearch } from "@/hooks/useSearch";
 import { useSourceHealth } from "@/hooks/useSourceHealth";
 import { alertMatchesRegionFilter } from "@/lib/regions";
@@ -46,6 +47,7 @@ function writeSelectedSources(sourceIds: string[]) {
 
 export default function App() {
   const { alerts, isLoading, sourceCount } = useAlerts();
+  const { alerts: stateAlerts } = useAlertState();
   const { sourceHealth, isLoading: isSourceHealthLoading } = useSourceHealth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
@@ -53,7 +55,8 @@ export default function App() {
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>(null);
   const [regionFilter, setRegionFilter] = useState<string>("Europe");
   const { query: searchQuery, setQuery: setSearchQuery, results: searchResults, isApiAvailable } = useSearch();
-  const [visibleAlertIds, setVisibleAlertIds] = useState<string[]>([]);
+  const [visibleNowAlertIds, setVisibleNowAlertIds] = useState<string[]>([]);
+  const [visibleHistoryAlertIds, setVisibleHistoryAlertIds] = useState<string[]>([]);
   const [mobilePane, setMobilePane] = useState<"intel" | "map" | "alerts">("map");
   const panelRef = useRef<HTMLDivElement>(null);
   const [utcTime, setUtcTime] = useState(() => new Date().toISOString().slice(0, 19).replace("T", " ") + "Z");
@@ -145,6 +148,46 @@ export default function App() {
     return filtered;
   }, [categoryFilter, regionScopedAlerts, selectedSourceIds, severityFilter]);
 
+  const stateRegionScopedAlerts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    let filtered = stateAlerts;
+    if (regionFilter !== "all") {
+      filtered = filtered.filter((alert) => alertMatchesRegionFilter(alert, regionFilter));
+    }
+    if (query) {
+      filtered = filtered.filter((alert) => {
+        const haystack = [
+          alert.title,
+          alert.source.authority_name,
+          alert.source.country,
+          alert.source.country_code,
+          alert.source.region,
+          alert.category,
+          alert.canonical_url,
+        ]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(query);
+      });
+    }
+    return filtered;
+  }, [stateAlerts, regionFilter, searchQuery]);
+
+  const scopedStateAlerts = useMemo(() => {
+    let filtered = stateRegionScopedAlerts;
+    if (selectedSourceIds.length > 0) {
+      const selectedSet = new Set(selectedSourceIds);
+      filtered = filtered.filter((alert) => selectedSet.has(alert.source_id));
+    }
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter((alert) => alert.category === categoryFilter);
+    }
+    if (severityFilter) {
+      filtered = filtered.filter((alert) => alert.severity === severityFilter);
+    }
+    return filtered;
+  }, [categoryFilter, stateRegionScopedAlerts, selectedSourceIds, severityFilter]);
+
   const handleCountrySelect = useCallback((countryCode: string) => {
     const nextRegion = `country:${countryCode}`;
     setRegionFilter((current) => current === nextRegion ? "all" : nextRegion);
@@ -160,7 +203,11 @@ export default function App() {
 
 
   const selectedAlert = selectedId
-    ? scopedAlerts.find((a) => a.alert_id === selectedId) ?? alerts.find((a) => a.alert_id === selectedId) ?? null
+    ? scopedAlerts.find((a) => a.alert_id === selectedId) ??
+      scopedStateAlerts.find((a) => a.alert_id === selectedId) ??
+      alerts.find((a) => a.alert_id === selectedId) ??
+      stateAlerts.find((a) => a.alert_id === selectedId) ??
+      null
     : null;
 
   const handleClose = useCallback(() => {
@@ -180,13 +227,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (selectedId && !alerts.some((a) => a.alert_id === selectedId)) {
+    const exists = alerts.some((a) => a.alert_id === selectedId) || stateAlerts.some((a) => a.alert_id === selectedId);
+    if (selectedId && !exists) {
       setSelectedId(null);
     }
-  }, [alerts, selectedId]);
+  }, [alerts, stateAlerts, selectedId]);
 
   useEffect(() => {
-    setVisibleAlertIds(scopedAlerts.map((a) => a.alert_id));
+    setVisibleNowAlertIds(scopedAlerts.map((a) => a.alert_id));
+    setVisibleHistoryAlertIds([]);
   }, [scopedAlerts]);
 
   return (
@@ -229,11 +278,13 @@ export default function App() {
         <div className={`${mobilePane === "map" ? "block" : "hidden"} md:block min-h-0 flex-1 min-w-0`}>
           <GlobeView
             alerts={scopedAlerts}
+            historicalAlerts={scopedStateAlerts}
             selectedId={selectedId}
             onSelect={setSelectedId}
             regionFilter={regionFilter}
             onRegionChange={handleRegionChange}
-            visibleAlertIds={visibleAlertIds}
+            visibleNowAlertIds={visibleNowAlertIds}
+            visibleHistoryAlertIds={visibleHistoryAlertIds}
             onSelectSourceIdsChange={handleSourceSelectionChange}
             selectedSourceIds={selectedSourceIds}
           />
@@ -249,12 +300,16 @@ export default function App() {
             ) : (
               <AlertFeed
                 alerts={scopedAlerts}
+                historicalAlerts={scopedStateAlerts}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
                 categoryFilter={categoryFilter}
                 regionFilter={regionFilter}
                 onRegionChange={handleRegionChange}
-                onVisibleAlertIdsChange={setVisibleAlertIds}
+                onVisibleAlertIdsChange={({ nowIds, historyIds }) => {
+                  setVisibleNowAlertIds(nowIds);
+                  setVisibleHistoryAlertIds(historyIds);
+                }}
               />
             )}
           </div>

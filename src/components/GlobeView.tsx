@@ -35,11 +35,13 @@ const REGION_VIEWPORTS: Record<string, MapViewport> = {
 
 interface Props {
   alerts: Alert[];
+  historicalAlerts: Alert[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   regionFilter: string;
   onRegionChange: (region: string) => void;
-  visibleAlertIds: string[];
+  visibleNowAlertIds: string[];
+  visibleHistoryAlertIds: string[];
   onSelectSourceIdsChange?: (sourceIds: string[]) => void;
   selectedSourceIds?: string[];
 }
@@ -48,13 +50,15 @@ interface Props {
 
 export function GlobeView({
   alerts,
+  historicalAlerts,
   selectedId,
   onSelect,
   regionFilter,
   onRegionChange,
   onSelectSourceIdsChange,
   selectedSourceIds = [],
-  visibleAlertIds,
+  visibleNowAlertIds,
+  visibleHistoryAlertIds,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -133,14 +137,23 @@ export function GlobeView({
     });
   }, [overlayDefs]);
 
-  const visibleIdSet = useMemo(() => new Set(visibleAlertIds), [visibleAlertIds]);
+  const visibleNowIdSet = useMemo(() => new Set(visibleNowAlertIds), [visibleNowAlertIds]);
+  const visibleHistoryIdSet = useMemo(() => new Set(visibleHistoryAlertIds), [visibleHistoryAlertIds]);
 
-  const visibleAlerts = useMemo(
+  const visibleNowAlerts = useMemo(
     () =>
       alerts.filter(
-        (a) => visibleIdSet.has(a.alert_id) && alertMatchesRegionFilter(a, regionFilter),
+        (a) => visibleNowIdSet.has(a.alert_id) && alertMatchesRegionFilter(a, regionFilter),
       ),
-    [alerts, regionFilter, visibleIdSet],
+    [alerts, regionFilter, visibleNowIdSet],
+  );
+
+  const visibleHistoryAlerts = useMemo(
+    () =>
+      historicalAlerts.filter(
+        (a) => visibleHistoryIdSet.has(a.alert_id) && alertMatchesRegionFilter(a, regionFilter),
+      ),
+    [historicalAlerts, regionFilter, visibleHistoryIdSet],
   );
 
   /* ── Initialise Leaflet once ──────────────────────────────────── */
@@ -225,7 +238,31 @@ export function GlobeView({
     markerLookup.current.clear();
 
     const markers: L.CircleMarker[] = [];
-    for (const alert of visibleAlerts) {
+    for (const alert of visibleHistoryAlerts) {
+      // Skip alerts with no resolved location (0,0).
+      if (alert.lat === 0 && alert.lng === 0) continue;
+      const selected = alert.alert_id === selectedId;
+      const text = textHex();
+      const marker = L.circleMarker([alert.lat, alert.lng], {
+        radius: selected ? 10 : 6,
+        fillColor: severityHex(alert.severity),
+        color: selected ? text : `${text}7A`,
+        weight: selected ? 2 : 1,
+        fillOpacity: 0.28,
+        opacity: 0.65,
+      });
+
+      marker.bindTooltip(
+        `<strong>${alert.source.authority_name}</strong><br/>[History] ${alert.title.slice(0, 76)}`,
+        { className: "siem-tooltip", direction: "top", offset: L.point(0, -6) },
+      );
+
+      marker.on("click", () => onSelectRef.current(alert.alert_id));
+      markers.push(marker);
+      markerLookup.current.set(alert.alert_id, marker);
+    }
+
+    for (const alert of visibleNowAlerts) {
       // Skip alerts with no resolved location (0,0).
       if (alert.lat === 0 && alert.lng === 0) continue;
       const selected = alert.alert_id === selectedId;
@@ -249,7 +286,7 @@ export function GlobeView({
     }
 
     cluster.addLayers(markers);
-  }, [visibleAlerts, selectedId]);
+  }, [visibleNowAlerts, visibleHistoryAlerts, selectedId]);
 
   /* ── Fly to region on filter change ───────────────────────────── */
 
@@ -266,9 +303,10 @@ export function GlobeView({
     lastRegionRef.current = regionFilter;
 
     // For country filters, fit map bounds to visible markers.
-    if (regionFilter.startsWith("country:") && visibleAlerts.length > 0) {
-      const lats = visibleAlerts.map((a) => a.lat);
-      const lngs = visibleAlerts.map((a) => a.lng);
+    const focusAlerts = visibleNowAlerts.length > 0 ? visibleNowAlerts : visibleHistoryAlerts;
+    if (regionFilter.startsWith("country:") && focusAlerts.length > 0) {
+      const lats = focusAlerts.map((a) => a.lat);
+      const lngs = focusAlerts.map((a) => a.lng);
       const bounds = L.latLngBounds(
         [Math.min(...lats) - 1, Math.min(...lngs) - 1],
         [Math.max(...lats) + 1, Math.max(...lngs) + 1]
@@ -279,13 +317,14 @@ export function GlobeView({
 
     const vp = REGION_VIEWPORTS[regionFilter] ?? REGION_VIEWPORTS.Europe;
     map.flyTo(vp.center, vp.zoom, { duration: 0.8 });
-  }, [regionFilter, visibleAlerts]);
+  }, [regionFilter, visibleNowAlerts, visibleHistoryAlerts]);
 
   /* ── Stats for sidebar ────────────────────────────────────────── */
 
   const topClusters = useMemo(() => {
+    const combinedVisibleAlerts = [...visibleNowAlerts, ...visibleHistoryAlerts];
     const bins = new Map<string, { sourceId: string; title: string; count: number }>();
-    for (const alert of visibleAlerts) {
+    for (const alert of combinedVisibleAlerts) {
       const key = alert.source.source_id;
       const existing = bins.get(key);
       if (existing) {
@@ -295,9 +334,9 @@ export function GlobeView({
       }
     }
     return [...bins.values()].sort((a, b) => b.count - a.count).slice(0, 6);
-  }, [visibleAlerts]);
+  }, [visibleNowAlerts, visibleHistoryAlerts]);
 
-  const activitySpikes = useMemo(() => detectSpikes(alerts), [alerts]);
+  const activitySpikes = useMemo(() => detectSpikes([...alerts, ...historicalAlerts]), [alerts, historicalAlerts]);
 
   /* ── Render ───────────────────────────────────────────────────── */
 
@@ -315,7 +354,7 @@ export function GlobeView({
                 : `${regionFilter} operating picture`}
           </div>
           <div className="mt-1 text-sm text-siem-muted">
-            {visibleAlerts.length} visible alerts across official feeds
+            {visibleNowAlerts.length + visibleHistoryAlerts.length} visible alerts across official feeds
           </div>
         </div>
 

@@ -22,16 +22,22 @@ const PREFERRED_REGION_ORDER = ["Europe", "Africa", "North America", "Asia"] as 
 
 interface Props {
   alerts: Alert[];
+  historicalAlerts: Alert[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   categoryFilter: AlertCategory | "all";
   regionFilter: string;
   onRegionChange: (region: string) => void;
-  onVisibleAlertIdsChange: (ids: string[]) => void;
+  onVisibleAlertIdsChange: (payload: {
+    nowIds: string[];
+    historyIds: string[];
+    mode: "now" | "history" | "now_history" | "briefing";
+  }) => void;
 }
 
 export function AlertFeed({
   alerts,
+  historicalAlerts,
   selectedId,
   onSelect,
   categoryFilter,
@@ -39,7 +45,7 @@ export function AlertFeed({
   onRegionChange,
   onVisibleAlertIdsChange,
 }: Props) {
-  const [viewMode, setViewMode] = useState<"live" | "history" | "briefing">("live");
+  const [viewMode, setViewMode] = useState<"now" | "history" | "now_history" | "briefing">("now");
   const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
   const [isRefreshingList, setIsRefreshingList] = useState(false);
   const [newAlertIds, setNewAlertIds] = useState<Set<string>>(new Set());
@@ -79,7 +85,18 @@ export function AlertFeed({
       ? alerts
       : alerts.filter((a) => alertMatchesRegionFilter(a, regionFilter));
 
+  const historicalRegionFiltered =
+    regionFilter === "all"
+      ? historicalAlerts
+      : historicalAlerts.filter((a) => alertMatchesRegionFilter(a, regionFilter));
+
   const facetFiltered = regionFiltered.filter((a) => {
+    const categoryMatch = categoryFilter === "all" || a.category === categoryFilter;
+    const severityMatch = severityFilter === "all" || a.severity === severityFilter;
+    return categoryMatch && severityMatch;
+  });
+
+  const historicalFacetFiltered = historicalRegionFiltered.filter((a) => {
     const categoryMatch = categoryFilter === "all" || a.category === categoryFilter;
     const severityMatch = severityFilter === "all" || a.severity === severityFilter;
     return categoryMatch && severityMatch;
@@ -103,7 +120,7 @@ export function AlertFeed({
   const now = Date.now();
   const liveCutoff = now - LIVE_WINDOW_MS;
 
-  const liveAlerts = useMemo(
+  const nowAlerts = useMemo(
     () =>
       actionableAlerts
         .filter((a) => {
@@ -116,14 +133,29 @@ export function AlertFeed({
 
   const historyAlerts = useMemo(
     () =>
-      actionableAlerts
+      historicalFacetFiltered
+        .filter((a) => a.status !== "filtered")
+        .filter((a) => (a.signal_lane ?? (a.severity === "info" ? "info" : "intel")) !== "info")
         .filter((a) => {
           const t = new Date(a.last_seen).getTime();
           return t < liveCutoff;
         })
         .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime()),
-    [actionableAlerts, liveCutoff],
+    [historicalFacetFiltered, liveCutoff],
   );
+
+  const nowAndHistoryAlerts = useMemo(() => {
+    const byId = new Map<string, Alert>();
+    for (const alert of nowAlerts) {
+      byId.set(alert.alert_id, alert);
+    }
+    for (const alert of historyAlerts) {
+      if (!byId.has(alert.alert_id)) {
+        byId.set(alert.alert_id, alert);
+      }
+    }
+    return [...byId.values()].sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime());
+  }, [nowAlerts, historyAlerts]);
 
   // History grouped by day.
   const historyGroups = useMemo(() => {
@@ -149,13 +181,13 @@ export function AlertFeed({
     return buckets.filter((b) => b.alerts.length > 0);
   }, [historyAlerts]);
 
-  // Keep globe visibility aligned — only live alerts show pins.
-  const visibleAlertIds = useMemo(
-    () =>
-      liveAlerts
-        .filter((a) => (a.signal_lane ?? (a.severity === "info" ? "info" : "intel")) !== "info")
-        .map((a) => a.alert_id),
-    [liveAlerts],
+  const visibleNowIds = useMemo(
+    () => nowAlerts.map((a) => a.alert_id),
+    [nowAlerts],
+  );
+  const visibleHistoryIds = useMemo(
+    () => historyAlerts.map((a) => a.alert_id),
+    [historyAlerts],
   );
 
   useEffect(() => {
@@ -210,11 +242,23 @@ export function AlertFeed({
   const severityRail = (s: Severity) => severityColor(s);
 
   useEffect(() => {
-    const sig = visibleAlertIds.join("|");
+    const sig = `${viewMode}|N:${visibleNowIds.join("|")}|H:${visibleHistoryIds.join("|")}`;
     if (sig === lastVisibleSigRef.current) return;
     lastVisibleSigRef.current = sig;
-    onVisibleAlertIdsChange(visibleAlertIds);
-  }, [visibleAlertIds, onVisibleAlertIdsChange]);
+    if (viewMode === "now") {
+      onVisibleAlertIdsChange({ nowIds: visibleNowIds, historyIds: [], mode: "now" });
+      return;
+    }
+    if (viewMode === "history") {
+      onVisibleAlertIdsChange({ nowIds: [], historyIds: visibleHistoryIds, mode: "history" });
+      return;
+    }
+    if (viewMode === "now_history") {
+      onVisibleAlertIdsChange({ nowIds: visibleNowIds, historyIds: visibleHistoryIds, mode: "now_history" });
+      return;
+    }
+    onVisibleAlertIdsChange({ nowIds: [], historyIds: [], mode: "briefing" });
+  }, [viewMode, visibleNowIds, visibleHistoryIds, onVisibleAlertIdsChange]);
 
   const renderAlertCard = (alert: Alert, position: number) => {
     const isSelected = selectedId === alert.alert_id;
@@ -289,7 +333,31 @@ export function AlertFeed({
     );
   };
 
-  const currentAlerts = viewMode === "live" ? liveAlerts : viewMode === "history" ? historyAlerts : briefingAlerts;
+  const currentAlerts =
+    viewMode === "now"
+      ? nowAlerts
+      : viewMode === "history"
+        ? historyAlerts
+        : viewMode === "now_history"
+          ? nowAndHistoryAlerts
+          : briefingAlerts;
+
+  const recentWindowStart = now - 24 * 60 * 60 * 1000;
+  const baselineWindowStart = now - 7 * 24 * 60 * 60 * 1000;
+  const recentCount = useMemo(
+    () => nowAndHistoryAlerts.filter((a) => new Date(a.last_seen).getTime() >= recentWindowStart).length,
+    [nowAndHistoryAlerts, recentWindowStart],
+  );
+  const baselineCount = useMemo(
+    () =>
+      nowAndHistoryAlerts.filter((a) => {
+        const t = new Date(a.last_seen).getTime();
+        return t >= baselineWindowStart && t < recentWindowStart;
+      }).length,
+    [nowAndHistoryAlerts, baselineWindowStart, recentWindowStart],
+  );
+  const baselineDaily = Math.max(1, Math.round(baselineCount / 6));
+  const deltaRatio = recentCount / baselineDaily;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -307,18 +375,18 @@ export function AlertFeed({
           </div>
         </div>
 
-        {/* Live / History / Briefing tabs */}
+        {/* Now / History / Combined / Briefing tabs */}
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => setViewMode("live")}
+            onClick={() => setViewMode("now")}
             className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
-              viewMode === "live"
+              viewMode === "now"
                 ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
                 : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
             }`}
           >
-            Live ({liveAlerts.length})
+            Now ({nowAlerts.length})
           </button>
           <button
             type="button"
@@ -333,6 +401,17 @@ export function AlertFeed({
           </button>
           <button
             type="button"
+            onClick={() => setViewMode("now_history")}
+            className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
+              viewMode === "now_history"
+                ? "bg-cyan-500/18 text-cyan-300 border-cyan-500/35"
+                : "bg-white/5 text-siem-muted border-siem-border hover:bg-cyan-500/10 hover:text-cyan-300"
+            }`}
+          >
+            Now + History ({nowAndHistoryAlerts.length})
+          </button>
+          <button
+            type="button"
             onClick={() => setViewMode("briefing")}
             className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
               viewMode === "briefing"
@@ -342,8 +421,24 @@ export function AlertFeed({
           >
             Briefing ({briefingAlerts.length})
           </button>
-          <div className="rounded border border-siem-border/50 bg-white/3 px-2 py-1.5" />
         </div>
+
+        {viewMode === "now_history" && (
+          <div className="rounded border border-siem-border bg-white/5 px-2 py-1.5 text-2xs font-mono uppercase tracking-wide">
+            <span className="text-siem-muted">Delta 24h vs baseline:</span>{" "}
+            <span
+              className={
+                deltaRatio >= 1.5
+                  ? "text-rose-300"
+                  : deltaRatio <= 0.7
+                    ? "text-emerald-300"
+                    : "text-amber-300"
+              }
+            >
+              {deltaRatio.toFixed(2)}x ({recentCount}/{baselineDaily})
+            </span>
+          </div>
+        )}
 
         {/* Compact stat strip */}
         <div className="grid grid-cols-3 gap-2 text-2xs font-mono uppercase tracking-wide">
@@ -433,9 +528,9 @@ export function AlertFeed({
           isRefreshingList ? "animate-alert-list-refresh" : ""
         }`}
       >
-        {viewMode === "live" ? (
-          liveAlerts.length > 0 ? (
-            liveAlerts.map((alert, idx) => renderAlertCard(alert, idx))
+        {viewMode === "now" ? (
+          nowAlerts.length > 0 ? (
+            nowAlerts.map((alert, idx) => renderAlertCard(alert, idx))
           ) : (
             <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
               <p className="text-xs text-siem-muted uppercase tracking-wider">
@@ -459,6 +554,16 @@ export function AlertFeed({
             <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
               <p className="text-xs text-siem-muted uppercase tracking-wider">
                 No historical alerts older than 48 hours
+              </p>
+            </div>
+          )
+        ) : viewMode === "now_history" ? (
+          nowAndHistoryAlerts.length > 0 ? (
+            nowAndHistoryAlerts.map((alert, idx) => renderAlertCard(alert, idx))
+          ) : (
+            <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
+              <p className="text-xs text-siem-muted uppercase tracking-wider">
+                No now/history alerts matching current filters
               </p>
             </div>
           )
