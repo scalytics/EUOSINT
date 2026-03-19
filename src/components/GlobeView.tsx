@@ -370,10 +370,10 @@ export function GlobeView({
       const marker = L.circleMarker([alert.lat, alert.lng], {
         radius: selected ? (isNowAndHistoryMode ? 9 : 10) : (isNowAndHistoryMode ? 5 : 6),
         fillColor: severityHex(alert.severity),
-        color: selected ? text : `${text}${isNowAndHistoryMode ? "66" : "7A"}`,
+        color: selected ? `${text}${isNowAndHistoryMode ? "AA" : "CC"}` : `${text}${isNowAndHistoryMode ? "4D" : "66"}`,
         weight: selected ? 2 : 1,
-        fillOpacity: isNowAndHistoryMode ? 0.16 : 0.28,
-        opacity: isNowAndHistoryMode ? 0.38 : 0.65,
+        fillOpacity: isNowAndHistoryMode ? 0.08 : 0.2,
+        opacity: isNowAndHistoryMode ? 0.2 : 0.45,
       });
 
       marker.bindTooltip(
