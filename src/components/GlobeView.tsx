@@ -36,6 +36,15 @@ const LARGE_COUNTRY_CODES = new Set([
   "KZ", "DZ", "SA", "ID",
 ]);
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 /* ── Props ────────────────────────────────────────────────────────── */
 
 interface Props {
@@ -70,7 +79,9 @@ export function GlobeView({
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const markerLookup = useRef<Map<string, L.CircleMarker>>(new Map());
+  const markerAlertLookup = useRef<Map<number, Alert>>(new Map());
   const overlayLayers = useRef<Map<OverlayId, L.LayerGroup>>(new Map());
+  const clusterListPopupRef = useRef<L.Popup | null>(null);
   const [overlayDefs, setOverlayDefs] = useState<OverlayDef[]>([]);
   const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set());
   const [hideLowConfidenceHistory, setHideLowConfidenceHistory] = useState(true);
@@ -296,7 +307,8 @@ export function GlobeView({
 
     const cluster = L.markerClusterGroup({
       maxClusterRadius: 45,
-      spiderfyOnMaxZoom: true,
+      spiderfyOnMaxZoom: false,
+      zoomToBoundsOnClick: false,
       showCoverageOnHover: false,
       iconCreateFunction(c) {
         const count = c.getChildCount();
@@ -339,11 +351,17 @@ export function GlobeView({
 
   useEffect(() => {
     const cluster = clusterRef.current;
-    if (!cluster) return;
+    const map = mapRef.current;
+    if (!cluster || !map) return;
 
     cluster.clearLayers();
     markerLookup.current.clear();
+    markerAlertLookup.current.clear();
     if (countryFilterCode !== "") {
+      if (clusterListPopupRef.current) {
+        map.closePopup(clusterListPopupRef.current);
+        clusterListPopupRef.current = null;
+      }
       return;
     }
 
@@ -371,6 +389,7 @@ export function GlobeView({
       marker.on("click", () => onSelectRef.current(alert.alert_id));
       markers.push(marker);
       markerLookup.current.set(alert.alert_id, marker);
+      markerAlertLookup.current.set(L.Util.stamp(marker), alert);
     }
 
     for (const alert of visibleNowAlerts) {
@@ -394,9 +413,85 @@ export function GlobeView({
       marker.on("click", () => onSelectRef.current(alert.alert_id));
       markers.push(marker);
       markerLookup.current.set(alert.alert_id, marker);
+      markerAlertLookup.current.set(L.Util.stamp(marker), alert);
     }
 
     cluster.addLayers(markers);
+
+    const closeClusterList = () => {
+      if (clusterListPopupRef.current) {
+        map.closePopup(clusterListPopupRef.current);
+        clusterListPopupRef.current = null;
+      }
+    };
+
+    const onClusterClick = (e: L.LeafletEvent & { layer?: L.MarkerCluster }) => {
+      const cl = e.layer;
+      if (!cl) return;
+      closeClusterList();
+
+      const childAlerts: Alert[] = (cl.getAllChildMarkers() as L.Layer[])
+        .map((m: L.Layer) => markerAlertLookup.current.get(L.Util.stamp(m)))
+        .filter((a): a is Alert => Boolean(a))
+        .sort((a: Alert, b: Alert) => {
+          const sa = a.severity === "critical" ? 4 : a.severity === "high" ? 3 : a.severity === "medium" ? 2 : a.severity === "low" ? 1 : 0;
+          const sb = b.severity === "critical" ? 4 : b.severity === "high" ? 3 : b.severity === "medium" ? 2 : b.severity === "low" ? 1 : 0;
+          if (sb !== sa) return sb - sa;
+          return new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime();
+        });
+      if (childAlerts.length === 0) return;
+
+      const rows = childAlerts
+        .slice(0, 16)
+        .map((alert: Alert, idx: number) => {
+          const sev = alert.severity.toUpperCase();
+          const title = escapeHtml(alert.title);
+          const auth = escapeHtml(alert.source.authority_name);
+          return `<button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:grid;grid-template-columns:58px 1fr;gap:8px;width:100%;text-align:left;background:transparent;border:0;padding:6px 0;cursor:pointer;border-bottom:1px solid rgba(148,163,184,.16);"><span style="font-size:10px;color:#94a3b8;letter-spacing:.08em;text-transform:uppercase;">${sev}</span><span style="font-size:12px;line-height:1.3;color:#e5e7eb;">${idx + 1}. ${title}<span style="display:block;color:#94a3b8;font-size:10px;margin-top:2px;">${auth}</span></span></button>`;
+        })
+        .join("");
+      const more = childAlerts.length > 16
+        ? `<div style="font-size:10px;color:#94a3b8;padding-top:6px;">+${childAlerts.length - 16} more alerts</div>`
+        : "";
+      const html = `<div style="min-width:300px;max-width:420px;"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Area Alerts (${childAlerts.length})</div><div style="max-height:260px;overflow:auto;">${rows}${more}</div></div>`;
+
+      const popup = L.popup({
+        autoClose: false,
+        closeOnClick: false,
+        closeButton: true,
+        className: "siem-tooltip",
+      })
+        .setLatLng(cl.getLatLng())
+        .setContent(html)
+        .openOn(map);
+      clusterListPopupRef.current = popup;
+
+      popup.once("add", () => {
+        const el = popup.getElement();
+        if (!el) return;
+        el.querySelectorAll<HTMLButtonElement>(".cluster-list-row").forEach((btn) => {
+          btn.addEventListener("click", (evt) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            const id = btn.dataset.alertId;
+            if (id) {
+              onSelectRef.current(id);
+            }
+          });
+        });
+      });
+    };
+
+    cluster.on("clusterclick", onClusterClick);
+    map.on("click", closeClusterList);
+    map.on("zoomstart", closeClusterList);
+
+    return () => {
+      cluster.off("clusterclick", onClusterClick);
+      map.off("click", closeClusterList);
+      map.off("zoomstart", closeClusterList);
+      closeClusterList();
+    };
   }, [countryFilterCode, visibleNowAlerts, visibleHistoryAlertsRendered, selectedId]);
 
   /* ── Fly to region on filter change ───────────────────────────── */
