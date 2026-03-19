@@ -116,6 +116,8 @@ export function GlobeView({
   const markerLookup = useRef<Map<string, L.CircleMarker>>(new Map());
   const markerAlertLookup = useRef<Map<number, Alert>>(new Map());
   const overlayLayers = useRef<Map<OverlayId, L.LayerGroup>>(new Map());
+  const overlayLoadTokens = useRef<Map<OverlayId, number>>(new Map());
+  const activeOverlaysRef = useRef<Set<OverlayId>>(new Set());
   const clusterListPopupRef = useRef<L.Popup | null>(null);
   const lastNonCountryRegionRef = useRef<string>("all");
   const countryTableReturnRegionRef = useRef<string>("all");
@@ -178,10 +180,21 @@ export function GlobeView({
     });
   }, [overlayDefs]);
 
+  useEffect(() => {
+    activeOverlaysRef.current = activeOverlays;
+  }, [activeOverlays]);
+
+  const nextOverlayToken = useCallback((id: OverlayId) => {
+    const next = (overlayLoadTokens.current.get(id) ?? 0) + 1;
+    overlayLoadTokens.current.set(id, next);
+    return next;
+  }, []);
+
   const toggleOverlay = useCallback((id: OverlayId) => {
     setActiveOverlays((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
+        nextOverlayToken(id); // invalidate pending async loads for this overlay
         next.delete(id);
         const layer = overlayLayers.current.get(id);
         if (layer && mapRef.current) {
@@ -194,7 +207,23 @@ export function GlobeView({
         if (map) {
           const def = overlayDefs.find((o) => o.id === id);
           if (def) {
-            loadOverlay(map, def).then((layer) => {
+            const token = nextOverlayToken(id);
+            const current = overlayLayers.current.get(id);
+            if (current) {
+              map.removeLayer(current);
+              overlayLayers.current.delete(id);
+            }
+            loadOverlay(map, def, regionFilter).then((layer) => {
+              const isLatest = overlayLoadTokens.current.get(id) === token;
+              const stillActive = activeOverlaysRef.current.has(id);
+              if (!isLatest || !stillActive || !mapRef.current) {
+                map.removeLayer(layer);
+                return;
+              }
+              const previous = overlayLayers.current.get(id);
+              if (previous && previous !== layer) {
+                map.removeLayer(previous);
+              }
               overlayLayers.current.set(id, layer);
             });
           }
@@ -202,7 +231,34 @@ export function GlobeView({
       }
       return next;
     });
-  }, [overlayDefs]);
+  }, [nextOverlayToken, overlayDefs, regionFilter]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const activeBases = activeOverlays.has("bases");
+    if (!map || !activeBases) return;
+    const def = overlayDefs.find((o) => o.id === "bases");
+    if (!def) return;
+    const token = nextOverlayToken("bases");
+    const currentLayer = overlayLayers.current.get("bases");
+    if (currentLayer) {
+      map.removeLayer(currentLayer);
+      overlayLayers.current.delete("bases");
+    }
+    loadOverlay(map, def, regionFilter).then((layer) => {
+      const isLatest = overlayLoadTokens.current.get("bases") === token;
+      const stillActive = activeOverlaysRef.current.has("bases");
+      if (!isLatest || !stillActive || !mapRef.current) {
+        map.removeLayer(layer);
+        return;
+      }
+      const previous = overlayLayers.current.get("bases");
+      if (previous && previous !== layer) {
+        map.removeLayer(previous);
+      }
+      overlayLayers.current.set("bases", layer);
+    });
+  }, [activeOverlays, nextOverlayToken, overlayDefs, regionFilter]);
 
   const visibleNowIdSet = useMemo(() => new Set(visibleNowAlertIds), [visibleNowAlertIds]);
   const visibleHistoryIdSet = useMemo(() => new Set(visibleHistoryAlertIds), [visibleHistoryAlertIds]);
