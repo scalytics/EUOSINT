@@ -26,15 +26,10 @@ interface Props {
 
 const REGIONS = [
   "Europe",
-  "all",
-  "North America",
-  "South America",
   "Africa",
-  "Middle East",
+  "North America",
   "Asia",
-  "Oceania",
-  "Caribbean",
-  "International",
+  "all",
 ];
 
 const SEARCH_HISTORY_COOKIE = "euosint_search_history";
@@ -337,7 +332,7 @@ function RegionSearch({
   const items = useMemo(() => {
     const regionItems = REGIONS.map((r) => ({
       value: r,
-      label: r === "all" ? "All regions" : r,
+      label: r === "all" ? "Global" : r,
       type: "region" as const,
       count: r === "all" ? alerts.length : alerts.filter((a) => alertMatchesRegionFilter(a, r)).length,
     }));
@@ -387,7 +382,7 @@ function RegionSearch({
       const match = items.find((i) => i.value === regionFilter);
       return match ? match.label : code;
     }
-    return regionFilter === "all" ? "All regions" : regionFilter;
+    return regionFilter === "all" ? "Global" : regionFilter;
   }, [regionFilter, items]);
 
   return (

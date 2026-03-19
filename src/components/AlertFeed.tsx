@@ -18,6 +18,7 @@ import { alertMatchesRegionFilter } from "@/lib/regions";
 import { Clock, Building2, ChevronDown, Globe } from "lucide-react";
 
 const LIVE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
+const PREFERRED_REGION_ORDER = ["Europe", "Africa", "North America", "Asia"] as const;
 
 interface Props {
   alerts: Alert[];
@@ -53,7 +54,8 @@ export function AlertFeed({
       const r = a.source.region;
       set.set(r, (set.get(r) ?? 0) + 1);
     });
-    return [...set.entries()].sort((a, b) => b[1] - a[1]);
+    const preferred = PREFERRED_REGION_ORDER.map((region) => [region, set.get(region) ?? 0] as [string, number]);
+    return preferred;
   }, [alerts]);
 
   const countries = useMemo(() => {
@@ -405,12 +407,12 @@ export function AlertFeed({
               onChange={(e) => onRegionChange(e.target.value)}
               className="w-full appearance-none bg-white/5 border border-siem-border rounded-md pl-7 pr-8 py-1.5 text-xs text-siem-text cursor-pointer hover:bg-siem-accent/10 transition-colors focus:outline-none focus:ring-1 focus:ring-siem-accent"
             >
-              <option value="all">Global ({alerts.length})</option>
               {regions.map(([region, count]) => (
                 <option key={region} value={region}>
                   {region} ({count})
                 </option>
               ))}
+              <option value="all">Global ({alerts.length})</option>
               {countries.length > 0 && (
                 <option disabled>── Countries ──</option>
               )}
