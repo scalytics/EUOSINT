@@ -861,6 +861,12 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 	if alert.FreshnessHours > 0 && alert.FreshnessHours <= 24 && (hasIncident || hasTechnical) {
 		add(0.04, "fresh post with potential early-warning signal")
 	}
+	if fusion := threatFusionMatchCount(text); fusion >= 2 {
+		add(0.14, "fraud/laundering/organized-crime/terror co-occurrence")
+		if fusion >= 3 {
+			add(0.06, "multi-domain criminal-threat fusion")
+		}
+	}
 
 	threshold := clamp01(cfg.IncidentRelevanceThreshold)
 	relevance := round3(clamp01(score))
@@ -941,6 +947,11 @@ func inferSeverity(title string, fallback string) string {
 	// about pandemics or a review of nuclear infrastructure is not an alert.
 	if IsInformationalTitle(title) {
 		return "info"
+	}
+	if fusion := threatFusionMatchCount(t); fusion >= 3 {
+		return "critical"
+	} else if fusion >= 2 && !strings.EqualFold(fallback, "critical") {
+		return "high"
 	}
 	switch {
 	case hasStrategicEscalationTitle(t):
@@ -1305,6 +1316,9 @@ func classifySignalLane(cfg config.Config, alert model.Alert) model.SignalLane {
 		alarmThreshold = 0.72
 	}
 	if score >= alarmThreshold || strings.EqualFold(alert.Severity, "critical") || strings.EqualFold(alert.Severity, "high") {
+		if shouldEscalateThreatFusion(alert, score, alarmThreshold) {
+			return model.SignalLaneAlarm
+		}
 		if hasStrategicEscalationTitle(strings.ToLower(alert.Title)) {
 			return model.SignalLaneAlarm
 		}
@@ -1319,6 +1333,41 @@ func classifySignalLane(cfg config.Config, alert model.Alert) model.SignalLane {
 		}
 	}
 	return model.SignalLaneIntel
+}
+
+func shouldEscalateThreatFusion(alert model.Alert, score float64, alarmThreshold float64) bool {
+	if threatFusionMatchCount(strings.ToLower(alert.Title)) < 2 {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(alert.Category)) {
+	case "fraud_alert", "public_safety", "terrorism_tip", "conflict_monitoring", "travel_warning":
+	default:
+		return false
+	}
+	required := alarmThreshold - 0.08
+	if required < 0.6 {
+		required = 0.6
+	}
+	return score >= required || strings.EqualFold(alert.Severity, "critical")
+}
+
+func threatFusionMatchCount(text string) int {
+	if strings.TrimSpace(text) == "" {
+		return 0
+	}
+	buckets := []bool{
+		containsAny(text, "fraud", "scam", "ponzi", "wire fraud", "investment fraud", "romance scam"),
+		containsAny(text, "money laundering", "launder", "sanctions evasion", "illicit finance"),
+		containsAny(text, "organized crime", "organised crime", "cartel", "mafia", "racketeer", "transnational criminal", "criminal network"),
+		containsAny(text, "terrorism", "terrorist", "extremist", "isis", "isil", "daesh", "al-qaeda", "terror plot"),
+	}
+	count := 0
+	for _, hit := range buckets {
+		if hit {
+			count++
+		}
+	}
+	return count
 }
 
 func hasStrategicEscalationTitle(lowerTitle string) bool {

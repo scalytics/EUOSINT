@@ -297,6 +297,10 @@ func TestInferSeverityInformationalOverride(t *testing.T) {
 	if sev != "critical" {
 		t.Fatalf("expected critical severity for war declaration signal, got %q", sev)
 	}
+	sev = inferSeverity("FBI operation targets organized crime money laundering and terrorism financing network", "medium")
+	if sev != "critical" {
+		t.Fatalf("expected critical severity for 3-domain threat fusion title, got %q", sev)
+	}
 }
 
 func TestApplySignalLanesSeparatesInfoIntelAlarm(t *testing.T) {
@@ -363,6 +367,75 @@ func TestApplySignalLaneEscalatesStrategicLegislativeAlerts(t *testing.T) {
 	}
 	if got[0].SignalLane != model.SignalLaneAlarm {
 		t.Fatalf("expected strategic legislative alert in alarm lane, got %q", got[0].SignalLane)
+	}
+}
+
+func TestThreatFusionMatchCount(t *testing.T) {
+	count := threatFusionMatchCount("Authorities dismantle organized crime ring linked to money laundering and terrorism financing")
+	if count < 3 {
+		t.Fatalf("expected at least 3 fusion buckets, got %d", count)
+	}
+	if got := threatFusionMatchCount("Routine patrol update from local police"); got != 0 {
+		t.Fatalf("expected 0 fusion buckets for routine text, got %d", got)
+	}
+}
+
+func TestApplySignalLaneEscalatesThreatFusionFraud(t *testing.T) {
+	cfg := config.Default()
+	cfg.AlarmRelevanceThreshold = 0.72
+
+	alert := model.Alert{
+		AlertID:  "fraud-fusion-1",
+		Category: "fraud_alert",
+		Severity: "high",
+		Title:    "Authorities expose organized crime money laundering scheme with terrorism financing links",
+		Triage:   &model.Triage{RelevanceScore: 0.66},
+		Source: model.SourceMetadata{
+			AuthorityType: "regulatory",
+		},
+	}
+	got := ApplySignalLanes(cfg, []model.Alert{alert})
+	if len(got) != 1 {
+		t.Fatalf("expected one alert, got %d", len(got))
+	}
+	if got[0].SignalLane != model.SignalLaneAlarm {
+		t.Fatalf("expected threat-fusion fraud alert in alarm lane, got %q", got[0].SignalLane)
+	}
+}
+
+func TestScoreBoostsThreatFusion(t *testing.T) {
+	cfg := config.Default()
+	meta := model.RegistrySource{
+		Type:     "rss",
+		Category: "fraud_alert",
+		Source: model.SourceMetadata{
+			SourceID:      "fbi-national-press",
+			AuthorityName: "FBI National Press Releases",
+			Country:       "United States",
+			CountryCode:   "US",
+			Region:        "North America",
+			AuthorityType: "police",
+			BaseURL:       "https://www.fbi.gov",
+		},
+	}
+	ctx := Context{Config: cfg, Now: time.Date(2026, 3, 19, 0, 0, 0, 0, time.UTC)}
+	plain := RSSItem(ctx, meta, parse.FeedItem{
+		Title:     "Fraud enforcement update",
+		Summary:   "Authorities announced charges in a fraud case.",
+		Link:      "https://www.fbi.gov/plain",
+		Published: "2026-03-18T10:00:00Z",
+	})
+	fusion := RSSItem(ctx, meta, parse.FeedItem{
+		Title:     "Organized crime and money laundering network tied to terrorism financing dismantled",
+		Summary:   "Investigators detail fraud, laundering, cartel logistics, and terror-financing links.",
+		Link:      "https://www.fbi.gov/fusion",
+		Published: "2026-03-18T10:00:00Z",
+	})
+	if plain == nil || fusion == nil {
+		t.Fatal("expected both alerts to be normalized")
+	}
+	if fusion.Triage.RelevanceScore <= plain.Triage.RelevanceScore {
+		t.Fatalf("expected fusion score (%.3f) > plain score (%.3f)", fusion.Triage.RelevanceScore, plain.Triage.RelevanceScore)
 	}
 }
 
