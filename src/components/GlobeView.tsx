@@ -74,6 +74,7 @@ export function GlobeView({
   const [overlayDefs, setOverlayDefs] = useState<OverlayDef[]>([]);
   const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set());
   const [hideLowConfidenceHistory, setHideLowConfidenceHistory] = useState(true);
+  const [activeAreaGroupID, setActiveAreaGroupID] = useState<string>("");
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const countryFilterCode = useMemo(
@@ -247,6 +248,21 @@ export function GlobeView({
       .slice(0, 8);
   }, [countryFilterCode, geocodedVisibleAlerts, isLargeCountryScope]);
 
+  useEffect(() => {
+    if (areaGroups.length === 0) {
+      setActiveAreaGroupID("");
+      return;
+    }
+    if (!areaGroups.some((g) => g.id === activeAreaGroupID)) {
+      setActiveAreaGroupID(areaGroups[0].id);
+    }
+  }, [activeAreaGroupID, areaGroups]);
+
+  const activeAreaGroup = useMemo(
+    () => areaGroups.find((group) => group.id === activeAreaGroupID) ?? null,
+    [activeAreaGroupID, areaGroups],
+  );
+
   /* ── Initialise Leaflet once ──────────────────────────────────── */
 
   useEffect(() => {
@@ -327,6 +343,9 @@ export function GlobeView({
 
     cluster.clearLayers();
     markerLookup.current.clear();
+    if (countryFilterCode !== "") {
+      return;
+    }
 
     const isNowAndHistoryMode = visibleNowAlerts.length > 0 && visibleHistoryAlertsRendered.length > 0;
     const markers: L.CircleMarker[] = [];
@@ -378,7 +397,7 @@ export function GlobeView({
     }
 
     cluster.addLayers(markers);
-  }, [visibleNowAlerts, visibleHistoryAlertsRendered, selectedId]);
+  }, [countryFilterCode, visibleNowAlerts, visibleHistoryAlertsRendered, selectedId]);
 
   /* ── Fly to region on filter change ───────────────────────────── */
 
@@ -540,47 +559,48 @@ export function GlobeView({
               {hideLowConfidenceHistory ? "Hide Low-Confidence History: On" : "Hide Low-Confidence History: Off"}
             </button>
           </div>
-        </div>
 
-        <aside className="m-4 ml-0 mt-0 flex flex-col gap-3 overflow-y-auto">
           {regionFilter.startsWith("country:") && areaGroups.length > 0 && (
-            <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
-              <div className="text-xxs uppercase tracking-[0.18em] text-siem-muted">
-                Area Groups
-              </div>
-              <div className="mt-3 space-y-2">
+            <div className="absolute left-3 top-3 z-[1000] w-[32rem] max-w-[calc(100%-6rem)] rounded-xl border border-siem-border/80 bg-siem-panel/95 p-3 text-xs text-siem-text shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+              <div className="text-2xs uppercase tracking-[0.14em] text-siem-muted">Country Alarm Table</div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {areaGroups.map((group) => (
                   <button
                     key={group.id}
                     type="button"
-                    onClick={() => {
-                      const map = mapRef.current;
-                      if (map) {
-                        map.flyTo([group.lat, group.lng], isLargeCountryScope ? 5.5 : 5, { duration: 0.7 });
-                      }
-                      if (group.alerts.length > 0) {
-                        onSelect(group.alerts[0].alert_id);
-                      }
-                    }}
-                    className="w-full text-left rounded-xl border border-siem-border bg-siem-panel-strong px-3 py-2 hover:border-siem-accent/40 hover:bg-siem-accent/8 transition-colors"
+                    onClick={() => setActiveAreaGroupID(group.id)}
+                    className={`rounded-md border px-2 py-1 text-2xs uppercase tracking-[0.12em] transition-colors ${
+                      activeAreaGroupID === group.id
+                        ? "border-siem-accent/45 bg-siem-accent/16 text-siem-text"
+                        : "border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/35 hover:bg-siem-accent/8"
+                    }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-siem-text truncate">{group.label}</span>
-                      <span className="shrink-0 text-2xs font-mono text-siem-muted">{group.count}</span>
-                    </div>
-                    <div className="mt-1 text-2xs text-siem-muted">
-                      Crit {group.critical} • High {group.high}
-                    </div>
-                    {group.alerts[0] && (
-                      <div className="mt-1 text-2xs text-siem-muted line-clamp-1">
-                        {group.alerts[0].title}
-                      </div>
-                    )}
+                    {group.label} ({group.count})
                   </button>
                 ))}
               </div>
+              <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-siem-border bg-siem-panel-strong">
+                {activeAreaGroup?.alerts.map((alert) => (
+                  <button
+                    key={alert.alert_id}
+                    type="button"
+                    onClick={() => onSelect(alert.alert_id)}
+                    className="grid w-full grid-cols-[4rem_3.5rem_1fr] gap-2 border-b border-siem-border/60 px-2 py-1.5 text-left last:border-b-0 hover:bg-siem-accent/8"
+                  >
+                    <span className="text-2xs uppercase tracking-[0.12em] text-siem-muted">{alert.severity}</span>
+                    <span className="text-2xs text-siem-muted">{alert.event_country_code || alert.source.country_code}</span>
+                    <span className="truncate text-xs text-siem-text">{alert.title}</span>
+                  </button>
+                ))}
+                {!activeAreaGroup && (
+                  <div className="px-2 py-2 text-2xs text-siem-muted">No alarms in selected group.</div>
+                )}
+              </div>
             </div>
           )}
+        </div>
+
+        <aside className="m-4 ml-0 mt-0 flex flex-col gap-3 overflow-y-auto">
           <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
             <div className="text-xxs uppercase tracking-[0.18em] text-siem-muted">Hot sectors</div>
             <div className="mt-3 space-y-2">
