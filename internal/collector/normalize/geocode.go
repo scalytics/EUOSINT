@@ -3,7 +3,10 @@
 
 package normalize
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 // countryGeo holds a country centroid for map placement.
 type countryGeo struct {
@@ -372,6 +375,8 @@ var geoAliases = map[string]string{
 // geoIndex maps lowercased country names to their centroid. Built once at init.
 var geoIndex map[string]*countryGeo
 
+var eventCountryPrefixRe = regexp.MustCompile(`(?i)(?:^|[\s,;:(\[])(?:in|near|at|off|outside|inside|across|around|within|throughout|into)\s+(?:the\s+)?$`)
+
 func init() {
 	geoIndex = make(map[string]*countryGeo, len(geoCountries)*2)
 	for i := range geoCountries {
@@ -418,28 +423,61 @@ func geocodeText(text string) (lat, lng float64, code string, ok bool) {
 	bestPos := -1 // rightmost end-position of best match
 	bestLen := 0  // length of best match (tiebreaker)
 	var bestGeo *countryGeo
+	bestContextPos := -1
+	bestContextLen := 0
+	var bestContextGeo *countryGeo
 
 	for key, g := range geoIndex {
-		idx := strings.LastIndex(lower, key)
-		if idx < 0 {
-			continue
+		searchEnd := len(lower)
+		for {
+			idx := strings.LastIndex(lower[:searchEnd], key)
+			if idx < 0 {
+				break
+			}
+			endPos := idx + len(key)
+			// Require word boundaries to prevent substring false positives
+			// (e.g. "oman" inside "Romania", "china" inside "Chinaware").
+			if isWordBoundary(lower, idx, endPos) {
+				if hasEventLocationPrefix(lower, idx) {
+					if endPos > bestContextPos || (endPos == bestContextPos && len(key) > bestContextLen) {
+						bestContextPos = endPos
+						bestContextLen = len(key)
+						bestContextGeo = g
+					}
+				}
+				if endPos > bestPos || (endPos == bestPos && len(key) > bestLen) {
+					bestPos = endPos
+					bestLen = len(key)
+					bestGeo = g
+				}
+			}
+			if idx == 0 {
+				break
+			}
+			searchEnd = idx
 		}
-		endPos := idx + len(key)
-		// Require word boundaries to prevent substring false positives
-		// (e.g. "oman" inside "Romania", "china" inside "Chinaware").
-		if !isWordBoundary(lower, idx, endPos) {
-			continue
-		}
-		if endPos > bestPos || (endPos == bestPos && len(key) > bestLen) {
-			bestPos = endPos
-			bestLen = len(key)
-			bestGeo = g
-		}
+	}
+	// Prefer event-location context mentions ("in Syria", "near Gaza")
+	// over actor-nationality mentions elsewhere in the title.
+	if bestContextGeo != nil {
+		return bestContextGeo.Lat, bestContextGeo.Lng, bestContextGeo.Code, true
 	}
 	if bestGeo != nil {
 		return bestGeo.Lat, bestGeo.Lng, bestGeo.Code, true
 	}
 	return 0, 0, "", false
+}
+
+func hasEventLocationPrefix(text string, idx int) bool {
+	if idx <= 0 {
+		return false
+	}
+	start := idx - 48
+	if start < 0 {
+		start = 0
+	}
+	prefix := text[start:idx]
+	return eventCountryPrefixRe.MatchString(prefix)
 }
 
 // isWordBoundary checks that the substring at text[start:end] is bounded by

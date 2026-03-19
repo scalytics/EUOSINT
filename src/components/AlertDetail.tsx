@@ -18,9 +18,6 @@ import {
   MapPin,
   Radio,
   X,
-  Phone,
-  Mail,
-  AlertTriangle,
 } from "lucide-react";
 
 interface Props {

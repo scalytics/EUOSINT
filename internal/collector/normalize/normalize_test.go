@@ -239,6 +239,7 @@ func TestInformationalTitleClassification(t *testing.T) {
 		{"Workshop on maritime safety held in Lisbon", true},
 		{"Training course on border security for West African officers", true},
 		{"Partnership agreement signed between IAEA and University of Tokyo", true},
+		{"Justice for Palestinian Women Demands End to Occupation, Reparations, Accountability, Experts Tell Rights Committee", true},
 		// Periodic digest titles — should be informational, not alerts.
 		{"UKMTO Weekly Piracy Report 15 – 21 November 2025", true},
 		{"Monthly Cyber Threat Summary – October 2025", true},

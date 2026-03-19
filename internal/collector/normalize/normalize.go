@@ -133,6 +133,7 @@ var (
 		regexp.MustCompile(`(?i)\b(?:review[sd]?|assess(?:es|ed)?|evaluat(?:es|ed)?)\b.*\b(?:infrastructure|development|progress|readiness|framework|programme|program)\b`),
 		regexp.MustCompile(`(?i)\b(?:awareness|outreach|education|campaign|initiative|celebration|anniversary|ceremony)\b`),
 		regexp.MustCompile(`(?i)\b(?:publication|report release|annual report|yearbook|magazine|newsletter|bulletin)\b`),
+		regexp.MustCompile(`(?i)\b(?:experts?|special rapporteurs?)\b.*\b(?:tell|told|urge|urged|call(?:ed)? for|demand(?:s|ed)?)\b.*\b(?:rights?|committee|council)\b`),
 		regexp.MustCompile(`(?i)\b(?:weekly|monthly|bi-?weekly|quarterly|daily|annual)\b.*\b(?:report|review|summary|digest|briefing|roundup|round-up|update|recap|overview|bulletin|wrap-up)\b`),
 		regexp.MustCompile(`(?i)\b(?:strengthen|bolster|enhance|promote|foster|advance|support)\b.*\b(?:global|regional|national|international)\b.*\b(?:defence|defense|capacity|capability|cooperation|preparedness)\b`),
 		regexp.MustCompile(`(?i)\b(?:priorities|strategy|roadmap|vision|principles|objectives|commitments|strategic plan)\b.*\b(?:strengthen|support|protect|trust|confidence|consumer|investor|resilience|compliance|governance)\b`),
