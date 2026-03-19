@@ -623,20 +623,6 @@ export function GlobeView({
             </div>
           </div>
 
-          <div className="absolute right-3 top-3 z-[1000] space-y-2">
-            <div className="rounded-lg border border-siem-border/80 bg-siem-panel/92 px-3 py-2 text-2xs text-siem-muted shadow-[0_10px_24px_rgba(0,0,0,0.24)] backdrop-blur-sm">
-              <div className="uppercase tracking-[0.14em]">Layers</div>
-              <div className="mt-1 flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-siem-accent" />
-                <span>Now (solid)</span>
-              </div>
-              <div className="mt-0.5 flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full border border-siem-muted/80 bg-transparent" />
-                <span>History (faded)</span>
-              </div>
-            </div>
-          </div>
-
           {regionFilter.startsWith("country:") && areaGroups.length > 0 && (
             <div className="absolute left-3 top-3 z-[1000] w-[32rem] max-w-[calc(100%-6rem)] rounded-xl border border-siem-border/80 bg-siem-panel/95 p-3 text-xs text-siem-text shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm">
               <div className="text-2xs uppercase tracking-[0.14em] text-siem-muted">Country Alarm Table</div>
