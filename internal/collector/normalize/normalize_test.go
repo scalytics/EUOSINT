@@ -488,3 +488,34 @@ func TestUCDPAlertSetsConflictCategory(t *testing.T) {
 		t.Fatalf("expected high severity, got %q", alert.Severity)
 	}
 }
+
+func TestLegislativeInstitutionalStatementDowngradedToInformational(t *testing.T) {
+	cfg := config.Default()
+	ctx := Context{Config: cfg, Now: time.Date(2026, 3, 19, 0, 0, 0, 0, time.UTC)}
+	meta := model.RegistrySource{
+		Type:     "rss",
+		Category: "legislative",
+		Source: model.SourceMetadata{
+			SourceID:      "un-rights-committee",
+			AuthorityName: "UN Security Council Press",
+			Country:       "China",
+			CountryCode:   "CN",
+			Region:        "International",
+			AuthorityType: "government",
+			BaseURL:       "https://example.test",
+		},
+	}
+	item := parse.FeedItem{
+		Title:     "Justice for Palestinian Women Demands End to Occupation, Reparations, Accountability, Experts Tell Rights Committee",
+		Summary:   "Institutional hearing and statements by experts to committee members.",
+		Link:      "https://example.test/statement",
+		Published: "2026-03-18T10:00:00Z",
+	}
+	alert := RSSItem(ctx, meta, item)
+	if alert == nil {
+		t.Fatal("expected alert")
+	}
+	if alert.Category != "informational" || alert.Severity != "info" {
+		t.Fatalf("expected informational/info, got category=%q severity=%q", alert.Category, alert.Severity)
+	}
+}

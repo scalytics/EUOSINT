@@ -376,6 +376,14 @@ var geoAliases = map[string]string{
 var geoIndex map[string]*countryGeo
 
 var eventCountryPrefixRe = regexp.MustCompile(`(?i)(?:^|[\s,;:(\[])(?:in|near|at|off|outside|inside|across|around|within|throughout|into)\s+(?:the\s+)?$`)
+var likelyNationalityAliasExceptions = map[string]struct{}{
+	"uk":      {},
+	"drc":     {},
+	"rok":     {},
+	"dprk":    {},
+	"uae":     {},
+	"britain": {},
+}
 
 func init() {
 	geoIndex = make(map[string]*countryGeo, len(geoCountries)*2)
@@ -419,13 +427,15 @@ func geocodeCountryCode(code string) (lat, lng float64, name string, ok bool) {
 // the longer match wins (e.g. "South Sudan" over "Sudan").
 func geocodeText(text string) (lat, lng float64, code string, ok bool) {
 	lower := strings.ToLower(text)
+	titleCut := strings.Index(lower, "\n")
+	if titleCut < 0 {
+		titleCut = len(lower)
+	}
 
-	bestPos := -1 // rightmost end-position of best match
-	bestLen := 0  // length of best match (tiebreaker)
+	bestScore := -1 << 30
+	bestPos := -1
+	bestLen := 0
 	var bestGeo *countryGeo
-	bestContextPos := -1
-	bestContextLen := 0
-	var bestContextGeo *countryGeo
 
 	for key, g := range geoIndex {
 		searchEnd := len(lower)
@@ -438,14 +448,18 @@ func geocodeText(text string) (lat, lng float64, code string, ok bool) {
 			// Require word boundaries to prevent substring false positives
 			// (e.g. "oman" inside "Romania", "china" inside "Chinaware").
 			if isWordBoundary(lower, idx, endPos) {
-				if hasEventLocationPrefix(lower, idx) {
-					if endPos > bestContextPos || (endPos == bestContextPos && len(key) > bestContextLen) {
-						bestContextPos = endPos
-						bestContextLen = len(key)
-						bestContextGeo = g
-					}
+				score := endPos
+				if idx < titleCut {
+					score += 20000
 				}
-				if endPos > bestPos || (endPos == bestPos && len(key) > bestLen) {
+				if hasEventLocationPrefix(lower, idx) {
+					score += 100000
+				}
+				if isLikelyNationalityAlias(key, g.Name) {
+					score -= 30000
+				}
+				if score > bestScore || (score == bestScore && (endPos > bestPos || (endPos == bestPos && len(key) > bestLen))) {
+					bestScore = score
 					bestPos = endPos
 					bestLen = len(key)
 					bestGeo = g
@@ -456,11 +470,6 @@ func geocodeText(text string) (lat, lng float64, code string, ok bool) {
 			}
 			searchEnd = idx
 		}
-	}
-	// Prefer event-location context mentions ("in Syria", "near Gaza")
-	// over actor-nationality mentions elsewhere in the title.
-	if bestContextGeo != nil {
-		return bestContextGeo.Lat, bestContextGeo.Lng, bestContextGeo.Code, true
 	}
 	if bestGeo != nil {
 		return bestGeo.Lat, bestGeo.Lng, bestGeo.Code, true
@@ -478,6 +487,26 @@ func hasEventLocationPrefix(text string, idx int) bool {
 	}
 	prefix := text[start:idx]
 	return eventCountryPrefixRe.MatchString(prefix)
+}
+
+func isLikelyNationalityAlias(key string, canonical string) bool {
+	key = strings.TrimSpace(strings.ToLower(key))
+	canonical = strings.TrimSpace(strings.ToLower(canonical))
+	if key == "" || canonical == "" || key == canonical {
+		return false
+	}
+	if _, ok := likelyNationalityAliasExceptions[key]; ok {
+		return false
+	}
+	if strings.Contains(key, " ") {
+		return false
+	}
+	return strings.HasSuffix(key, "ian") ||
+		strings.HasSuffix(key, "ean") ||
+		strings.HasSuffix(key, "ish") ||
+		strings.HasSuffix(key, "ese") ||
+		strings.HasSuffix(key, "ani") ||
+		strings.HasSuffix(key, "i")
 }
 
 // isWordBoundary checks that the substring at text[start:end] is bounded by

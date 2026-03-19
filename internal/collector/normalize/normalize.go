@@ -143,6 +143,11 @@ var (
 		regexp.MustCompile(`(?i)\b(?:lapsing|withdrawal|surrender|cancellation|revocation)\b.*\b(?:authori[sz]\w*|licen[cs]\w*|registration|permit)\b`),
 		regexp.MustCompile(`(?i)\b(?:appoint(?:ed|ment|s)?|elected|nomination|inaugurat)\b`),
 	}
+	legislativeInformationalTitlePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(?:experts?|special rapporteurs?)\b.*\b(?:tell|told|urge|urged|call(?:ed)? for|demand(?:s|ed)?)\b.*\b(?:rights?|committee|council)\b`),
+		regexp.MustCompile(`(?i)\b(?:committee|council|parliamentary)\b.*\b(?:hears?|debates?|discuss(?:es|ed)?|review(?:s|ed)?)\b`),
+		regexp.MustCompile(`(?i)\b(?:statement|remarks|briefing)\b.*\b(?:committee|council|assembly|parliament)\b`),
+	}
 	assistancePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:report(?:\s+a)?(?:\s+crime)?|submit (?:a )?tip|tip[-\s]?off)\b`),
 		regexp.MustCompile(`(?i)\b(?:contact (?:police|authorities|law enforcement)|hotline|helpline)\b`),
@@ -202,7 +207,7 @@ func RSSItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+"\n"+item.Summary, publishedAt)
 	// Feed-provided coordinates (e.g. <georss:point>) override geocoding.
 	if item.Lat != 0 || item.Lng != 0 {
 		alert.Lat, alert.Lng = jitter(item.Lat, item.Lng, meta.Source.SourceID+":"+item.Link, "georss")
@@ -231,7 +236,7 @@ func RSSItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model
 }
 
 func HTMLItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
-	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, ctx.Now)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+"\n"+item.Summary, ctx.Now)
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
 		Tags:     item.Tags,
@@ -256,7 +261,7 @@ func KEVAlert(ctx Context, meta model.RegistrySource, cveID string, vulnName str
 	if strings.TrimSpace(cveID) != "" {
 		link = "https://nvd.nist.gov/vuln/detail/" + strings.TrimSpace(cveID)
 	}
-	alert := baseAlert(ctx, meta, title, link, title+" "+description, publishedAt)
+	alert := baseAlert(ctx, meta, title, link, title+"\n"+description, publishedAt)
 	if hoursBetween(ctx.Now, publishedAt) <= 72 {
 		alert.Severity = "critical"
 	} else if hoursBetween(ctx.Now, publishedAt) <= 168 {
@@ -278,7 +283,7 @@ func InterpolAlert(ctx Context, meta model.RegistrySource, noticeID string, titl
 	if strings.TrimSpace(title) == "" {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, title, firstNonEmpty(link, meta.Source.BaseURL), title+" "+summary, ctx.Now)
+	alert := baseAlert(ctx, meta, title, firstNonEmpty(link, meta.Source.BaseURL), title+"\n"+summary, ctx.Now)
 	alert.Severity = "critical"
 	if id := strings.TrimSpace(noticeID); id != "" {
 		alert.AlertID = meta.Source.SourceID + ":" + id
@@ -312,7 +317,7 @@ func FBIWantedAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem)
 	if publishedAt.IsZero() {
 		publishedAt = ctx.Now
 	}
-	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+"\n"+item.Summary, publishedAt)
 	alert.Severity = "critical"
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
@@ -331,7 +336,7 @@ func ACLEDAlert(ctx Context, meta model.RegistrySource, ev parse.ACLEDItem) *mod
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+" "+ev.Summary, publishedAt)
+	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+"\n"+ev.Summary, publishedAt)
 	alert.Category = parse.ACLEDEventCategory(ev.EventType)
 	alert.Severity = parse.ACLEDEventSeverity(ev.EventType, ev.Fatalities)
 	// Use ACLED's precise coordinates instead of registry defaults.
@@ -369,7 +374,7 @@ func UCDPAlert(ctx Context, meta model.RegistrySource, ev parse.UCDPItem) *model
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+" "+ev.Summary, publishedAt)
+	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+"\n"+ev.Summary, publishedAt)
 	alert.Category = "conflict_monitoring"
 	alert.Severity = "medium"
 	if ev.Fatalities >= 25 {
@@ -412,7 +417,7 @@ func TravelWarningAlert(ctx Context, meta model.RegistrySource, item parse.FeedI
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+"\n"+item.Summary, publishedAt)
 	alert.Severity = inferTravelWarningSeverity(item.Title, item.Summary, item.Tags)
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
@@ -446,7 +451,7 @@ func USGSAlert(ctx Context, meta model.RegistrySource, ev parse.USGSItem) *model
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+" "+ev.Summary, publishedAt)
+	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+"\n"+ev.Summary, publishedAt)
 	alert.Category = "public_safety"
 	alert.Severity = parse.USGSSeverity(ev.Magnitude, ev.AlertLevel)
 	// Use GeoJSON coordinates directly (precise epicenter).
@@ -471,7 +476,7 @@ func EONETAlert(ctx Context, meta model.RegistrySource, ev parse.EONETItem) *mod
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+" "+ev.Summary, publishedAt)
+	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+"\n"+ev.Summary, publishedAt)
 	alert.Category = "public_safety"
 	alert.Severity = parse.EONETSeverity(ev.CategoryID)
 	if ev.Lat != 0 || ev.Lng != 0 {
@@ -495,7 +500,7 @@ func GDELTAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem, sou
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+" "+item.Summary, publishedAt)
+	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+"\n"+item.Summary, publishedAt)
 	// Pin to country capital when we have a source country.
 	if iso2 := parse.GDELTCountryISO2(sourceCountry); iso2 != "" {
 		if gLat, gLng, _, ok := geocodeCountryCode(iso2); ok {
@@ -529,7 +534,7 @@ func FeodoAlert(ctx Context, meta model.RegistrySource, ev parse.FeodoItem) *mod
 	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
 		return nil
 	}
-	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+" "+ev.Summary, publishedAt)
+	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+"\n"+ev.Summary, publishedAt)
 	alert.Category = "cyber_advisory"
 	alert.Severity = "high"
 	// Pin to country capital using the 2-letter country code from Feodo.
@@ -940,6 +945,20 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 }
 
 func normalizeInformational(cfg config.Config, alert model.Alert, feed FeedContext) model.Alert {
+	if shouldDowngradeLegislativeToInformational(alert, feed) {
+		threshold := clamp01(cfg.IncidentRelevanceThreshold)
+		if alert.Triage != nil {
+			score := math.Max(alert.Triage.RelevanceScore, threshold)
+			alert.Triage.RelevanceScore = round3(score)
+			alert.Triage.Threshold = threshold
+			alert.Triage.Confidence = "medium"
+			alert.Triage.Disposition = "retained"
+			alert.Triage.WeakSignals = append([]string{"reclassified as informational institutional statement"}, limitStrings(alert.Triage.WeakSignals, 10)...)
+		}
+		alert.Category = "informational"
+		alert.Severity = "info"
+		return alert
+	}
 	if !isSecurityInformational(alert, feed) || alert.Triage == nil {
 		return alert
 	}
@@ -953,6 +972,26 @@ func normalizeInformational(cfg config.Config, alert model.Alert, feed FeedConte
 	alert.Triage.Disposition = "retained"
 	alert.Triage.WeakSignals = append([]string{"reclassified as informational security/cybersecurity update"}, limitStrings(alert.Triage.WeakSignals, 10)...)
 	return alert
+}
+
+func shouldDowngradeLegislativeToInformational(alert model.Alert, feed FeedContext) bool {
+	if !strings.EqualFold(strings.TrimSpace(alert.Category), "legislative") {
+		return false
+	}
+	lowerTitle := strings.ToLower(alert.Title)
+	if hasStrategicEscalationTitle(lowerTitle) {
+		return false
+	}
+	if IsActionableTitle(alert.Title) {
+		return false
+	}
+	text := strings.ToLower(strings.TrimSpace(strings.Join([]string{
+		alert.Title,
+		feed.Summary,
+		feed.Author,
+		strings.Join(feed.Tags, " "),
+	}, "\n")))
+	return hasAny(text, legislativeInformationalTitlePatterns) || IsInformationalTitle(alert.Title)
 }
 
 func thresholdForAlert(cfg config.Config, alert model.Alert) float64 {
