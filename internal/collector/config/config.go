@@ -64,6 +64,7 @@ type Config struct {
 	DiscoverIntervalMS               int
 	DiscoverOutputPath               string
 	CandidateQueuePath               string
+	SovereignSeedPath                string
 	SearchDiscoveryEnabled           bool
 	SearchDiscoveryMaxTargets        int
 	SearchDiscoveryMaxURLsPerTarget  int
@@ -77,6 +78,8 @@ type Config struct {
 	SourceVettingRequired            bool
 	SourceMinQuality                 float64
 	SourceMinOperationalRelevance    float64
+	OfficialStatementsMinQuality     float64
+	OfficialStatementsMinOperational float64
 	VettingProvider                  string
 	VettingBaseURL                   string
 	VettingAPIKey                    string
@@ -148,6 +151,7 @@ func Default() Config {
 		DiscoverIntervalMS:               defaultIntervalMS,
 		DiscoverOutputPath:               "discover-results.json",
 		CandidateQueuePath:               "registry/source_candidates.json",
+		SovereignSeedPath:                "registry/sovereign_official_statements.seed.json",
 		SearchDiscoveryEnabled:           false,
 		SearchDiscoveryMaxTargets:        40,
 		SearchDiscoveryMaxURLsPerTarget:  3,
@@ -161,6 +165,8 @@ func Default() Config {
 		SourceVettingRequired:            true,
 		SourceMinQuality:                 0.6,
 		SourceMinOperationalRelevance:    0.6,
+		OfficialStatementsMinQuality:     0.75,
+		OfficialStatementsMinOperational: 0.7,
 		VettingProvider:                  "openai-compatible",
 		VettingBaseURL:                   "https://api.openai.com/v1",
 		VettingModel:                     "gpt-4.1-mini",
@@ -229,6 +235,7 @@ func FromEnv() Config {
 	cfg.DiscoverIntervalMS = envInt("DISCOVER_INTERVAL_MS", cfg.DiscoverIntervalMS)
 	cfg.DiscoverOutputPath = envString("DISCOVER_OUTPUT_PATH", cfg.DiscoverOutputPath)
 	cfg.CandidateQueuePath = envString("CANDIDATE_QUEUE_PATH", cfg.CandidateQueuePath)
+	cfg.SovereignSeedPath = envString("SOVEREIGN_SEED_PATH", cfg.SovereignSeedPath)
 	cfg.SearchDiscoveryEnabled = envBool("SEARCH_DISCOVERY_ENABLED", cfg.SearchDiscoveryEnabled)
 	cfg.SearchDiscoveryMaxTargets = envInt("SEARCH_DISCOVERY_MAX_TARGETS", cfg.SearchDiscoveryMaxTargets)
 	cfg.SearchDiscoveryMaxURLsPerTarget = envInt("SEARCH_DISCOVERY_MAX_URLS_PER_TARGET", cfg.SearchDiscoveryMaxURLsPerTarget)
@@ -239,6 +246,8 @@ func FromEnv() Config {
 	cfg.SourceVettingRequired = envBool("SOURCE_VETTING_REQUIRED", cfg.SourceVettingRequired)
 	cfg.SourceMinQuality = envFloat("SOURCE_MIN_QUALITY", cfg.SourceMinQuality)
 	cfg.SourceMinOperationalRelevance = envFloat("SOURCE_MIN_OPERATIONAL_RELEVANCE", cfg.SourceMinOperationalRelevance)
+	cfg.OfficialStatementsMinQuality = envFloat("OFFICIAL_STATEMENTS_MIN_QUALITY", cfg.OfficialStatementsMinQuality)
+	cfg.OfficialStatementsMinOperational = envFloat("OFFICIAL_STATEMENTS_MIN_OPERATIONAL_RELEVANCE", cfg.OfficialStatementsMinOperational)
 	cfg.VettingProvider = envString("SOURCE_VETTING_PROVIDER", cfg.VettingProvider)
 	cfg.VettingBaseURL = envString("SOURCE_VETTING_BASE_URL", cfg.VettingBaseURL)
 	cfg.VettingAPIKey = envString("SOURCE_VETTING_API_KEY", cfg.VettingAPIKey)

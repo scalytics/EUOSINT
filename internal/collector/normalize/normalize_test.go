@@ -293,6 +293,10 @@ func TestInferSeverityInformationalOverride(t *testing.T) {
 	if sev != "critical" {
 		t.Fatalf("expected critical severity for real pandemic, got %q", sev)
 	}
+	sev = inferSeverity("Parliament declares war after cross-border armed attack", "medium")
+	if sev != "critical" {
+		t.Fatalf("expected critical severity for war declaration signal, got %q", sev)
+	}
 }
 
 func TestApplySignalLanesSeparatesInfoIntelAlarm(t *testing.T) {
@@ -337,5 +341,35 @@ func TestApplySignalLanesSeparatesInfoIntelAlarm(t *testing.T) {
 	}
 	if got[2].SignalLane != model.SignalLaneIntel {
 		t.Fatalf("expected cyber advisory in intel lane, got %q", got[2].SignalLane)
+	}
+}
+
+func TestApplySignalLaneEscalatesStrategicLegislativeAlerts(t *testing.T) {
+	cfg := config.Default()
+	cfg.AlarmRelevanceThreshold = 0.72
+
+	alert := model.Alert{
+		AlertID:  "leg-1",
+		Category: "legislative",
+		Severity: "critical",
+		Title:    "Parliament declares war after armed attack",
+		Source: model.SourceMetadata{
+			AuthorityType: "government",
+		},
+	}
+	got := ApplySignalLanes(cfg, []model.Alert{alert})
+	if len(got) != 1 {
+		t.Fatalf("expected one alert, got %d", len(got))
+	}
+	if got[0].SignalLane != model.SignalLaneAlarm {
+		t.Fatalf("expected strategic legislative alert in alarm lane, got %q", got[0].SignalLane)
+	}
+}
+
+func TestSanitizeGeoTextStripsPublisherAttribution(t *testing.T) {
+	raw := "Iceland's Chief 'Lava Cooler' Is Bracing for the Next Eruption - The New York Times"
+	got := sanitizeGeoText(raw)
+	if got != "Iceland's Chief 'Lava Cooler' Is Bracing for the Next Eruption" {
+		t.Fatalf("unexpected sanitized geo text: %q", got)
 	}
 }

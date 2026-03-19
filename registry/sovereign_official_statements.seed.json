@@ -1,0 +1,225 @@
+{
+  "generated_at": "2026-03-19T00:00:00Z",
+  "sources": [
+    {
+      "url": "https://www.whitehouse.gov/briefing-room/statements-releases/",
+      "authority_name": "The White House",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "base_url": "https://www.whitehouse.gov",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.pm.gc.ca/en/news",
+      "authority_name": "Prime Minister of Canada",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "base_url": "https://www.pm.gc.ca",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.regeringen.se/pressmeddelanden/",
+      "authority_name": "Government Offices of Sweden",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "base_url": "https://www.regeringen.se",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.government.no/en/aktuelt/id1336/",
+      "authority_name": "Government of Norway",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Norway",
+      "country_code": "NO",
+      "region": "Europe",
+      "base_url": "https://www.government.no",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.government.is/news/",
+      "authority_name": "Government of Iceland",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Iceland",
+      "country_code": "IS",
+      "region": "Europe",
+      "base_url": "https://www.government.is",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.government.nl/latest/news",
+      "authority_name": "Government of the Netherlands",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Netherlands",
+      "country_code": "NL",
+      "region": "Europe",
+      "base_url": "https://www.government.nl",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.gov.uk/government/announcements",
+      "authority_name": "UK Government",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "base_url": "https://www.gov.uk",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.elysee.fr/en/all-actualities",
+      "authority_name": "Presidency of the French Republic",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "France",
+      "country_code": "FR",
+      "region": "Europe",
+      "base_url": "https://www.elysee.fr",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.bundesregierung.de/breg-en/news",
+      "authority_name": "Federal Government of Germany",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "base_url": "https://www.bundesregierung.de",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.president.go.kr",
+      "authority_name": "Office of the President of the Republic of Korea",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "South Korea",
+      "country_code": "KR",
+      "region": "Asia",
+      "base_url": "https://www.president.go.kr",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.pm.gov.sg/newsroom",
+      "authority_name": "Prime Minister's Office Singapore",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Singapore",
+      "country_code": "SG",
+      "region": "Asia",
+      "base_url": "https://www.pm.gov.sg",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.pmo.gov.my/media/kenyataan-media/",
+      "authority_name": "Prime Minister's Office Malaysia",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Malaysia",
+      "country_code": "MY",
+      "region": "Asia",
+      "base_url": "https://www.pmo.gov.my",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.sis.gov.eg/Story/Category/1/0?lang=en-us",
+      "authority_name": "State Information Service Egypt",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Egypt",
+      "country_code": "EG",
+      "region": "Africa",
+      "base_url": "https://www.sis.gov.eg",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.presidency.gov.gh/index.php/media",
+      "authority_name": "Presidency of Ghana",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Ghana",
+      "country_code": "GH",
+      "region": "Africa",
+      "base_url": "https://www.presidency.gov.gh",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.gov.za/speeches",
+      "authority_name": "Government of South Africa",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "South Africa",
+      "country_code": "ZA",
+      "region": "Africa",
+      "base_url": "https://www.gov.za",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://statehousekenya.go.ke/media/",
+      "authority_name": "State House Kenya",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Kenya",
+      "country_code": "KE",
+      "region": "Africa",
+      "base_url": "https://statehousekenya.go.ke",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.fed.gov.ae/en/media-hub/news.aspx",
+      "authority_name": "UAE Cabinet",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "United Arab Emirates",
+      "country_code": "AE",
+      "region": "Asia",
+      "base_url": "https://www.fed.gov.ae",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.my.gov.sa/wps/portal/snp/aboutksa/saudimissions/news",
+      "authority_name": "Government of Saudi Arabia",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Saudi Arabia",
+      "country_code": "SA",
+      "region": "Asia",
+      "base_url": "https://www.my.gov.sa",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.president.ir/en",
+      "authority_name": "Office of the President of Iran",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Iran",
+      "country_code": "IR",
+      "region": "Asia",
+      "base_url": "https://www.president.ir",
+      "notes": "autonomous seed: sovereign-official-statements"
+    },
+    {
+      "url": "https://www.gov.br/planalto/pt-br/acompanhe-o-planalto/noticias",
+      "authority_name": "Presidency of Brazil",
+      "authority_type": "government",
+      "category": "legislative",
+      "country": "Brazil",
+      "country_code": "BR",
+      "region": "South America",
+      "base_url": "https://www.gov.br",
+      "notes": "autonomous seed: sovereign-official-statements"
+    }
+  ]
+}

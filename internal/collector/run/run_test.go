@@ -559,15 +559,15 @@ func TestRunnerRunOnceUsesSQLiteAlertStateWithoutDuplicatingAlerts(t *testing.T)
 	}
 }
 
-func TestClassifySourceErrorTreats401And522AsDeadLetter(t *testing.T) {
+func TestClassifySourceErrorTreats401And522AsRetry(t *testing.T) {
 	errClass, needsReplacement, action := classifySourceError(errors.New("fetch https://example.test/feed: status 401"))
-	if errClass != "unauthorized" || !needsReplacement || action != "dead_letter" {
-		t.Fatalf("expected 401 to dead-letter, got class=%q needs=%v action=%q", errClass, needsReplacement, action)
+	if errClass != "unauthorized" || needsReplacement || action != "retry" {
+		t.Fatalf("expected 401 to retry, got class=%q needs=%v action=%q", errClass, needsReplacement, action)
 	}
 
 	errClass, needsReplacement, action = classifySourceError(errors.New("fetch https://example.test/feed: status 522"))
-	if errClass != "origin_unreachable" || !needsReplacement || action != "dead_letter" {
-		t.Fatalf("expected 522 to dead-letter, got class=%q needs=%v action=%q", errClass, needsReplacement, action)
+	if errClass != "origin_unreachable" || needsReplacement || action != "retry" {
+		t.Fatalf("expected 522 to retry, got class=%q needs=%v action=%q", errClass, needsReplacement, action)
 	}
 }
 

@@ -85,16 +85,30 @@ If the VM only has `docker-compose`, adjust the unit commands accordingly.
 
 ## Source Discovery
 
-The collector runs a background discovery loop alongside feed collection. Discovery seeds candidate sources from FIRST.org, Wikidata, and gap analysis, then probes them for RSS/Atom feeds or HTML listing pages.
+The collector runs a background discovery loop alongside feed collection. Discovery seeds candidate sources from:
+
+- curated sovereign official-statement endpoints (`registry/sovereign_official_statements.seed.json`)
+- FIRST.org and Wikidata (enrichment layers)
+- gap analysis and replacement search
+
+It then probes them for RSS/Atom feeds or HTML listing pages.
 
 Discovery requires LLM source vetting to promote candidates into the live registry. Without vetting enabled, candidates are discovered and queued but never activated.
 
 ### How it works
 
-1. **Seeding** — FIRST.org CSIRT teams, Wikidata police/humanitarian/government orgs, and gap analysis (missing country+category combinations) generate candidate URLs.
+1. **Seeding** — Curated sovereign official-statement seeds (head of state/government channels), FIRST.org CSIRT teams, Wikidata police/humanitarian/government orgs, and gap analysis (missing country+category combinations) generate candidate URLs.
 2. **Probing** — Each candidate URL is checked for RSS/Atom feeds or stable HTML listing pages.
 3. **Vetting** — If `SOURCE_VETTING_ENABLED=true`, discovered feeds are sampled and sent to the configured LLM for approval. The LLM scores source quality, operational relevance, and assigns mission tags.
 4. **Promotion** — Approved sources are written into `sources.db` and picked up by the collector on its next sweep.
+
+For sovereign official-statement seeds, stricter promotion thresholds are applied only when category is `legislative`.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SOVEREIGN_SEED_PATH` | `registry/sovereign_official_statements.seed.json` | Curated sovereign official-statement candidate seeds |
+| `OFFICIAL_STATEMENTS_MIN_QUALITY` | `0.75` | Minimum source quality for legislative official-statement seed promotion |
+| `OFFICIAL_STATEMENTS_MIN_OPERATIONAL_RELEVANCE` | `0.7` | Minimum operational relevance for legislative official-statement seed promotion |
 
 ### Enabling discovery with vetting
 

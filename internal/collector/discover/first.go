@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/scalytics/euosint/internal/collector/config"
@@ -61,8 +62,8 @@ func FetchFIRSTTeams(ctx context.Context, cfg config.Config, client *fetch.Clien
 		if ctx.Err() != nil {
 			return allTeams, ctx.Err()
 		}
-		url := fmt.Sprintf("%s?limit=%d&offset=%d", firstAPIBase, firstPageLimit, offset)
-		body, err := fetchWikidataTextWithCache(ctx, cfg, client, url, "application/json")
+		reqURL := fmt.Sprintf("%s?limit=%d&offset=%d", firstAPIBase, firstPageLimit, offset)
+		body, err := fetchWikidataTextWithCache(ctx, cfg, client, reqURL, "application/json")
 		if err != nil {
 			return allTeams, fmt.Errorf("FIRST.org API page offset=%d: %w", offset, err)
 		}
@@ -81,18 +82,20 @@ func FetchFIRSTTeams(ctx context.Context, cfg config.Config, client *fetch.Clien
 		}
 
 		for _, team := range resp.Data {
-			website := strings.TrimSpace(string(team.Website))
-			if website == "" {
-				website = strings.TrimSpace(team.Host)
-			}
+			website := normalizeFIRSTWebsite(firstNonEmpty(string(team.Website), team.Host))
 			if website == "" {
 				continue
 			}
-			if !strings.HasPrefix(website, "http") {
-				website = "https://" + website
+			parsed, err := url.Parse(website)
+			if err != nil || strings.TrimSpace(parsed.Hostname()) == "" {
+				continue
+			}
+			authorityName := strings.TrimSpace(team.ShortName)
+			if authorityName == "" {
+				authorityName = hostToName(strings.ToLower(parsed.Hostname()))
 			}
 			allTeams = append(allTeams, FIRSTTeam{
-				ShortName: team.ShortName,
+				ShortName: authorityName,
 				Country:   team.Country,
 				Website:   strings.TrimRight(website, "/"),
 			})
@@ -104,4 +107,22 @@ func FetchFIRSTTeams(ctx context.Context, cfg config.Config, client *fetch.Clien
 		}
 	}
 	return allTeams, nil
+}
+
+func normalizeFIRSTWebsite(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if !strings.HasPrefix(strings.ToLower(raw), "http://") && !strings.HasPrefix(strings.ToLower(raw), "https://") {
+		raw = "https://" + raw
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	if strings.TrimSpace(parsed.Hostname()) == "" || strings.Contains(parsed.Hostname(), " ") {
+		return ""
+	}
+	return parsed.String()
 }

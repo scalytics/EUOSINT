@@ -548,6 +548,7 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	if geoText == "" {
 		geoText = title
 	}
+	geoText = sanitizeGeoText(geoText)
 	// Fix broken NCMEC-style titles that start with ": Name (State)".
 	if strings.HasPrefix(title, ": ") {
 		title = "Missing" + title
@@ -572,6 +573,9 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	// For international sources and travel warnings, geocode to the actual
 	// target location instead of pinning to the issuing org's HQ.
 	isCrossCountry := meta.RegionTag == "INT" || meta.Source.CountryCode == "INT" || meta.Category == "travel_warning"
+	if isLikelyNewsAggregator(meta) {
+		isCrossCountry = true
+	}
 	skipLLMGeo := isPersonCategory(meta.Category)
 	if allowDynamicGeocode && isCrossCountry {
 		if ctx.Geocoder != nil {
@@ -661,6 +665,61 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		FreshnessHours:     hoursBetween(ctx.Now, publishedAt),
 		Reporting:          meta.Reporting,
 	}
+}
+
+func sanitizeGeoText(text string) string {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return text
+	}
+	// Remove trailing publisher attributions that poison geocoding
+	// (e.g. "... - The New York Times" => false York/UK matches).
+	for _, sep := range []string{" - ", " | ", " — ", " – "} {
+		parts := strings.Split(text, sep)
+		if len(parts) < 2 {
+			continue
+		}
+		suffix := strings.ToLower(strings.TrimSpace(parts[len(parts)-1]))
+		if looksLikePublisherSuffix(suffix) {
+			return strings.TrimSpace(strings.Join(parts[:len(parts)-1], sep))
+		}
+	}
+	return text
+}
+
+func looksLikePublisherSuffix(s string) bool {
+	if s == "" {
+		return false
+	}
+	publisherHints := []string{
+		"new york times", "nytimes", "reuters", "associated press", "ap news",
+		"bbc", "cnn", "guardian", "washington post", "financial times",
+		"bloomberg", "al jazeera", "the times", "fox news", "nbc news",
+	}
+	for _, hint := range publisherHints {
+		if strings.Contains(s, hint) {
+			return true
+		}
+	}
+	// Generic "xxx news" fallback.
+	return strings.HasSuffix(s, " news")
+}
+
+func isLikelyNewsAggregator(meta model.RegistrySource) bool {
+	authorityType := strings.ToLower(strings.TrimSpace(meta.Source.AuthorityType))
+	if strings.Contains(authorityType, "news") || authorityType == "media" {
+		return true
+	}
+	if _, ok := newsMediaIDs[strings.ToLower(strings.TrimSpace(meta.Source.SourceID))]; ok {
+		return true
+	}
+	base := strings.ToLower(strings.TrimSpace(meta.Source.BaseURL))
+	for _, domain := range newsMediaDomains {
+		if strings.Contains(base, domain) {
+			return true
+		}
+	}
+	return false
 }
 
 // isPersonCategory returns true for categories where alert text describes
@@ -884,6 +943,8 @@ func inferSeverity(title string, fallback string) string {
 		return "info"
 	}
 	switch {
+	case hasStrategicEscalationTitle(t):
+		return "critical"
 	case containsAny(t, "critical", "kritische", "emergency", "zero-day", "0-day", "ransomware", "actively exploited", "exploitation", "breach", "data leak", "crypto heist", "million stolen", "wanted", "fugitive", "murder", "homicide", "missing", "amber alert", "kidnap", "do not travel", "notfall", "pandemic", "ebola", "plague", "tsunami", "earthquake", "eruption", "nuclear incident", "radiation leak", "oil spill", "explosion"):
 		return "critical"
 	case containsAny(t, "hack", "compromise", "vulnerability", "schwachstelle", "sicherheitslücke", "high", "severe", "urgent", "dringend", "fatal", "death", "shooting", "fraud", "scam", "phishing", "reconsider travel", "avoid non-essential travel", "warnung", "gefährlich", "outbreak", "epidemic", "cholera", "mpox", "avian influenza", "flood", "wildfire", "cyclone", "hurricane", "typhoon", "drought", "chemical spill", "hazmat"):
@@ -1244,6 +1305,9 @@ func classifySignalLane(cfg config.Config, alert model.Alert) model.SignalLane {
 		alarmThreshold = 0.72
 	}
 	if score >= alarmThreshold || strings.EqualFold(alert.Severity, "critical") || strings.EqualFold(alert.Severity, "high") {
+		if hasStrategicEscalationTitle(strings.ToLower(alert.Title)) {
+			return model.SignalLaneAlarm
+		}
 		switch strings.ToLower(strings.TrimSpace(alert.Category)) {
 		case "missing_person", "wanted_suspect", "conflict_monitoring", "maritime_security",
 			"logistics_incident", "travel_warning", "health_emergency", "disease_outbreak",
@@ -1255,6 +1319,21 @@ func classifySignalLane(cfg config.Config, alert model.Alert) model.SignalLane {
 		}
 	}
 	return model.SignalLaneIntel
+}
+
+func hasStrategicEscalationTitle(lowerTitle string) bool {
+	return containsAny(lowerTitle,
+		"declares war",
+		"declaration of war",
+		"state of war",
+		"country under attack",
+		"attacked by",
+		"armed attack",
+		"missile strike on",
+		"invoked article 5",
+		"martial law declared",
+		"state of emergency declared",
+	)
 }
 
 func eventGeoConfidence(source string) float64 {

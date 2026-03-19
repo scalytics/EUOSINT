@@ -366,9 +366,8 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 	currentActive, currentFiltered, fullState := state.Reconcile(cfg, active, filtered, previousAlerts, now, accumulateSources)
 	replacementQueue := dlq.Entries()
-	if err := deactivateReplacementSources(ctx, cfg.RegistryPath, replacementQueue); err != nil {
-		return err
-	}
+	// Keep sources active even when queued for replacement. This avoids
+	// collapsing active feed coverage due to transient source failures.
 	if err := saveAlertState(ctx, cfg, fullState); err != nil {
 		return err
 	}
@@ -2327,11 +2326,11 @@ func classifySourceError(err error) (string, bool, string) {
 	case strings.Contains(msg, "status 404"), strings.Contains(msg, "status 410"):
 		return "not_found", true, "dead_letter"
 	case strings.Contains(msg, "status 401"):
-		// Feed requires auth or blocks anonymous clients.
-		return "unauthorized", true, "dead_letter"
+		// Feed may require auth temporarily; keep retrying.
+		return "unauthorized", false, "retry"
 	case strings.Contains(msg, "status 522"):
-		// Cloudflare connection timeout at origin; frequently persistent dead feeds.
-		return "origin_unreachable", true, "dead_letter"
+		// Origin timeout is often transient for stressed sources.
+		return "origin_unreachable", false, "retry"
 	case strings.Contains(msg, "stopped after 10 redirects"):
 		// Redirect loop — feed URL is broken.
 		return "redirect_loop", true, "dead_letter"
@@ -2340,7 +2339,8 @@ func classifySourceError(err error) (string, bool, string) {
 		// one here it means the chain exceeded 10 hops.
 		return "redirect", true, "dead_letter"
 	case strings.Contains(msg, "status 403"):
-		return "blocked", true, "dead_letter"
+		// WAF/country blocks can be temporary or path-specific.
+		return "blocked", false, "retry"
 	case strings.Contains(msg, "response too large"):
 		return "oversized", true, "dead_letter"
 	case strings.Contains(msg, "certificate signed by unknown authority"):

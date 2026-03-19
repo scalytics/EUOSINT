@@ -86,6 +86,9 @@ Key collector variables:
 - `NOISE_POLICY_B_PATH`: optional A/B policy file (default `registry/noise_policy_b.json`)
 - `NOISE_POLICY_B_PERCENT`: percentage routed to policy-B (default `0`)
 - `NOISE_METRICS_OUTPUT_PATH`: noise quality/drift output JSON (default `public/noise-metrics.json`)
+- `SOVEREIGN_SEED_PATH`: curated sovereign official-statements seed candidates (default `registry/sovereign_official_statements.seed.json`)
+- `OFFICIAL_STATEMENTS_MIN_QUALITY`: stricter vetting minimum for legislative official-statement seeds (default `0.75`)
+- `OFFICIAL_STATEMENTS_MIN_OPERATIONAL_RELEVANCE`: stricter operational relevance minimum for legislative official-statement seeds (default `0.7`)
 
 ## Operations
 

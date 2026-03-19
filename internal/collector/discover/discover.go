@@ -147,7 +147,6 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 				mu.Unlock()
 
 				if !passesDiscoveryHygiene(candidate.AuthorityName, firstNonEmpty(candidate.BaseURL, candidate.URL), candidate.AuthorityType) {
-					addRemaining(candidate)
 					continue
 				}
 				if isDeadLettered(candidate, dead) {
@@ -156,15 +155,16 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 
 				baseURL := candidateBaseURL(candidate)
 				if baseURL == "" {
-					addRemaining(candidate)
 					continue
 				}
 				promotedForCandidate := false
+				discoveredForCandidate := false
 				results := ProbeFeeds(ctx, client, baseURL)
 				for _, r := range results {
 					if !tryReserveFeedURL(r.FeedURL) {
 						continue
 					}
+					discoveredForCandidate = true
 					found := DiscoveredSource{
 						FeedURL:       r.FeedURL,
 						FeedType:      r.FeedType,
@@ -209,6 +209,7 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 						target = baseURL
 					}
 					if probeHTMLPage(ctx, client, target) && tryReserveFeedURL(target) {
+						discoveredForCandidate = true
 						found := DiscoveredSource{
 							FeedURL:       target,
 							FeedType:      "html-list",
@@ -245,7 +246,12 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 						}
 					}
 				}
-				if !promotedForCandidate {
+				if discoveredForCandidate {
+					// Candidate is extractable and was already processed; don't
+					// keep retrying it in the pending queue.
+					continue
+				}
+				if !promotedForCandidate && shouldRetryCandidateQueue(ctx, client, candidate, baseURL) {
 					addRemaining(candidate)
 				}
 			}
@@ -277,6 +283,11 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 	candidates := make([]model.SourceCandidate, 0)
 	var failures []string
 	var slowSkips []string
+	sovereignSeeds := loadSovereignSeedCandidates(cfg.SovereignSeedPath)
+	if len(sovereignSeeds) > 0 {
+		fmt.Fprintf(stderr, "Curated sovereign official-statement seeds: %d candidate URLs\n", len(sovereignSeeds))
+		candidates = append(candidates, sovereignSeeds...)
+	}
 	runStructured, nextAt, err := shouldRunStructuredDiscovery(cfg, time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(stderr, "WARN structured discovery cadence check failed: %v\n", err)
@@ -613,6 +624,31 @@ func loadCandidateQueue(path string) []model.SourceCandidate {
 	return doc.Sources
 }
 
+func loadSovereignSeedCandidates(path string) []model.SourceCandidate {
+	seeds := loadCandidateQueue(path)
+	if len(seeds) == 0 {
+		return nil
+	}
+	out := make([]model.SourceCandidate, 0, len(seeds))
+	for _, seed := range seeds {
+		seed.URL = strings.TrimSpace(seed.URL)
+		seed.BaseURL = strings.TrimSpace(seed.BaseURL)
+		if seed.URL == "" && seed.BaseURL == "" {
+			continue
+		}
+		if strings.TrimSpace(seed.Category) == "" {
+			seed.Category = "legislative"
+		}
+		if strings.TrimSpace(seed.AuthorityType) == "" {
+			seed.AuthorityType = "government"
+		}
+		seed.CountryCode = strings.ToUpper(strings.TrimSpace(seed.CountryCode))
+		seed.Notes = firstNonEmpty(seed.Notes, "autonomous seed: sovereign-official-statements")
+		out = append(out, seed)
+	}
+	return out
+}
+
 func writeCandidateQueue(path string, candidates []model.SourceCandidate) error {
 	doc := model.SourceCandidateDocument{
 		GeneratedAt: "",
@@ -673,6 +709,26 @@ func compactNormalizedURLs(values ...string) []string {
 	return out
 }
 
+func shouldRetryCandidateQueue(ctx context.Context, client *fetch.Client, candidate model.SourceCandidate, baseURL string) bool {
+	target := strings.TrimSpace(candidate.URL)
+	if target == "" {
+		target = baseURL
+	}
+	if target == "" {
+		return false
+	}
+	status, err := client.HeadStatus(ctx, target, true)
+	if err != nil {
+		// Keep retries for transient network/probe errors.
+		return true
+	}
+	// Queue should only retain potentially valid sources.
+	if status == 404 || status == 410 || status >= 500 {
+		return false
+	}
+	return status >= 200 && status < 400
+}
+
 func vetAndPromote(ctx context.Context, cfg config.Config, client *fetch.Client, sourceVetter *vet.Vetter, candidate model.SourceCandidate, discovered DiscoveredSource) (*model.RegistrySource, vet.Verdict, error) {
 	samples, err := sampleSource(ctx, client, discovered, cfg.VettingMaxSampleItems)
 	if err != nil {
@@ -696,20 +752,28 @@ func vetAndPromote(ctx context.Context, cfg config.Config, client *fetch.Client,
 		return nil, verdict, nil
 	}
 	if cfg.SourceVettingRequired {
-		if float64(verdict.SourceQuality) < cfg.SourceMinQuality {
+		minQuality := cfg.SourceMinQuality
+		minOperationalRelevance := cfg.SourceMinOperationalRelevance
+		if isOfficialStatementsCandidate(candidate) {
+			minQuality = maxFloat(minQuality, cfg.OfficialStatementsMinQuality)
+			minOperationalRelevance = maxFloat(minOperationalRelevance, cfg.OfficialStatementsMinOperational)
+		}
+
+		if float64(verdict.SourceQuality) < minQuality {
 			verdict.Approve = false
 			verdict.PromotionStatus = "rejected"
-			verdict.Reason = fmt.Sprintf("below source quality threshold %.2f < %.2f", float64(verdict.SourceQuality), cfg.SourceMinQuality)
+			verdict.Reason = fmt.Sprintf("below source quality threshold %.2f < %.2f", float64(verdict.SourceQuality), minQuality)
 			return nil, verdict, nil
 		}
-		minOperationalRelevance := cfg.SourceMinOperationalRelevance
-		switch strings.ToLower(strings.TrimSpace(verdict.Level)) {
-		case "local":
-			// Local official law-enforcement is valuable for country-scoped views.
-			// Keep a lower operational floor so we can retain trusted local signals.
-			minOperationalRelevance = minFloat(minOperationalRelevance, 0.35)
-		case "regional":
-			minOperationalRelevance = minFloat(minOperationalRelevance, 0.5)
+		if !isOfficialStatementsCandidate(candidate) {
+			switch strings.ToLower(strings.TrimSpace(verdict.Level)) {
+			case "local":
+				// Local official law-enforcement is valuable for country-scoped views.
+				// Keep a lower operational floor so we can retain trusted local signals.
+				minOperationalRelevance = minFloat(minOperationalRelevance, 0.35)
+			case "regional":
+				minOperationalRelevance = minFloat(minOperationalRelevance, 0.5)
+			}
 		}
 		if float64(verdict.OperationalRelevance) < minOperationalRelevance {
 			verdict.Approve = false
@@ -746,6 +810,20 @@ func vetAndPromote(ctx context.Context, cfg config.Config, client *fetch.Client,
 		src.Source.BaseURL = discovered.TeamURL
 	}
 	return &src, verdict, nil
+}
+
+func isOfficialStatementsCandidate(candidate model.SourceCandidate) bool {
+	if !strings.EqualFold(strings.TrimSpace(candidate.Category), "legislative") {
+		return false
+	}
+	if strings.Contains(strings.ToLower(strings.TrimSpace(candidate.Notes)), "official-statements") {
+		return true
+	}
+	switch strings.ToLower(strings.TrimSpace(candidate.AuthorityType)) {
+	case "government", "legislative", "diplomatic", "national_security":
+		return true
+	}
+	return false
 }
 
 func promoteDiscoveredSources(ctx context.Context, registryPath string, sources []model.RegistrySource) error {
@@ -827,6 +905,13 @@ func firstNonEmpty(values ...string) string {
 
 func minFloat(a float64, b float64) float64 {
 	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxFloat(a float64, b float64) float64 {
+	if a > b {
 		return a
 	}
 	return b

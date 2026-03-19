@@ -162,6 +162,47 @@ func TestMergeCandidatesSkipsDeadAndActive(t *testing.T) {
 	}
 }
 
+func TestLoadSovereignSeedCandidatesAppliesLegislativeDefaults(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sovereign.json")
+	if err := os.WriteFile(path, []byte(`{"sources":[{"url":"https://president.example/news","authority_name":"Presidency of Example","country":"Exampleland","country_code":"ex"}]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	got := loadSovereignSeedCandidates(path)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 sovereign seed candidate, got %d", len(got))
+	}
+	if got[0].Category != "legislative" {
+		t.Fatalf("expected legislative default category, got %q", got[0].Category)
+	}
+	if got[0].AuthorityType != "government" {
+		t.Fatalf("expected government default authority_type, got %q", got[0].AuthorityType)
+	}
+	if got[0].CountryCode != "EX" {
+		t.Fatalf("expected uppercase country code, got %q", got[0].CountryCode)
+	}
+	if !strings.Contains(got[0].Notes, "official-statements") {
+		t.Fatalf("expected official-statements seed note, got %q", got[0].Notes)
+	}
+}
+
+func TestIsOfficialStatementsCandidateOnlyForLegislative(t *testing.T) {
+	if isOfficialStatementsCandidate(model.SourceCandidate{
+		Category:      "cyber_advisory",
+		AuthorityType: "government",
+		Notes:         "autonomous seed: sovereign-official-statements",
+	}) {
+		t.Fatal("expected non-legislative category to bypass official-statements strict gate")
+	}
+	if !isOfficialStatementsCandidate(model.SourceCandidate{
+		Category:      "legislative",
+		AuthorityType: "government",
+	}) {
+		t.Fatal("expected legislative government source to use official-statements strict gate")
+	}
+}
+
 type stubSearchCompleter struct {
 	content string
 	err     error
@@ -235,6 +276,42 @@ func TestFirstWebsiteFieldAcceptsStringOrArray(t *testing.T) {
 	}
 	if string(got.Website) != "https://array.example/feed" {
 		t.Fatalf("unexpected array website %q", got.Website)
+	}
+}
+
+func TestNormalizeFIRSTWebsite(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "host only", in: "cert.example.org", want: "https://cert.example.org"},
+		{name: "full url", in: "https://csirt.example.org/feed", want: "https://csirt.example.org/feed"},
+		{name: "invalid spaces", in: "A1 Telekom Austria AG", want: ""},
+		{name: "empty", in: "", want: ""},
+	}
+	for _, tt := range tests {
+		if got := normalizeFIRSTWebsite(tt.in); got != tt.want {
+			t.Fatalf("%s: normalizeFIRSTWebsite(%q) = %q, want %q", tt.name, tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestShouldRetryCandidateQueueSkipsHardHTTPFailures(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	cfg := config.Default()
+	client := fetch.New(cfg)
+	candidate := model.SourceCandidate{URL: srv.URL}
+	if shouldRetryCandidateQueue(context.Background(), client, candidate, srv.URL) {
+		t.Fatal("expected 404 candidate to be removed from queue")
 	}
 }
 
@@ -407,6 +484,66 @@ func TestVetAndPromoteThresholdGateRejectsLowQuality(t *testing.T) {
 	}
 	if verdict.Approve {
 		t.Fatalf("expected approve=false after threshold gate, got %+v", verdict)
+	}
+	if !strings.Contains(verdict.Reason, "below source quality threshold") {
+		t.Fatalf("expected quality-threshold reason, got %q", verdict.Reason)
+	}
+}
+
+func TestVetAndPromoteOfficialStatementsUsesStricterThresholds(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/feed", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, `<?xml version="1.0"?><rss><channel><item><title>Official statement</title><link>https://example.test/item/7</link><pubDate>Mon, 02 Jan 2026 15:04:05 MST</pubDate><description>Strategic update</description></item></channel></rss>`)
+	})
+	mux.HandleFunc("/chat/completions", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"choices": []map[string]any{
+				{"message": map[string]any{"content": `{"approve":true,"promotion_status":"active","category":"legislative","level":"national","mission_tags":["official_statement"],"source_quality":0.72,"operational_relevance":0.72,"reason":"approved"}`}},
+			},
+		})
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	cfg := config.Default()
+	cfg.VettingBaseURL = server.URL
+	cfg.SourceVettingRequired = true
+	cfg.SourceMinQuality = 0.6
+	cfg.SourceMinOperationalRelevance = 0.6
+	cfg.OfficialStatementsMinQuality = 0.75
+	cfg.OfficialStatementsMinOperational = 0.7
+	cfg.VettingMaxSampleItems = 2
+
+	candidate := model.SourceCandidate{
+		URL:           server.URL + "/feed",
+		BaseURL:       server.URL,
+		AuthorityName: "Presidency of Example",
+		AuthorityType: "government",
+		Category:      "legislative",
+		Country:       "Exampleland",
+		CountryCode:   "EX",
+		Notes:         "autonomous seed: sovereign-official-statements",
+	}
+	discovered := DiscoveredSource{
+		FeedURL:       server.URL + "/feed",
+		FeedType:      "rss",
+		AuthorityType: "government",
+		Category:      "legislative",
+		OrgName:       "Presidency of Example",
+		Country:       "Exampleland",
+		CountryCode:   "EX",
+		TeamURL:       server.URL,
+	}
+
+	promoted, verdict, err := vetAndPromote(context.Background(), cfg, fetch.New(cfg), vet.New(cfg), candidate, discovered)
+	if err != nil {
+		t.Fatalf("vetAndPromote returned error: %v", err)
+	}
+	if promoted != nil {
+		t.Fatalf("expected official-statement source to be rejected by stricter quality threshold, got %+v", *promoted)
+	}
+	if verdict.Approve {
+		t.Fatalf("expected approve=false after official-statement strict gate, got %+v", verdict)
 	}
 	if !strings.Contains(verdict.Reason, "below source quality threshold") {
 		t.Fatalf("expected quality-threshold reason, got %q", verdict.Reason)

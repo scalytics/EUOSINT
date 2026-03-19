@@ -34,6 +34,11 @@ Strategic intelligence assessments, geopolitical analysis, and security briefing
 
 **Sources:** SIPRI, IISS, RUSI, Jane's, UN Security Council press, OSCE, NATO CCDCOE, national intelligence agency public releases.
 
+### Legislative
+Official sovereign-government statements and institutional policy announcements (head of state/government, parliament, MFA/defense channels). Most items are informational for briefing/trend analysis, but strategic escalation titles (for example declaration of war/state emergency) are routed into alarm workflows.
+
+**Sources:** Curated sovereign official-statement seed layer, plus vetted government/legislative/diplomatic discovery sources.
+
 ### Travel Warning
 Government-issued travel advisories and consular warnings. Covers security situations, health risks, and entry restrictions for countries and regions.
 
