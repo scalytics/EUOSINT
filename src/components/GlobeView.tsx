@@ -12,7 +12,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import type { Alert } from "@/types/alert";
 import { alertMatchesRegionFilter } from "@/lib/regions";
 import { severityHex, textHex } from "@/lib/theme";
-import { OVERLAYS, loadOverlay, type OverlayId } from "@/lib/map-overlays";
+import { loadOverlayDefs, loadOverlay, type OverlayDef, type OverlayId } from "@/lib/map-overlays";
 import { detectSpikes } from "@/lib/activity-spikes";
 
 /* ── Region viewports ─────────────────────────────────────────────── */
@@ -61,6 +61,7 @@ export function GlobeView({
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const markerLookup = useRef<Map<string, L.CircleMarker>>(new Map());
   const overlayLayers = useRef<Map<OverlayId, L.LayerGroup>>(new Map());
+  const [overlayDefs, setOverlayDefs] = useState<OverlayDef[]>([]);
   const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set());
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
@@ -73,6 +74,38 @@ export function GlobeView({
     }
     onSelectSourceIdsChange([...selectedSourceIds, sourceId]);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    loadOverlayDefs().then((defs) => {
+      if (!cancelled) {
+        setOverlayDefs(defs);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Drop no-longer-registered active overlays when manifest changes.
+    setActiveOverlays((prev) => {
+      const allowed = new Set(overlayDefs.map((o) => o.id));
+      const next = new Set<OverlayId>();
+      for (const id of prev) {
+        if (allowed.has(id)) {
+          next.add(id);
+        } else {
+          const layer = overlayLayers.current.get(id);
+          if (layer && mapRef.current) {
+            mapRef.current.removeLayer(layer);
+          }
+          overlayLayers.current.delete(id);
+        }
+      }
+      return next;
+    });
+  }, [overlayDefs]);
 
   const toggleOverlay = useCallback((id: OverlayId) => {
     setActiveOverlays((prev) => {
@@ -88,7 +121,7 @@ export function GlobeView({
         next.add(id);
         const map = mapRef.current;
         if (map) {
-          const def = OVERLAYS.find((o) => o.id === id);
+          const def = overlayDefs.find((o) => o.id === id);
           if (def) {
             loadOverlay(map, def).then((layer) => {
               overlayLayers.current.set(id, layer);
@@ -98,7 +131,7 @@ export function GlobeView({
       }
       return next;
     });
-  }, []);
+  }, [overlayDefs]);
 
   const visibleIdSet = useMemo(() => new Set(visibleAlertIds), [visibleAlertIds]);
 
@@ -304,7 +337,7 @@ export function GlobeView({
             ))}
           </div>
           <div className="grid grid-cols-5 gap-1 md:grid-cols-9">
-            {OVERLAYS.map((overlay) => (
+            {overlayDefs.map((overlay) => (
               <button
                 key={overlay.id}
                 type="button"

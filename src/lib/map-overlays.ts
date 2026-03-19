@@ -1,6 +1,6 @@
 import L from "leaflet";
 
-export type OverlayId = "cables" | "shipping" | "ports" | "conflicts" | "bases" | "nuclear" | "sanctions" | "piracy" | "terrorism";
+export type OverlayId = string;
 
 export interface OverlayDef {
   id: OverlayId;
@@ -9,7 +9,7 @@ export interface OverlayDef {
   url: string;
 }
 
-export const OVERLAYS: OverlayDef[] = [
+export const DEFAULT_OVERLAYS: OverlayDef[] = [
   { id: "conflicts", label: "Conflict Zones", color: "#ff5d5d", url: "/geo/conflict-zones.geojson" },
   { id: "cables", label: "Undersea Cables", color: "#60a5fa", url: "/geo/submarine-cables.geojson" },
   { id: "shipping", label: "Shipping Lanes", color: "#4ccb8d", url: "/geo/shipping-lanes.geojson" },
@@ -20,6 +20,29 @@ export const OVERLAYS: OverlayDef[] = [
   { id: "piracy", label: "Piracy Zones", color: "#38bdf8", url: "/geo/piracy-zones.geojson" },
   { id: "terrorism", label: "Terror Zones", color: "#e879f9", url: "/geo/terrorism-zones.geojson" },
 ];
+
+export async function loadOverlayDefs(): Promise<OverlayDef[]> {
+  try {
+    const resp = await fetch("/geo/overlays.json", { cache: "no-cache" });
+    if (!resp.ok) {
+      return DEFAULT_OVERLAYS;
+    }
+    const raw = (await resp.json()) as { overlays?: OverlayDef[] };
+    const overlays = Array.isArray(raw?.overlays) ? raw.overlays : [];
+    const normalized = overlays
+      .filter((o) => typeof o?.id === "string" && typeof o?.url === "string")
+      .map((o) => ({
+        id: o.id.trim(),
+        label: (o.label ?? o.id).trim(),
+        color: (o.color ?? "#94a3b8").trim(),
+        url: o.url.trim(),
+      }))
+      .filter((o) => o.id !== "" && o.url !== "");
+    return normalized.length > 0 ? normalized : DEFAULT_OVERLAYS;
+  } catch {
+    return DEFAULT_OVERLAYS;
+  }
+}
 
 const conflictTypeColors: Record<string, string> = {
   active_war: "#ff3333",

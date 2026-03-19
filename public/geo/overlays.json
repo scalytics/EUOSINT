@@ -1,0 +1,13 @@
+{
+  "overlays": [
+    { "id": "conflicts", "label": "Conflict Zones", "color": "#ff5d5d", "url": "/geo/conflict-zones.geojson" },
+    { "id": "cables", "label": "Undersea Cables", "color": "#60a5fa", "url": "/geo/submarine-cables.geojson" },
+    { "id": "shipping", "label": "Shipping Lanes", "color": "#4ccb8d", "url": "/geo/shipping-lanes.geojson" },
+    { "id": "ports", "label": "Strategic Ports", "color": "#f29d4b", "url": "/geo/strategic-ports.geojson" },
+    { "id": "bases", "label": "Military Bases", "color": "#a78bfa", "url": "/geo/military-bases.geojson" },
+    { "id": "nuclear", "label": "Nuclear Sites", "color": "#facc15", "url": "/geo/nuclear-sites.geojson" },
+    { "id": "sanctions", "label": "Sanctions Zones", "color": "#f87171", "url": "/geo/sanctions-zones.geojson" },
+    { "id": "piracy", "label": "Piracy Zones", "color": "#38bdf8", "url": "/geo/piracy-zones.geojson" },
+    { "id": "terrorism", "label": "Terror Zones", "color": "#e879f9", "url": "/geo/terrorism-zones.geojson" }
+  ]
+}
