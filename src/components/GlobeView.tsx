@@ -247,6 +247,7 @@ export function GlobeView({
     cluster.clearLayers();
     markerLookup.current.clear();
 
+    const isNowAndHistoryMode = visibleNowAlerts.length > 0 && visibleHistoryAlertsRendered.length > 0;
     const markers: L.CircleMarker[] = [];
     for (const alert of visibleHistoryAlertsRendered) {
       // Skip alerts with no resolved location (0,0).
@@ -254,12 +255,12 @@ export function GlobeView({
       const selected = alert.alert_id === selectedId;
       const text = textHex();
       const marker = L.circleMarker([alert.lat, alert.lng], {
-        radius: selected ? 10 : 6,
+        radius: selected ? (isNowAndHistoryMode ? 9 : 10) : (isNowAndHistoryMode ? 5 : 6),
         fillColor: severityHex(alert.severity),
-        color: selected ? text : `${text}7A`,
+        color: selected ? text : `${text}${isNowAndHistoryMode ? "66" : "7A"}`,
         weight: selected ? 2 : 1,
-        fillOpacity: 0.28,
-        opacity: 0.65,
+        fillOpacity: isNowAndHistoryMode ? 0.16 : 0.28,
+        opacity: isNowAndHistoryMode ? 0.38 : 0.65,
       });
 
       marker.bindTooltip(
@@ -369,8 +370,8 @@ export function GlobeView({
         </div>
 
         <div className="rounded-2xl border border-siem-border bg-siem-panel p-2 space-y-1.5">
-          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
-            {["Europe", "all", "Asia", "North America"].map((region) => (
+          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-5">
+            {["Europe", "Africa", "North America", "Asia", "all"].map((region) => (
               <button
                 key={region}
                 type="button"
