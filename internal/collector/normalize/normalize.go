@@ -693,6 +693,11 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		eventCountry = ""
 		eventCountryCode = ""
 	}
+	canonicalCategory := canonicalCategory(meta.Category)
+	canonicalSeverity := inferSeverity(title, defaultSeverity(canonicalCategory))
+	if canonicalCategory == "informational" {
+		canonicalSeverity = "info"
+	}
 	return model.Alert{
 		AlertID:            meta.Source.SourceID + "-" + hashID(link),
 		SourceID:           meta.Source.SourceID,
@@ -702,8 +707,8 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		FirstSeen:          publishedAt.UTC().Format(time.RFC3339),
 		LastSeen:           ctx.Now.UTC().Format(time.RFC3339),
 		Status:             "active",
-		Category:           meta.Category,
-		Severity:           inferSeverity(title, defaultSeverity(meta.Category)),
+		Category:           canonicalCategory,
+		Severity:           canonicalSeverity,
 		RegionTag:          meta.RegionTag,
 		Lat:                lat,
 		Lng:                lng,
@@ -713,6 +718,22 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		EventGeoConfidence: eventGeoConfidence(geoSource),
 		FreshnessHours:     hoursBetween(ctx.Now, publishedAt),
 		Reporting:          meta.Reporting,
+	}
+}
+
+func canonicalCategory(category string) string {
+	c := strings.ToLower(strings.TrimSpace(category))
+	switch c {
+	case "public_appeal":
+		return "public_safety"
+	case "intelligence_report", "private_sector", "education_digital_capacity", "humanitarian_tasking":
+		return "informational"
+	case "humanitarian_security":
+		return "conflict_monitoring"
+	case "emergency_management":
+		return "public_safety"
+	default:
+		return c
 	}
 }
 
@@ -945,6 +966,10 @@ func score(cfg config.Config, alert model.Alert, feed FeedContext) *model.Triage
 }
 
 func normalizeInformational(cfg config.Config, alert model.Alert, feed FeedContext) model.Alert {
+	alert.Category = canonicalCategory(alert.Category)
+	if alert.Category == "informational" {
+		alert.Severity = "info"
+	}
 	if shouldDowngradeLegislativeToInformational(alert, feed) {
 		threshold := clamp01(cfg.IncidentRelevanceThreshold)
 		if alert.Triage != nil {

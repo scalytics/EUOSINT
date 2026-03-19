@@ -66,7 +66,7 @@ func Load(path string) ([]model.RegistrySource, error) {
 
 func normalize(entry model.RegistrySource) (model.RegistrySource, bool) {
 	entry.Type = strings.TrimSpace(entry.Type)
-	entry.Category = strings.TrimSpace(entry.Category)
+	entry.Category = canonicalCategory(strings.TrimSpace(entry.Category))
 	entry.RegionTag = strings.TrimSpace(entry.RegionTag)
 	entry.FeedURL = strings.TrimSpace(entry.FeedURL)
 	entry.Source.SourceID = strings.TrimSpace(entry.Source.SourceID)
@@ -89,6 +89,22 @@ func normalize(entry model.RegistrySource) (model.RegistrySource, bool) {
 		entry.MaxItems = 20
 	}
 	return entry, true
+}
+
+func canonicalCategory(category string) string {
+	c := strings.ToLower(strings.TrimSpace(category))
+	switch c {
+	case "public_appeal":
+		return "public_safety"
+	case "intelligence_report", "private_sector", "education_digital_capacity", "humanitarian_tasking":
+		return "informational"
+	case "humanitarian_security":
+		return "conflict_monitoring"
+	case "emergency_management":
+		return "public_safety"
+	default:
+		return c
+	}
 }
 
 func fallback(value, fallback string) string {

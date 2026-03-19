@@ -519,3 +519,45 @@ func TestLegislativeInstitutionalStatementDowngradedToInformational(t *testing.T
 		t.Fatalf("expected informational/info, got category=%q severity=%q", alert.Category, alert.Severity)
 	}
 }
+
+func TestLegacyCategoryRemapOnAlertBuild(t *testing.T) {
+	cfg := config.Default()
+	ctx := Context{Config: cfg, Now: time.Date(2026, 3, 19, 0, 0, 0, 0, time.UTC)}
+
+	mk := func(category string, title string) *model.Alert {
+		meta := model.RegistrySource{
+			Type:     "rss",
+			Category: category,
+			Source: model.SourceMetadata{
+				SourceID:      "test-" + category,
+				AuthorityName: "Test Source",
+				Country:       "Germany",
+				CountryCode:   "DE",
+				Region:        "Europe",
+				AuthorityType: "regulatory",
+				BaseURL:       "https://example.test",
+			},
+		}
+		return RSSItem(ctx, meta, parse.FeedItem{
+			Title:     title,
+			Summary:   "summary",
+			Link:      "https://example.test/" + category,
+			Published: "2026-03-18T10:00:00Z",
+		})
+	}
+
+	a1 := mk("public_appeal", "Wanted in fraud operation")
+	if a1 == nil || a1.Category != "public_safety" {
+		t.Fatalf("expected public_appeal -> public_safety, got %#v", a1)
+	}
+
+	a2 := mk("intelligence_report", "Weekly intelligence briefing")
+	if a2 == nil || a2.Category != "informational" || a2.Severity != "info" {
+		t.Fatalf("expected intelligence_report -> informational/info, got %#v", a2)
+	}
+
+	a3 := mk("humanitarian_security", "Armed attack on aid convoy in border zone")
+	if a3 == nil || a3.Category != "conflict_monitoring" {
+		t.Fatalf("expected humanitarian_security -> conflict_monitoring, got %#v", a3)
+	}
+}
