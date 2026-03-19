@@ -7451,6 +7451,7 @@
   },
   {
     "type": "x",
+    "fetch_mode": "browser",
     "source": {
       "source_id": "x-idf",
       "authority_name": "Israel Defense Forces",
@@ -7470,6 +7471,7 @@
   },
   {
     "type": "x",
+    "fetch_mode": "browser",
     "source": {
       "source_id": "x-centcom",
       "authority_name": "US CENTCOM",
@@ -7489,6 +7491,7 @@
   },
   {
     "type": "x",
+    "fetch_mode": "browser",
     "source": {
       "source_id": "x-state-dept",
       "authority_name": "US State Department",
@@ -7508,6 +7511,7 @@
   },
   {
     "type": "x",
+    "fetch_mode": "browser",
     "source": {
       "source_id": "x-nato",
       "authority_name": "NATO",
@@ -7527,6 +7531,7 @@
   },
   {
     "type": "x",
+    "fetch_mode": "browser",
     "source": {
       "source_id": "x-sentdefender",
       "authority_name": "OSINTdefender",
@@ -7537,7 +7542,7 @@
       "base_url": "https://x.com/sentdefender"
     },
     "feed_url": "https://x.com/sentdefender",
-    "category": "intelligence_report",
+    "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 35.0,
     "lng": 38.0,
@@ -7546,6 +7551,7 @@
   },
   {
     "type": "x",
+    "fetch_mode": "browser",
     "source": {
       "source_id": "x-osinttechnical",
       "authority_name": "OSINTtechnical",
@@ -7556,7 +7562,7 @@
       "base_url": "https://x.com/Osinttechnical"
     },
     "feed_url": "https://x.com/Osinttechnical",
-    "category": "intelligence_report",
+    "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 50.0,
     "lng": 30.5,
@@ -7565,6 +7571,7 @@
   },
   {
     "type": "x",
+    "fetch_mode": "browser",
     "source": {
       "source_id": "x-geoconfirmed",
       "authority_name": "GeoConfirmed",
@@ -7575,7 +7582,7 @@
       "base_url": "https://x.com/GeoConfirmed"
     },
     "feed_url": "https://x.com/GeoConfirmed",
-    "category": "intelligence_report",
+    "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 52.37,
     "lng": 4.9,
@@ -7584,6 +7591,7 @@
   },
   {
     "type": "x",
+    "fetch_mode": "browser",
     "source": {
       "source_id": "x-elintnews",
       "authority_name": "ELINT News",
@@ -7594,11 +7602,131 @@
       "base_url": "https://x.com/ELINTNews"
     },
     "feed_url": "https://x.com/ELINTNews",
-    "category": "intelligence_report",
+    "category": "conflict_monitoring",
     "region_tag": "INT",
     "lat": 34.0,
     "lng": 36.0,
     "include_keywords": ["air defense", "radar", "missile", "intercept", "drone", "threat", "warning", "strike", "syria", "iran"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-osint613",
+      "authority_name": "Open Source Intel",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://x.com/Osint613"
+    },
+    "feed_url": "https://x.com/Osint613",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 31.5,
+    "lng": 35.0,
+    "include_keywords": ["strike", "airstrike", "missile", "rocket", "drone", "attack", "idf", "hezbollah", "iran", "escalation"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-auroraintel",
+      "authority_name": "Aurora Intel",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://x.com/AuroraIntel"
+    },
+    "feed_url": "https://x.com/AuroraIntel",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 33.9,
+    "lng": 35.5,
+    "include_keywords": ["breaking", "strike", "airstrike", "missile", "attack", "explosion", "drone", "intercept", "warning", "escalation"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-menchosint",
+      "authority_name": "MenchOsint",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://x.com/MenchOsint"
+    },
+    "feed_url": "https://x.com/MenchOsint",
+    "category": "intelligence_report",
+    "region_tag": "INT",
+    "lat": 14.6,
+    "lng": 20.9,
+    "include_keywords": ["aircraft", "movement", "deployment", "airlift", "tracking", "conflict", "strike", "military", "map"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-intel-sky",
+      "authority_name": "Intel Sky",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://x.com/Intel_Sky"
+    },
+    "feed_url": "https://x.com/Intel_Sky",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 33.5,
+    "lng": 36.3,
+    "include_keywords": ["radar", "air defense", "missile", "drone", "airspace", "strike", "threat", "warning", "intercept"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-vcdgf555",
+      "authority_name": "vcdgf555",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://x.com/vcdgf555"
+    },
+    "feed_url": "https://x.com/vcdgf555",
+    "category": "intelligence_report",
+    "region_tag": "INT",
+    "lat": 35.0,
+    "lng": 39.0,
+    "include_keywords": ["naval", "aircraft", "convoy", "missile", "drone", "military", "movement", "tracking", "operation"],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-schizointel",
+      "authority_name": "Schizointel",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "osint",
+      "base_url": "https://x.com/Schizointel"
+    },
+    "feed_url": "https://x.com/Schizointel",
+    "category": "intelligence_report",
+    "region_tag": "INT",
+    "lat": 36.0,
+    "lng": 29.0,
+    "include_keywords": ["naval", "fleet", "warship", "maritime", "missile", "drone", "strike", "deployment", "port"],
     "max_items": 20
   },
   {

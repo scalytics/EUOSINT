@@ -9,6 +9,14 @@ export interface OverlayDef {
   url: string;
 }
 
+const BASES_REGION_URLS: Record<string, string> = {
+  Europe: "/geo/military-bases.europe.geojson",
+  Africa: "/geo/military-bases.africa.geojson",
+  "North America": "/geo/military-bases.north-america.geojson",
+  Asia: "/geo/military-bases.asia.geojson",
+  all: "/geo/military-bases.geojson",
+};
+
 export const DEFAULT_OVERLAYS: OverlayDef[] = [
   { id: "conflicts", label: "Conflict Zones", color: "#ff5d5d", url: "/geo/conflict-zones.geojson" },
   { id: "cables", label: "Undersea Cables", color: "#60a5fa", url: "/geo/submarine-cables.geojson" },
@@ -146,8 +154,12 @@ const terrorismTypeColors: Record<string, string> = {
 export async function loadOverlay(
   map: L.Map,
   def: OverlayDef,
+  regionFilter = "all",
 ): Promise<L.LayerGroup> {
-  const resp = await fetch(def.url);
+  const url = def.id === "bases"
+    ? (BASES_REGION_URLS[regionFilter] ?? BASES_REGION_URLS.all)
+    : def.url;
+  const resp = await fetch(url);
   const geojson = await resp.json();
   const group = L.layerGroup();
 

@@ -322,77 +322,92 @@ func TestFetchUCDPSkipsSilentlyWithoutToken(t *testing.T) {
 	}
 }
 
-func TestExtractXHandle(t *testing.T) {
+func TestIsXStatusURL(t *testing.T) {
 	tests := []struct {
 		in   string
-		want string
+		want bool
 	}{
-		{in: "https://x.com/IDF", want: "IDF"},
-		{in: "https://x.com/CENTCOM/status/12345", want: "CENTCOM"},
-		{in: "https://twitter.com/StateDept", want: "StateDept"},
-		{in: "@NATO", want: "NATO"},
-		{in: "AuroraIntel", want: "AuroraIntel"},
-		{in: "https://x.com/explore", want: ""},
-		{in: "", want: ""},
+		{in: "https://x.com/CENTCOM/status/12345", want: true},
+		{in: "https://twitter.com/StateDept/status/99", want: true},
+		{in: "https://x.com/IDF", want: false},
+		{in: "https://x.com/explore", want: false},
+		{in: "https://example.com/CENTCOM/status/12345", want: false},
+		{in: "", want: false},
 	}
 	for _, tc := range tests {
-		if got := extractXHandle(tc.in); got != tc.want {
-			t.Fatalf("extractXHandle(%q) = %q, want %q", tc.in, got, tc.want)
+		if got := isXStatusURL(tc.in); got != tc.want {
+			t.Fatalf("isXStatusURL(%q) = %v, want %v", tc.in, got, tc.want)
 		}
 	}
 }
 
-func TestFetchXUsesScraperItemsAndFilters(t *testing.T) {
-	runner := New(io.Discard, io.Discard)
-	runner.xFetchFunc = func(_ context.Context, _ config.Config, source model.RegistrySource, maxItems int) ([]parse.FeedItem, error) {
-		if source.FeedURL != "https://x.com/CENTCOM" {
-			t.Fatalf("unexpected source feed url: %q", source.FeedURL)
-		}
-		if maxItems != 20 {
-			t.Fatalf("expected per-source max items 20, got %d", maxItems)
-		}
-		return []parse.FeedItem{
-			{
-				Title:     "CENTCOM confirms precision strike on militia launch site",
-				Link:      "https://x.com/CENTCOM/status/1",
-				Published: "2026-03-19T10:00:00Z",
-				Summary:   "Operational update",
-			},
-			{
-				Title:     "sports roundup and football highlights",
-				Link:      "https://x.com/CENTCOM/status/2",
-				Published: "2026-03-19T09:00:00Z",
-				Summary:   "noise",
-			},
-		}, nil
+func TestParseXStatusAnchorsKeepsShortStatusLinks(t *testing.T) {
+	body := `<html><body>
+<a href="/IDF/status/123">5h</a>
+<a href="https://x.com/CENTCOM/status/987">2m</a>
+<a href="https://x.com/IDF">Profile</a>
+</body></html>`
+	items := parseXStatusAnchors(body, "https://x.com/IDF")
+	if len(items) != 2 {
+		t.Fatalf("expected 2 x status anchors, got %d", len(items))
 	}
-	cfg := config.Default()
-	cfg.StopWords = []string{"football"}
-	nctx := normalize.Context{Config: cfg, Now: time.Date(2026, 3, 19, 0, 0, 0, 0, time.UTC)}
-	source := model.RegistrySource{
-		Type:     "x",
-		FeedURL:  "https://x.com/CENTCOM",
-		Category: "conflict_monitoring",
-		Source: model.SourceMetadata{
-			SourceID:      "x-centcom",
-			AuthorityName: "US CENTCOM",
-			Country:       "United States",
-			CountryCode:   "US",
-			Region:        "North America",
-			AuthorityType: "military",
-			BaseURL:       "https://x.com/CENTCOM",
-		},
+	if items[0].Link != "https://x.com/IDF/status/123" {
+		t.Fatalf("unexpected first item: %#v", items[0])
 	}
+	if items[1].Link != "https://x.com/CENTCOM/status/987" {
+		t.Fatalf("unexpected second item: %#v", items[1])
+	}
+	if items[0].Title == "" || items[1].Title == "" {
+		t.Fatalf("expected non-empty titles, got %#v", items)
+	}
+}
 
-	alerts, err := runner.fetchX(context.Background(), nctx, source, nil)
-	if err != nil {
-		t.Fatalf("fetchX error: %v", err)
+func TestParseXTweetsFromGraphQLJSON(t *testing.T) {
+	body := []byte(`{
+	  "data": {
+	    "user": {
+	      "result": {
+	        "timeline": {
+	          "timeline": {
+	            "instructions": [
+	              {
+	                "entries": [
+	                  {
+	                    "content": {
+	                      "itemContent": {
+	                        "tweet_results": {
+	                          "result": {
+	                            "legacy": {
+	                              "id_str": "2034641269960393096",
+	                              "created_at": "Thu Mar 19 14:40:55 +0000 2026",
+	                              "full_text": "Test operational update"
+	                            }
+	                          }
+	                        }
+	                      }
+	                    }
+	                  }
+	                ]
+	              }
+	            ]
+	          }
+	        }
+	      }
+	    }
+	  }
+	}`)
+	items := parseXTweetsFromGraphQLJSON(body, "https://x.com/IDF")
+	if len(items) != 1 {
+		t.Fatalf("expected 1 parsed tweet, got %d", len(items))
 	}
-	if len(alerts) != 1 {
-		t.Fatalf("expected 1 filtered alert, got %d", len(alerts))
+	if items[0].Link != "https://x.com/IDF/status/2034641269960393096" {
+		t.Fatalf("unexpected link: %q", items[0].Link)
 	}
-	if alerts[0].CanonicalURL != "https://x.com/CENTCOM/status/1" {
-		t.Fatalf("unexpected canonical url: %q", alerts[0].CanonicalURL)
+	if items[0].Title != "Test operational update" {
+		t.Fatalf("unexpected title: %q", items[0].Title)
+	}
+	if items[0].Published != "2026-03-19T14:40:55Z" {
+		t.Fatalf("unexpected published: %q", items[0].Published)
 	}
 }
 
