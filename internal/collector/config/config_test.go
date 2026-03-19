@@ -70,3 +70,18 @@ func TestLoadStopWordsShippedDefault(t *testing.T) {
 		t.Fatal("shipped stop_words.json should contain 'football'")
 	}
 }
+
+func TestDefaultNoisePolicyPath(t *testing.T) {
+	cfg := Default()
+	if cfg.NoisePolicyPath != "registry/noise_policy.json" {
+		t.Fatalf("unexpected default noise policy path %q", cfg.NoisePolicyPath)
+	}
+}
+
+func TestNoisePolicyPathFromEnv(t *testing.T) {
+	t.Setenv("NOISE_POLICY_PATH", "/tmp/noise_policy.json")
+	cfg := FromEnv()
+	if cfg.NoisePolicyPath != "/tmp/noise_policy.json" {
+		t.Fatalf("expected NOISE_POLICY_PATH override, got %q", cfg.NoisePolicyPath)
+	}
+}

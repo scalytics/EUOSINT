@@ -106,6 +106,7 @@ type Config struct {
 	ACLEDPassword                   string
 	StopWordsPath                   string
 	StopWords                       []string
+	NoisePolicyPath                 string
 }
 
 func Default() Config {
@@ -181,6 +182,7 @@ func Default() Config {
 		APIEnabled:                      false,
 		APIAddr:                         ":3001",
 		StopWordsPath:                   defaultStopWordsPath,
+		NoisePolicyPath:                 "registry/noise_policy.json",
 	}
 }
 
@@ -264,6 +266,7 @@ func FromEnv() Config {
 	if extra := envCSV("STOP_WORDS", nil); len(extra) > 0 {
 		cfg.StopWords = append(cfg.StopWords, extra...)
 	}
+	cfg.NoisePolicyPath = envString("NOISE_POLICY_PATH", cfg.NoisePolicyPath)
 	return cfg
 }
 
