@@ -31,6 +31,11 @@ const REGION_VIEWPORTS: Record<string, MapViewport> = {
   all: { center: [20, 0], zoom: 3 },
 };
 
+const LARGE_COUNTRY_CODES = new Set([
+  "US", "CA", "BR", "RU", "CN", "IN", "AU", "MX", "AR",
+  "KZ", "DZ", "SA", "ID",
+]);
+
 /* ── Props ────────────────────────────────────────────────────────── */
 
 interface Props {
@@ -71,6 +76,11 @@ export function GlobeView({
   const [hideLowConfidenceHistory, setHideLowConfidenceHistory] = useState(true);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const countryFilterCode = useMemo(
+    () => (regionFilter.startsWith("country:") ? regionFilter.slice(8).toUpperCase() : ""),
+    [regionFilter],
+  );
+  const isLargeCountryScope = countryFilterCode !== "" && LARGE_COUNTRY_CODES.has(countryFilterCode);
 
   const toggleSource = (sourceId: string) => {
     if (!onSelectSourceIdsChange) return;
@@ -165,6 +175,77 @@ export function GlobeView({
         : visibleHistoryAlerts,
     [hideLowConfidenceHistory, visibleHistoryAlerts],
   );
+
+  const combinedVisibleAlerts = useMemo(
+    () => [...visibleNowAlerts, ...visibleHistoryAlertsRendered],
+    [visibleNowAlerts, visibleHistoryAlertsRendered],
+  );
+
+  const geocodedVisibleAlerts = useMemo(
+    () => combinedVisibleAlerts.filter((a) => !(a.lat === 0 && a.lng === 0)),
+    [combinedVisibleAlerts],
+  );
+
+  const areaGroups = useMemo(() => {
+    if (countryFilterCode === "" || geocodedVisibleAlerts.length === 0) {
+      return [] as Array<{
+        id: string;
+        label: string;
+        count: number;
+        critical: number;
+        high: number;
+        lat: number;
+        lng: number;
+        alerts: Alert[];
+      }>;
+    }
+
+    const avgLat = geocodedVisibleAlerts.reduce((sum, a) => sum + a.lat, 0) / geocodedVisibleAlerts.length;
+    const avgLng = geocodedVisibleAlerts.reduce((sum, a) => sum + a.lng, 0) / geocodedVisibleAlerts.length;
+
+    if (!isLargeCountryScope) {
+      return [{
+        id: `${countryFilterCode}-national`,
+        label: "National",
+        count: geocodedVisibleAlerts.length,
+        critical: geocodedVisibleAlerts.filter((a) => a.severity === "critical").length,
+        high: geocodedVisibleAlerts.filter((a) => a.severity === "high").length,
+        lat: avgLat,
+        lng: avgLng,
+        alerts: geocodedVisibleAlerts,
+      }];
+    }
+
+    const latStep = 1.2;
+    const lngStep = 1.2;
+    const groups = new Map<string, Alert[]>();
+    for (const alert of geocodedVisibleAlerts) {
+      const ns = alert.lat > avgLat+latStep ? "North" : alert.lat < avgLat-latStep ? "South" : "Central";
+      const ew = alert.lng > avgLng+lngStep ? "East" : alert.lng < avgLng-lngStep ? "West" : "Central";
+      let label = "Central";
+      if (ns === "Central" && ew !== "Central") label = ew;
+      else if (ew === "Central" && ns !== "Central") label = ns;
+      else if (ns !== "Central" && ew !== "Central") label = `${ns} ${ew}`;
+      const key = label.toLowerCase().replace(/\s+/g, "-");
+      const list = groups.get(key) ?? [];
+      list.push(alert);
+      groups.set(key, list);
+    }
+
+    return [...groups.entries()]
+      .map(([id, items]) => ({
+        id,
+        label: id.split("-").map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(" "),
+        count: items.length,
+        critical: items.filter((a) => a.severity === "critical").length,
+        high: items.filter((a) => a.severity === "high").length,
+        lat: items.reduce((sum, a) => sum + a.lat, 0) / items.length,
+        lng: items.reduce((sum, a) => sum + a.lng, 0) / items.length,
+        alerts: items.sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime()),
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [countryFilterCode, geocodedVisibleAlerts, isLargeCountryScope]);
 
   /* ── Initialise Leaflet once ──────────────────────────────────── */
 
@@ -313,27 +394,31 @@ export function GlobeView({
     if (lastRegionRef.current === regionFilter) return;
     lastRegionRef.current = regionFilter;
 
-    // For country filters, fit map bounds to visible markers.
-    const focusAlerts = visibleNowAlerts.length > 0 ? visibleNowAlerts : visibleHistoryAlertsRendered;
-    if (regionFilter.startsWith("country:") && focusAlerts.length > 0) {
-      const lats = focusAlerts.map((a) => a.lat);
-      const lngs = focusAlerts.map((a) => a.lng);
-      const bounds = L.latLngBounds(
-        [Math.min(...lats) - 1, Math.min(...lngs) - 1],
-        [Math.max(...lats) + 1, Math.max(...lngs) + 1]
-      );
-      map.flyToBounds(bounds, { duration: 0.8, maxZoom: 7, padding: [30, 30] });
+    // Country-first view: keep situational zoom, avoid village-level drill-in.
+    if (countryFilterCode !== "" && geocodedVisibleAlerts.length > 0) {
+      const lats = geocodedVisibleAlerts.map((a) => a.lat);
+      const lngs = geocodedVisibleAlerts.map((a) => a.lng);
+      if (isLargeCountryScope) {
+        const bounds = L.latLngBounds(
+          [Math.min(...lats) - 1, Math.min(...lngs) - 1],
+          [Math.max(...lats) + 1, Math.max(...lngs) + 1],
+        );
+        map.flyToBounds(bounds, { duration: 0.8, maxZoom: 5, padding: [40, 40] });
+      } else {
+        const centerLat = lats.reduce((sum, v) => sum + v, 0) / lats.length;
+        const centerLng = lngs.reduce((sum, v) => sum + v, 0) / lngs.length;
+        map.flyTo([centerLat, centerLng], 5, { duration: 0.8 });
+      }
       return;
     }
 
     const vp = REGION_VIEWPORTS[regionFilter] ?? REGION_VIEWPORTS.Europe;
     map.flyTo(vp.center, vp.zoom, { duration: 0.8 });
-  }, [regionFilter, visibleNowAlerts, visibleHistoryAlertsRendered]);
+  }, [countryFilterCode, geocodedVisibleAlerts, isLargeCountryScope, regionFilter]);
 
   /* ── Stats for sidebar ────────────────────────────────────────── */
 
   const topClusters = useMemo(() => {
-    const combinedVisibleAlerts = [...visibleNowAlerts, ...visibleHistoryAlertsRendered];
     const bins = new Map<string, { sourceId: string; title: string; count: number }>();
     for (const alert of combinedVisibleAlerts) {
       const key = alert.source.source_id;
@@ -345,7 +430,7 @@ export function GlobeView({
       }
     }
     return [...bins.values()].sort((a, b) => b.count - a.count).slice(0, 6);
-  }, [visibleNowAlerts, visibleHistoryAlertsRendered]);
+  }, [combinedVisibleAlerts]);
 
   const activitySpikes = useMemo(() => detectSpikes([...alerts, ...historicalAlerts]), [alerts, historicalAlerts]);
 
@@ -458,6 +543,44 @@ export function GlobeView({
         </div>
 
         <aside className="m-4 ml-0 mt-0 flex flex-col gap-3 overflow-y-auto">
+          {regionFilter.startsWith("country:") && areaGroups.length > 0 && (
+            <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
+              <div className="text-xxs uppercase tracking-[0.18em] text-siem-muted">
+                Area Groups
+              </div>
+              <div className="mt-3 space-y-2">
+                {areaGroups.map((group) => (
+                  <button
+                    key={group.id}
+                    type="button"
+                    onClick={() => {
+                      const map = mapRef.current;
+                      if (map) {
+                        map.flyTo([group.lat, group.lng], isLargeCountryScope ? 5.5 : 5, { duration: 0.7 });
+                      }
+                      if (group.alerts.length > 0) {
+                        onSelect(group.alerts[0].alert_id);
+                      }
+                    }}
+                    className="w-full text-left rounded-xl border border-siem-border bg-siem-panel-strong px-3 py-2 hover:border-siem-accent/40 hover:bg-siem-accent/8 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-siem-text truncate">{group.label}</span>
+                      <span className="shrink-0 text-2xs font-mono text-siem-muted">{group.count}</span>
+                    </div>
+                    <div className="mt-1 text-2xs text-siem-muted">
+                      Crit {group.critical} • High {group.high}
+                    </div>
+                    {group.alerts[0] && (
+                      <div className="mt-1 text-2xs text-siem-muted line-clamp-1">
+                        {group.alerts[0].title}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
             <div className="text-xxs uppercase tracking-[0.18em] text-siem-muted">Hot sectors</div>
             <div className="mt-3 space-y-2">
