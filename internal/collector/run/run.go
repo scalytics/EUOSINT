@@ -1637,9 +1637,23 @@ func applyNoiseDecision(alert *model.Alert, decision noisegate.Decision) {
 	if alert == nil {
 		return
 	}
+	if alert.Triage == nil {
+		alert.Triage = &model.Triage{}
+	}
+	if alert.Triage.Metadata == nil {
+		alert.Triage.Metadata = &model.TriageMetadata{}
+	}
+	alert.Triage.Metadata.NoiseDecision = string(decision.Outcome)
+	alert.Triage.Metadata.NoisePolicyVersion = decision.PolicyVersion
+	alert.Triage.Metadata.NoiseBlockScore = decision.BlockScore
+	alert.Triage.Metadata.NoiseScore = decision.NoiseScore
+	alert.Triage.Metadata.NoiseActionability = decision.ActionabilityScore
+	alert.Triage.Metadata.NoiseReasons = append([]string{}, decision.Reasons...)
+	alert.Triage.Metadata.NoiseDecisionTimestamp = time.Now().UTC().Format(time.RFC3339)
 	if decision.Outcome == noisegate.OutcomeDowngrade {
 		alert.Severity = "info"
 		alert.Category = "informational"
+		alert.Triage.WeakSignals = append([]string{"noise-gate downgraded to informational"}, alert.Triage.WeakSignals...)
 	}
 }
 

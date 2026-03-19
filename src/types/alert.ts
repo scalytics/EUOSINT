@@ -92,5 +92,13 @@ export interface AlertTriage {
   metadata?: {
     author?: string;
     tags?: string[];
+    noise_decision?: string;
+    noise_policy_version?: string;
+    noise_policy_variant?: string;
+    noise_block_score?: number;
+    noise_score?: number;
+    noise_actionability_score?: number;
+    noise_reasons?: string[];
+    noise_decision_ts?: string;
   };
 }

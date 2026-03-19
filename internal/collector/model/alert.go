@@ -47,8 +47,16 @@ type Triage struct {
 }
 
 type TriageMetadata struct {
-	Author string   `json:"author,omitempty"`
-	Tags   []string `json:"tags,omitempty"`
+	Author                 string   `json:"author,omitempty"`
+	Tags                   []string `json:"tags,omitempty"`
+	NoiseDecision          string   `json:"noise_decision,omitempty"`
+	NoisePolicyVersion     string   `json:"noise_policy_version,omitempty"`
+	NoisePolicyVariant     string   `json:"noise_policy_variant,omitempty"`
+	NoiseBlockScore        float64  `json:"noise_block_score,omitempty"`
+	NoiseScore             float64  `json:"noise_score,omitempty"`
+	NoiseActionability     float64  `json:"noise_actionability_score,omitempty"`
+	NoiseReasons           []string `json:"noise_reasons,omitempty"`
+	NoiseDecisionTimestamp string   `json:"noise_decision_ts,omitempty"`
 }
 
 type DuplicateSample struct {

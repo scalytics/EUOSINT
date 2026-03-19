@@ -416,9 +416,28 @@ func TestApplyNoiseDecisionDowngradesAlert(t *testing.T) {
 		Category: "public_appeal",
 		Severity: "high",
 	}
-	applyNoiseDecision(alert, noisegate.Decision{Outcome: noisegate.OutcomeDowngrade})
+	applyNoiseDecision(alert, noisegate.Decision{
+		Outcome:            noisegate.OutcomeDowngrade,
+		PolicyVersion:      "v1",
+		BlockScore:         0.2,
+		NoiseScore:         0.8,
+		ActionabilityScore: 0.3,
+		Reasons:            []string{"downgrade-threshold"},
+	})
 	if alert.Category != "informational" || alert.Severity != "info" {
 		t.Fatalf("expected informational downgrade, got category=%q severity=%q", alert.Category, alert.Severity)
+	}
+	if alert.Triage == nil || alert.Triage.Metadata == nil {
+		t.Fatalf("expected triage metadata to be populated, got %#v", alert.Triage)
+	}
+	if alert.Triage.Metadata.NoiseDecision != "downgrade" {
+		t.Fatalf("expected noise decision metadata, got %#v", alert.Triage.Metadata)
+	}
+	if alert.Triage.Metadata.NoisePolicyVersion != "v1" {
+		t.Fatalf("expected policy version, got %#v", alert.Triage.Metadata)
+	}
+	if len(alert.Triage.WeakSignals) == 0 {
+		t.Fatalf("expected weak signal reason from downgrade, got %#v", alert.Triage)
 	}
 }
 
