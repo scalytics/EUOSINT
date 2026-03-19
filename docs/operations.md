@@ -149,8 +149,6 @@ Optional A/B testing is supported with `registry/noise_policy_b.json`.
 | `NOISE_POLICY_B_PATH` | `registry/noise_policy_b.json` | Secondary policy for A/B evaluation |
 | `NOISE_POLICY_B_PERCENT` | `0` | Percent of items routed to policy B (0–100) |
 | `NOISE_METRICS_OUTPUT_PATH` | `public/noise-metrics.json` | Output JSON for noise quality/drift metrics |
-| `REGISTRY_SYNC_ENABLED` | `true` | Enables seed-file -> SQLite registry sync worker (append+dedup) |
-| `REGISTRY_SYNC_INTERVAL_MS` | `900000` | Sync worker cadence in milliseconds |
 
 Guidance:
 
@@ -195,6 +193,7 @@ Alert payloads include `signal_lane`, event-geo fields, and `subcategory` so dow
 - New tables are created via `CREATE TABLE IF NOT EXISTS` in `internal/sourcedb/schema.sql`.
 - New columns are migrated via `ALTER TABLE` in `internal/sourcedb/db.go`.
 - Registry seed sync state is tracked in `registry_sync_state` (seed hash + last sync timestamp + source count).
+- When using SQLite registry mode, seed-file sync runs automatically in watch mode and applies append+dedup upserts only when the seed hash changes.
 
 ## Collector Lifecycle And Cadence Variables
 

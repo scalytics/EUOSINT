@@ -115,8 +115,6 @@ type Config struct {
 	NoisePolicyBPath                 string
 	NoisePolicyBPercent              int
 	NoiseMetricsOutputPath           string
-	RegistrySyncEnabled              bool
-	RegistrySyncIntervalMS           int
 	MilitaryBasesEnabled             bool
 	MilitaryBasesURL                 string
 	MilitaryBasesOutputPath          string
@@ -205,8 +203,6 @@ func Default() Config {
 		NoisePolicyBPath:                 "",
 		NoisePolicyBPercent:              0,
 		NoiseMetricsOutputPath:           "public/noise-metrics.json",
-		RegistrySyncEnabled:              true,
-		RegistrySyncIntervalMS:           defaultIntervalMS,
 		MilitaryBasesEnabled:             true,
 		MilitaryBasesURL:                 "https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_Military_Bases/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson",
 		MilitaryBasesOutputPath:          "public/geo/military-bases.geojson",
@@ -303,8 +299,6 @@ func FromEnv() Config {
 	cfg.NoisePolicyBPath = envString("NOISE_POLICY_B_PATH", cfg.NoisePolicyBPath)
 	cfg.NoisePolicyBPercent = envInt("NOISE_POLICY_B_PERCENT", cfg.NoisePolicyBPercent)
 	cfg.NoiseMetricsOutputPath = envString("NOISE_METRICS_OUTPUT_PATH", cfg.NoiseMetricsOutputPath)
-	cfg.RegistrySyncEnabled = envBool("REGISTRY_SYNC_ENABLED", cfg.RegistrySyncEnabled)
-	cfg.RegistrySyncIntervalMS = envInt("REGISTRY_SYNC_INTERVAL_MS", cfg.RegistrySyncIntervalMS)
 	cfg.MilitaryBasesEnabled = envBool("MILITARY_BASES_ENABLED", cfg.MilitaryBasesEnabled)
 	cfg.MilitaryBasesURL = envString("MILITARY_BASES_URL", cfg.MilitaryBasesURL)
 	cfg.MilitaryBasesOutputPath = envString("MILITARY_BASES_OUTPUT_PATH", cfg.MilitaryBasesOutputPath)

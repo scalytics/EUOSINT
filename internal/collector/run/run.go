@@ -76,9 +76,7 @@ func (r Runner) watch(ctx context.Context, cfg config.Config) error {
 	ticker := time.NewTicker(time.Duration(cfg.IntervalMS) * time.Millisecond)
 	defer ticker.Stop()
 
-	if cfg.RegistrySyncEnabled {
-		go r.runRegistrySyncLoop(ctx, cfg)
-	}
+	go r.runRegistrySyncLoop(ctx, cfg)
 
 	for {
 		if err := r.runOnce(ctx, cfg); err != nil {
@@ -414,10 +412,7 @@ func (r Runner) runRegistrySyncLoop(ctx context.Context, cfg config.Config) {
 	if err := r.syncRegistrySeed(ctx, cfg); err != nil {
 		fmt.Fprintf(r.stderr, "WARN registry sync: %v\n", err)
 	}
-	interval := cfg.RegistrySyncIntervalMS
-	if interval <= 0 {
-		interval = cfg.IntervalMS
-	}
+	interval := cfg.IntervalMS
 	if interval <= 0 {
 		interval = 60000
 	}
@@ -436,7 +431,7 @@ func (r Runner) runRegistrySyncLoop(ctx context.Context, cfg config.Config) {
 }
 
 func (r Runner) syncRegistrySeed(ctx context.Context, cfg config.Config) error {
-	if !cfg.RegistrySyncEnabled || !isSQLitePath(cfg.RegistryPath) {
+	if !isSQLitePath(cfg.RegistryPath) {
 		return nil
 	}
 	seedPath := strings.TrimSpace(cfg.RegistrySeedPath)
