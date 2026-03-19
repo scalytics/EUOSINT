@@ -232,6 +232,7 @@ func RSSItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model
 		Tags:     item.Tags,
 		FeedType: meta.Type,
 	})
+	assignSubcategory(&alert, item.Summary, item.Author, strings.Join(item.Tags, " "))
 	return &alert
 }
 
@@ -248,6 +249,7 @@ func HTMLItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *mode
 		Tags:     item.Tags,
 		FeedType: meta.Type,
 	})
+	assignSubcategory(&alert, item.Summary, strings.Join(item.Tags, " "))
 	return &alert
 }
 
@@ -276,6 +278,7 @@ func KEVAlert(ctx Context, meta model.RegistrySource, cveID string, vulnName str
 		Tags:     tags,
 		FeedType: meta.Type,
 	})
+	assignSubcategory(&alert, vulnName, description, strings.Join(tags, " "))
 	return &alert
 }
 
@@ -309,6 +312,7 @@ func InterpolAlert(ctx Context, meta model.RegistrySource, noticeID string, titl
 		Tags:     tags,
 		FeedType: meta.Type,
 	})
+	assignSubcategory(&alert, summary, strings.Join(tags, " "))
 	return &alert
 }
 
@@ -325,6 +329,7 @@ func FBIWantedAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem)
 		FeedType: meta.Type,
 	})
 	alert.Triage = triage
+	assignSubcategory(&alert, item.Summary, strings.Join(item.Tags, " "))
 	return &alert
 }
 
@@ -363,6 +368,7 @@ func ACLEDAlert(ctx Context, meta model.RegistrySource, ev parse.ACLEDItem) *mod
 		FeedType: meta.Type,
 	})
 	alert.Triage = triage
+	assignSubcategory(&alert, ev.Summary, ev.EventType, strings.Join(ev.Tags, " "))
 	return &alert
 }
 
@@ -406,6 +412,7 @@ func UCDPAlert(ctx Context, meta model.RegistrySource, ev parse.UCDPItem) *model
 		FeedType: meta.Type,
 	})
 	alert.Triage = triage
+	assignSubcategory(&alert, ev.Summary, ev.Region, strings.Join(ev.Tags, " "))
 	return &alert
 }
 
@@ -426,6 +433,7 @@ func TravelWarningAlert(ctx Context, meta model.RegistrySource, item parse.FeedI
 		FeedType: meta.Type,
 	})
 	alert.Triage = triage
+	assignSubcategory(&alert, item.Summary, item.Author, strings.Join(item.Tags, " "))
 	return &alert
 }
 
@@ -465,6 +473,7 @@ func USGSAlert(ctx Context, meta model.RegistrySource, ev parse.USGSItem) *model
 		FeedType: meta.Type,
 	})
 	alert.Triage = triage
+	assignSubcategory(&alert, ev.Summary, strings.Join(ev.Tags, " "))
 	return &alert
 }
 
@@ -489,6 +498,7 @@ func EONETAlert(ctx Context, meta model.RegistrySource, ev parse.EONETItem) *mod
 		FeedType: meta.Type,
 	})
 	alert.Triage = triage
+	assignSubcategory(&alert, ev.Summary, strings.Join(ev.Tags, " "))
 	return &alert
 }
 
@@ -523,6 +533,7 @@ func GDELTAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem, sou
 		FeedType: meta.Type,
 	})
 	alert.Triage = triage
+	assignSubcategory(&alert, item.Summary, item.Author, sourceCountry, strings.Join(item.Tags, " "))
 	return &alert
 }
 
@@ -558,6 +569,7 @@ func FeodoAlert(ctx Context, meta model.RegistrySource, ev parse.FeodoItem) *mod
 		FeedType: meta.Type,
 	})
 	alert.Triage = triage
+	assignSubcategory(&alert, ev.Summary, ev.IPAddress, strings.Join(ev.Tags, " "))
 	return &alert
 }
 
@@ -572,6 +584,7 @@ func StaticInterpolEntry(now time.Time) model.Alert {
 		LastSeen:           now.UTC().Format(time.RFC3339),
 		Status:             "active",
 		Category:           "wanted_suspect",
+		Subcategory:        "wanted_notice",
 		Severity:           "critical",
 		SignalLane:         model.SignalLaneAlarm,
 		RegionTag:          "INT",
@@ -708,6 +721,7 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		LastSeen:           ctx.Now.UTC().Format(time.RFC3339),
 		Status:             "active",
 		Category:           canonicalCategory,
+		Subcategory:        inferSubcategory(canonicalCategory, title+"\n"+geoText),
 		Severity:           canonicalSeverity,
 		RegionTag:          meta.RegionTag,
 		Lat:                lat,
@@ -982,9 +996,11 @@ func normalizeInformational(cfg config.Config, alert model.Alert, feed FeedConte
 		}
 		alert.Category = "informational"
 		alert.Severity = "info"
+		assignSubcategory(&alert, feed.Summary, feed.Author, strings.Join(feed.Tags, " "))
 		return alert
 	}
 	if !isSecurityInformational(alert, feed) || alert.Triage == nil {
+		assignSubcategory(&alert, feed.Summary, feed.Author, strings.Join(feed.Tags, " "))
 		return alert
 	}
 	threshold := clamp01(cfg.IncidentRelevanceThreshold)
@@ -996,7 +1012,149 @@ func normalizeInformational(cfg config.Config, alert model.Alert, feed FeedConte
 	alert.Triage.Confidence = "medium"
 	alert.Triage.Disposition = "retained"
 	alert.Triage.WeakSignals = append([]string{"reclassified as informational security/cybersecurity update"}, limitStrings(alert.Triage.WeakSignals, 10)...)
+	assignSubcategory(&alert, feed.Summary, feed.Author, strings.Join(feed.Tags, " "))
 	return alert
+}
+
+func assignSubcategory(alert *model.Alert, parts ...string) {
+	if alert == nil {
+		return
+	}
+	text := alert.Title
+	if len(parts) > 0 {
+		text += "\n" + strings.Join(parts, "\n")
+	}
+	alert.Subcategory = inferSubcategory(alert.Category, text)
+}
+
+func inferSubcategory(category string, text string) string {
+	cat := strings.ToLower(strings.TrimSpace(category))
+	lower := strings.ToLower(strings.TrimSpace(text))
+	if cat == "" || lower == "" {
+		return ""
+	}
+	switch cat {
+	case "cyber_advisory":
+		switch {
+		case containsAny(lower, "cve-", "vulnerability", "zero-day", "patch"):
+			return "vulnerability"
+		case containsAny(lower, "ransomware", "extortion"):
+			return "ransomware"
+		case containsAny(lower, "phishing", "smishing", "vishing"):
+			return "phishing"
+		case containsAny(lower, "breach", "data leak", "compromised", "unauthorized access"):
+			return "data_breach"
+		default:
+			return "cyber_incident"
+		}
+	case "conflict_monitoring":
+		switch {
+		case containsAny(lower, "airstrike", "air strike", "missile", "drone strike"):
+			return "airstrike"
+		case containsAny(lower, "shelling", "artillery", "ground assault", "clashes", "clash"):
+			return "ground_clash"
+		case containsAny(lower, "ceasefire", "truce", "peace talk", "peace talks"):
+			return "ceasefire"
+		default:
+			return "conflict_event"
+		}
+	case "maritime_security":
+		switch {
+		case containsAny(lower, "piracy", "pirate", "hijack", "boarded", "boarding"):
+			return "piracy"
+		case containsAny(lower, "collision", "grounding", "capsized", "distress", "sos", "mayday"):
+			return "vessel_incident"
+		case containsAny(lower, "port closed", "port closure", "port disruption", "canal"):
+			return "port_disruption"
+		default:
+			return "maritime_event"
+		}
+	case "logistics_incident":
+		switch {
+		case containsAny(lower, "port closed", "port closure", "port disruption", "terminal"):
+			return "port_disruption"
+		case containsAny(lower, "rail", "train derail", "derailment", "track closure"):
+			return "rail_disruption"
+		case containsAny(lower, "airport", "runway", "flight suspension", "airspace"):
+			return "aviation_disruption"
+		default:
+			return "supply_chain_disruption"
+		}
+	case "environmental_disaster":
+		switch {
+		case containsAny(lower, "earthquake", "aftershock", "seismic"):
+			return "earthquake"
+		case containsAny(lower, "eruption", "volcano", "lava"):
+			return "volcanic_activity"
+		case containsAny(lower, "flood", "flooding", "inundation"):
+			return "flood"
+		case containsAny(lower, "wildfire", "forest fire", "bushfire"):
+			return "wildfire"
+		case containsAny(lower, "cyclone", "hurricane", "typhoon", "storm"):
+			return "storm"
+		default:
+			return "natural_hazard"
+		}
+	case "disease_outbreak", "health_emergency":
+		if containsAny(lower, "outbreak", "cluster", "epidemic", "pandemic") {
+			return "outbreak"
+		}
+		return "public_health"
+	case "fraud_alert":
+		switch {
+		case containsAny(lower, "money laundering", "laundering"):
+			return "money_laundering"
+		case containsAny(lower, "organized crime", "trafficking", "cartel"):
+			return "organized_crime"
+		default:
+			return "fraud_scam"
+		}
+	case "terrorism_tip":
+		if containsAny(lower, "financing", "funding", "material support") {
+			return "terror_financing"
+		}
+		return "terror_activity"
+	case "travel_warning":
+		switch {
+		case containsAny(lower, "level 4", "do not travel", "advise against all travel"):
+			return "advisory_level_4"
+		case containsAny(lower, "level 3", "reconsider travel", "all but essential travel"):
+			return "advisory_level_3"
+		case containsAny(lower, "level 2", "exercise increased caution"):
+			return "advisory_level_2"
+		default:
+			return "travel_advisory"
+		}
+	case "wanted_suspect":
+		return "wanted_notice"
+	case "missing_person":
+		return "missing_notice"
+	case "public_safety":
+		switch {
+		case containsAny(lower, "earthquake", "eruption", "wildfire", "flood", "storm"):
+			return "hazard_warning"
+		case containsAny(lower, "arrest", "detained", "seized", "raid"):
+			return "law_enforcement_action"
+		default:
+			return "public_safety_bulletin"
+		}
+	case "legislative":
+		switch {
+		case containsAny(lower, "declare war", "declaration of war", "attacked", "invasion", "state of emergency", "martial law"):
+			return "strategic_escalation"
+		case containsAny(lower, "sanction", "embargo", "designation"):
+			return "sanctions_policy"
+		default:
+			return "official_statement"
+		}
+	case "informational":
+		if containsAny(lower, "sanction", "legislation", "bill", "decree", "executive order", "parliament", "committee") {
+			return "policy_update"
+		}
+		return "context_update"
+	default:
+		return ""
+	}
 }
 
 func shouldDowngradeLegislativeToInformational(alert model.Alert, feed FeedContext) bool {

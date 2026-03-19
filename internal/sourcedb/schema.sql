@@ -161,6 +161,7 @@ CREATE TABLE IF NOT EXISTS alerts (
   title TEXT NOT NULL,
   canonical_url TEXT NOT NULL,
   category TEXT NOT NULL,
+  subcategory TEXT NOT NULL DEFAULT '',
   severity TEXT NOT NULL,
   signal_lane TEXT NOT NULL DEFAULT 'intel',
   region_tag TEXT NOT NULL,

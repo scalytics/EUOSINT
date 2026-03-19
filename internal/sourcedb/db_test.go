@@ -359,6 +359,7 @@ func TestSaveAndLoadAlertsReplacesMaterializedStateWithoutDuplicates(t *testing.
 			LastSeen:     lastSeen,
 			Status:       "active",
 			Category:     "cyber_advisory",
+			Subcategory:  "vulnerability",
 			Severity:     "high",
 			RegionTag:    "EU",
 			Source: model.SourceMetadata{
@@ -391,6 +392,9 @@ func TestSaveAndLoadAlertsReplacesMaterializedStateWithoutDuplicates(t *testing.
 	}
 	if loaded[0].FirstSeen != firstSeen {
 		t.Fatalf("expected first_seen %q, got %q", firstSeen, loaded[0].FirstSeen)
+	}
+	if loaded[0].Subcategory != "vulnerability" {
+		t.Fatalf("expected subcategory to round-trip, got %q", loaded[0].Subcategory)
 	}
 }
 

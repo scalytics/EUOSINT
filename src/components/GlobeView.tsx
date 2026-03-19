@@ -63,6 +63,15 @@ function dominantCountryLabel(alerts: Alert[]): string {
   return best || "Unknown";
 }
 
+function formatSubcategory(raw: string | undefined): string {
+  const value = (raw ?? "").trim();
+  if (!value) return "";
+  return value
+    .split("_")
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(" ");
+}
+
 /* ── Props ────────────────────────────────────────────────────────── */
 
 interface Props {
@@ -458,7 +467,11 @@ export function GlobeView({
         .slice(0, 16)
         .map((alert: Alert, idx: number) => {
           const title = escapeHtml(alert.title);
-          return `<button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:6px 0;cursor:pointer;border-bottom:1px solid rgba(148,163,184,.16);font-size:12px;line-height:1.3;color:#f3f4f6;">${idx + 1}. ${title}</button>`;
+          const subcategory = escapeHtml(formatSubcategory(alert.subcategory));
+          const meta = subcategory
+            ? `<div style="font-size:10px;line-height:1.2;color:#94a3b8;margin-top:2px;">${subcategory}</div>`
+            : "";
+          return `<button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:6px 0;cursor:pointer;border-bottom:1px solid rgba(148,163,184,.16);font-size:12px;line-height:1.3;color:#f3f4f6;"><div>${idx + 1}. ${title}</div>${meta}</button>`;
         })
         .join("");
       const more = childAlerts.length > 16

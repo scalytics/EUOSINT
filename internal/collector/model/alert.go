@@ -13,6 +13,7 @@ type Alert struct {
 	LastSeen           string            `json:"last_seen"`
 	Status             string            `json:"status"`
 	Category           string            `json:"category"`
+	Subcategory        string            `json:"subcategory,omitempty"`
 	Severity           string            `json:"severity"`
 	SignalLane         SignalLane        `json:"signal_lane,omitempty"`
 	RegionTag          string            `json:"region_tag"`

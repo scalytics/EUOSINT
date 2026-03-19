@@ -175,6 +175,8 @@ The collector API now supports analyst feedback used for precision tracking:
   - `include_removed=true|false`
   - `lane=alarm|intel|info|all`
 
+Alert payloads include `signal_lane`, event-geo fields, and `subcategory` so downstream UIs can separate alarms vs intelligence vs briefing context and render finer-grained labels without changing top-level category filters.
+
 ### Noise Metrics Output
 
 `NOISE_METRICS_OUTPUT_PATH` writes a periodic JSON snapshot including:

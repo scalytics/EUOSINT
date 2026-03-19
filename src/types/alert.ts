@@ -60,6 +60,7 @@ export interface Alert {
   last_seen: string;
   status: AlertStatus;
   category: AlertCategory;
+  subcategory?: string;
   severity: Severity;
   signal_lane?: SignalLane;
   region_tag: string;

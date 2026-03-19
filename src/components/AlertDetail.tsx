@@ -27,6 +27,11 @@ interface Props {
 
 export function AlertDetail({ alert, onClose }: Props) {
   if (!alert) return null;
+  const subcategoryLabel = (alert.subcategory ?? "")
+    .split("_")
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(" ")
+    .trim();
   const eventCountry = alert.event_country || alert.source.country;
   const sourceCountry = alert.source.country;
   const geoSource = alert.event_geo_source || "registry";
@@ -134,6 +139,11 @@ export function AlertDetail({ alert, onClose }: Props) {
               Category
             </div>
             <div className="text-sm">{categoryLabels[alert.category]}</div>
+            {subcategoryLabel && (
+              <div className="mt-1 text-2xs uppercase tracking-wider text-siem-muted">
+                {subcategoryLabel}
+              </div>
+            )}
           </div>
           <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
             <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">

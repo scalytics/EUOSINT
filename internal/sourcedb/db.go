@@ -138,6 +138,7 @@ func (db *DB) Init(ctx context.Context) error {
 		`ALTER TABLE sources ADD COLUMN is_mirror INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE sources ADD COLUMN preferred_source_rank INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE alerts ADD COLUMN signal_lane TEXT NOT NULL DEFAULT 'intel'`,
+		`ALTER TABLE alerts ADD COLUMN subcategory TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE alerts ADD COLUMN event_country TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE alerts ADD COLUMN event_country_code TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE alerts ADD COLUMN event_geo_source TEXT NOT NULL DEFAULT ''`,
@@ -483,6 +484,7 @@ func (db *DB) LoadAlerts(ctx context.Context) ([]model.Alert, error) {
   title,
   canonical_url,
 	  category,
+	  subcategory,
 	  severity,
 	  signal_lane,
 	  region_tag,
@@ -518,6 +520,7 @@ ORDER BY last_seen DESC`)
 			&alert.Title,
 			&alert.CanonicalURL,
 			&alert.Category,
+			&alert.Subcategory,
 			&alert.Severity,
 			&alert.SignalLane,
 			&alert.RegionTag,
@@ -807,10 +810,10 @@ func (db *DB) SaveAlerts(ctx context.Context, alerts []model.Alert) error {
 		if _, err := tx.ExecContext(ctx, `
 	INSERT INTO alerts (
 	  alert_id, source_id, status, first_seen, last_seen, title, canonical_url,
-	  category, severity, signal_lane, region_tag, lat, lng, event_country, event_country_code,
+	  category, subcategory, severity, signal_lane, region_tag, lat, lng, event_country, event_country_code,
 	  event_geo_source, event_geo_confidence, freshness_hours, source_json,
 	  reporting_json, triage_json
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(alert_id) DO UPDATE SET
 	  source_id = excluded.source_id,
 	  status = excluded.status,
@@ -819,6 +822,7 @@ func (db *DB) SaveAlerts(ctx context.Context, alerts []model.Alert) error {
 	  title = excluded.title,
 	  canonical_url = excluded.canonical_url,
 	  category = excluded.category,
+	  subcategory = excluded.subcategory,
 	  severity = excluded.severity,
 	  signal_lane = excluded.signal_lane,
 	  region_tag = excluded.region_tag,
@@ -832,7 +836,7 @@ func (db *DB) SaveAlerts(ctx context.Context, alerts []model.Alert) error {
 	  source_json = excluded.source_json,
 	  reporting_json = excluded.reporting_json,
 	  triage_json = excluded.triage_json
-	`, alert.AlertID, alert.SourceID, alert.Status, alert.FirstSeen, alert.LastSeen, alert.Title, alert.CanonicalURL, alert.Category, alert.Severity, alert.SignalLane, alert.RegionTag, alert.Lat, alert.Lng, alert.EventCountry, alert.EventCountryCode, alert.EventGeoSource, alert.EventGeoConfidence, alert.FreshnessHours, string(sourceJSON), string(reportingJSON), string(triageJSON)); err != nil {
+	`, alert.AlertID, alert.SourceID, alert.Status, alert.FirstSeen, alert.LastSeen, alert.Title, alert.CanonicalURL, alert.Category, alert.Subcategory, alert.Severity, alert.SignalLane, alert.RegionTag, alert.Lat, alert.Lng, alert.EventCountry, alert.EventCountryCode, alert.EventGeoSource, alert.EventGeoConfidence, alert.FreshnessHours, string(sourceJSON), string(reportingJSON), string(triageJSON)); err != nil {
 			return fmt.Errorf("upsert alert %s: %w", alert.AlertID, err)
 		}
 	}
@@ -1022,7 +1026,7 @@ func (db *DB) SearchAlerts(ctx context.Context, query string, category string, r
 		args = append(args, limit)
 		rows, err = db.sql.QueryContext(ctx, `
 SELECT a.alert_id, a.source_id, a.status, a.first_seen, a.last_seen, a.title,
-  a.canonical_url, a.category, a.severity, a.signal_lane, a.region_tag, a.lat, a.lng,
+  a.canonical_url, a.category, a.subcategory, a.severity, a.signal_lane, a.region_tag, a.lat, a.lng,
   a.event_country, a.event_country_code, a.event_geo_source, a.event_geo_confidence,
   a.freshness_hours, a.source_json, a.reporting_json, a.triage_json,
   bm25(alerts_fts, 0, 10.0, 0, 3.0, 0, 2.0, 2.0, 2.0, 1.0) AS rank
@@ -1050,7 +1054,7 @@ LIMIT ?`, args...)
 		args = append(args, limit)
 		rows, err = db.sql.QueryContext(ctx, `
 SELECT a.alert_id, a.source_id, a.status, a.first_seen, a.last_seen, a.title,
-  a.canonical_url, a.category, a.severity, a.signal_lane, a.region_tag, a.lat, a.lng,
+  a.canonical_url, a.category, a.subcategory, a.severity, a.signal_lane, a.region_tag, a.lat, a.lng,
   a.event_country, a.event_country_code, a.event_geo_source, a.event_geo_confidence,
   a.freshness_hours, a.source_json, a.reporting_json, a.triage_json,
   0 AS rank
@@ -1079,7 +1083,7 @@ LIMIT ?`, args...)
 			rank       float64
 		)
 		if err := rows.Scan(&a.AlertID, &a.SourceID, &a.Status, &a.FirstSeen, &a.LastSeen,
-			&a.Title, &a.CanonicalURL, &a.Category, &a.Severity, &a.SignalLane, &a.RegionTag,
+			&a.Title, &a.CanonicalURL, &a.Category, &a.Subcategory, &a.Severity, &a.SignalLane, &a.RegionTag,
 			&a.Lat, &a.Lng, &a.EventCountry, &a.EventCountryCode, &a.EventGeoSource, &a.EventGeoConfidence,
 			&a.FreshnessHours, &sourceJSON, &reportJSON, &triageJSON, &rank); err != nil {
 			return nil, fmt.Errorf("scan search result: %w", err)

@@ -561,3 +561,52 @@ func TestLegacyCategoryRemapOnAlertBuild(t *testing.T) {
 		t.Fatalf("expected humanitarian_security -> conflict_monitoring, got %#v", a3)
 	}
 }
+
+func TestInferSubcategoryHeuristics(t *testing.T) {
+	tests := []struct {
+		name     string
+		category string
+		text     string
+		want     string
+	}{
+		{
+			name:     "cyber vulnerability",
+			category: "cyber_advisory",
+			text:     "Critical CVE-2026-1234 vulnerability requires immediate patch",
+			want:     "vulnerability",
+		},
+		{
+			name:     "maritime piracy",
+			category: "maritime_security",
+			text:     "Oil tanker boarded by armed pirates in gulf transit route",
+			want:     "piracy",
+		},
+		{
+			name:     "environment earthquake",
+			category: "environmental_disaster",
+			text:     "Magnitude 6.2 earthquake triggers aftershocks",
+			want:     "earthquake",
+		},
+		{
+			name:     "legislative escalation",
+			category: "legislative",
+			text:     "Parliament approves declaration of war after invasion",
+			want:     "strategic_escalation",
+		},
+		{
+			name:     "informational policy",
+			category: "informational",
+			text:     "Committee approved new sanctions package and executive order",
+			want:     "policy_update",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := inferSubcategory(tc.category, tc.text)
+			if got != tc.want {
+				t.Fatalf("inferSubcategory(%q, %q) = %q, want %q", tc.category, tc.text, got, tc.want)
+			}
+		})
+	}
+}

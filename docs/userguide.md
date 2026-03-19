@@ -4,6 +4,8 @@
 
 EUOSINT classifies every alert into one of the following categories. Each category groups a specific type of intelligence and is sourced from relevant official feeds.
 
+Each alert also carries a derived `subcategory` (for example `piracy`, `airstrike`, `money_laundering`, `earthquake`, `policy_update`) to improve clustering and analyst triage without expanding the left-panel primary category filters.
+
 ### Cyber Advisory
 Vulnerability disclosures, patch advisories, and threat intelligence from national CERTs and cybersecurity agencies. Covers zero-days, actively exploited CVEs, ransomware campaigns, and critical infrastructure advisories.
 
@@ -117,7 +119,7 @@ Only the most recent window is fetched each cycle. Notices are pinned on the map
 
 The map uses [CARTO](https://carto.com/) dark basemap tiles loaded from their CDN. An active internet connection is required for map rendering. Missing or slow-loading tiles indicate network connectivity issues to `basemaps.cartocdn.com`.
 
-Alerts are plotted at their source country coordinates. International sources (Interpol, UN agencies) are geocoded to the relevant crisis or nationality country when possible.
+Alerts are plotted at event coordinates/country when resolvable. If event location confidence is low, fallback pinning uses source-country coordinates with low-confidence metadata.
 
 ---
 
