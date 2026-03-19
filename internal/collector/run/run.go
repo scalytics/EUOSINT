@@ -1592,10 +1592,14 @@ func (r Runner) fetchGDELT(ctx context.Context, fetcher fetch.Fetcher, nctx norm
 }
 
 func (r Runner) fetchUCDP(ctx context.Context, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	token := strings.TrimSpace(nctx.Config.UCDPAccessToken)
+	if token == "" {
+		// Silent drop by configuration: no token means UCDP is disabled.
+		return nil, nil
+	}
 	client := r.clientFactory(nctx.Config)
-	headers := map[string]string{}
-	if token := strings.TrimSpace(nctx.Config.UCDPAccessToken); token != "" {
-		headers["x-ucdp-access-token"] = token
+	headers := map[string]string{
+		"x-ucdp-access-token": token,
 	}
 	body, err := client.TextWithHeaders(ctx, source.FeedURL, source.FollowRedirects, "application/json", headers)
 	if err != nil {

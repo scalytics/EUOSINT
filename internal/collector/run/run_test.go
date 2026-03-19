@@ -20,6 +20,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/fetch"
 	"github.com/scalytics/euosint/internal/collector/model"
 	"github.com/scalytics/euosint/internal/collector/noisegate"
+	"github.com/scalytics/euosint/internal/collector/normalize"
 	"github.com/scalytics/euosint/internal/collector/parse"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
@@ -290,6 +291,34 @@ func TestShouldRefreshOutput(t *testing.T) {
 	}
 	if !shouldRefreshOutput(path, 168, now) {
 		t.Fatal("expected stale output file to require refresh")
+	}
+}
+
+func TestFetchUCDPSkipsSilentlyWithoutToken(t *testing.T) {
+	runner := New(io.Discard, io.Discard)
+	called := false
+	runner.clientFactory = func(cfg config.Config) *fetch.Client {
+		called = true
+		return fetch.New(cfg)
+	}
+
+	cfg := config.Default()
+	cfg.UCDPAccessToken = ""
+	nctx := normalize.Context{Config: cfg, Now: time.Date(2026, 3, 19, 0, 0, 0, 0, time.UTC)}
+	source := model.RegistrySource{
+		Type:    "ucdp-json",
+		FeedURL: "https://ucdpapi.pcr.uu.se/api/gedevents/25.1",
+	}
+
+	alerts, err := runner.fetchUCDP(context.Background(), nctx, source)
+	if err != nil {
+		t.Fatalf("expected silent skip without token, got error: %v", err)
+	}
+	if len(alerts) != 0 {
+		t.Fatalf("expected zero alerts when token missing, got %d", len(alerts))
+	}
+	if called {
+		t.Fatal("expected no HTTP client calls when UCDP token is missing")
 	}
 }
 
