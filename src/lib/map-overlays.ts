@@ -68,6 +68,63 @@ const baseTypeIcons: Record<string, string> = {
   intelligence: "\u25C9", // fisheye
 };
 
+function pickString(props: Record<string, unknown>, ...keys: string[]): string {
+  for (const key of keys) {
+    const value = props[key];
+    if (typeof value === "string" && value.trim() !== "") {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
+function collectLonLat(coords: unknown, out: Array<[number, number]>): void {
+  if (!Array.isArray(coords)) return;
+  if (coords.length >= 2 && typeof coords[0] === "number" && typeof coords[1] === "number") {
+    out.push([coords[0], coords[1]]);
+    return;
+  }
+  for (const item of coords) {
+    collectLonLat(item, out);
+  }
+}
+
+function geometryCenterLatLng(geometry: { type?: string; coordinates?: unknown } | undefined): L.LatLng | null {
+  if (!geometry || !geometry.type) return null;
+  if (geometry.type === "Point" && Array.isArray(geometry.coordinates) && geometry.coordinates.length >= 2) {
+    const lon = geometry.coordinates[0];
+    const lat = geometry.coordinates[1];
+    if (typeof lon === "number" && typeof lat === "number") {
+      return L.latLng(lat, lon);
+    }
+    return null;
+  }
+  const points: Array<[number, number]> = [];
+  collectLonLat(geometry.coordinates, points);
+  if (points.length === 0) return null;
+  let minLon = points[0][0];
+  let maxLon = points[0][0];
+  let minLat = points[0][1];
+  let maxLat = points[0][1];
+  for (const [lon, lat] of points) {
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+  return L.latLng((minLat + maxLat) / 2, (minLon + maxLon) / 2);
+}
+
+function inferBaseType(name: string, description: string, component: string, isJoint: boolean): string {
+  if (isJoint) return "joint";
+  const text = `${name} ${description} ${component}`.toLowerCase();
+  if (text.includes("intel")) return "intelligence";
+  if (text.includes("air") || text.includes("afb") || text.includes("air force")) return "air";
+  if (text.includes("naval") || text.includes("navy") || text.includes("shipyard")) return "naval";
+  if (text.includes("army") || text.includes("fort") || text.includes("camp")) return "army";
+  return "joint";
+}
+
 const sanctionTypeColors: Record<string, string> = {
   comprehensive: "#f87171",
   sectoral: "#fb923c",
@@ -136,25 +193,35 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "bases") {
-    L.geoJSON(geojson, {
-      pointToLayer: (_feature, latlng) => {
-        return L.circleMarker(latlng, {
-          radius: 4,
-          fillColor: def.color,
-          color: `${def.color}99`,
-          weight: 1,
-          fillOpacity: 0.85,
-        });
-      },
-      onEachFeature: (feature, layer) => {
-        const p = feature.properties;
-        const icon = baseTypeIcons[p.type] ?? "\u2605";
-        layer.bindTooltip(
-          `${icon} <strong>${p.name}</strong> (${p.country})<br/>${p.operator} — ${p.type}`,
-          { className: "siem-tooltip", direction: "top" },
-        );
-      },
-    }).addTo(group);
+    const features = Array.isArray((geojson as { features?: unknown[] }).features)
+      ? ((geojson as { features: Array<{ geometry?: { type?: string; coordinates?: unknown }; properties?: Record<string, unknown> }> }).features)
+      : [];
+    for (const feature of features) {
+      const latlng = geometryCenterLatLng(feature.geometry);
+      if (!latlng) continue;
+      const props = feature.properties ?? {};
+      const name = pickString(props, "name", "featureName", "siteName") || "Military Base";
+      const country = pickString(props, "country", "countryName", "stateNameCode") || "US";
+      const operator = pickString(props, "operator", "siteReportingComponent") || "DoD";
+      const description = pickString(props, "featureDescription");
+      const component = pickString(props, "siteReportingComponent");
+      const isJoint = props.isJointBase === true || props.isJointBase === 1 || props.isJointBase === "1";
+      const type = pickString(props, "type") || inferBaseType(name, description, component, isJoint);
+      const icon = baseTypeIcons[type] ?? "\u2605";
+
+      const marker = L.circleMarker(latlng, {
+        radius: 4,
+        fillColor: def.color,
+        color: `${def.color}99`,
+        weight: 1,
+        fillOpacity: 0.85,
+      });
+      marker.bindTooltip(
+        `${icon} <strong>${name}</strong> (${country})<br/>${operator} — ${type}`,
+        { className: "siem-tooltip", direction: "top" },
+      );
+      marker.addTo(group);
+    }
   } else if (def.id === "nuclear") {
     L.geoJSON(geojson, {
       pointToLayer: (_feature, latlng) => {
