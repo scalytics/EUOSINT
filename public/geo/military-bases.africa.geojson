@@ -1,0 +1,4424 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Al Udeid Air Base",
+        "country": "QA",
+        "operator": "US",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.31,
+          25.12
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Camp Lemonnier",
+        "country": "DJ",
+        "operator": "US",
+        "type": "joint"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.15,
+          11.55
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bahrain Naval Base",
+        "country": "BH",
+        "operator": "US",
+        "type": "naval"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.6,
+          26.2
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Djibouti PLA Support Base",
+        "country": "DJ",
+        "operator": "CN",
+        "type": "joint"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.08,
+          11.59
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Muwaffaq Salti AB",
+        "country": "JO",
+        "operator": "US",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.78,
+          32.36
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Prince Sultan AB",
+        "country": "SA",
+        "operator": "US",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          47.58,
+          24.06
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Djibouti (FR Forces)",
+        "country": "DJ",
+        "operator": "FR",
+        "type": "joint"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.14,
+          11.55
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Dakar (Éléments français)",
+        "country": "SN",
+        "operator": "FR",
+        "type": "joint"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -17.44,
+          14.69
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Nevatim AB",
+        "country": "IL",
+        "operator": "IL",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.98,
+          31.21
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Ramat David AB",
+        "country": "IL",
+        "operator": "IL",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          35.19,
+          32.67
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Berenice Military Base",
+        "country": "EG",
+        "operator": "EG",
+        "type": "joint"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          35.47,
+          23.97
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Palmachim AB",
+        "country": "IL",
+        "operator": "IL",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.69,
+          31.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Hatzerim AB",
+        "country": "IL",
+        "operator": "IL",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.66,
+          31.23
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Haifa Naval Base",
+        "country": "IL",
+        "operator": "IL",
+        "type": "naval"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          35,
+          32.82
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tel Nof AB",
+        "country": "IL",
+        "operator": "IL",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.82,
+          31.84
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Ramon AB",
+        "country": "IL",
+        "operator": "IL",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.67,
+          30.78
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Al Asad AB",
+        "country": "IQ",
+        "operator": "US/IQ",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          42.44,
+          33.79
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Ain al-Assad",
+        "country": "IQ",
+        "operator": "IQ",
+        "type": "joint"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          42.45,
+          33.78
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Balad AB (Joint Base)",
+        "country": "IQ",
+        "operator": "IQ",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.36,
+          33.94
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Basra AB",
+        "country": "IQ",
+        "operator": "IQ",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          47.66,
+          30.55
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Al-Jufra AB",
+        "country": "LY",
+        "operator": "RU/LNA",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16,
+          29.2
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Al-Khadim AB",
+        "country": "LY",
+        "operator": "RU/LNA",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.26,
+          31.07
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Cairo West AB",
+        "country": "EG",
+        "operator": "EG",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30.92,
+          30.12
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Alexandria Naval Base",
+        "country": "EG",
+        "operator": "EG",
+        "type": "naval"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          29.87,
+          31.2
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "King Abdulaziz AB (Dhahran)",
+        "country": "SA",
+        "operator": "SA",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.16,
+          26.27
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "King Faisal Naval Base (Jeddah)",
+        "country": "SA",
+        "operator": "SA",
+        "type": "naval"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          39.15,
+          21.54
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "King Khalid Military City",
+        "country": "SA",
+        "operator": "SA",
+        "type": "army"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          45.53,
+          27.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "King Fahd AB (Taif)",
+        "country": "SA",
+        "operator": "SA",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          40.54,
+          21.48
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Jubail Naval Base",
+        "country": "SA",
+        "operator": "SA",
+        "type": "naval"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          49.66,
+          27
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Ali Al Salem AB",
+        "country": "KW",
+        "operator": "US/KW",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          47.52,
+          29.35
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Camp Arifjan",
+        "country": "KW",
+        "operator": "US",
+        "type": "army"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          48.11,
+          29.07
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Casablanca Naval Base",
+        "country": "MA",
+        "operator": "MA",
+        "type": "naval"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.6,
+          33.6
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Abuja Military HQ",
+        "country": "NG",
+        "operator": "NG",
+        "type": "joint"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.49,
+          9.06
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Manda Bay (Camp Simba)",
+        "country": "KE",
+        "operator": "US/KE",
+        "type": "joint"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          41.2,
+          -2.27
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Baledogle AB",
+        "country": "SO",
+        "operator": "US/SO",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.77,
+          2.33
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Harar Meda AB",
+        "country": "ET",
+        "operator": "ET",
+        "type": "air"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          38.95,
+          8.72
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.60276,
+          24.34092
+        ]
+      },
+      "properties": {
+        "name": "Ras Ghumais Air Base",
+        "country": "AE",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.578968,
+          26.107242
+        ]
+      },
+      "properties": {
+        "name": "Riffa Air Base",
+        "country": "BH",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.608078,
+          25.946174
+        ]
+      },
+      "properties": {
+        "name": "Sheik Isa Air Base Helipad",
+        "country": "BH",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12.446136,
+          -5.918629
+        ]
+      },
+      "properties": {
+        "name": "Kitona Air Base",
+        "country": "CD",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.22321,
+          3.96893
+        ]
+      },
+      "properties": {
+        "name": "Limbé Military Heliport",
+        "country": "CM",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.288219,
+          26.712418
+        ]
+      },
+      "properties": {
+        "name": "Reggane Air Base",
+        "country": "DZ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.13258,
+          11.57195
+        ]
+      },
+      "properties": {
+        "name": "Djibouti Sudanese Military Hospital Heliport",
+        "country": "DJ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.15745,
+          11.54554
+        ]
+      },
+      "properties": {
+        "name": "Military Helipads (5x)",
+        "country": "DJ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.156668,
+          11.554781
+        ]
+      },
+      "properties": {
+        "name": "Military Helipad",
+        "country": "DJ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3821,
+          32.306198
+        ]
+      },
+      "properties": {
+        "name": "Remada Air Base",
+        "country": "TN",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.9939,
+          29.6397
+        ]
+      },
+      "properties": {
+        "name": "Boulaadam Air Base",
+        "country": "DZ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.43748,
+          24.42643
+        ]
+      },
+      "properties": {
+        "name": "Takhrekhuri Air Base",
+        "country": "DZ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          35.460277,
+          23.980437
+        ]
+      },
+      "properties": {
+        "name": "Berenice International Airport / Banas Cape Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "large_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30.664859,
+          31.043742
+        ]
+      },
+      "properties": {
+        "name": "Al Rahmaniyah Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.266932,
+          30.329104
+        ]
+      },
+      "properties": {
+        "name": "Fayed Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          33.827079,
+          31.144695
+        ]
+      },
+      "properties": {
+        "name": "El Arish Military Hospital Helipad",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.2463,
+          29.969388
+        ]
+      },
+      "properties": {
+        "name": "Maadi Military Hospital Heliport",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.37619,
+          31.21905
+        ]
+      },
+      "properties": {
+        "name": "East Port Said Naval Base Heliport",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.845586,
+          30.057669
+        ]
+      },
+      "properties": {
+        "name": "Katameya Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30.885848,
+          30.03825
+        ]
+      },
+      "properties": {
+        "name": "Sheikh Zayed City Military Airstrip",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30.893517,
+          30.039018
+        ]
+      },
+      "properties": {
+        "name": "Sheikh Zayed City Military Heliport",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          25.894004,
+          31.524462
+        ]
+      },
+      "properties": {
+        "name": "Western Military Region Stadium Heliport",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          29.799986,
+          31.031976
+        ]
+      },
+      "properties": {
+        "name": "RAF El Amiriya",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.466477,
+          30.997694
+        ]
+      },
+      "properties": {
+        "name": "RAF El Daba",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.412195,
+          30.247667
+        ]
+      },
+      "properties": {
+        "name": "RAF Kasfareet",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.16197,
+          29.81049
+        ]
+      },
+      "properties": {
+        "name": "West Cairo Military Hospital Heliport",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.944109,
+          30.842918
+        ]
+      },
+      "properties": {
+        "name": "El Alamein Heliport",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -14.48609,
+          26.10788
+        ]
+      },
+      "properties": {
+        "name": "Boujdour Military Heliport",
+        "country": "EH",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.919725,
+          -30.636509
+        ]
+      },
+      "properties": {
+        "name": "De Aar Military Airport",
+        "country": "ZA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.052921,
+          -24.361864
+        ]
+      },
+      "properties": {
+        "name": "Eastgate Airport / Air Force Base Hoedspruit",
+        "country": "ZA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.09869956970215,
+          -28.036800384521484
+        ]
+      },
+      "properties": {
+        "name": "Lohathla Military Airport",
+        "country": "ZA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          29.696501,
+          -23.159901
+        ]
+      },
+      "properties": {
+        "name": "Makhado Air Force Base Airport",
+        "country": "ZA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.1646,
+          -25.8097
+        ]
+      },
+      "properties": {
+        "name": "Swartkop Air Force Base",
+        "country": "ZA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.222499847399998,
+          -25.829999923699997
+        ]
+      },
+      "properties": {
+        "name": "Waterkloof Air Force Base",
+        "country": "ZA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.498301,
+          -33.9002
+        ]
+      },
+      "properties": {
+        "name": "Ysterplaat Air Force Base",
+        "country": "ZA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -14.392744,
+          -7.970179
+        ]
+      },
+      "properties": {
+        "name": "RAF Ascension Island",
+        "country": "SH",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.663889,
+          -12.997222
+        ]
+      },
+      "properties": {
+        "name": "Peter Zuze Air Force Base",
+        "country": "ZM",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.2606,
+          -9.65305
+        ]
+      },
+      "properties": {
+        "name": "Cabo Ledo Air Base",
+        "country": "AO",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.188644,
+          18.52793
+        ]
+      },
+      "properties": {
+        "name": "Ouadi Doum Air Base",
+        "country": "TD",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.700978,
+          -20.100491
+        ]
+      },
+      "properties": {
+        "name": "RAF Induna",
+        "country": "ZW",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          29.861945,
+          -19.436718
+        ]
+      },
+      "properties": {
+        "name": "Josiah Tungamirai Air Force Base",
+        "country": "ZW",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          27.502928,
+          -29.302799
+        ]
+      },
+      "properties": {
+        "name": "Mejametalana Air Base",
+        "country": "LS",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.66667,
+          4.156991
+        ]
+      },
+      "properties": {
+        "name": "Kotakoli Airbase",
+        "country": "CD",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          25.252899,
+          -8.64202
+        ]
+      },
+      "properties": {
+        "name": "Kamina Air Base",
+        "country": "CD",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.185487,
+          5.592844
+        ]
+      },
+      "properties": {
+        "name": "37 Military Hospital Helipad",
+        "country": "GH",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.448109,
+          30.332373
+        ]
+      },
+      "properties": {
+        "name": "Inshas Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.3309,
+          29.8225
+        ]
+      },
+      "properties": {
+        "name": "Helwan Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30.936001,
+          30.836599
+        ]
+      },
+      "properties": {
+        "name": "Birma Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          33.128543,
+          26.55239
+        ]
+      },
+      "properties": {
+        "name": "Abu Shahat Valley Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          25.584583,
+          29.552626
+        ]
+      },
+      "properties": {
+        "name": "Osman Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30.5602,
+          30.540501
+        ]
+      },
+      "properties": {
+        "name": "Gebel El Basur Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.4342,
+          30.9676
+        ]
+      },
+      "properties": {
+        "name": "Al Mansurah Airbase",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.095298767089844,
+          30.57270050048828
+        ]
+      },
+      "properties": {
+        "name": "Abu Suwayr Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.6014,
+          30.394899
+        ]
+      },
+      "properties": {
+        "name": "Bilbeis Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.359739,
+          30.091702
+        ]
+      },
+      "properties": {
+        "name": "Almaza Air Force Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.013471,
+          29.20224
+        ]
+      },
+      "properties": {
+        "name": "Bani Sweif Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30.915535,
+          30.116431
+        ]
+      },
+      "properties": {
+        "name": "Cairo West Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30.1912,
+          30.819799
+        ]
+      },
+      "properties": {
+        "name": "Jiyanklis Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.235689,
+          30.597951
+        ]
+      },
+      "properties": {
+        "name": "Ismailia Air Base",
+        "country": "EG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.159193,
+          -0.298419
+        ]
+      },
+      "properties": {
+        "name": "Lanet Military Airstrip",
+        "country": "KE",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          37.026901,
+          0.032933
+        ]
+      },
+      "properties": {
+        "name": "Laikipia Air Base",
+        "country": "KE",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.862301,
+          -1.27727
+        ]
+      },
+      "properties": {
+        "name": "Moi Air Base",
+        "country": "KE",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.8309,
+          21.6877
+        ]
+      },
+      "properties": {
+        "name": "Matan al-Sarra Air Base",
+        "country": "LY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.897899627700001,
+          32.473400116
+        ]
+      },
+      "properties": {
+        "name": "Okba Ibn Nafa Air Base",
+        "country": "LY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.597095,
+          31.058578
+        ]
+      },
+      "properties": {
+        "name": "Sirt International Airport / Ghardabiya Airbase",
+        "country": "LY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "large_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.287878,
+          32.89177
+        ]
+      },
+      "properties": {
+        "name": "Mitiga International Airport",
+        "country": "LY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "large_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          37.2159,
+          19.5765
+        ]
+      },
+      "properties": {
+        "name": "Port Sudan Air Base",
+        "country": "SD",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          38.153944,
+          -6.717083
+        ]
+      },
+      "properties": {
+        "name": "Ngerengere Air Force Base",
+        "country": "TZ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.914894,
+          32.087673
+        ]
+      },
+      "properties": {
+        "name": "RAF Petah Tikva",
+        "country": "IL",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          47.07957077026367,
+          31.81797218322754
+        ]
+      },
+      "properties": {
+        "name": "Amara New Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          45.33306,
+          32.504356
+        ]
+      },
+      "properties": {
+        "name": "An Numaniyah Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          47.10854,
+          30.354156
+        ]
+      },
+      "properties": {
+        "name": "Ar Rumaylah Southwest Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.56970977783203,
+          30.646995544433594
+        ]
+      },
+      "properties": {
+        "name": "As Salman North Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.67546081542969,
+          30.913951873779297
+        ]
+      },
+      "properties": {
+        "name": "Ghalaysan New Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          41.436712,
+          33.816262
+        ]
+      },
+      "properties": {
+        "name": "H1 New Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          40.5880241394043,
+          33.36372375488281
+        ]
+      },
+      "properties": {
+        "name": "H2 Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          39.74510192871094,
+          32.92938232421875
+        ]
+      },
+      "properties": {
+        "name": "H3 Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          39.59961700439453,
+          33.07456970214844
+        ]
+      },
+      "properties": {
+        "name": "H3 Northwest AFB",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          39.59955596923828,
+          32.74492645263672
+        ]
+      },
+      "properties": {
+        "name": "H3 Southwest Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.602779,
+          30.546518
+        ]
+      },
+      "properties": {
+        "name": "Jalibah Southeast Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.382240295410156,
+          32.11684036254883
+        ]
+      },
+      "properties": {
+        "name": "Kut Al Hayy East Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          41.9474945068,
+          32.4106712341
+        ]
+      },
+      "properties": {
+        "name": "Mudaysis Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          47.289791107177734,
+          31.456581115722656
+        ]
+      },
+      "properties": {
+        "name": "Qalat Salih Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.304840087890625,
+          31.83498191833496
+        ]
+      },
+      "properties": {
+        "name": "Qalat Sikar Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.493706,
+          33.279327
+        ]
+      },
+      "properties": {
+        "name": "Rasheed Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          39.12361145019531,
+          32.40611267089844
+        ]
+      },
+      "properties": {
+        "name": "Ruwayshid Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.629791259765625,
+          32.929039001464844
+        ]
+      },
+      "properties": {
+        "name": "Shayka Mazhar Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.182362,
+          31.417402
+        ]
+      },
+      "properties": {
+        "name": "Wadi Al Khirr New Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          41.45194,
+          33.79491
+        ]
+      },
+      "properties": {
+        "name": "H1 Old Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          47.94933,
+          30.01682
+        ]
+      },
+      "properties": {
+        "name": "Umm Qasr Naval Base Heliport",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.035301,
+          29.099199
+        ]
+      },
+      "properties": {
+        "name": "Hoseynaki Military Airfield",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.067501,
+          29.375799
+        ]
+      },
+      "properties": {
+        "name": "Ab Pakhsh Airport",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.85616,
+          28.90889
+        ]
+      },
+      "properties": {
+        "name": "Bahregan Air Base",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.139072,
+          35.309329
+        ]
+      },
+      "properties": {
+        "name": "Amuk-e-pāyin Military Helipad",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.004323,
+          35.529266
+        ]
+      },
+      "properties": {
+        "name": "Military Helipads (2x)",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.976434,
+          35.545758
+        ]
+      },
+      "properties": {
+        "name": "Military Runway",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.880347,
+          35.578874
+        ]
+      },
+      "properties": {
+        "name": "Military Runway",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.934827,
+          35.711762
+        ]
+      },
+      "properties": {
+        "name": "Military Heliport Runway (39x)",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.015551,
+          35.503671
+        ]
+      },
+      "properties": {
+        "name": "Military Helipads (6x)",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.484237,
+          36.049396
+        ]
+      },
+      "properties": {
+        "name": "Qazvin Province Army Airfield",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.219501,
+          31.997999
+        ]
+      },
+      "properties": {
+        "name": "King Abdullah II Air Base",
+        "country": "JO",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.147701,
+          30.3435
+        ]
+      },
+      "properties": {
+        "name": "King Feisal Air Base",
+        "country": "JO",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.12590026855469,
+          30.01919937133789
+        ]
+      },
+      "properties": {
+        "name": "Al Jafr 2 Air Base",
+        "country": "JO",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          35.01945,
+          29.57194
+        ]
+      },
+      "properties": {
+        "name": "Prince Hashem bin Abdullah Military Hospital Heliport",
+        "country": "JO",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.6908,
+          31.8979
+        ]
+      },
+      "properties": {
+        "name": "Palmahim Air Base",
+        "country": "IL",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.8218,
+          31.8395
+        ]
+      },
+      "properties": {
+        "name": "Tel Nof Air Base",
+        "country": "IL",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          35.007702,
+          32.4408
+        ]
+      },
+      "properties": {
+        "name": "Ein Shemer Airfield",
+        "country": "IL",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.662601,
+          31.2334
+        ]
+      },
+      "properties": {
+        "name": "Hatzerim Air Base",
+        "country": "IL",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.7272,
+          31.762501
+        ]
+      },
+      "properties": {
+        "name": "Hatzor Air Base",
+        "country": "IL",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          35.012298584,
+          31.208299636799996
+        ]
+      },
+      "properties": {
+        "name": "Nevatim Air Base",
+        "country": "IL",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.935799,
+          29.9403
+        ]
+      },
+      "properties": {
+        "name": "Ovda Airport",
+        "country": "IL",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          35.179501,
+          32.6651
+        ]
+      },
+      "properties": {
+        "name": "Ramat David Air Base",
+        "country": "IL",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.666698,
+          30.7761
+        ]
+      },
+      "properties": {
+        "name": "Ramon Air Base",
+        "country": "IL",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.573589,
+          30.458143
+        ]
+      },
+      "properties": {
+        "name": "RAF Marble Arch",
+        "country": "LY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          22.745001,
+          32.542
+        ]
+      },
+      "properties": {
+        "name": "Martuba Air Base",
+        "country": "LY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.237865,
+          27.726982
+        ]
+      },
+      "properties": {
+        "name": "Mahbes Airbase",
+        "country": "EH",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.9461,
+          32.85821
+        ]
+      },
+      "properties": {
+        "name": "Khouribga Air Base",
+        "country": "MA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.877884,
+          32.124889
+        ]
+      },
+      "properties": {
+        "name": "Ben Guerir Air Base",
+        "country": "MA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          25.186701,
+          -17.775299
+        ]
+      },
+      "properties": {
+        "name": "Namibia East Air Base",
+        "country": "NA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8.01861,
+          16.95575
+        ]
+      },
+      "properties": {
+        "name": "Niger Air Base 201",
+        "country": "NE",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.650711,
+          21.951146
+        ]
+      },
+      "properties": {
+        "name": "Madama Military Base",
+        "country": "NE",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.484224,
+          9.895279
+        ]
+      },
+      "properties": {
+        "name": "Kainji Air Base",
+        "country": "NG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.021389,
+          4.846111
+        ]
+      },
+      "properties": {
+        "name": "Port Harcourt City Airport / Port Harcourt Air Force Base",
+        "country": "NG",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.590599,
+          25.9184
+        ]
+      },
+      "properties": {
+        "name": "Sheik Isa Air Base",
+        "country": "BH",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.524544,
+          26.034533
+        ]
+      },
+      "properties": {
+        "name": "Sakhir Air Base",
+        "country": "BH",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          49.704102,
+          26.941601
+        ]
+      },
+      "properties": {
+        "name": "King Abdulaziz Naval Base",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.39120101928711,
+          24.942100524902344
+        ]
+      },
+      "properties": {
+        "name": "King Abdul Aziz Military Academy Airport",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.152,
+          26.2654
+        ]
+      },
+      "properties": {
+        "name": "King Abdulaziz Air Base",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "large_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          39.173,
+          21.348101
+        ]
+      },
+      "properties": {
+        "name": "King Faisal Naval Base",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          45.528198,
+          27.9009
+        ]
+      },
+      "properties": {
+        "name": "King Khaled Military City Airport",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          42.803501,
+          18.2973
+        ]
+      },
+      "properties": {
+        "name": "King Khalid Air Base",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          47.580502,
+          24.0627
+        ]
+      },
+      "properties": {
+        "name": "Prince Sultan Air Base",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.722336,
+          24.725725
+        ]
+      },
+      "properties": {
+        "name": "Riyadh Air Base",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.69111,
+          32.567166
+        ]
+      },
+      "properties": {
+        "name": "Shahid Vatanpour Army Air Base",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.696999,
+          32.621101
+        ]
+      },
+      "properties": {
+        "name": "Badr Air Base",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          48.6534,
+          35.211601
+        ]
+      },
+      "properties": {
+        "name": "Nojeh Air Base",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.806198,
+          34.984001
+        ]
+      },
+      "properties": {
+        "name": "Manzariyeh Air Base",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.475101,
+          35.702999
+        ]
+      },
+      "properties": {
+        "name": "Doshan Tappeh Air Base",
+        "country": "IR",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          37.149399,
+          32.160702
+        ]
+      },
+      "properties": {
+        "name": "Prince Hassan Air Base",
+        "country": "JO",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          38.195,
+          32.5392
+        ]
+      },
+      "properties": {
+        "name": "H4 Air Base",
+        "country": "JO",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.782001,
+          31.8256
+        ]
+      },
+      "properties": {
+        "name": "Muwaffaq Salti Air Base",
+        "country": "JO",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          47.791900634799994,
+          28.9347991943
+        ]
+      },
+      "properties": {
+        "name": "Ahmed Al Jaber Air Base",
+        "country": "KW",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          47.520118,
+          29.346905
+        ]
+      },
+      "properties": {
+        "name": "Ali Al Salem Air Base",
+        "country": "KW",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          48.27280044555664,
+          28.864500045776367
+        ]
+      },
+      "properties": {
+        "name": "Ras al-Qulayah Naval Base Heliport",
+        "country": "KW",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          35.987701416015625,
+          33.850799560546875
+        ]
+      },
+      "properties": {
+        "name": "Rayak Air Base",
+        "country": "LB",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          42.4412002563,
+          33.7855987549
+        ]
+      },
+      "properties": {
+        "name": "Al Asad Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.597099304199,
+          33.33810043335
+        ]
+      },
+      "properties": {
+        "name": "Al Taqaddum Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.2346,
+          33.262501
+        ]
+      },
+      "properties": {
+        "name": "Baghdad International Airport / New Al Muthana Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "large_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.090099,
+          30.935801
+        ]
+      },
+      "properties": {
+        "name": "Ali Air Base",
+        "country": "IQ",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.412899017333984,
+          32.7052001953125
+        ]
+      },
+      "properties": {
+        "name": "As Suwayda West Air Base",
+        "country": "SY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.749000549316406,
+          33.60960006713867
+        ]
+      },
+      "properties": {
+        "name": "Dumayr Air Base",
+        "country": "SY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.457401275634766,
+          33.2864990234375
+        ]
+      },
+      "properties": {
+        "name": "Marj Ruhayyil Air Base",
+        "country": "SY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.866600036621094,
+          33.91899871826172
+        ]
+      },
+      "properties": {
+        "name": "An Nasiriyah Air Base",
+        "country": "SY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          37.21390151977539,
+          33.68239974975586
+        ]
+      },
+      "properties": {
+        "name": "Saiqal Air Base",
+        "country": "SY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.55820846557617,
+          33.077301025390625
+        ]
+      },
+      "properties": {
+        "name": "Khalkhalah Air Base",
+        "country": "SY",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.3149986267,
+          25.1173000336
+        ]
+      },
+      "properties": {
+        "name": "Al Udeid Air Base",
+        "country": "QA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          44.765099,
+          13.1747
+        ]
+      },
+      "properties": {
+        "name": "Al Anad Air Base",
+        "country": "YE",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.478874,
+          31.472586
+        ]
+      },
+      "properties": {
+        "name": "RAF Gaza",
+        "country": "PS",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.999479,
+          25.467722
+        ]
+      },
+      "properties": {
+        "name": "Dukhan / Tamim Airbase",
+        "country": "QA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51.030442,
+          24.895392
+        ]
+      },
+      "properties": {
+        "name": "Military Helipad",
+        "country": "QA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.989609,
+          25.005234
+        ]
+      },
+      "properties": {
+        "name": "Military Helipad",
+        "country": "QA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.0217,
+          26.31996
+        ]
+      },
+      "properties": {
+        "name": "King Fahd Military Medical City Heliport",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.570712,
+          24.477911
+        ]
+      },
+      "properties": {
+        "name": "Dirab Air Base",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.871238,
+          24.418148
+        ]
+      },
+      "properties": {
+        "name": "Military Helipad",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.920248,
+          24.626854
+        ]
+      },
+      "properties": {
+        "name": "SANG Airbase Helipads (4x)",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.918402,
+          24.620335
+        ]
+      },
+      "properties": {
+        "name": "Khashm Alan Air Base",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.924925,
+          24.665125
+        ]
+      },
+      "properties": {
+        "name": "Military Airport",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.504371,
+          24.898475
+        ]
+      },
+      "properties": {
+        "name": "Military Helipad",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.932049,
+          24.890174
+        ]
+      },
+      "properties": {
+        "name": "Military Helipad",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.885732,
+          24.870985
+        ]
+      },
+      "properties": {
+        "name": "Military Helipad",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          39.331076,
+          24.720833
+        ]
+      },
+      "properties": {
+        "name": "Military Helipad SSSP7",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.944945,
+          24.95615
+        ]
+      },
+      "properties": {
+        "name": "Military Helipad",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.890727,
+          24.97324
+        ]
+      },
+      "properties": {
+        "name": "Military Helipad",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.759103,
+          26.315632
+        ]
+      },
+      "properties": {
+        "name": "Military Helipads (3x)",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          46.659279,
+          24.465259
+        ]
+      },
+      "properties": {
+        "name": "King Salman Air Base",
+        "country": "SA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.51401,
+          15.815213
+        ]
+      },
+      "properties": {
+        "name": "Wadi Seidna Air Base",
+        "country": "SD",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "medium_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.48534,
+          15.61515
+        ]
+      },
+      "properties": {
+        "name": "Muhandiseen Military Hospital Heliport",
+        "country": "SD",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "heliport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          32.853462,
+          13.089439
+        ]
+      },
+      "properties": {
+        "name": "Kenana Air Base",
+        "country": "SD",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          43.40793,
+          12.66653
+        ]
+      },
+      "properties": {
+        "name": "Perim Air Base",
+        "country": "YE",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.53043,
+          -33.90696
+        ]
+      },
+      "properties": {
+        "name": "Wingfield Air Base",
+        "country": "ZA",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          27.1867847443,
+          -15.072745130299998
+        ]
+      },
+      "properties": {
+        "name": "Mumbwa",
+        "country": "ZM",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "small_airport",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.61093,
+          -20.134885
+        ]
+      },
+      "properties": {
+        "name": "Kumalo Airport (RAF Kumalo)",
+        "country": "ZW",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.76564,
+          -20.13267
+        ]
+      },
+      "properties": {
+        "name": "RAF Heany",
+        "country": "ZW",
+        "type": "air_base",
+        "operator": "Unknown",
+        "source": "ourairports",
+        "confidence": 0.58,
+        "inferred_from": "name_or_keywords",
+        "airport_type": "closed",
+        "region_hint": "Africa"
+      }
+    }
+  ]
+}
