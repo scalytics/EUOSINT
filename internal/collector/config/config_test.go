@@ -17,6 +17,9 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.MaxPerSource <= 0 {
 		t.Fatalf("unexpected max per source %d", cfg.MaxPerSource)
 	}
+	if cfg.StructuredDiscoveryIntervalHours != 168 {
+		t.Fatalf("unexpected structured discovery interval default %d", cfg.StructuredDiscoveryIntervalHours)
+	}
 }
 
 func TestLoadStopWordsFromFile(t *testing.T) {

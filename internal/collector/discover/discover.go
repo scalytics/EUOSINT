@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/fetch"
@@ -217,104 +218,122 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 	candidates := make([]model.SourceCandidate, 0)
 	var failures []string
 	var slowSkips []string
-
-	teams, err := FetchFIRSTTeams(ctx, cfg, client)
+	runStructured, nextAt, err := shouldRunStructuredDiscovery(cfg, time.Now().UTC())
 	if err != nil {
-		if isDiscoveryTimeout(err) {
-			slowSkips = append(slowSkips, "FIRST.org")
-		} else {
-			failures = append(failures, fmt.Sprintf("FIRST.org: %v", err))
-		}
-	} else {
-		fmt.Fprintf(stderr, "FIRST.org: %d teams for candidate seeding\n", len(teams))
-		for _, team := range teams {
-			candidates = append(candidates, model.SourceCandidate{
-				URL:           team.Website,
-				AuthorityName: team.ShortName,
-				AuthorityType: "cert",
-				Category:      "cyber_advisory",
-				Country:       team.Country,
-				BaseURL:       team.Website,
-				Notes:         "autonomous seed: first.org",
-			})
-		}
+		fmt.Fprintf(stderr, "WARN structured discovery cadence check failed: %v\n", err)
+		runStructured = true
 	}
-
-	agencies, err := FetchPoliceAgencies(ctx, cfg, client)
-	if err != nil {
-		if isDiscoveryTimeout(err) {
-			slowSkips = append(slowSkips, "Wikidata police")
-		} else {
-			failures = append(failures, fmt.Sprintf("Wikidata police: %v", err))
-		}
+	structuredSuccess := false
+	if !runStructured {
+		fmt.Fprintf(stderr, "Structured discovery skipped until %s (FIRST/Wikidata cadence gate)\n", nextAt.Format(time.RFC3339))
 	} else {
-		fmt.Fprintf(stderr, "Wikidata: fetched %d police/law-enforcement agencies for candidate seeding\n", len(agencies))
-		for _, agency := range agencies {
-			if !passesDiscoveryHygiene(agency.Name, agency.Website, agency.AuthorityType) {
-				continue
+		teams, err := FetchFIRSTTeams(ctx, cfg, client)
+		if err != nil {
+			if isDiscoveryTimeout(err) {
+				slowSkips = append(slowSkips, "FIRST.org")
+			} else {
+				failures = append(failures, fmt.Sprintf("FIRST.org: %v", err))
 			}
-			candidates = append(candidates, model.SourceCandidate{
-				URL:           agency.Website,
-				AuthorityName: agency.Name,
-				AuthorityType: agency.AuthorityType,
-				Category:      agency.Category,
-				Country:       agency.Country,
-				CountryCode:   agency.CountryCode,
-				BaseURL:       agency.Website,
-				Notes:         "autonomous seed: wikidata-police",
-			})
-		}
-	}
-
-	humOrgs, err := FetchHumanitarianOrgs(ctx, cfg, client)
-	if err != nil {
-		if isDiscoveryTimeout(err) {
-			slowSkips = append(slowSkips, "Wikidata humanitarian")
 		} else {
-			failures = append(failures, fmt.Sprintf("Wikidata humanitarian: %v", err))
-		}
-	} else {
-		fmt.Fprintf(stderr, "Wikidata: fetched %d humanitarian/emergency orgs for candidate seeding\n", len(humOrgs))
-		for _, org := range humOrgs {
-			if !passesDiscoveryHygiene(org.Name, org.Website, "public_safety_program") {
-				continue
+			structuredSuccess = true
+			fmt.Fprintf(stderr, "FIRST.org: %d teams for candidate seeding\n", len(teams))
+			for _, team := range teams {
+				candidates = append(candidates, model.SourceCandidate{
+					URL:           team.Website,
+					AuthorityName: team.ShortName,
+					AuthorityType: "cert",
+					Category:      "cyber_advisory",
+					Country:       team.Country,
+					BaseURL:       team.Website,
+					Notes:         "autonomous seed: first.org",
+				})
 			}
-			candidates = append(candidates, model.SourceCandidate{
-				URL:           org.Website,
-				AuthorityName: org.Name,
-				AuthorityType: "public_safety_program",
-				Category:      "humanitarian_security",
-				Country:       org.Country,
-				CountryCode:   org.CountryCode,
-				BaseURL:       org.Website,
-				Notes:         "autonomous seed: wikidata-humanitarian",
-			})
 		}
-	}
 
-	govOrgs, err := FetchGovernmentOrgs(ctx, cfg, client)
-	if err != nil {
-		if isDiscoveryTimeout(err) {
-			slowSkips = append(slowSkips, "Wikidata government")
-		} else {
-			failures = append(failures, fmt.Sprintf("Wikidata government: %v", err))
-		}
-	} else {
-		fmt.Fprintf(stderr, "Wikidata: fetched %d government/legislative/diplomatic orgs for candidate seeding\n", len(govOrgs))
-		for _, org := range govOrgs {
-			if !passesDiscoveryHygiene(org.Name, org.Website, org.AuthorityType) {
-				continue
+		agencies, err := FetchPoliceAgencies(ctx, cfg, client)
+		if err != nil {
+			if isDiscoveryTimeout(err) {
+				slowSkips = append(slowSkips, "Wikidata police")
+			} else {
+				failures = append(failures, fmt.Sprintf("Wikidata police: %v", err))
 			}
-			candidates = append(candidates, model.SourceCandidate{
-				URL:           org.Website,
-				AuthorityName: org.Name,
-				AuthorityType: org.AuthorityType,
-				Category:      org.Category,
-				Country:       org.Country,
-				CountryCode:   org.CountryCode,
-				BaseURL:       org.Website,
-				Notes:         "autonomous seed: wikidata-government",
-			})
+		} else {
+			structuredSuccess = true
+			fmt.Fprintf(stderr, "Wikidata: fetched %d police/law-enforcement agencies for candidate seeding\n", len(agencies))
+			for _, agency := range agencies {
+				if !passesDiscoveryHygiene(agency.Name, agency.Website, agency.AuthorityType) {
+					continue
+				}
+				candidates = append(candidates, model.SourceCandidate{
+					URL:           agency.Website,
+					AuthorityName: agency.Name,
+					AuthorityType: agency.AuthorityType,
+					Category:      agency.Category,
+					Country:       agency.Country,
+					CountryCode:   agency.CountryCode,
+					BaseURL:       agency.Website,
+					Notes:         "autonomous seed: wikidata-police",
+				})
+			}
+		}
+
+		humOrgs, err := FetchHumanitarianOrgs(ctx, cfg, client)
+		if err != nil {
+			if isDiscoveryTimeout(err) {
+				slowSkips = append(slowSkips, "Wikidata humanitarian")
+			} else {
+				failures = append(failures, fmt.Sprintf("Wikidata humanitarian: %v", err))
+			}
+		} else {
+			structuredSuccess = true
+			fmt.Fprintf(stderr, "Wikidata: fetched %d humanitarian/emergency orgs for candidate seeding\n", len(humOrgs))
+			for _, org := range humOrgs {
+				if !passesDiscoveryHygiene(org.Name, org.Website, "public_safety_program") {
+					continue
+				}
+				candidates = append(candidates, model.SourceCandidate{
+					URL:           org.Website,
+					AuthorityName: org.Name,
+					AuthorityType: "public_safety_program",
+					Category:      "humanitarian_security",
+					Country:       org.Country,
+					CountryCode:   org.CountryCode,
+					BaseURL:       org.Website,
+					Notes:         "autonomous seed: wikidata-humanitarian",
+				})
+			}
+		}
+
+		govOrgs, err := FetchGovernmentOrgs(ctx, cfg, client)
+		if err != nil {
+			if isDiscoveryTimeout(err) {
+				slowSkips = append(slowSkips, "Wikidata government")
+			} else {
+				failures = append(failures, fmt.Sprintf("Wikidata government: %v", err))
+			}
+		} else {
+			structuredSuccess = true
+			fmt.Fprintf(stderr, "Wikidata: fetched %d government/legislative/diplomatic orgs for candidate seeding\n", len(govOrgs))
+			for _, org := range govOrgs {
+				if !passesDiscoveryHygiene(org.Name, org.Website, org.AuthorityType) {
+					continue
+				}
+				candidates = append(candidates, model.SourceCandidate{
+					URL:           org.Website,
+					AuthorityName: org.Name,
+					AuthorityType: org.AuthorityType,
+					Category:      org.Category,
+					Country:       org.Country,
+					CountryCode:   org.CountryCode,
+					BaseURL:       org.Website,
+					Notes:         "autonomous seed: wikidata-government",
+				})
+			}
+		}
+		if structuredSuccess {
+			if err := markStructuredDiscoveryRun(cfg, time.Now().UTC()); err != nil {
+				fmt.Fprintf(stderr, "WARN structured discovery state update failed: %v\n", err)
+			}
 		}
 	}
 
@@ -375,6 +394,61 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 		return candidates, fmt.Errorf("%s", strings.Join(failures, " | "))
 	}
 	return candidates, nil
+}
+
+type structuredDiscoveryState struct {
+	LastStructuredRun string `json:"last_structured_run"`
+}
+
+func shouldRunStructuredDiscovery(cfg config.Config, now time.Time) (bool, time.Time, error) {
+	intervalHours := cfg.StructuredDiscoveryIntervalHours
+	if intervalHours <= 0 {
+		intervalHours = 168
+	}
+	statePath := structuredDiscoveryStatePath(cfg)
+	data, err := os.ReadFile(statePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return true, now, nil
+		}
+		return true, now, err
+	}
+	var state structuredDiscoveryState
+	if err := json.Unmarshal(data, &state); err != nil {
+		return true, now, nil
+	}
+	last := strings.TrimSpace(state.LastStructuredRun)
+	if last == "" {
+		return true, now, nil
+	}
+	lastTime, err := time.Parse(time.RFC3339, last)
+	if err != nil {
+		return true, now, nil
+	}
+	nextAt := lastTime.UTC().Add(time.Duration(intervalHours) * time.Hour)
+	return !now.Before(nextAt), nextAt, nil
+}
+
+func markStructuredDiscoveryRun(cfg config.Config, now time.Time) error {
+	path := structuredDiscoveryStatePath(cfg)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	state := structuredDiscoveryState{LastStructuredRun: now.UTC().Format(time.RFC3339)}
+	body, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return err
+	}
+	body = append(body, '\n')
+	return os.WriteFile(path, body, 0o644)
+}
+
+func structuredDiscoveryStatePath(cfg config.Config) string {
+	base := strings.TrimSpace(cfg.WikidataCachePath)
+	if base == "" {
+		base = filepath.Join("registry", "wikidata_cache")
+	}
+	return filepath.Join(base, "structured_discovery_state.json")
 }
 
 func isDiscoveryTimeout(err error) bool {

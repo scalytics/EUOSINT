@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/fetch"
@@ -428,5 +429,39 @@ func TestSampleSourceParsesRSSItems(t *testing.T) {
 	}
 	if samples[0].Title != "Bulletin A" {
 		t.Fatalf("unexpected sample title: %q", samples[0].Title)
+	}
+}
+
+func TestStructuredDiscoveryWeeklyCadence(t *testing.T) {
+	cfg := config.Default()
+	cfg.WikidataCachePath = t.TempDir()
+	cfg.StructuredDiscoveryIntervalHours = 168
+
+	now := time.Date(2026, 3, 19, 12, 0, 0, 0, time.UTC)
+	due, nextAt, err := shouldRunStructuredDiscovery(cfg, now)
+	if err != nil {
+		t.Fatalf("shouldRunStructuredDiscovery initial: %v", err)
+	}
+	if !due {
+		t.Fatalf("expected due on first run, nextAt=%s", nextAt)
+	}
+	if err := markStructuredDiscoveryRun(cfg, now); err != nil {
+		t.Fatalf("markStructuredDiscoveryRun: %v", err)
+	}
+
+	due, nextAt, err = shouldRunStructuredDiscovery(cfg, now.Add(24*time.Hour))
+	if err != nil {
+		t.Fatalf("shouldRunStructuredDiscovery +24h: %v", err)
+	}
+	if due {
+		t.Fatalf("expected not due at +24h, nextAt=%s", nextAt)
+	}
+
+	due, _, err = shouldRunStructuredDiscovery(cfg, now.Add(8*24*time.Hour))
+	if err != nil {
+		t.Fatalf("shouldRunStructuredDiscovery +8d: %v", err)
+	}
+	if !due {
+		t.Fatal("expected due after weekly interval elapsed")
 	}
 }

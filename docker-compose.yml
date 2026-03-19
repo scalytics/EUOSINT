@@ -46,6 +46,7 @@ services:
       REMOVED_RETENTION_DAYS: "14"
       CURSORS_PATH: "/data/cursors.json"
       WIKIDATA_CACHE_PATH: "/data/wikidata_cache"
+      STRUCTURED_DISCOVERY_INTERVAL_HOURS: "${STRUCTURED_DISCOVERY_INTERVAL_HOURS:-168}"
       CATEGORY_DICTIONARY_PATH: "/app/registry/category_dictionary.json"
       STOP_WORDS_PATH: "/app/registry/stop_words.json"
       NOISE_POLICY_PATH: "${NOISE_POLICY_PATH:-/app/registry/noise_policy.json}"

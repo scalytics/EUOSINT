@@ -17,6 +17,9 @@ import (
 )
 
 func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer) error {
+	stdout = newTimestampWriter(stdout)
+	stderr = newTimestampWriter(stderr)
+
 	fs := flag.NewFlagSet("euosint-collector", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 
@@ -53,6 +56,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	fs.StringVar(&cfg.WikimediaUserAgent, "wikimedia-user-agent", cfg.WikimediaUserAgent, "Identifying bot User-Agent for Wikimedia/Wikidata requests")
 	fs.StringVar(&cfg.WikidataCachePath, "wikidata-cache-path", cfg.WikidataCachePath, "Directory for cached Wikidata discovery responses")
 	fs.IntVar(&cfg.WikidataCacheTTLHours, "wikidata-cache-ttl-hours", cfg.WikidataCacheTTLHours, "How long to reuse cached Wikidata discovery responses")
+	fs.IntVar(&cfg.StructuredDiscoveryIntervalHours, "structured-discovery-interval-hours", cfg.StructuredDiscoveryIntervalHours, "Minimum hours between FIRST/Wikidata structured discovery seeding runs")
 	fs.BoolVar(&cfg.VettingEnabled, "source-vetting", cfg.VettingEnabled, "Enable LLM-assisted source vetting and promotion for discovered candidates")
 	fs.BoolVar(&cfg.SourceVettingRequired, "source-vetting-required", cfg.SourceVettingRequired, "Require source vetting as a hard promotion gate during discovery")
 	fs.Float64Var(&cfg.SourceMinQuality, "source-min-quality", cfg.SourceMinQuality, "Minimum source quality score required for auto-promotion")

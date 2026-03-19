@@ -4,10 +4,12 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -34,6 +36,28 @@ func TestRunWritesOutputs(t *testing.T) {
 	for _, path := range []string{"alerts.json", "filtered.json", "state.json", "health.json", "replacement.json"} {
 		if _, err := os.Stat(filepath.Join(dir, path)); err != nil {
 			t.Fatalf("expected %s to be written: %v", path, err)
+		}
+	}
+}
+
+func TestTimestampWriterPrefixesLines(t *testing.T) {
+	var buf bytes.Buffer
+	w := newTimestampWriter(&buf)
+	if _, err := w.Write([]byte("line one\nline two\n")); err != nil {
+		t.Fatal(err)
+	}
+	out := strings.TrimSpace(buf.String())
+	lines := strings.Split(out, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 output lines, got %d: %q", len(lines), out)
+	}
+	for _, line := range lines {
+		parts := strings.SplitN(line, " ", 2)
+		if len(parts) != 2 {
+			t.Fatalf("expected timestamp prefix, got %q", line)
+		}
+		if !strings.Contains(parts[0], "T") || !strings.HasSuffix(parts[0], "Z") {
+			t.Fatalf("expected RFC3339 UTC timestamp prefix, got %q", parts[0])
 		}
 	}
 }
