@@ -71,6 +71,8 @@ type Config struct {
 	DDGSearchEnabled                 bool
 	DDGSearchMaxQueries              int
 	DDGSearchDelayMS                 int
+	DiscoverSocialEnabled            bool
+	DiscoverSocialMaxTargets         int
 	WikidataCachePath                string
 	WikidataCacheTTLHours            int
 	StructuredDiscoveryIntervalHours int
@@ -109,11 +111,9 @@ type Config struct {
 	ACLEDUsername                    string
 	ACLEDPassword                    string
 	UCDPAccessToken                  string
-	XScraperUsername                 string
-	XScraperPassword                 string
-	XScraperExtra                    string
 	StopWordsPath                    string
 	StopWords                        []string
+	XFetchPauseMS                    int
 	NoisePolicyPath                  string
 	NoisePolicyBPath                 string
 	NoisePolicyBPercent              int
@@ -166,6 +166,8 @@ func Default() Config {
 		DDGSearchEnabled:                 true,
 		DDGSearchMaxQueries:              40,
 		DDGSearchDelayMS:                 5000,
+		DiscoverSocialEnabled:            true,
+		DiscoverSocialMaxTargets:         24,
 		WikidataCachePath:                "registry/wikidata_cache",
 		WikidataCacheTTLHours:            168,
 		StructuredDiscoveryIntervalHours: 168,
@@ -201,9 +203,6 @@ func Default() Config {
 		APIEnabled:                       false,
 		APIAddr:                          ":3001",
 		UCDPAccessToken:                  "",
-		XScraperUsername:                 "",
-		XScraperPassword:                 "",
-		XScraperExtra:                    "",
 		StopWordsPath:                    defaultStopWordsPath,
 		NoisePolicyPath:                  "registry/noise_policy.json",
 		NoisePolicyBPath:                 "",
@@ -213,6 +212,7 @@ func Default() Config {
 		MilitaryBasesURL:                 "https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_Military_Bases/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson",
 		MilitaryBasesOutputPath:          "public/geo/military-bases.geojson",
 		MilitaryBasesRefreshHours:        168,
+		XFetchPauseMS:                    1250,
 	}
 }
 
@@ -288,6 +288,8 @@ func FromEnv() Config {
 	cfg.DDGSearchEnabled = envBool("DDG_SEARCH_ENABLED", cfg.DDGSearchEnabled)
 	cfg.DDGSearchMaxQueries = envInt("DDG_SEARCH_MAX_QUERIES", cfg.DDGSearchMaxQueries)
 	cfg.DDGSearchDelayMS = envInt("DDG_SEARCH_DELAY_MS", cfg.DDGSearchDelayMS)
+	cfg.DiscoverSocialEnabled = envBool("DISCOVER_SOCIAL_ENABLED", cfg.DiscoverSocialEnabled)
+	cfg.DiscoverSocialMaxTargets = envInt("DISCOVER_SOCIAL_MAX_TARGETS", cfg.DiscoverSocialMaxTargets)
 	cfg.GeoNamesPath = envString("GEONAMES_PATH", cfg.GeoNamesPath)
 	cfg.NominatimBaseURL = envString("NOMINATIM_BASE_URL", cfg.NominatimBaseURL)
 	cfg.NominatimEnabled = envBool("NOMINATIM_ENABLED", cfg.NominatimEnabled)
@@ -296,14 +298,12 @@ func FromEnv() Config {
 	cfg.ACLEDUsername = envString("ACLED_USERNAME", cfg.ACLEDUsername)
 	cfg.ACLEDPassword = envString("ACLED_PASSWORD", cfg.ACLEDPassword)
 	cfg.UCDPAccessToken = envString("UCDP_ACCESS_TOKEN", cfg.UCDPAccessToken)
-	cfg.XScraperUsername = envString("X_SCRAPER_USERNAME", cfg.XScraperUsername)
-	cfg.XScraperPassword = envString("X_SCRAPER_PASSWORD", cfg.XScraperPassword)
-	cfg.XScraperExtra = envString("X_SCRAPER_EXTRA", cfg.XScraperExtra)
 	cfg.StopWordsPath = envString("STOP_WORDS_PATH", cfg.StopWordsPath)
 	cfg.StopWords = loadStopWords(cfg.StopWordsPath)
 	if extra := envCSV("STOP_WORDS", nil); len(extra) > 0 {
 		cfg.StopWords = append(cfg.StopWords, extra...)
 	}
+	cfg.XFetchPauseMS = envInt("X_FETCH_PAUSE_MS", cfg.XFetchPauseMS)
 	cfg.NoisePolicyPath = envString("NOISE_POLICY_PATH", cfg.NoisePolicyPath)
 	cfg.NoisePolicyBPath = envString("NOISE_POLICY_B_PATH", cfg.NoisePolicyBPath)
 	cfg.NoisePolicyBPercent = envInt("NOISE_POLICY_B_PERCENT", cfg.NoisePolicyBPercent)

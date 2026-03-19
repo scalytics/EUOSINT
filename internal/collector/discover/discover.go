@@ -210,9 +210,10 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 					}
 					if probeHTMLPage(ctx, client, target) && tryReserveFeedURL(target) {
 						discoveredForCandidate = true
+						feedType := discoveredFeedTypeFromURL(target)
 						found := DiscoveredSource{
 							FeedURL:       target,
-							FeedType:      "html-list",
+							FeedType:      feedType,
 							AuthorityType: candidate.AuthorityType,
 							Category:      candidate.Category,
 							OrgName:       candidate.AuthorityName,
@@ -424,6 +425,13 @@ func generateAutonomousCandidates(ctx context.Context, cfg config.Config, client
 	if len(replacementTargets) > 0 {
 		fmt.Fprintf(stderr, "Replacement search targets: %d dead-source metadata entries queued for feed search\n", len(replacementTargets))
 		searchSeeds = append(searchSeeds, replacementTargets...)
+	}
+	if cfg.DiscoverSocialEnabled {
+		socialSeeds := buildSocialDiscoveryTargets(cfg, searchSeeds)
+		if len(socialSeeds) > 0 {
+			fmt.Fprintf(stderr, "Social discovery seeds: %d X/Telegram targets queued for conflict/piracy/terror monitoring\n", len(socialSeeds))
+			searchSeeds = append(searchSeeds, socialSeeds...)
+		}
 	}
 
 	// DDG search is the first citizen — free, no API key needed.
@@ -722,6 +730,9 @@ func shouldRetryCandidateQueue(ctx context.Context, client *fetch.Client, candid
 		// Keep retries for transient network/probe errors.
 		return true
 	}
+	if isSocialSignalURL(target) && (status == 401 || status == 403 || status == 429) {
+		return true
+	}
 	// Queue should only retain potentially valid sources.
 	if status == 404 || status == 410 || status >= 500 {
 		return false
@@ -843,7 +854,7 @@ func promoteDiscoveredSources(ctx context.Context, registryPath string, sources 
 
 func sampleSource(ctx context.Context, client *fetch.Client, discovered DiscoveredSource, limit int) ([]vet.Sample, error) {
 	accept := "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8"
-	if discovered.FeedType == "html-list" {
+	if discovered.FeedType == "html-list" || discovered.FeedType == "telegram" || discovered.FeedType == "x" {
 		accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
 	}
 	body, err := client.Text(ctx, discovered.FeedURL, true, accept)
@@ -851,7 +862,9 @@ func sampleSource(ctx context.Context, client *fetch.Client, discovered Discover
 		return nil, fmt.Errorf("sample source fetch %s: %w", discovered.FeedURL, err)
 	}
 	var items []parse.FeedItem
-	if discovered.FeedType == "html-list" {
+	if discovered.FeedType == "telegram" {
+		items = parse.ParseTelegram(string(body), extractTelegramChannel(discovered.FeedURL))
+	} else if discovered.FeedType == "html-list" || discovered.FeedType == "x" {
 		items = parse.ParseHTMLAnchors(string(body), discovered.FeedURL)
 	} else {
 		items = parse.ParseFeed(string(body))
@@ -861,6 +874,10 @@ func sampleSource(ctx context.Context, client *fetch.Client, discovered Discover
 
 func discoveredTypeToRegistryType(feedType string) string {
 	switch strings.TrimSpace(feedType) {
+	case "x":
+		return "x"
+	case "telegram":
+		return "telegram"
 	case "html-list":
 		return "html-list"
 	default:
@@ -881,6 +898,83 @@ func sourceIDForCandidate(candidate model.SourceCandidate, discovered Discovered
 		return "candidate-source"
 	}
 	return base
+}
+
+func discoveredFeedTypeFromURL(raw string) string {
+	if !looksLikeSocialSignalURL(raw) {
+		return "html-list"
+	}
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return "html-list"
+	}
+	host := strings.ToLower(strings.TrimPrefix(parsed.Hostname(), "www."))
+	if host == "t.me" || host == "telegram.me" {
+		return "telegram"
+	}
+	if host == "x.com" || host == "twitter.com" {
+		return "x"
+	}
+	return "html-list"
+}
+
+func buildSocialDiscoveryTargets(cfg config.Config, seeds []model.SourceCandidate) []model.SourceCandidate {
+	maxTargets := cfg.DiscoverSocialMaxTargets
+	if maxTargets <= 0 {
+		maxTargets = 24
+	}
+	out := make([]model.SourceCandidate, 0, maxTargets)
+	seen := map[string]struct{}{}
+	for _, seed := range seeds {
+		if !socialDiscoveryCategory(seed.Category) {
+			continue
+		}
+		cc := strings.ToUpper(strings.TrimSpace(seed.CountryCode))
+		if cc == "" || cc == "INT" {
+			continue
+		}
+		for _, host := range []string{"https://x.com", "https://t.me"} {
+			key := cc + "|" + strings.ToLower(strings.TrimSpace(seed.Category)) + "|" + host
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			out = append(out, model.SourceCandidate{
+				URL:           host,
+				BaseURL:       host,
+				AuthorityName: firstNonEmpty(seed.AuthorityName, seed.Country+" conflict monitor"),
+				AuthorityType: firstNonEmpty(seed.AuthorityType, "national_security"),
+				Category:      seed.Category,
+				Country:       seed.Country,
+				CountryCode:   cc,
+				Region:        seed.Region,
+				Notes:         "autonomous seed: social-discovery",
+			})
+			if len(out) >= maxTargets {
+				return out
+			}
+		}
+	}
+	return out
+}
+
+func extractTelegramChannel(raw string) string {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return ""
+	}
+	path := strings.Trim(parsed.Path, "/")
+	if path == "" {
+		return ""
+	}
+	parts := strings.Split(path, "/")
+	if len(parts) == 0 {
+		return ""
+	}
+	if parts[0] == "s" && len(parts) > 1 {
+		return parts[1]
+	}
+	return parts[0]
 }
 
 // writeJSON is a helper that marshals data to indented JSON and writes to a file.

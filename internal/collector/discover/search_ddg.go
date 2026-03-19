@@ -109,7 +109,12 @@ func buildDDGQuery(target model.SourceCandidate) string {
 		parts = append(parts, topic)
 	}
 
-	parts = append(parts, "RSS OR atom OR feed")
+	if socialDiscoveryCategory(target.Category) {
+		parts = append(parts, "(site:x.com OR site:t.me)")
+		parts = append(parts, "alerts OR updates OR statements")
+	} else {
+		parts = append(parts, "RSS OR atom OR feed")
+	}
 
 	return strings.Join(parts, " ")
 }
@@ -139,7 +144,7 @@ func ddgSearch(ctx context.Context, browser *fetch.BrowserClient, query string, 
 			continue
 		}
 		// Only keep URLs that look like they could be feeds or official sites.
-		if !looksLikeFeedURL(raw) && !looksLikeOfficialSite(raw) {
+		if !looksLikeFeedURL(raw) && !looksLikeOfficialSite(raw) && !looksLikeSocialSignalURL(raw) {
 			continue
 		}
 		candidates = append(candidates, model.SourceCandidate{

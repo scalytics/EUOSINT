@@ -71,10 +71,36 @@ func passesDiscoveryHygiene(name string, website string, authorityType string) b
 			}
 		}
 	}
+	if isSocialSignalURL(website) {
+		return socialAuthorityTypeAllowed(authorityType)
+	}
 	if hostLooksLocal(website) || hostIsNonOSINT(website) {
 		return false
 	}
 	return true
+}
+
+func socialAuthorityTypeAllowed(authorityType string) bool {
+	switch strings.TrimSpace(strings.ToLower(authorityType)) {
+	case "national_security", "intelligence", "police", "government", "military", "defense":
+		return true
+	default:
+		return false
+	}
+}
+
+func isSocialSignalURL(rawURL string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(strings.TrimPrefix(parsed.Hostname(), "www."))
+	switch host {
+	case "x.com", "twitter.com", "t.me", "telegram.me":
+		return true
+	default:
+		return false
+	}
 }
 
 func hostLooksLocal(rawURL string) bool {

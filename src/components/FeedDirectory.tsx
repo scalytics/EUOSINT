@@ -16,7 +16,7 @@ import type { SourceHealthDocument } from "@/types/source-health";
 import { categoryLabels, categoryBadge, categoryOrder } from "@/lib/severity";
 import { alertMatchesRegionFilter } from "@/lib/regions";
 
-type View = "overview" | "feeds" | "authorities" | "health";
+type View = "overview" | "feeds" | "sources" | "health";
 type SeverityFilter = "critical" | "high" | null;
 
 interface DigestTerm {
@@ -137,7 +137,7 @@ export function FeedDirectory({
       .sort((a, b) => b.count - a.count);
   }, [regionAlerts]);
 
-  const topAuthorities = useMemo(() => {
+  const topSources = useMemo(() => {
     const filtered = categoryFilter === "all"
       ? regionAlerts
       : regionAlerts.filter((a) => a.category === categoryFilter);
@@ -322,11 +322,11 @@ export function FeedDirectory({
           </div>
         </div>
 
-        {/* ── Top authorities ──────────────────────────────────────── */}
+        {/* ── Top sources ──────────────────────────────────────── */}
         <div>
           <div className="mb-1 flex items-center gap-1 text-4xs uppercase tracking-[0.16em] text-siem-muted">
             <TrendingUp size={7} />
-            Authorities
+            SOURCES
             {selectedSourceIds.length > 0 && (
               <button
                 type="button"
@@ -338,7 +338,7 @@ export function FeedDirectory({
             )}
           </div>
           <div className="space-y-px">
-            {topAuthorities.map((auth) => {
+            {topSources.map((auth) => {
               const commonCaps = [15, 20, 40, 60, 80, 100];
               const likelyCapped = commonCaps.includes(auth.count);
               return (

@@ -67,6 +67,19 @@ func TestBuildDDGQuery(t *testing.T) {
 	// Actually "Norway" appears in AuthorityName, so it should only appear once.
 }
 
+func TestBuildDDGQueryForConflictUsesSocialSites(t *testing.T) {
+	target := model.SourceCandidate{
+		AuthorityName: "Ukraine defense ministry or armed forces",
+		Country:       "Ukraine",
+		Category:      "conflict_monitoring",
+		AuthorityType: "national_security",
+	}
+	query := buildDDGQuery(target)
+	if !containsAll(query, "site:x.com", "site:t.me", "alerts OR updates OR statements") {
+		t.Fatalf("expected social-site DDG query for conflict target, got %q", query)
+	}
+}
+
 func TestLooksLikeOfficialSite(t *testing.T) {
 	tests := []struct {
 		url  string
@@ -84,6 +97,24 @@ func TestLooksLikeOfficialSite(t *testing.T) {
 		got := looksLikeOfficialSite(tt.url)
 		if got != tt.want {
 			t.Errorf("looksLikeOfficialSite(%q) = %v, want %v", tt.url, got, tt.want)
+		}
+	}
+}
+
+func TestLooksLikeSocialSignalURL(t *testing.T) {
+	tests := []struct {
+		url  string
+		want bool
+	}{
+		{"https://x.com/IDF", true},
+		{"https://x.com/search?q=idf", false},
+		{"https://t.me/s/auroraintel", true},
+		{"https://t.me", false},
+		{"https://example.com/signal", false},
+	}
+	for _, tt := range tests {
+		if got := looksLikeSocialSignalURL(tt.url); got != tt.want {
+			t.Errorf("looksLikeSocialSignalURL(%q)=%v want %v", tt.url, got, tt.want)
 		}
 	}
 }

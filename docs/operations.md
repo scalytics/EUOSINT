@@ -199,11 +199,13 @@ Alert payloads include `signal_lane`, event-geo fields, and `subcategory` so dow
 
 - `RECENT_WINDOW_PER_SOURCE` (default `20`): cap per-run fetch window for non-HTML stream sources (Telegram/RSS/Atom/API).
 - `HTML_SCRAPE_INTERVAL_HOURS` (default `24`): minimum interval between successful HTML full scrapes when probe status is `200`.
+- `DISCOVER_SOCIAL_ENABLED` (default `true`): enable X/Telegram discovery targeting for conflict, maritime/piracy, terror, and intelligence categories.
+- `DISCOVER_SOCIAL_MAX_TARGETS` (default `24`): max social discovery targets generated per run.
+- `X_FETCH_PAUSE_MS` (default `1250`): pause between sequential X crawls to reduce platform throttling and temporary blocks.
 - `ALERT_COOLDOWN_HOURS` (default `24`): missing alerts move from `active` to `cooldown` after this horizon.
 - `ALERT_STALE_DAYS` (default `14`): missing alerts move from `cooldown` to `stale` after this horizon.
 - `ALERT_ARCHIVE_DAYS` (default `90`): missing alerts move from `stale` to `archived` after this horizon.
 - `UCDP_ACCESS_TOKEN` (default empty): token sent as `x-ucdp-access-token` for `ucdp-json` sources. If empty, `ucdp-json` sources are skipped silently.
-- `X_SCRAPER_USERNAME` / `X_SCRAPER_PASSWORD` / `X_SCRAPER_EXTRA` (default empty): optional credentials for `type: "x"` source collection through the in-process scraper bridge. If credentials are unset, collector attempts open-account mode.
 - `MILITARY_BASES_ENABLED` (default `true`): enables periodic refresh of static military-bases GeoJSON.
 - `MILITARY_BASES_URL`: source URL for military-bases GeoJSON refresh.
 - `MILITARY_BASES_OUTPUT_PATH` (default `public/geo/military-bases.geojson`): output file consumed by the web layer.

@@ -20,6 +20,12 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.StructuredDiscoveryIntervalHours != 168 {
 		t.Fatalf("unexpected structured discovery interval default %d", cfg.StructuredDiscoveryIntervalHours)
 	}
+	if !cfg.DiscoverSocialEnabled {
+		t.Fatal("expected social discovery to be enabled by default")
+	}
+	if cfg.XFetchPauseMS <= 0 {
+		t.Fatalf("expected X fetch pause default > 0, got %d", cfg.XFetchPauseMS)
+	}
 }
 
 func TestLoadStopWordsFromFile(t *testing.T) {

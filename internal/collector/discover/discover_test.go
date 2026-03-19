@@ -102,6 +102,15 @@ func TestDiscoveryHygieneDoesNotTreatTransportAsSport(t *testing.T) {
 	}
 }
 
+func TestDiscoveryHygieneSocialSignals(t *testing.T) {
+	if !passesDiscoveryHygiene("IDF Official", "https://x.com/IDF", "national_security") {
+		t.Fatal("expected vetted national-security X source to pass hygiene gate")
+	}
+	if passesDiscoveryHygiene("Generic CERT", "https://x.com/someaccount", "cert") {
+		t.Fatal("expected non-security authority type to fail social-source hygiene gate")
+	}
+}
+
 func TestSearchTopicLabelIncludesNewCategories(t *testing.T) {
 	if got := searchTopicLabel("maritime_security", "national_security"); !strings.Contains(got, "maritime security") {
 		t.Fatalf("expected maritime topic label, got %q", got)

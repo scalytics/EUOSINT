@@ -251,3 +251,39 @@ func looksLikeFeedURL(raw string) bool {
 		strings.HasSuffix(raw, ".xml") ||
 		strings.Contains(raw, "/feed")
 }
+
+func socialDiscoveryCategory(category string) bool {
+	switch strings.TrimSpace(strings.ToLower(category)) {
+	case "conflict_monitoring", "maritime_security", "terror_warning", "terrorism_tip", "intelligence_report":
+		return true
+	default:
+		return false
+	}
+}
+
+func looksLikeSocialSignalURL(raw string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(strings.TrimPrefix(parsed.Hostname(), "www."))
+	path := strings.Trim(parsed.Path, "/")
+	if path == "" {
+		return false
+	}
+	parts := strings.Split(path, "/")
+	if len(parts) == 0 || strings.TrimSpace(parts[0]) == "" {
+		return false
+	}
+	switch host {
+	case "x.com", "twitter.com":
+		if parts[0] == "i" || parts[0] == "search" || parts[0] == "explore" || parts[0] == "home" {
+			return false
+		}
+		return true
+	case "t.me", "telegram.me":
+		return parts[0] != "s" || len(parts) > 1
+	default:
+		return false
+	}
+}

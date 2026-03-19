@@ -87,16 +87,16 @@ Key collector variables:
 - `NOISE_POLICY_B_PERCENT`: percentage routed to policy-B (default `0`)
 - `NOISE_METRICS_OUTPUT_PATH`: noise quality/drift output JSON (default `public/noise-metrics.json`)
 - `SOVEREIGN_SEED_PATH`: curated sovereign official-statements seed candidates (default `registry/sovereign_official_statements.seed.json`)
+- `DISCOVER_SOCIAL_ENABLED`: discover X/Telegram candidates for conflict, maritime/piracy, terror, and intelligence categories (default `true`)
+- `DISCOVER_SOCIAL_MAX_TARGETS`: max social discovery targets per run (default `24`)
 - `OFFICIAL_STATEMENTS_MIN_QUALITY`: stricter vetting minimum for legislative official-statement seeds (default `0.75`)
 - `OFFICIAL_STATEMENTS_MIN_OPERATIONAL_RELEVANCE`: stricter operational relevance minimum for legislative official-statement seeds (default `0.7`)
 - `UCDP_ACCESS_TOKEN`: optional UCDP API token (`x-ucdp-access-token`) for `ucdp-json` conflict ingestion
-- `X_SCRAPER_USERNAME`: optional X account username used by the in-process `x` connector
-- `X_SCRAPER_PASSWORD`: optional X account password used by the in-process `x` connector
-- `X_SCRAPER_EXTRA`: optional X email/2FA code field passed as third login credential
 - `MILITARY_BASES_ENABLED`: enable periodic static military-bases GeoJSON refresh (default `true`)
 - `MILITARY_BASES_URL`: source URL for military-bases GeoJSON refresh
 - `MILITARY_BASES_OUTPUT_PATH`: output path for static military-bases layer (default `public/geo/military-bases.geojson`)
 - `MILITARY_BASES_REFRESH_HOURS`: refresh cadence for military-bases layer (default `168`)
+- `X_FETCH_PAUSE_MS`: delay between sequential X source crawls to reduce throttling/blocks (default `1250`)
 
 ## Operations
 

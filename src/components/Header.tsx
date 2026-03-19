@@ -9,7 +9,7 @@ import { Globe2, Radar, Search, Shield, X } from "lucide-react";
 import type { Alert } from "@/types/alert";
 import { alertMatchesRegionFilter } from "@/lib/regions";
 
-type MenuView = "overview" | "feeds" | "authorities" | "health";
+type MenuView = "overview" | "feeds" | "sources" | "health";
 
 interface Props {
   regionFilter: string;
@@ -113,7 +113,7 @@ function FeedFocus({
   }, [query, sources]);
 
   const selectedLabels = useMemo(() => {
-    if (selectedSourceIds.length === 0) return `All ${sourceCount} authorities`;
+    if (selectedSourceIds.length === 0) return `All ${sourceCount} sources`;
     const labels = selectedSourceIds
       .map((sourceId) => sources.find((source) => source.id === sourceId)?.name ?? sourceId)
       .slice(0, 2);

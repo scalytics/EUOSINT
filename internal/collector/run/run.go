@@ -15,13 +15,13 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	twitterscraper "github.com/n0madic/twitter-scraper"
 	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/dictionary"
 	"github.com/scalytics/euosint/internal/collector/discover"
@@ -45,7 +45,6 @@ type Runner struct {
 	clientFactory  func(config.Config) *fetch.Client
 	browserFactory func(config.Config) (*fetch.BrowserClient, error)
 	noiseGate      *noisegate.Engine
-	xFetchFunc     func(context.Context, config.Config, model.RegistrySource, int) ([]parse.FeedItem, error)
 }
 
 func New(stdout io.Writer, stderr io.Writer) Runner {
@@ -56,7 +55,6 @@ func New(stdout io.Writer, stderr io.Writer) Runner {
 		browserFactory: func(cfg config.Config) (*fetch.BrowserClient, error) {
 			return fetch.NewBrowser(cfg.BrowserTimeoutMS)
 		},
-		xFetchFunc: fetchXItemsViaScraper,
 	}
 }
 
@@ -273,9 +271,21 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 
 	// Slow sequential pass — browser/HTML sources with full timeout.
+	var lastXFetch time.Time
 	for _, source := range slowSources {
 		if ctx.Err() != nil {
 			break
+		}
+		if source.Type == "x" && cfg.XFetchPauseMS > 0 && !lastXFetch.IsZero() {
+			pause := time.Duration(cfg.XFetchPauseMS) * time.Millisecond
+			nextAllowed := lastXFetch.Add(pause)
+			if wait := time.Until(nextAllowed); wait > 0 {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(wait):
+				}
+			}
 		}
 		if dlq.ShouldSkip(source.Source.SourceID, now) {
 			entry := model.SourceHealthEntry{
@@ -315,6 +325,9 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 			}
 		}
 		batch, entry := r.fetchOneSourceSlow(ctx, client, browser, nctx, source, categoryDictionary, cursors)
+		if source.Type == "x" {
+			lastXFetch = time.Now()
+		}
 		sourceHealth = append(sourceHealth, entry)
 		alerts = append(alerts, batch...)
 		completed++
@@ -626,7 +639,7 @@ func prioritizeSources(sources []model.RegistrySource) []model.RegistrySource {
 // or need the full HTTP timeout (HTML scraping, Interpol API with WAF, etc.).
 func needsBrowser(s model.RegistrySource) bool {
 	switch s.Type {
-	case "html-list", "telegram":
+	case "html-list", "telegram", "x":
 		return true
 	case "interpol-red-json", "interpol-yellow-json":
 		return true // Akamai WAF, needs special headers + browser fallback
@@ -768,7 +781,7 @@ func acceptForType(sourceType string) string {
 	case "rss":
 		return "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8"
 	case "x":
-		return "application/json, text/html;q=0.9, */*;q=0.8"
+		return "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
 	case "kev-json", "fbi-wanted-json", "travelwarning-json", "acled-json",
 		"usgs-geojson", "eonet-json", "gdelt-json", "feodo-json", "ucdp-json":
 		return "application/json"
@@ -845,7 +858,7 @@ func typePriority(kind string) int {
 	case "rss":
 		return 3
 	case "x":
-		return 3
+		return 2
 	case "html-list", "telegram":
 		return 2
 	default:
@@ -871,7 +884,7 @@ func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser 
 	case "rss":
 		return r.fetchRSS(ctx, fetcher, nctx, source)
 	case "x":
-		return r.fetchX(ctx, nctx, source, categoryDictionary)
+		return r.fetchX(ctx, fetcher, browser, nctx, source, categoryDictionary)
 	case "html-list":
 		return r.fetchHTML(ctx, fetcher, nctx, source, categoryDictionary)
 	case "kev-json":
@@ -1034,11 +1047,22 @@ func (r Runner) fetchTelegram(ctx context.Context, fetcher fetch.Fetcher, nctx n
 	return out, nil
 }
 
-func (r Runner) fetchX(ctx context.Context, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store) ([]model.Alert, error) {
+func (r Runner) fetchX(ctx context.Context, fetcher fetch.Fetcher, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store) ([]model.Alert, error) {
 	limit := perSourceLimit(nctx.Config, source)
-	items, err := r.xFetchFunc(ctx, nctx.Config, source, limit)
-	if err != nil {
-		return nil, err
+	items := []parse.FeedItem{}
+	if browser != nil {
+		if captured, err := browser.CaptureJSONResponses(ctx, source.FeedURL, "UserTweets"); err == nil {
+			for _, body := range captured {
+				items = append(items, parseXTweetsFromGraphQLJSON(body, source.FeedURL)...)
+			}
+		}
+	}
+	if len(items) == 0 {
+		body, finalURL, err := fetchWithFallbackURL(ctx, fetcher, source, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+		if err != nil {
+			return nil, err
+		}
+		items = parseXStatusAnchors(string(body), finalURL)
 	}
 	items = filterFeedKeywords(items, source.IncludeKeywords, source.ExcludeKeywords, nctx.Config.StopWords)
 	items = filterCategoryItems(items, source, categoryDictionary)
@@ -1064,91 +1088,156 @@ func (r Runner) fetchX(ctx context.Context, nctx normalize.Context, source model
 	return out, nil
 }
 
-func fetchXItemsViaScraper(ctx context.Context, cfg config.Config, source model.RegistrySource, maxItems int) ([]parse.FeedItem, error) {
-	handle := extractXHandle(source.FeedURL)
-	if handle == "" {
-		return nil, fmt.Errorf("x source requires a profile URL or handle: %q", source.FeedURL)
+func parseXStatusAnchors(body string, baseURL string) []parse.FeedItem {
+	anchorRe := regexp.MustCompile(`(?is)<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)</a>`)
+	matches := anchorRe.FindAllStringSubmatch(body, -1)
+	resolved, err := url.Parse(baseURL)
+	if err != nil {
+		return nil
 	}
-	if maxItems <= 0 {
-		maxItems = 20
-	}
-	if maxItems > 50 {
-		maxItems = 50 // frontend endpoint becomes unstable with bigger windows
-	}
-	scraper := twitterscraper.New()
-	if user := strings.TrimSpace(cfg.XScraperUsername); user != "" && strings.TrimSpace(cfg.XScraperPassword) != "" {
-		creds := []string{user, strings.TrimSpace(cfg.XScraperPassword)}
-		if extra := strings.TrimSpace(cfg.XScraperExtra); extra != "" {
-			creds = append(creds, extra)
-		}
-		if err := scraper.Login(creds...); err != nil {
-			if err := scraper.LoginOpenAccount(); err != nil {
-				return nil, fmt.Errorf("x login failed for %s: %w", handle, err)
-			}
-		}
-	} else {
-		if err := scraper.LoginOpenAccount(); err != nil {
-			return nil, fmt.Errorf("x open-account login failed for %s: %w", handle, err)
-		}
-	}
-
-	items := make([]parse.FeedItem, 0, maxItems)
-	seen := map[string]struct{}{}
-	for result := range scraper.GetTweets(ctx, handle, maxItems) {
-		if result == nil {
+	seen := make(map[string]struct{}, len(matches))
+	out := make([]parse.FeedItem, 0, len(matches))
+	for _, match := range matches {
+		if len(match) < 3 {
 			continue
 		}
-		if result.Error != nil {
-			return nil, result.Error
-		}
-		tweet := result.Tweet
-		if strings.TrimSpace(tweet.ID) == "" || strings.TrimSpace(tweet.Text) == "" {
+		href := strings.TrimSpace(match[1])
+		if href == "" || strings.HasPrefix(href, "#") {
 			continue
 		}
-		if tweet.IsRetweet {
+		rawURL, err := url.Parse(href)
+		if err != nil {
 			continue
 		}
-		link := strings.TrimSpace(tweet.PermanentURL)
-		if link == "" {
-			link = fmt.Sprintf("https://x.com/%s/status/%s", handle, tweet.ID)
+		link := resolved.ResolveReference(rawURL).String()
+		if !isXStatusURL(link) {
+			continue
 		}
-		if _, exists := seen[link]; exists {
+		if _, ok := seen[link]; ok {
 			continue
 		}
 		seen[link] = struct{}{}
-		published := ""
-		if !tweet.TimeParsed.IsZero() {
-			published = tweet.TimeParsed.UTC().Format(time.RFC3339)
+		title := parse.StripHTML(match[2])
+		if strings.TrimSpace(title) == "" {
+			title = xStatusTitleFallback(link)
 		}
-		items = append(items, parse.FeedItem{
-			Title:     strings.TrimSpace(tweet.Text),
-			Link:      link,
-			Published: published,
-			Author:    strings.TrimSpace(tweet.Name),
-			Summary:   strings.TrimSpace(tweet.Text),
-			Tags:      append([]string{}, tweet.Hashtags...),
-		})
-		if len(items) >= maxItems {
-			break
-		}
+		out = append(out, parse.FeedItem{Title: title, Link: link, Summary: title})
 	}
-	return items, nil
+	return out
 }
 
-func extractXHandle(raw string) string {
+func isXStatusURL(raw string) bool {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(strings.TrimPrefix(u.Hostname(), "www."))
+	if host != "x.com" && host != "twitter.com" {
+		return false
+	}
+	path := strings.Trim(strings.TrimSpace(u.Path), "/")
+	parts := strings.Split(path, "/")
+	if len(parts) < 3 {
+		return false
+	}
+	if !strings.EqualFold(parts[1], "status") {
+		return false
+	}
+	return strings.TrimSpace(parts[2]) != ""
+}
+
+func xStatusTitleFallback(raw string) string {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return "X post"
+	}
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) >= 3 {
+		return "X post by @" + parts[0]
+	}
+	return "X post"
+}
+
+func parseXTweetsFromGraphQLJSON(body []byte, feedURL string) []parse.FeedItem {
+	var decoded any
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		return nil
+	}
+	handle := xHandleFromFeedURL(feedURL)
+	seen := map[string]struct{}{}
+	out := make([]parse.FeedItem, 0, 32)
+	var walk func(any)
+	walk = func(node any) {
+		switch v := node.(type) {
+		case map[string]any:
+			if legacyRaw, ok := v["legacy"]; ok {
+				if legacy, ok := legacyRaw.(map[string]any); ok {
+					id := strings.TrimSpace(anyToString(legacy["id_str"]))
+					title := strings.TrimSpace(anyToString(legacy["full_text"]))
+					published := xCreatedAtToRFC3339(anyToString(legacy["created_at"]))
+					if id != "" {
+						linkHandle := handle
+						if linkHandle == "" {
+							linkHandle = "i"
+						}
+						link := fmt.Sprintf("https://x.com/%s/status/%s", linkHandle, id)
+						if _, exists := seen[link]; !exists {
+							seen[link] = struct{}{}
+							if title == "" {
+								title = xStatusTitleFallback(link)
+							}
+							out = append(out, parse.FeedItem{
+								Title:     title,
+								Link:      link,
+								Published: published,
+								Summary:   title,
+							})
+						}
+					}
+				}
+			}
+			for _, child := range v {
+				walk(child)
+			}
+		case []any:
+			for _, child := range v {
+				walk(child)
+			}
+		}
+	}
+	walk(decoded)
+	return out
+}
+
+func anyToString(value any) string {
+	switch v := value.(type) {
+	case string:
+		return v
+	case fmt.Stringer:
+		return v.String()
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+func xCreatedAtToRFC3339(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return ""
 	}
-	raw = strings.TrimPrefix(raw, "@")
-	if !strings.Contains(raw, "://") && !strings.Contains(raw, "/") {
-		return sanitizeXHandle(raw)
-	}
-	u, err := url.Parse(raw)
+	parsed, err := time.Parse("Mon Jan 02 15:04:05 -0700 2006", raw)
 	if err != nil {
 		return ""
 	}
-	path := strings.Trim(strings.TrimSpace(u.Path), "/")
+	return parsed.UTC().Format(time.RFC3339)
+}
+
+func xHandleFromFeedURL(feedURL string) string {
+	u, err := url.Parse(strings.TrimSpace(feedURL))
+	if err != nil {
+		return ""
+	}
+	path := strings.Trim(u.Path, "/")
 	if path == "" {
 		return ""
 	}
@@ -1156,29 +1245,13 @@ func extractXHandle(raw string) string {
 	if len(parts) == 0 {
 		return ""
 	}
-	return sanitizeXHandle(parts[0])
-}
-
-func sanitizeXHandle(value string) string {
-	value = strings.TrimSpace(strings.TrimPrefix(value, "@"))
-	if value == "" {
-		return ""
-	}
+	handle := strings.TrimSpace(parts[0])
 	for _, reserved := range []string{"home", "explore", "i", "search", "settings", "compose"} {
-		if strings.EqualFold(value, reserved) {
+		if strings.EqualFold(handle, reserved) {
 			return ""
 		}
 	}
-	var b strings.Builder
-	for _, r := range value {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
-			b.WriteRune(r)
-		}
-	}
-	if b.Len() == 0 {
-		return ""
-	}
-	return b.String()
+	return handle
 }
 
 func extractTelegramChannel(feedURL string) string {
