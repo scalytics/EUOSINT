@@ -441,7 +441,6 @@ export function GlobeView({
         map.closePopup(clusterListPopupRef.current);
         clusterListPopupRef.current = null;
       }
-      return;
     }
 
     const isNowAndHistoryMode = visibleNowAlerts.length > 0 && visibleHistoryAlertsRendered.length > 0;
