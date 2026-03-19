@@ -108,12 +108,17 @@ type Config struct {
 	APIAddr                          string
 	ACLEDUsername                    string
 	ACLEDPassword                    string
+	UCDPAccessToken                  string
 	StopWordsPath                    string
 	StopWords                        []string
 	NoisePolicyPath                  string
 	NoisePolicyBPath                 string
 	NoisePolicyBPercent              int
 	NoiseMetricsOutputPath           string
+	MilitaryBasesEnabled             bool
+	MilitaryBasesURL                 string
+	MilitaryBasesOutputPath          string
+	MilitaryBasesRefreshHours        int
 }
 
 func Default() Config {
@@ -192,11 +197,16 @@ func Default() Config {
 		NominatimEnabled:                 true,
 		APIEnabled:                       false,
 		APIAddr:                          ":3001",
+		UCDPAccessToken:                  "",
 		StopWordsPath:                    defaultStopWordsPath,
 		NoisePolicyPath:                  "registry/noise_policy.json",
 		NoisePolicyBPath:                 "",
 		NoisePolicyBPercent:              0,
 		NoiseMetricsOutputPath:           "public/noise-metrics.json",
+		MilitaryBasesEnabled:             true,
+		MilitaryBasesURL:                 "https://services2.arcgis.com/C8EMgrsFcRFL6LrL/ArcGIS/rest/services/GOM_National_Security/FeatureServer/7/query?where=1%3D1&outFields=*&f=geojson",
+		MilitaryBasesOutputPath:          "public/military-bases.geojson",
+		MilitaryBasesRefreshHours:        168,
 	}
 }
 
@@ -279,6 +289,7 @@ func FromEnv() Config {
 	cfg.APIAddr = envString("API_ADDR", cfg.APIAddr)
 	cfg.ACLEDUsername = envString("ACLED_USERNAME", cfg.ACLEDUsername)
 	cfg.ACLEDPassword = envString("ACLED_PASSWORD", cfg.ACLEDPassword)
+	cfg.UCDPAccessToken = envString("UCDP_ACCESS_TOKEN", cfg.UCDPAccessToken)
 	cfg.StopWordsPath = envString("STOP_WORDS_PATH", cfg.StopWordsPath)
 	cfg.StopWords = loadStopWords(cfg.StopWordsPath)
 	if extra := envCSV("STOP_WORDS", nil); len(extra) > 0 {
@@ -288,6 +299,10 @@ func FromEnv() Config {
 	cfg.NoisePolicyBPath = envString("NOISE_POLICY_B_PATH", cfg.NoisePolicyBPath)
 	cfg.NoisePolicyBPercent = envInt("NOISE_POLICY_B_PERCENT", cfg.NoisePolicyBPercent)
 	cfg.NoiseMetricsOutputPath = envString("NOISE_METRICS_OUTPUT_PATH", cfg.NoiseMetricsOutputPath)
+	cfg.MilitaryBasesEnabled = envBool("MILITARY_BASES_ENABLED", cfg.MilitaryBasesEnabled)
+	cfg.MilitaryBasesURL = envString("MILITARY_BASES_URL", cfg.MilitaryBasesURL)
+	cfg.MilitaryBasesOutputPath = envString("MILITARY_BASES_OUTPUT_PATH", cfg.MilitaryBasesOutputPath)
+	cfg.MilitaryBasesRefreshHours = envInt("MILITARY_BASES_REFRESH_HOURS", cfg.MilitaryBasesRefreshHours)
 	return cfg
 }
 

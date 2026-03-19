@@ -84,6 +84,11 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	fs.StringVar(&cfg.RegistrySeedPath, "registry-seed", cfg.RegistrySeedPath, "Path to the baked-in JSON registry for live merge on each cycle")
 	fs.BoolVar(&cfg.APIEnabled, "api", cfg.APIEnabled, "Start the search API server alongside the collector")
 	fs.StringVar(&cfg.APIAddr, "api-addr", cfg.APIAddr, "Listen address for the search API server")
+	fs.StringVar(&cfg.UCDPAccessToken, "ucdp-access-token", cfg.UCDPAccessToken, "UCDP API access token (x-ucdp-access-token)")
+	fs.BoolVar(&cfg.MilitaryBasesEnabled, "military-bases-enabled", cfg.MilitaryBasesEnabled, "Enable periodic refresh of the public military-bases GeoJSON layer")
+	fs.StringVar(&cfg.MilitaryBasesURL, "military-bases-url", cfg.MilitaryBasesURL, "Source URL for military-bases GeoJSON")
+	fs.StringVar(&cfg.MilitaryBasesOutputPath, "military-bases-output", cfg.MilitaryBasesOutputPath, "Output path for military-bases GeoJSON")
+	fs.IntVar(&cfg.MilitaryBasesRefreshHours, "military-bases-refresh-hours", cfg.MilitaryBasesRefreshHours, "Refresh cadence in hours for military-bases GeoJSON")
 
 	if err := fs.Parse(args); err != nil {
 		return err

@@ -89,6 +89,11 @@ Key collector variables:
 - `SOVEREIGN_SEED_PATH`: curated sovereign official-statements seed candidates (default `registry/sovereign_official_statements.seed.json`)
 - `OFFICIAL_STATEMENTS_MIN_QUALITY`: stricter vetting minimum for legislative official-statement seeds (default `0.75`)
 - `OFFICIAL_STATEMENTS_MIN_OPERATIONAL_RELEVANCE`: stricter operational relevance minimum for legislative official-statement seeds (default `0.7`)
+- `UCDP_ACCESS_TOKEN`: optional UCDP API token (`x-ucdp-access-token`) for `ucdp-json` conflict ingestion
+- `MILITARY_BASES_ENABLED`: enable periodic static military-bases GeoJSON refresh (default `true`)
+- `MILITARY_BASES_URL`: source URL for military-bases GeoJSON refresh
+- `MILITARY_BASES_OUTPUT_PATH`: output path for static military-bases layer (default `public/military-bases.geojson`)
+- `MILITARY_BASES_REFRESH_HOURS`: refresh cadence for military-bases layer (default `168`)
 
 ## Operations
 

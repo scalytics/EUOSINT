@@ -446,3 +446,44 @@ func TestSanitizeGeoTextStripsPublisherAttribution(t *testing.T) {
 		t.Fatalf("unexpected sanitized geo text: %q", got)
 	}
 }
+
+func TestUCDPAlertSetsConflictCategory(t *testing.T) {
+	cfg := config.Default()
+	ctx := Context{Config: cfg, Now: time.Date(2026, 3, 19, 0, 0, 0, 0, time.UTC)}
+	meta := model.RegistrySource{
+		Type:     "ucdp-json",
+		Category: "conflict_monitoring",
+		Source: model.SourceMetadata{
+			SourceID:      "ucdp-ged",
+			AuthorityName: "UCDP Georeferenced Event Dataset",
+			Country:       "Sweden",
+			CountryCode:   "SE",
+			Region:        "Europe",
+			AuthorityType: "research",
+			BaseURL:       "https://ucdp.uu.se",
+		},
+	}
+	alert := UCDPAlert(ctx, meta, parse.UCDPItem{
+		FeedItem: parse.FeedItem{
+			Title:     "State-based conflict in Syria",
+			Link:      "https://ucdp.uu.se/exploratory?id=123",
+			Published: "2026-03-18",
+			Summary:   "Type: State-based conflict. Fatalities: 14",
+			Lat:       35.2,
+			Lng:       36.8,
+		},
+		ViolenceType: "State-based conflict",
+		Fatalities:   14,
+		Country:      "Syria",
+		Region:       "Middle East",
+	})
+	if alert == nil {
+		t.Fatal("expected UCDP alert")
+	}
+	if alert.Category != "conflict_monitoring" {
+		t.Fatalf("expected conflict_monitoring, got %q", alert.Category)
+	}
+	if alert.Severity != "high" {
+		t.Fatalf("expected high severity, got %q", alert.Severity)
+	}
+}

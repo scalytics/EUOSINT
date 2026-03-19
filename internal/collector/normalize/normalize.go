@@ -360,6 +360,49 @@ func ACLEDAlert(ctx Context, meta model.RegistrySource, ev parse.ACLEDItem) *mod
 	return &alert
 }
 
+func UCDPAlert(ctx Context, meta model.RegistrySource, ev parse.UCDPItem) *model.Alert {
+	publishedAt := parseDate(ev.Published)
+	if publishedAt.IsZero() {
+		publishedAt = ctx.Now
+	}
+	if !isFresh(ctx.Config, publishedAt, ctx.Now) {
+		return nil
+	}
+	alert := baseAlert(ctx, meta, ev.Title, ev.Link, ev.Title+" "+ev.Summary, publishedAt)
+	alert.Category = "conflict_monitoring"
+	alert.Severity = "medium"
+	if ev.Fatalities >= 25 {
+		alert.Severity = "critical"
+	} else if ev.Fatalities > 0 {
+		alert.Severity = "high"
+	}
+	if ev.Lat != 0 || ev.Lng != 0 {
+		alert.Lat = ev.Lat
+		alert.Lng = ev.Lng
+		alert.EventGeoSource = "coordinates"
+		alert.EventGeoConfidence = eventGeoConfidence("coordinates")
+	}
+	if name := strings.TrimSpace(ev.Country); name != "" {
+		alert.EventCountry = name
+		alert.Source.Country = name
+		if _, _, code, ok := geocodeText(name); ok {
+			alert.EventCountryCode = code
+			alert.Source.CountryCode = code
+			alert.RegionTag = code
+		}
+	}
+	if region := strings.TrimSpace(ev.Region); region != "" {
+		alert.Source.Region = region
+	}
+	triage := score(ctx.Config, alert, FeedContext{
+		Summary:  ev.Summary,
+		Tags:     ev.Tags,
+		FeedType: meta.Type,
+	})
+	alert.Triage = triage
+	return &alert
+}
+
 func TravelWarningAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
 	publishedAt := parseDate(item.Published)
 	if publishedAt.IsZero() {

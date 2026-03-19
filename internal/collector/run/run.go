@@ -110,6 +110,9 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 	sources = prioritizeSources(sources)
 	client := r.clientFactory(cfg)
+	if err := r.refreshMilitaryBasesLayer(ctx, cfg, client); err != nil {
+		fmt.Fprintf(r.stderr, "WARN military bases layer refresh failed: %v\n", err)
+	}
 	var runStore *sourcedb.DB
 	if isSQLiteRegistryPath(cfg.RegistryPath) {
 		db, err := sourcedb.Open(cfg.RegistryPath)
@@ -690,7 +693,7 @@ func acceptForType(sourceType string) string {
 	case "rss":
 		return "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8"
 	case "kev-json", "fbi-wanted-json", "travelwarning-json", "acled-json",
-		"usgs-geojson", "eonet-json", "gdelt-json", "feodo-json":
+		"usgs-geojson", "eonet-json", "gdelt-json", "feodo-json", "ucdp-json":
 		return "application/json"
 	case "travelwarning-atom":
 		return "application/atom+xml, application/xml;q=0.9, */*;q=0.8"
@@ -760,7 +763,7 @@ func typePriority(kind string) int {
 		return 5
 	case "interpol-red-json", "interpol-yellow-json", "fbi-wanted-json", "travelwarning-json", "travelwarning-atom":
 		return 4
-	case "usgs-geojson", "eonet-json", "feodo-json", "gdelt-json":
+	case "usgs-geojson", "eonet-json", "feodo-json", "gdelt-json", "ucdp-json":
 		return 4
 	case "rss":
 		return 3
@@ -812,6 +815,8 @@ func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser 
 		return r.fetchFeodo(ctx, fetcher, nctx, source)
 	case "gdelt-json":
 		return r.fetchGDELT(ctx, fetcher, nctx, source)
+	case "ucdp-json":
+		return r.fetchUCDP(ctx, nctx, source)
 	default:
 		return nil, fmt.Errorf("unsupported source type %s", source.Type)
 	}
@@ -1586,6 +1591,34 @@ func (r Runner) fetchGDELT(ctx context.Context, fetcher fetch.Fetcher, nctx norm
 	return out, nil
 }
 
+func (r Runner) fetchUCDP(ctx context.Context, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	client := r.clientFactory(nctx.Config)
+	headers := map[string]string{}
+	if token := strings.TrimSpace(nctx.Config.UCDPAccessToken); token != "" {
+		headers["x-ucdp-access-token"] = token
+	}
+	body, err := client.TextWithHeaders(ctx, source.FeedURL, source.FollowRedirects, "application/json", headers)
+	if err != nil {
+		return nil, err
+	}
+	items, err := parse.ParseUCDP(body)
+	if err != nil {
+		return nil, err
+	}
+	limit := perSourceLimit(nctx.Config, source)
+	out := make([]model.Alert, 0, limit)
+	for _, item := range items {
+		if len(out) == limit {
+			break
+		}
+		alert := normalize.UCDPAlert(nctx, source, item)
+		if alert != nil {
+			out = append(out, *alert)
+		}
+	}
+	return out, nil
+}
+
 func fetchWithFallback(ctx context.Context, fetcher fetch.Fetcher, source model.RegistrySource, accept string) ([]byte, error) {
 	body, _, err := fetchWithFallbackURL(ctx, fetcher, source, accept)
 	return body, err
@@ -2013,7 +2046,58 @@ func writeJSONFile(path string, value any) error {
 		return err
 	}
 	body = append(body, '\n')
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
 	return os.WriteFile(path, body, 0o644)
+}
+
+func (r Runner) refreshMilitaryBasesLayer(ctx context.Context, cfg config.Config, client *fetch.Client) error {
+	if !cfg.MilitaryBasesEnabled {
+		return nil
+	}
+	url := strings.TrimSpace(cfg.MilitaryBasesURL)
+	path := strings.TrimSpace(cfg.MilitaryBasesOutputPath)
+	if url == "" || path == "" {
+		return nil
+	}
+	if !shouldRefreshOutput(path, cfg.MilitaryBasesRefreshHours, time.Now().UTC()) {
+		return nil
+	}
+	body, err := client.Text(ctx, url, true, "application/geo+json,application/json;q=0.9,*/*;q=0.8")
+	if err != nil {
+		return err
+	}
+	var geojsonDoc struct {
+		Type     string            `json:"type"`
+		Features []json.RawMessage `json:"features"`
+	}
+	if err := json.Unmarshal(body, &geojsonDoc); err != nil {
+		return fmt.Errorf("parse geojson: %w", err)
+	}
+	if len(geojsonDoc.Features) == 0 {
+		return fmt.Errorf("geojson has no features")
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(path, body, 0o644); err != nil {
+		return err
+	}
+	fmt.Fprintf(r.stderr, "Military bases layer refreshed: %d features -> %s\n", len(geojsonDoc.Features), path)
+	return nil
+}
+
+func shouldRefreshOutput(path string, refreshHours int, now time.Time) bool {
+	if refreshHours <= 0 {
+		refreshHours = 168
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return true
+	}
+	age := now.Sub(info.ModTime().UTC())
+	return age >= time.Duration(refreshHours)*time.Hour
 }
 
 func assertCriticalSourceCoverage(cfg config.Config, entries []model.SourceHealthEntry) error {

@@ -3281,6 +3281,50 @@
   {
     "type": "rss",
     "source": {
+      "source_id": "isw-assessments",
+      "authority_name": "Institute for the Study of War",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "research",
+      "base_url": "https://www.iswresearch.org"
+    },
+    "feed_url": "https://www.iswresearch.org/feeds/posts/default?alt=rss",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 38.9,
+    "lng": -77.04,
+    "include_keywords": [
+      "assessment",
+      "offensive",
+      "strike",
+      "battlefield",
+      "frontline",
+      "campaign update",
+      "military operation"
+    ]
+  },
+  {
+    "type": "ucdp-json",
+    "source": {
+      "source_id": "ucdp-ged",
+      "authority_name": "UCDP Georeferenced Event Dataset",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "International",
+      "authority_type": "research",
+      "base_url": "https://ucdp.uu.se"
+    },
+    "feed_url": "https://ucdpapi.pcr.uu.se/api/gedevents/25.1",
+    "category": "conflict_monitoring",
+    "region_tag": "INT",
+    "lat": 59.86,
+    "lng": 17.64,
+    "max_items": 80
+  },
+  {
+    "type": "rss",
+    "source": {
       "source_id": "sipri-news",
       "authority_name": "SIPRI News",
       "country": "Sweden",

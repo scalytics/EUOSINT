@@ -268,6 +268,31 @@ func TestFilterCategoryItemsMatchesCatalanMissingPersonPage(t *testing.T) {
 	}
 }
 
+func TestShouldRefreshOutput(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "military-bases.geojson")
+	now := time.Date(2026, 3, 19, 12, 0, 0, 0, time.UTC)
+
+	if !shouldRefreshOutput(path, 168, now) {
+		t.Fatal("expected missing output file to require refresh")
+	}
+	if err := os.WriteFile(path, []byte(`{"type":"FeatureCollection","features":[]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(path, now.Add(-2*time.Hour), now.Add(-2*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if shouldRefreshOutput(path, 168, now) {
+		t.Fatal("expected fresh output file to skip refresh")
+	}
+	if err := os.Chtimes(path, now.Add(-200*time.Hour), now.Add(-200*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if !shouldRefreshOutput(path, 168, now) {
+		t.Fatal("expected stale output file to require refresh")
+	}
+}
+
 func TestFilterFeedKeywordsAppliesToRSSContent(t *testing.T) {
 	items := []parse.FeedItem{
 		{Title: "Budget debate", Summary: "Parliament procedure only", Link: "https://example.test/a"},
