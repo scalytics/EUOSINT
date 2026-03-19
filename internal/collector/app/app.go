@@ -89,6 +89,8 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	fs.StringVar(&cfg.MilitaryBasesURL, "military-bases-url", cfg.MilitaryBasesURL, "Source URL for military-bases GeoJSON")
 	fs.StringVar(&cfg.MilitaryBasesOutputPath, "military-bases-output", cfg.MilitaryBasesOutputPath, "Output path for military-bases GeoJSON")
 	fs.IntVar(&cfg.MilitaryBasesRefreshHours, "military-bases-refresh-hours", cfg.MilitaryBasesRefreshHours, "Refresh cadence in hours for military-bases GeoJSON")
+	fs.BoolVar(&cfg.RegistrySyncEnabled, "registry-sync-enabled", cfg.RegistrySyncEnabled, "Enable registry seed -> SQLite sync worker")
+	fs.IntVar(&cfg.RegistrySyncIntervalMS, "registry-sync-interval-ms", cfg.RegistrySyncIntervalMS, "Registry sync worker interval in milliseconds")
 
 	if err := fs.Parse(args); err != nil {
 		return err

@@ -76,6 +76,10 @@ func (r Runner) watch(ctx context.Context, cfg config.Config) error {
 	ticker := time.NewTicker(time.Duration(cfg.IntervalMS) * time.Millisecond)
 	defer ticker.Stop()
 
+	if cfg.RegistrySyncEnabled {
+		go r.runRegistrySyncLoop(ctx, cfg)
+	}
+
 	for {
 		if err := r.runOnce(ctx, cfg); err != nil {
 			fmt.Fprintf(r.stderr, "collector run failed: %v\n", err)
@@ -96,11 +100,11 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		r.noiseGate = noiseEngine
 	}
 
-	// Live-merge the baked-in JSON registry into SQLite every cycle.
-	// This picks up new sources and syncs rejected status without restart.
-	if cfg.RegistrySeedPath != "" && isSQLitePath(cfg.RegistryPath) {
-		if err := r.mergeRegistry(ctx, cfg); err != nil {
-			fmt.Fprintf(r.stderr, "WARN registry merge: %v\n", err)
+	// In one-shot mode we perform a seed sync inline. In watch mode,
+	// the dedicated registry-sync loop handles it at its own cadence.
+	if !cfg.Watch {
+		if err := r.syncRegistrySeed(ctx, cfg); err != nil {
+			fmt.Fprintf(r.stderr, "WARN registry sync: %v\n", err)
 		}
 	}
 
@@ -404,6 +408,79 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 	_, err = fmt.Fprintf(r.stdout, "Wrote %d active alerts -> %s (%d filtered in %s)\n", len(currentActive), cfg.OutputPath, len(currentFiltered), cfg.FilteredOutputPath)
 	return err
+}
+
+func (r Runner) runRegistrySyncLoop(ctx context.Context, cfg config.Config) {
+	if err := r.syncRegistrySeed(ctx, cfg); err != nil {
+		fmt.Fprintf(r.stderr, "WARN registry sync: %v\n", err)
+	}
+	interval := cfg.RegistrySyncIntervalMS
+	if interval <= 0 {
+		interval = cfg.IntervalMS
+	}
+	if interval <= 0 {
+		interval = 60000
+	}
+	ticker := time.NewTicker(time.Duration(interval) * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := r.syncRegistrySeed(ctx, cfg); err != nil {
+				fmt.Fprintf(r.stderr, "WARN registry sync: %v\n", err)
+			}
+		}
+	}
+}
+
+func (r Runner) syncRegistrySeed(ctx context.Context, cfg config.Config) error {
+	if !cfg.RegistrySyncEnabled || !isSQLitePath(cfg.RegistryPath) {
+		return nil
+	}
+	seedPath := strings.TrimSpace(cfg.RegistrySeedPath)
+	if seedPath == "" {
+		return nil
+	}
+	data, err := os.ReadFile(seedPath)
+	if err != nil {
+		return fmt.Errorf("read registry seed: %w", err)
+	}
+	hash := sha1.Sum(data)
+	hashHex := hex.EncodeToString(hash[:])
+	syncKey := "seed:" + filepath.Clean(seedPath)
+
+	db, err := sourcedb.Open(cfg.RegistryPath)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	prev, ok, err := db.GetRegistrySyncState(ctx, syncKey)
+	if err != nil {
+		return err
+	}
+	if ok && strings.EqualFold(strings.TrimSpace(prev.LastHash), hashHex) {
+		return nil
+	}
+	if err := db.MergeRegistry(ctx, seedPath); err != nil {
+		return err
+	}
+	sourceCount, err := db.CountSources(ctx)
+	if err != nil {
+		return err
+	}
+	if err := db.UpsertRegistrySyncState(ctx, sourcedb.RegistrySyncState{
+		SyncKey:      syncKey,
+		LastHash:     hashHex,
+		LastSyncedAt: time.Now().UTC().Format(time.RFC3339),
+		SourceCount:  sourceCount,
+	}); err != nil {
+		return err
+	}
+	fmt.Fprintf(r.stderr, "Registry sync applied: seed=%s sources=%d hash=%s\n", seedPath, sourceCount, hashHex[:12])
+	return nil
 }
 
 func (r Runner) writeProgressSnapshot(cfg config.Config, freshAlerts []model.Alert, previousAlerts []model.Alert, sourceHealth []model.SourceHealthEntry, previousSourceHealth []model.SourceHealthEntry, totalRegistrySources int) {

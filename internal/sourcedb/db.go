@@ -93,6 +93,13 @@ type SourceWatermark struct {
 	LastSuccessAt     string
 }
 
+type RegistrySyncState struct {
+	SyncKey      string
+	LastHash     string
+	LastSyncedAt string
+	SourceCount  int
+}
+
 func Open(path string) (*DB, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, fmt.Errorf("create source DB directory: %w", err)
@@ -800,6 +807,71 @@ FROM source_watermarks
 		out[wm.SourceID] = &wm
 	}
 	return out, rows.Err()
+}
+
+func (db *DB) GetRegistrySyncState(ctx context.Context, syncKey string) (RegistrySyncState, bool, error) {
+	if err := db.Init(ctx); err != nil {
+		return RegistrySyncState{}, false, err
+	}
+	syncKey = strings.TrimSpace(syncKey)
+	if syncKey == "" {
+		return RegistrySyncState{}, false, nil
+	}
+	var out RegistrySyncState
+	err := db.sql.QueryRowContext(ctx, `
+SELECT sync_key, last_hash, last_synced_at, source_count
+FROM registry_sync_state
+WHERE sync_key = ?
+`, syncKey).Scan(&out.SyncKey, &out.LastHash, &out.LastSyncedAt, &out.SourceCount)
+	if err == sql.ErrNoRows {
+		return RegistrySyncState{}, false, nil
+	}
+	if err != nil {
+		return RegistrySyncState{}, false, fmt.Errorf("query registry sync state %s: %w", syncKey, err)
+	}
+	return out, true, nil
+}
+
+func (db *DB) UpsertRegistrySyncState(ctx context.Context, in RegistrySyncState) error {
+	if err := db.Init(ctx); err != nil {
+		return err
+	}
+	syncKey := strings.TrimSpace(in.SyncKey)
+	if syncKey == "" {
+		return nil
+	}
+	lastSyncedAt := strings.TrimSpace(in.LastSyncedAt)
+	if lastSyncedAt == "" {
+		lastSyncedAt = nowRFC3339()
+	}
+	if in.SourceCount < 0 {
+		in.SourceCount = 0
+	}
+	_, err := db.sql.ExecContext(ctx, `
+INSERT INTO registry_sync_state (
+  sync_key, last_hash, last_synced_at, source_count, updated_at
+) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+ON CONFLICT(sync_key) DO UPDATE SET
+  last_hash = excluded.last_hash,
+  last_synced_at = excluded.last_synced_at,
+  source_count = excluded.source_count,
+  updated_at = CURRENT_TIMESTAMP
+`, syncKey, strings.TrimSpace(in.LastHash), lastSyncedAt, in.SourceCount)
+	if err != nil {
+		return fmt.Errorf("upsert registry sync state %s: %w", syncKey, err)
+	}
+	return nil
+}
+
+func (db *DB) CountSources(ctx context.Context) (int, error) {
+	if err := db.Init(ctx); err != nil {
+		return 0, err
+	}
+	var count int
+	if err := db.sql.QueryRowContext(ctx, `SELECT COUNT(*) FROM sources`).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count sources: %w", err)
+	}
+	return count, nil
 }
 
 func (db *DB) SaveAlerts(ctx context.Context, alerts []model.Alert) error {
