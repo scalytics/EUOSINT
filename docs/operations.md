@@ -201,7 +201,7 @@ The collector API now supports analyst feedback used for precision tracking:
 - `UCDP_ACCESS_TOKEN` (default empty): token sent as `x-ucdp-access-token` for `ucdp-json` sources. If empty, `ucdp-json` sources are skipped silently.
 - `MILITARY_BASES_ENABLED` (default `true`): enables periodic refresh of static military-bases GeoJSON.
 - `MILITARY_BASES_URL`: source URL for military-bases GeoJSON refresh.
-- `MILITARY_BASES_OUTPUT_PATH` (default `public/military-bases.geojson`): output file consumed by the web layer.
+- `MILITARY_BASES_OUTPUT_PATH` (default `public/geo/military-bases.geojson`): output file consumed by the web layer.
 - `MILITARY_BASES_REFRESH_HOURS` (default `168`): refresh cadence for the static military-bases layer.
 
 Alert lifecycle notes:

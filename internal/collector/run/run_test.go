@@ -322,6 +322,22 @@ func TestFetchUCDPSkipsSilentlyWithoutToken(t *testing.T) {
 	}
 }
 
+func TestMergeGeoJSONFeaturesDeduplicatesByIDAndProperties(t *testing.T) {
+	a := []json.RawMessage{
+		json.RawMessage(`{"type":"Feature","id":"base-1","properties":{"name":"Base A"},"geometry":{"type":"Point","coordinates":[1,2]}}`),
+		json.RawMessage(`{"type":"Feature","properties":{"OBJECTID":200,"name":"Base B"},"geometry":{"type":"Point","coordinates":[3,4]}}`),
+	}
+	b := []json.RawMessage{
+		json.RawMessage(`{"type":"Feature","id":"base-1","properties":{"name":"Base A duplicate"},"geometry":{"type":"Point","coordinates":[1,2]}}`),
+		json.RawMessage(`{"type":"Feature","properties":{"OBJECTID":200,"name":"Base B duplicate"},"geometry":{"type":"Point","coordinates":[3,4]}}`),
+		json.RawMessage(`{"type":"Feature","id":"base-3","properties":{"name":"Base C"},"geometry":{"type":"Point","coordinates":[5,6]}}`),
+	}
+	merged := mergeGeoJSONFeatures(a, b)
+	if len(merged) != 3 {
+		t.Fatalf("expected 3 deduplicated features, got %d", len(merged))
+	}
+}
+
 func TestFilterFeedKeywordsAppliesToRSSContent(t *testing.T) {
 	items := []parse.FeedItem{
 		{Title: "Budget debate", Summary: "Parliament procedure only", Link: "https://example.test/a"},

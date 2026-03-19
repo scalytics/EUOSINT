@@ -2072,24 +2072,123 @@ func (r Runner) refreshMilitaryBasesLayer(ctx context.Context, cfg config.Config
 	if err != nil {
 		return err
 	}
-	var geojsonDoc struct {
+	fetchedFeatures, err := geoJSONFeaturesFromBytes(body)
+	if err != nil {
+		return fmt.Errorf("parse fetched geojson: %w", err)
+	}
+	if len(fetchedFeatures) == 0 {
+		return fmt.Errorf("fetched geojson has no features")
+	}
+
+	sets := [][]json.RawMessage{fetchedFeatures}
+	if existingFeatures, err := geoJSONFeaturesFromFile(path); err == nil && len(existingFeatures) > 0 {
+		sets = append(sets, existingFeatures)
+	}
+	canonicalPath := filepath.Join("public", "geo", "military-bases.geojson")
+	if filepath.Clean(path) != filepath.Clean(canonicalPath) {
+		if canonicalFeatures, err := geoJSONFeaturesFromFile(canonicalPath); err == nil && len(canonicalFeatures) > 0 {
+			sets = append(sets, canonicalFeatures)
+		}
+	}
+	mergedFeatures := mergeGeoJSONFeatures(sets...)
+	if len(mergedFeatures) == 0 {
+		return fmt.Errorf("merged military-bases layer has no features")
+	}
+	doc := struct {
 		Type     string            `json:"type"`
 		Features []json.RawMessage `json:"features"`
+	}{
+		Type:     "FeatureCollection",
+		Features: mergedFeatures,
 	}
-	if err := json.Unmarshal(body, &geojsonDoc); err != nil {
-		return fmt.Errorf("parse geojson: %w", err)
+	mergedBody, err := json.MarshalIndent(doc, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal merged geojson: %w", err)
 	}
-	if len(geojsonDoc.Features) == 0 {
-		return fmt.Errorf("geojson has no features")
-	}
+	mergedBody = append(mergedBody, '\n')
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, body, 0o644); err != nil {
+	if err := os.WriteFile(path, mergedBody, 0o644); err != nil {
 		return err
 	}
-	fmt.Fprintf(r.stderr, "Military bases layer refreshed: %d features -> %s\n", len(geojsonDoc.Features), path)
+	fmt.Fprintf(r.stderr, "Military bases layer refreshed: fetched=%d merged=%d -> %s\n", len(fetchedFeatures), len(mergedFeatures), path)
 	return nil
+}
+
+func geoJSONFeaturesFromFile(path string) ([]json.RawMessage, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return geoJSONFeaturesFromBytes(data)
+}
+
+func geoJSONFeaturesFromBytes(data []byte) ([]json.RawMessage, error) {
+	var doc struct {
+		Type     string            `json:"type"`
+		Features []json.RawMessage `json:"features"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, err
+	}
+	return doc.Features, nil
+}
+
+func mergeGeoJSONFeatures(featureSets ...[]json.RawMessage) []json.RawMessage {
+	out := make([]json.RawMessage, 0)
+	seen := map[string]struct{}{}
+	for _, set := range featureSets {
+		for _, raw := range set {
+			key := geoJSONFeatureKey(raw)
+			if key == "" {
+				continue
+			}
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			out = append(out, raw)
+		}
+	}
+	return out
+}
+
+func geoJSONFeatureKey(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var feature map[string]any
+	if err := json.Unmarshal(raw, &feature); err != nil {
+		sum := sha1.Sum(raw)
+		return "raw:" + hex.EncodeToString(sum[:])
+	}
+
+	if id, ok := feature["id"]; ok {
+		idKey := strings.TrimSpace(fmt.Sprintf("%v", id))
+		if idKey != "" && idKey != "<nil>" {
+			return "id:" + strings.ToLower(idKey)
+		}
+	}
+
+	props, _ := feature["properties"].(map[string]any)
+	for _, key := range []string{"id", "ID", "site_id", "SITE_ID", "OBJECTID", "objectid", "full_name", "FULLNAME", "name", "NAME"} {
+		if props == nil {
+			continue
+		}
+		if rawValue, ok := props[key]; ok {
+			value := strings.TrimSpace(fmt.Sprintf("%v", rawValue))
+			if value != "" && value != "<nil>" {
+				return "prop:" + strings.ToLower(key) + ":" + strings.ToLower(value)
+			}
+		}
+	}
+
+	sum := sha1.Sum(raw)
+	return "raw:" + hex.EncodeToString(sum[:])
 }
 
 func shouldRefreshOutput(path string, refreshHours int, now time.Time) bool {

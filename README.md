@@ -92,7 +92,7 @@ Key collector variables:
 - `UCDP_ACCESS_TOKEN`: optional UCDP API token (`x-ucdp-access-token`) for `ucdp-json` conflict ingestion
 - `MILITARY_BASES_ENABLED`: enable periodic static military-bases GeoJSON refresh (default `true`)
 - `MILITARY_BASES_URL`: source URL for military-bases GeoJSON refresh
-- `MILITARY_BASES_OUTPUT_PATH`: output path for static military-bases layer (default `public/military-bases.geojson`)
+- `MILITARY_BASES_OUTPUT_PATH`: output path for static military-bases layer (default `public/geo/military-bases.geojson`)
 - `MILITARY_BASES_REFRESH_HOURS`: refresh cadence for military-bases layer (default `168`)
 
 ## Operations

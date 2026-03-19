@@ -205,7 +205,7 @@ func Default() Config {
 		NoiseMetricsOutputPath:           "public/noise-metrics.json",
 		MilitaryBasesEnabled:             true,
 		MilitaryBasesURL:                 "https://services2.arcgis.com/C8EMgrsFcRFL6LrL/ArcGIS/rest/services/GOM_National_Security/FeatureServer/7/query?where=1%3D1&outFields=*&f=geojson",
-		MilitaryBasesOutputPath:          "public/military-bases.geojson",
+		MilitaryBasesOutputPath:          "public/geo/military-bases.geojson",
 		MilitaryBasesRefreshHours:        168,
 	}
 }
