@@ -26,6 +26,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/discover"
 	"github.com/scalytics/euosint/internal/collector/fetch"
 	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/euosint/internal/collector/noisegate"
 	"github.com/scalytics/euosint/internal/collector/normalize"
 	"github.com/scalytics/euosint/internal/collector/output"
 	"github.com/scalytics/euosint/internal/collector/parse"
@@ -42,6 +43,7 @@ type Runner struct {
 	stderr         io.Writer
 	clientFactory  func(config.Config) *fetch.Client
 	browserFactory func(config.Config) (*fetch.BrowserClient, error)
+	noiseGate      *noisegate.Engine
 }
 
 func New(stdout io.Writer, stderr io.Writer) Runner {
@@ -87,6 +89,13 @@ func (r Runner) watch(ctx context.Context, cfg config.Config) error {
 }
 
 func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
+	noiseEngine, err := noisegate.Load(cfg.NoisePolicyPath)
+	if err != nil {
+		fmt.Fprintf(r.stderr, "WARN noise policy load failed: %v\n", err)
+	} else {
+		r.noiseGate = noiseEngine
+	}
+
 	// Live-merge the baked-in JSON registry into SQLite every cycle.
 	// This picks up new sources and syncs rejected status without restart.
 	if cfg.RegistrySeedPath != "" && isSQLitePath(cfg.RegistryPath) {
@@ -822,6 +831,7 @@ func (r Runner) fetchRSS(ctx context.Context, fetcher fetch.Fetcher, nctx normal
 		}
 	}
 	items = filterFeedKeywords(items, source.IncludeKeywords, source.ExcludeKeywords, nctx.Config.StopWords)
+	items, decisions := r.applyNoiseGate(source, items)
 	sortFeedItemsNewest(items)
 	limit := perSourceLimit(nctx.Config, source)
 	if len(items) > limit {
@@ -837,6 +847,9 @@ func (r Runner) fetchRSS(ctx context.Context, fetcher fetch.Fetcher, nctx normal
 		}
 		alert := normalize.RSSItem(nctx, source, item)
 		if alert != nil {
+			if decision, ok := decisions[itemDecisionKey(item)]; ok {
+				applyNoiseDecision(alert, decision)
+			}
 			out = append(out, *alert)
 		}
 	}
@@ -852,6 +865,7 @@ func (r Runner) fetchHTML(ctx context.Context, fetcher fetch.Fetcher, nctx norma
 	items := parse.ParseHTMLAnchors(string(body), finalURL)
 	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords, nctx.Config.StopWords)
 	items = filterCategoryItems(items, source, categoryDictionary)
+	items, decisions := r.applyNoiseGate(source, items)
 	limit := perSourceLimit(nctx.Config, source)
 	if nctx.Config.AlertLLMEnabled {
 		if llmLimit := nctx.Config.AlertLLMMaxItemsPerSource; llmLimit > 0 && llmLimit < limit {
@@ -880,6 +894,9 @@ func (r Runner) fetchHTML(ctx context.Context, fetcher fetch.Fetcher, nctx norma
 				meta.Category = firstNonEmpty(classifiedItem.Category, source.Category)
 				alert := normalize.HTMLItem(nctx, meta, classifiedItem.Item)
 				if alert != nil {
+					if decision, ok := decisions[itemDecisionKey(classifiedItem.Item)]; ok {
+						applyNoiseDecision(alert, decision)
+					}
 					out = append(out, *alert)
 				}
 			}
@@ -890,6 +907,9 @@ func (r Runner) fetchHTML(ctx context.Context, fetcher fetch.Fetcher, nctx norma
 	for _, item := range items {
 		alert := normalize.HTMLItem(nctx, source, item)
 		if alert != nil {
+			if decision, ok := decisions[itemDecisionKey(item)]; ok {
+				applyNoiseDecision(alert, decision)
+			}
 			out = append(out, *alert)
 		}
 	}
@@ -906,6 +926,7 @@ func (r Runner) fetchTelegram(ctx context.Context, fetcher fetch.Fetcher, nctx n
 	items := parse.ParseTelegram(string(body), channel)
 	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords, nctx.Config.StopWords)
 	items = filterCategoryItems(items, source, categoryDictionary)
+	items, decisions := r.applyNoiseGate(source, items)
 	sortFeedItemsNewest(items)
 	limit := perSourceLimit(nctx.Config, source)
 	if len(items) > limit {
@@ -915,6 +936,9 @@ func (r Runner) fetchTelegram(ctx context.Context, fetcher fetch.Fetcher, nctx n
 	for _, item := range items {
 		alert := normalize.HTMLItem(nctx, source, item)
 		if alert != nil {
+			if decision, ok := decisions[itemDecisionKey(item)]; ok {
+				applyNoiseDecision(alert, decision)
+			}
 			out = append(out, *alert)
 		}
 	}
@@ -1587,11 +1611,44 @@ func fetchWithFallbackURL(ctx context.Context, fetcher fetch.Fetcher, source mod
 	return nil, "", lastErr
 }
 
+func itemDecisionKey(item parse.FeedItem) string {
+	return strings.ToLower(strings.TrimSpace(item.Title + "|" + item.Link))
+}
+
+func (r Runner) applyNoiseGate(source model.RegistrySource, items []parse.FeedItem) ([]parse.FeedItem, map[string]noisegate.Decision) {
+	if r.noiseGate == nil || len(items) == 0 {
+		return items, map[string]noisegate.Decision{}
+	}
+	out := make([]parse.FeedItem, 0, len(items))
+	decisions := make(map[string]noisegate.Decision, len(items))
+	for _, item := range items {
+		decision := r.noiseGate.Evaluate(source, item)
+		if decision.Outcome == noisegate.OutcomeDrop {
+			continue
+		}
+		key := itemDecisionKey(item)
+		decisions[key] = decision
+		out = append(out, item)
+	}
+	return out, decisions
+}
+
+func applyNoiseDecision(alert *model.Alert, decision noisegate.Decision) {
+	if alert == nil {
+		return
+	}
+	if decision.Outcome == noisegate.OutcomeDowngrade {
+		alert.Severity = "info"
+		alert.Category = "informational"
+	}
+}
+
 func filterKeywords(items []parse.FeedItem, include []string, exclude []string, globalExclude ...[]string) []parse.FeedItem {
 	include = normalizeKeywords(include)
 	exclude = normalizeKeywords(exclude)
+	global := []string{}
 	for _, extra := range globalExclude {
-		exclude = append(exclude, normalizeKeywords(extra)...)
+		global = append(global, normalizeKeywords(extra)...)
 	}
 	out := []parse.FeedItem{}
 	for _, item := range items {
@@ -1607,6 +1664,9 @@ func filterKeywords(items []parse.FeedItem, include []string, exclude []string, 
 		if len(exclude) > 0 && containsKeyword(fullHay, exclude) {
 			continue
 		}
+		if len(global) > 0 && shouldExcludeByGlobalStopWords(item, global) {
+			continue
+		}
 		out = append(out, item)
 	}
 	return out
@@ -1615,8 +1675,9 @@ func filterKeywords(items []parse.FeedItem, include []string, exclude []string, 
 func filterFeedKeywords(items []parse.FeedItem, include []string, exclude []string, globalExclude ...[]string) []parse.FeedItem {
 	include = normalizeKeywords(include)
 	exclude = normalizeKeywords(exclude)
+	global := []string{}
 	for _, extra := range globalExclude {
-		exclude = append(exclude, normalizeKeywords(extra)...)
+		global = append(global, normalizeKeywords(extra)...)
 	}
 	out := []parse.FeedItem{}
 	for _, item := range items {
@@ -1637,6 +1698,9 @@ func filterFeedKeywords(items []parse.FeedItem, include []string, exclude []stri
 			continue
 		}
 		if len(exclude) > 0 && containsKeyword(excludeHay, exclude) {
+			continue
+		}
+		if len(global) > 0 && shouldExcludeByGlobalStopWords(item, global) {
 			continue
 		}
 		out = append(out, item)
@@ -1662,6 +1726,83 @@ func containsKeyword(hay string, needles []string) bool {
 		}
 	}
 	return false
+}
+
+var stopWordActionableOverrides = []string{
+	"sexual assault",
+	"sex trafficking",
+	"human trafficking",
+	"sextortion",
+	"rape",
+	"molestation",
+	"child exploitation",
+	"domestic violence",
+	"police appeal",
+	"wanted",
+	"missing person",
+}
+
+func shouldExcludeByGlobalStopWords(item parse.FeedItem, stopWords []string) bool {
+	hay := strings.ToLower(strings.Join([]string{
+		item.Title,
+		item.Summary,
+		item.Author,
+		strings.Join(item.Tags, " "),
+		item.Link,
+	}, " "))
+	if !containsStopWord(hay, stopWords) {
+		return false
+	}
+	context := strings.ToLower(strings.TrimSpace(item.Title + " " + item.Summary))
+	for _, phrase := range stopWordActionableOverrides {
+		if strings.Contains(context, phrase) {
+			return false
+		}
+	}
+	return true
+}
+
+func containsStopWord(hay string, needles []string) bool {
+	for _, needle := range needles {
+		if needle == "" {
+			continue
+		}
+		if strings.Contains(needle, " ") {
+			if strings.Contains(hay, needle) {
+				return true
+			}
+			continue
+		}
+		if containsWholeWord(hay, needle) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsWholeWord(hay string, needle string) bool {
+	start := 0
+	for {
+		idx := strings.Index(hay[start:], needle)
+		if idx < 0 {
+			return false
+		}
+		idx += start
+		leftOK := idx == 0 || !isWordChar(rune(hay[idx-1]))
+		end := idx + len(needle)
+		rightOK := end >= len(hay) || !isWordChar(rune(hay[end]))
+		if leftOK && rightOK {
+			return true
+		}
+		start = idx + len(needle)
+		if start >= len(hay) {
+			return false
+		}
+	}
+}
+
+func isWordChar(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_'
 }
 
 // downgradeNonActionable marks alerts from broad sources (those without

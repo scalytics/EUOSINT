@@ -19,6 +19,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/dictionary"
 	"github.com/scalytics/euosint/internal/collector/fetch"
 	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/euosint/internal/collector/noisegate"
 	"github.com/scalytics/euosint/internal/collector/parse"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
@@ -339,6 +340,85 @@ func TestFilterKeywordsGlobalStopWordsEmptyPassesAll(t *testing.T) {
 	filtered := filterKeywords(items, nil, nil)
 	if len(filtered) != 2 {
 		t.Fatalf("expected all 2 items with no stop words, got %d", len(filtered))
+	}
+}
+
+func TestGlobalStopWordsDoNotSuppressSexualAssaultIntelligence(t *testing.T) {
+	items := []parse.FeedItem{
+		{
+			Title:   "Police appeal: sexual assault investigation in city center",
+			Summary: "Authorities seek witnesses",
+			Link:    "https://example.test/a",
+		},
+		{
+			Title: "Celebrity sex scandal spreads online",
+			Link:  "https://example.test/b",
+		},
+	}
+	filtered := filterFeedKeywords(items, nil, nil, []string{"sex", "sex scandal"})
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 retained intelligence item, got %d", len(filtered))
+	}
+	if filtered[0].Link != "https://example.test/a" {
+		t.Fatalf("unexpected retained item: %#v", filtered[0])
+	}
+}
+
+func TestGlobalStopWordsUseWholeWordMatching(t *testing.T) {
+	items := []parse.FeedItem{
+		{
+			Title: "National police warning on sextortion campaign",
+			Link:  "https://example.test/sextortion",
+		},
+		{
+			Title: "Sex rumor thread goes viral",
+			Link:  "https://example.test/rumor",
+		},
+	}
+	filtered := filterFeedKeywords(items, nil, nil, []string{"sex"})
+	if len(filtered) != 1 {
+		t.Fatalf("expected only sextortion item retained, got %d", len(filtered))
+	}
+	if filtered[0].Link != "https://example.test/sextortion" {
+		t.Fatalf("unexpected retained item: %#v", filtered[0])
+	}
+}
+
+func TestApplyNoiseGateDropsPolicySpam(t *testing.T) {
+	runner := New(io.Discard, io.Discard)
+	engine, err := noisegate.Load(filepath.Join("..", "..", "..", "registry", "noise_policy.json"))
+	if err != nil {
+		t.Fatalf("load noise policy: %v", err)
+	}
+	runner.noiseGate = engine
+
+	items := []parse.FeedItem{
+		{Title: "Celebrity gossip giveaway and lottery update", Link: "https://example.test/spam"},
+		{Title: "Police appeal for missing person", Link: "https://example.test/valid"},
+	}
+	filtered, decisions := runner.applyNoiseGate(model.RegistrySource{
+		Category: "public_appeal",
+		Source:   model.SourceMetadata{AuthorityType: "police"},
+	}, items)
+	if len(filtered) != 1 {
+		t.Fatalf("expected only one retained item, got %d", len(filtered))
+	}
+	if filtered[0].Link != "https://example.test/valid" {
+		t.Fatalf("unexpected retained item: %#v", filtered[0])
+	}
+	if decisions[itemDecisionKey(filtered[0])].Outcome != noisegate.OutcomeKeep {
+		t.Fatalf("expected kept decision for valid item, got %+v", decisions[itemDecisionKey(filtered[0])])
+	}
+}
+
+func TestApplyNoiseDecisionDowngradesAlert(t *testing.T) {
+	alert := &model.Alert{
+		Category: "public_appeal",
+		Severity: "high",
+	}
+	applyNoiseDecision(alert, noisegate.Decision{Outcome: noisegate.OutcomeDowngrade})
+	if alert.Category != "informational" || alert.Severity != "info" {
+		t.Fatalf("expected informational downgrade, got category=%q severity=%q", alert.Category, alert.Severity)
 	}
 }
 
