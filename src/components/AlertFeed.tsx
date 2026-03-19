@@ -317,25 +317,26 @@ export function AlertFeed({
             {freshnessLabel(alert.freshness_hours)}
           </span>
         </div>
-        <div className="mt-1.5 flex items-center gap-1.5 text-2xs">
-          <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-siem-accent/10 text-siem-accent border border-siem-accent/20">
-            <Globe size={9} />
-            {alert.event_country || alert.source.country}
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-2xs">
+          <span className="inline-flex max-w-[11rem] items-center gap-1 rounded px-1.5 py-0.5 border border-siem-border bg-white/5 text-siem-text">
+            <Globe size={9} className="text-siem-muted" />
+            <span className="truncate">{alert.event_country || alert.source.country}</span>
           </span>
           {(alert.event_country || alert.source.country) !== alert.source.country && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded border border-siem-border text-siem-muted bg-white/5">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded border border-siem-border text-3xs text-siem-muted bg-white/5">
               Source {alert.source.country}
             </span>
           )}
           {(alert.event_geo_confidence ?? 0) < 0.6 && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10">
-              Low geo confidence
+            <span
+              className="inline-flex items-center rounded border border-amber-500/30 bg-amber-500/10 px-1 py-0.5"
+              title="Low geo confidence"
+              aria-label="Low geo confidence"
+            >
+              <Globe size={9} className="text-amber-300" />
             </span>
           )}
-          <span
-            className={`inline-flex items-center px-1.5 py-0.5 rounded border ${categoryBadge[alert.category]}`}
-            style={{ fontSize: "0.6rem" }}
-          >
+          <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-2xs font-medium ${categoryBadge[alert.category]}`}>
             {categoryLabels[alert.category]}
           </span>
         </div>
