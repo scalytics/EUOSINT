@@ -109,6 +109,7 @@ type Config struct {
 	NoisePolicyPath                 string
 	NoisePolicyBPath                string
 	NoisePolicyBPercent             int
+	NoiseMetricsOutputPath          string
 }
 
 func Default() Config {
@@ -187,6 +188,7 @@ func Default() Config {
 		NoisePolicyPath:                 "registry/noise_policy.json",
 		NoisePolicyBPath:                "",
 		NoisePolicyBPercent:             0,
+		NoiseMetricsOutputPath:          "public/noise-metrics.json",
 	}
 }
 
@@ -273,6 +275,7 @@ func FromEnv() Config {
 	cfg.NoisePolicyPath = envString("NOISE_POLICY_PATH", cfg.NoisePolicyPath)
 	cfg.NoisePolicyBPath = envString("NOISE_POLICY_B_PATH", cfg.NoisePolicyBPath)
 	cfg.NoisePolicyBPercent = envInt("NOISE_POLICY_B_PERCENT", cfg.NoisePolicyBPercent)
+	cfg.NoiseMetricsOutputPath = envString("NOISE_METRICS_OUTPUT_PATH", cfg.NoiseMetricsOutputPath)
 	return cfg
 }
 

@@ -72,6 +72,14 @@ type NoiseFeedbackStats struct {
 	PerSourceSamples map[string]int `json:"per_source_samples"`
 }
 
+type NoiseSourcePrecision struct {
+	SourceID       string  `json:"source_id"`
+	Precision      float64 `json:"precision"`
+	Samples        int     `json:"samples"`
+	FalsePositives int     `json:"false_positives"`
+	TrueSignals    int     `json:"true_signals"`
+}
+
 type SourceWatermark struct {
 	SourceID          string
 	LastRunStartedAt  string
@@ -1340,6 +1348,55 @@ GROUP BY source_id`)
 		return stats, fmt.Errorf("noise feedback by source rows: %w", err)
 	}
 	return stats, nil
+}
+
+func (db *DB) NoiseFeedbackPrecisionBySource(ctx context.Context) ([]NoiseSourcePrecision, error) {
+	rows, err := db.sql.QueryContext(ctx, `
+SELECT
+  source_id,
+  SUM(CASE WHEN verdict = 'false_positive' THEN 1 ELSE 0 END) AS false_positive_count,
+  SUM(CASE WHEN verdict IN ('confirm', 'promote_to_alarm') THEN 1 ELSE 0 END) AS true_signal_count,
+  COUNT(*) AS total_count
+FROM noise_feedback
+WHERE source_id <> ''
+GROUP BY source_id`)
+	if err != nil {
+		return nil, fmt.Errorf("noise feedback precision by source: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]NoiseSourcePrecision, 0)
+	for rows.Next() {
+		var sourceID string
+		var fpCount int
+		var trueCount int
+		var total int
+		if err := rows.Scan(&sourceID, &fpCount, &trueCount, &total); err != nil {
+			return nil, fmt.Errorf("scan noise feedback precision row: %w", err)
+		}
+		denom := fpCount + trueCount
+		precision := 0.5
+		if denom > 0 {
+			precision = float64(trueCount) / float64(denom)
+		}
+		out = append(out, NoiseSourcePrecision{
+			SourceID:       sourceID,
+			Precision:      math.Round(precision*1000) / 1000,
+			Samples:        total,
+			FalsePositives: fpCount,
+			TrueSignals:    trueCount,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("noise feedback precision rows: %w", err)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Samples != out[j].Samples {
+			return out[i].Samples > out[j].Samples
+		}
+		return out[i].SourceID < out[j].SourceID
+	})
+	return out, nil
 }
 
 func (db *DB) ExportRegistry(ctx context.Context, registryPath string) error {

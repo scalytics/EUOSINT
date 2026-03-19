@@ -397,6 +397,9 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if err := output.Write(cfg, currentActive, currentFiltered, fullState, sourceHealth, duplicateAudit, replacementQueue); err != nil {
 		return err
 	}
+	if err := r.writeNoiseMetrics(ctx, cfg, currentActive, runStore); err != nil {
+		fmt.Fprintf(r.stderr, "WARN noise metrics: %v\n", err)
+	}
 	_, err = fmt.Fprintf(r.stdout, "Wrote %d active alerts -> %s (%d filtered in %s)\n", len(currentActive), cfg.OutputPath, len(currentFiltered), cfg.FilteredOutputPath)
 	return err
 }
@@ -1897,6 +1900,121 @@ func populateSourceHealth(entries []model.SourceHealthEntry, active []model.Aler
 		entries[i].ActiveCount = activeBySource[entries[i].SourceID]
 		entries[i].FilteredCount = filteredBySource[entries[i].SourceID]
 	}
+}
+
+type noiseMetricsDocument struct {
+	GeneratedAt            string                          `json:"generated_at"`
+	NoisePolicyVersion     string                          `json:"noise_policy_version,omitempty"`
+	LaneDistribution       map[string]int                  `json:"lane_distribution"`
+	LaneDistributionDrift  map[string]float64              `json:"lane_distribution_drift,omitempty"`
+	GeoConfidenceAverage   float64                         `json:"geo_confidence_average"`
+	GeoConfidenceDrift     float64                         `json:"geo_confidence_drift,omitempty"`
+	GeoConfidenceBySource  map[string]float64              `json:"geo_confidence_by_source,omitempty"`
+	SourcePrecision        []sourcedb.NoiseSourcePrecision `json:"source_precision,omitempty"`
+	SourceLaneDistribution map[string]map[string]int       `json:"source_lane_distribution,omitempty"`
+}
+
+func (r Runner) writeNoiseMetrics(ctx context.Context, cfg config.Config, alerts []model.Alert, runStore *sourcedb.DB) error {
+	path := strings.TrimSpace(cfg.NoiseMetricsOutputPath)
+	if path == "" {
+		return nil
+	}
+	doc := noiseMetricsDocument{
+		GeneratedAt:            time.Now().UTC().Format(time.RFC3339),
+		LaneDistribution:       map[string]int{"alarm": 0, "intel": 0, "info": 0},
+		LaneDistributionDrift:  map[string]float64{},
+		GeoConfidenceBySource:  map[string]float64{},
+		SourceLaneDistribution: map[string]map[string]int{},
+	}
+	if r.noiseGate != nil {
+		doc.NoisePolicyVersion = r.noiseGate.Version()
+	}
+	previous := readNoiseMetrics(path)
+
+	sumConfidence := 0.0
+	for _, alert := range alerts {
+		lane := strings.ToLower(strings.TrimSpace(string(alert.SignalLane)))
+		if lane == "" {
+			lane = "intel"
+		}
+		doc.LaneDistribution[lane]++
+		if _, ok := doc.SourceLaneDistribution[alert.SourceID]; !ok {
+			doc.SourceLaneDistribution[alert.SourceID] = map[string]int{"alarm": 0, "intel": 0, "info": 0}
+		}
+		doc.SourceLaneDistribution[alert.SourceID][lane]++
+		sumConfidence += alert.EventGeoConfidence
+		doc.GeoConfidenceBySource[alert.SourceID] += alert.EventGeoConfidence
+	}
+	if len(alerts) > 0 {
+		doc.GeoConfidenceAverage = round3(sumConfidence / float64(len(alerts)))
+	}
+	for sourceID, total := range doc.GeoConfidenceBySource {
+		count := 0
+		for _, alert := range alerts {
+			if alert.SourceID == sourceID {
+				count++
+			}
+		}
+		if count > 0 {
+			doc.GeoConfidenceBySource[sourceID] = round3(total / float64(count))
+		}
+	}
+
+	totalCurrent := len(alerts)
+	totalPrevious := 0
+	if previous != nil {
+		for _, v := range previous.LaneDistribution {
+			totalPrevious += v
+		}
+		doc.GeoConfidenceDrift = round3(doc.GeoConfidenceAverage - previous.GeoConfidenceAverage)
+		for lane, count := range doc.LaneDistribution {
+			curPct := 0.0
+			if totalCurrent > 0 {
+				curPct = float64(count) / float64(totalCurrent)
+			}
+			prevPct := 0.0
+			if totalPrevious > 0 {
+				prevPct = float64(previous.LaneDistribution[lane]) / float64(totalPrevious)
+			}
+			doc.LaneDistributionDrift[lane] = round3(curPct - prevPct)
+		}
+	}
+
+	if runStore != nil {
+		if precision, err := runStore.NoiseFeedbackPrecisionBySource(ctx); err == nil {
+			doc.SourcePrecision = precision
+		}
+	}
+
+	return writeJSONFile(path, doc)
+}
+
+func readNoiseMetrics(path string) *noiseMetricsDocument {
+	data, err := os.ReadFile(path)
+	if err != nil || len(data) == 0 {
+		return nil
+	}
+	var doc noiseMetricsDocument
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil
+	}
+	if doc.LaneDistribution == nil {
+		doc.LaneDistribution = map[string]int{}
+	}
+	return &doc
+}
+
+func round3(v float64) float64 {
+	return float64(int(v*1000+0.5)) / 1000
+}
+
+func writeJSONFile(path string, value any) error {
+	body, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return err
+	}
+	body = append(body, '\n')
+	return os.WriteFile(path, body, 0o644)
 }
 
 func assertCriticalSourceCoverage(cfg config.Config, entries []model.SourceHealthEntry) error {

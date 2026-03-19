@@ -441,6 +441,44 @@ func TestApplyNoiseDecisionDowngradesAlert(t *testing.T) {
 	}
 }
 
+func TestWriteNoiseMetrics(t *testing.T) {
+	dir := t.TempDir()
+	cfg := config.Default()
+	cfg.NoiseMetricsOutputPath = filepath.Join(dir, "noise-metrics.json")
+	runner := New(io.Discard, io.Discard)
+	alerts := []model.Alert{
+		{
+			AlertID:            "a1",
+			SourceID:           "src-a",
+			SignalLane:         model.SignalLaneAlarm,
+			EventGeoConfidence: 0.9,
+		},
+		{
+			AlertID:            "a2",
+			SourceID:           "src-a",
+			SignalLane:         model.SignalLaneIntel,
+			EventGeoConfidence: 0.6,
+		},
+	}
+	if err := runner.writeNoiseMetrics(context.Background(), cfg, alerts, nil); err != nil {
+		t.Fatalf("writeNoiseMetrics: %v", err)
+	}
+	raw, err := os.ReadFile(cfg.NoiseMetricsOutputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := doc["lane_distribution"]; !ok {
+		t.Fatalf("expected lane_distribution in metrics doc: %s", string(raw))
+	}
+	if _, ok := doc["geo_confidence_average"]; !ok {
+		t.Fatalf("expected geo_confidence_average in metrics doc: %s", string(raw))
+	}
+}
+
 func TestRunnerRunOnceUsesSQLiteAlertStateWithoutDuplicatingAlerts(t *testing.T) {
 	dir := t.TempDir()
 	registryPath := filepath.Join(dir, "sources.db")

@@ -599,4 +599,15 @@ func TestSaveNoiseFeedbackAndStats(t *testing.T) {
 	if stats.PerSourceSamples["source-a"] != 1 {
 		t.Fatalf("expected source-a sample=1, got %#v", stats.PerSourceSamples)
 	}
+
+	precision, err := db.NoiseFeedbackPrecisionBySource(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(precision) != 1 {
+		t.Fatalf("expected one source precision entry, got %#v", precision)
+	}
+	if precision[0].SourceID != "source-a" || precision[0].Samples != 1 {
+		t.Fatalf("unexpected source precision entry %#v", precision[0])
+	}
 }
