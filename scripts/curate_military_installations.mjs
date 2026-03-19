@@ -99,6 +99,23 @@ const MAJOR_ALLOWLIST = [
   "al udeid",
   "raf akrotiri",
   "rzeszow",
+  "guantanamo",
+  "bondsteel",
+  "detention",
+  "black site",
+];
+
+const SENSITIVE_PATTERNS = [/\bdetention\b/i, /\bblack\s*site\b/i, /\binternment\b/i, /\brendition\b/i];
+
+const MANUAL_STRATEGIC_SITES = [
+  {
+    name: "Guantanamo Bay Naval Base",
+    country: "CU",
+    operator: "US Navy",
+    lat: 19.9065,
+    lng: -75.2074,
+    notes: "Manual strategic seed: detention-sensitive installation.",
+  },
 ];
 
 function clean(v) {
@@ -171,6 +188,7 @@ function classify(feature) {
   const major = STRATEGIC_PATTERNS.some((re) => re.test(text));
   const airfield = AIRFIELD_PATTERNS.some((re) => re.test(text));
   const lowSignal = LOW_SIGNAL_PATTERNS.some((re) => re.test(text));
+  const sensitive = SENSITIVE_PATTERNS.some((re) => re.test(text));
   const operatorHit = OPERATOR_PATTERNS.some((re) => re.test(operator));
   const allowlisted = MAJOR_ALLOWLIST.some((token) => norm(name).includes(token));
 
@@ -178,6 +196,7 @@ function classify(feature) {
   if (airfield) score += 4;
   if (operatorHit) score += 2;
   if (allowlisted) score += 6;
+  if (sensitive) score += 7;
   if (props.isJointBase === true || clean(props.isJointBase) === "Y") score += 3;
   if (isUSDOT && USDOT_MAJOR_PREFIXES.some((re) => re.test(name))) score += 5;
   if (isUSDOT && USDOT_NOISE_PATTERNS.some((re) => re.test(`${name} ${description}`))) score -= 4;
@@ -188,7 +207,7 @@ function classify(feature) {
 
   if (lowSignal && !major && !allowlisted) score -= 3;
 
-  if (!major && !airfield && !allowlisted && !(isUSDOT && score >= 5)) {
+  if (!major && !airfield && !allowlisted && !sensitive && !(isUSDOT && score >= 5)) {
     return { keep: false, score, tier: "" };
   }
 
@@ -196,7 +215,7 @@ function classify(feature) {
     return { keep: false, score, tier: "" };
   }
 
-  const tier = score >= 8 || allowlisted || (major && !lowSignal) ? "major" : "operational_airfield";
+  const tier = score >= 8 || allowlisted || sensitive || (major && !lowSignal) ? "major" : "operational_airfield";
   if (score < 3) {
     return { keep: false, score, tier: "" };
   }
@@ -241,6 +260,28 @@ for (const feature of sourceDoc.features) {
     ...feature,
     geometry: { type: "Point", coordinates: [lng, lat] },
     properties: nextProps,
+  });
+}
+
+for (const site of MANUAL_STRATEGIC_SITES) {
+  const key = `${site.country}|${norm(site.name)}|${site.lat.toFixed(3)}|${site.lng.toFixed(3)}`;
+  if (dedupe.has(key)) {
+    continue;
+  }
+  dedupe.add(key);
+  curatedFeatures.push({
+    type: "Feature",
+    geometry: { type: "Point", coordinates: [site.lng, site.lat] },
+    properties: {
+      name: site.name,
+      country: site.country,
+      operator: site.operator,
+      type: "naval_base",
+      source: "manual_seed",
+      notes: site.notes,
+      importance_score: 11,
+      importance_tier: "major",
+    },
   });
 }
 

@@ -7011,6 +7011,26 @@
           36.95
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.2074,
+          19.9065
+        ]
+      },
+      "properties": {
+        "name": "Guantanamo Bay Naval Base",
+        "country": "CU",
+        "operator": "US Navy",
+        "type": "naval_base",
+        "source": "manual_seed",
+        "notes": "Manual strategic seed: detention-sensitive installation.",
+        "importance_score": 11,
+        "importance_tier": "major"
+      }
     }
   ]
 }

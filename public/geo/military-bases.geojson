@@ -7090,6 +7090,24 @@
     {
       "type": "Feature",
       "properties": {
+        "name": "Camp Bondsteel",
+        "country": "XK",
+        "operator": "US/KFOR",
+        "type": "army",
+        "importance_score": 6,
+        "importance_tier": "major"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.25,
+          42.36
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
         "name": "Naval Station Rota",
         "country": "ES",
         "operator": "US/NATO",
@@ -36444,6 +36462,26 @@
         "region_hint": "Asia",
         "importance_score": 6,
         "importance_tier": "operational_airfield"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.2074,
+          19.9065
+        ]
+      },
+      "properties": {
+        "name": "Guantanamo Bay Naval Base",
+        "country": "CU",
+        "operator": "US Navy",
+        "type": "naval_base",
+        "source": "manual_seed",
+        "notes": "Manual strategic seed: detention-sensitive installation.",
+        "importance_score": 11,
+        "importance_tier": "major"
       }
     }
   ]

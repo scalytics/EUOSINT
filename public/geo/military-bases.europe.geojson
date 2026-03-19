@@ -22,6 +22,24 @@
     {
       "type": "Feature",
       "properties": {
+        "name": "Camp Bondsteel",
+        "country": "XK",
+        "operator": "US/KFOR",
+        "type": "army",
+        "importance_score": 6,
+        "importance_tier": "major"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.25,
+          42.36
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
         "name": "Naval Station Rota",
         "country": "ES",
         "operator": "US/NATO",
