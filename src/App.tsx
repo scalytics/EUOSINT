@@ -233,11 +233,6 @@ export default function App() {
     }
   }, [alerts, stateAlerts, selectedId]);
 
-  useEffect(() => {
-    setVisibleNowAlertIds(scopedAlerts.map((a) => a.alert_id));
-    setVisibleHistoryAlertIds([]);
-  }, [scopedAlerts]);
-
   return (
     <div className="flex h-[100dvh] flex-col bg-siem-bg text-siem-text">
       <Header
