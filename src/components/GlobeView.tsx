@@ -119,6 +119,7 @@ export function GlobeView({
   const clusterListPopupRef = useRef<L.Popup | null>(null);
   const lastNonCountryRegionRef = useRef<string>("all");
   const countryTableReturnRegionRef = useRef<string>("all");
+  const countryFocusFromSpikeRef = useRef<string>("");
   const [overlayDefs, setOverlayDefs] = useState<OverlayDef[]>([]);
   const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set());
   const [activeAreaGroupID, setActiveAreaGroupID] = useState<string>("");
@@ -237,8 +238,22 @@ export function GlobeView({
     [combinedVisibleAlerts],
   );
 
+  const countryFocusCenter = useMemo(() => {
+    if (countryFilterCode === "") return null as [number, number] | null;
+    const countryAlerts = [...alerts, ...historicalAlerts].filter((a) => {
+      const sourceCode = (a.source.country_code || "").toUpperCase();
+      const eventCode = (a.event_country_code || "").toUpperCase();
+      return sourceCode === countryFilterCode || eventCode === countryFilterCode;
+    });
+    const geocoded = countryAlerts.filter((a) => !(a.lat === 0 && a.lng === 0));
+    if (geocoded.length === 0) return null;
+    const lat = geocoded.reduce((sum, a) => sum + a.lat, 0) / geocoded.length;
+    const lng = geocoded.reduce((sum, a) => sum + a.lng, 0) / geocoded.length;
+    return [lat, lng] as [number, number];
+  }, [alerts, historicalAlerts, countryFilterCode]);
+
   const areaGroups = useMemo(() => {
-    if (countryFilterCode === "" || geocodedVisibleAlerts.length === 0) {
+    if (countryFilterCode === "") {
       return [] as Array<{
         id: string;
         label: string;
@@ -249,6 +264,31 @@ export function GlobeView({
         lng: number;
         alerts: Alert[];
       }>;
+    }
+
+    if (geocodedVisibleAlerts.length === 0) {
+      if (combinedVisibleAlerts.length === 0) {
+        return [] as Array<{
+          id: string;
+          label: string;
+          count: number;
+          critical: number;
+          high: number;
+          lat: number;
+          lng: number;
+          alerts: Alert[];
+        }>;
+      }
+      return [{
+        id: `${countryFilterCode}-national`,
+        label: "National",
+        count: combinedVisibleAlerts.length,
+        critical: combinedVisibleAlerts.filter((a) => a.severity === "critical").length,
+        high: combinedVisibleAlerts.filter((a) => a.severity === "high").length,
+        lat: countryFocusCenter?.[0] ?? 0,
+        lng: countryFocusCenter?.[1] ?? 0,
+        alerts: combinedVisibleAlerts.sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime()),
+      }];
     }
 
     const avgLat = geocodedVisibleAlerts.reduce((sum, a) => sum + a.lat, 0) / geocodedVisibleAlerts.length;
@@ -296,7 +336,7 @@ export function GlobeView({
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
-  }, [countryFilterCode, geocodedVisibleAlerts, isLargeCountryScope]);
+  }, [combinedVisibleAlerts, countryFilterCode, countryFocusCenter, geocodedVisibleAlerts, isLargeCountryScope]);
 
   useEffect(() => {
     if (areaGroups.length === 0) {
@@ -588,6 +628,18 @@ export function GlobeView({
     if (lastRegionRef.current === regionFilter) return;
     lastRegionRef.current = regionFilter;
 
+    // Country-first view from Activity Spikes: center at country level,
+    // avoid pin-driven deep zoom that feels overly precise.
+    if (countryFilterCode !== "" && countryFocusFromSpikeRef.current === countryFilterCode) {
+      const center = countryFocusCenter;
+      if (center) {
+        map.flyTo(center, isLargeCountryScope ? 4 : 5, { duration: 0.8 });
+      } else {
+        map.flyTo(REGION_VIEWPORTS.all.center, 3, { duration: 0.8 });
+      }
+      return;
+    }
+
     // Country-first view: keep situational zoom, avoid village-level drill-in.
     if (countryFilterCode !== "" && geocodedVisibleAlerts.length > 0) {
       const lats = geocodedVisibleAlerts.map((a) => a.lat);
@@ -608,7 +660,7 @@ export function GlobeView({
 
     const vp = REGION_VIEWPORTS[regionFilter] ?? REGION_VIEWPORTS.Europe;
     map.flyTo(vp.center, vp.zoom, { duration: 0.8 });
-  }, [countryFilterCode, geocodedVisibleAlerts, isLargeCountryScope, regionFilter]);
+  }, [countryFilterCode, countryFocusCenter, geocodedVisibleAlerts, isLargeCountryScope, regionFilter]);
 
   /* ── Stats for sidebar ────────────────────────────────────────── */
 
@@ -793,6 +845,7 @@ export function GlobeView({
                     key={spike.countryCode}
                     type="button"
                     onClick={() => {
+                      countryFocusFromSpikeRef.current = spike.countryCode.toUpperCase();
                       countryTableReturnRegionRef.current = regionFilter.startsWith("country:")
                         ? lastNonCountryRegionRef.current
                         : regionFilter;
