@@ -76,12 +76,23 @@ func TestDefaultNoisePolicyPath(t *testing.T) {
 	if cfg.NoisePolicyPath != "registry/noise_policy.json" {
 		t.Fatalf("unexpected default noise policy path %q", cfg.NoisePolicyPath)
 	}
+	if cfg.NoisePolicyBPath != "" || cfg.NoisePolicyBPercent != 0 {
+		t.Fatalf("unexpected noise policy B defaults: path=%q percent=%d", cfg.NoisePolicyBPath, cfg.NoisePolicyBPercent)
+	}
 }
 
 func TestNoisePolicyPathFromEnv(t *testing.T) {
 	t.Setenv("NOISE_POLICY_PATH", "/tmp/noise_policy.json")
+	t.Setenv("NOISE_POLICY_B_PATH", "/tmp/noise_policy_b.json")
+	t.Setenv("NOISE_POLICY_B_PERCENT", "25")
 	cfg := FromEnv()
 	if cfg.NoisePolicyPath != "/tmp/noise_policy.json" {
 		t.Fatalf("expected NOISE_POLICY_PATH override, got %q", cfg.NoisePolicyPath)
+	}
+	if cfg.NoisePolicyBPath != "/tmp/noise_policy_b.json" {
+		t.Fatalf("expected NOISE_POLICY_B_PATH override, got %q", cfg.NoisePolicyBPath)
+	}
+	if cfg.NoisePolicyBPercent != 25 {
+		t.Fatalf("expected NOISE_POLICY_B_PERCENT override, got %d", cfg.NoisePolicyBPercent)
 	}
 }

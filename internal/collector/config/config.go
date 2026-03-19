@@ -107,6 +107,8 @@ type Config struct {
 	StopWordsPath                   string
 	StopWords                       []string
 	NoisePolicyPath                 string
+	NoisePolicyBPath                string
+	NoisePolicyBPercent             int
 }
 
 func Default() Config {
@@ -183,6 +185,8 @@ func Default() Config {
 		APIAddr:                         ":3001",
 		StopWordsPath:                   defaultStopWordsPath,
 		NoisePolicyPath:                 "registry/noise_policy.json",
+		NoisePolicyBPath:                "",
+		NoisePolicyBPercent:             0,
 	}
 }
 
@@ -267,6 +271,8 @@ func FromEnv() Config {
 		cfg.StopWords = append(cfg.StopWords, extra...)
 	}
 	cfg.NoisePolicyPath = envString("NOISE_POLICY_PATH", cfg.NoisePolicyPath)
+	cfg.NoisePolicyBPath = envString("NOISE_POLICY_B_PATH", cfg.NoisePolicyBPath)
+	cfg.NoisePolicyBPercent = envInt("NOISE_POLICY_B_PERCENT", cfg.NoisePolicyBPercent)
 	return cfg
 }
 

@@ -6,7 +6,9 @@ package noisegate
 import (
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/scalytics/euosint/internal/collector/model"
@@ -39,6 +41,7 @@ type Policy struct {
 type Decision struct {
 	Outcome            Outcome
 	PolicyVersion      string
+	PolicyVariant      string
 	BlockScore         float64
 	NoiseScore         float64
 	ActionabilityScore float64
@@ -46,40 +49,68 @@ type Decision struct {
 }
 
 type Engine struct {
-	policy Policy
+	policyA  Policy
+	policyB  *Policy
+	bPercent int
 }
 
 func Load(path string) (*Engine, error) {
-	path = strings.TrimSpace(path)
-	if path == "" {
+	return LoadAB(path, "", 0)
+}
+
+func LoadAB(primaryPath string, secondaryPath string, secondaryPercent int) (*Engine, error) {
+	primaryPath = strings.TrimSpace(primaryPath)
+	if primaryPath == "" {
 		return nil, nil
 	}
+	p, err := loadPolicy(primaryPath)
+	if err != nil {
+		return nil, err
+	}
+	engine := &Engine{policyA: p}
+	if secondaryPercent > 0 && strings.TrimSpace(secondaryPath) != "" {
+		pb, err := loadPolicy(secondaryPath)
+		if err != nil {
+			return nil, fmt.Errorf("load secondary noise policy: %w", err)
+		}
+		if secondaryPercent > 100 {
+			secondaryPercent = 100
+		}
+		engine.policyB = &pb
+		engine.bPercent = secondaryPercent
+	}
+	return engine, nil
+}
+
+func loadPolicy(path string) (Policy, error) {
+	path = strings.TrimSpace(path)
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read noise policy: %w", err)
+		return Policy{}, fmt.Errorf("read noise policy: %w", err)
 	}
 	var p Policy
 	if err := json.Unmarshal(data, &p); err != nil {
-		return nil, fmt.Errorf("decode noise policy: %w", err)
+		return Policy{}, fmt.Errorf("decode noise policy: %w", err)
 	}
 	normalizePolicy(&p)
 	if p.Version == "" {
 		p.Version = "v0"
 	}
-	return &Engine{policy: p}, nil
+	return p, nil
 }
 
 func (e *Engine) Version() string {
 	if e == nil {
 		return ""
 	}
-	return e.policy.Version
+	return e.policyA.Version
 }
 
 func (e *Engine) Evaluate(source model.RegistrySource, item parse.FeedItem) Decision {
 	if e == nil {
 		return Decision{Outcome: OutcomeKeep}
 	}
+	policy, variant := e.selectPolicy(source, item)
 	text := strings.ToLower(strings.Join([]string{
 		item.Title,
 		item.Summary,
@@ -91,11 +122,11 @@ func (e *Engine) Evaluate(source model.RegistrySource, item parse.FeedItem) Deci
 	}, " "))
 	reasons := make([]string, 0, 8)
 
-	blockHits := countMatches(text, e.policy.HardBlockTerms)
-	noiseHits := countMatches(text, e.policy.DowngradeTerms)
-	actionHits := countMatches(text, e.policy.ActionableOverride)
+	blockHits := countMatches(text, policy.HardBlockTerms)
+	noiseHits := countMatches(text, policy.DowngradeTerms)
+	actionHits := countMatches(text, policy.ActionableOverride)
 
-	for _, rule := range e.policy.CooccurrenceRules {
+	for _, rule := range policy.CooccurrenceRules {
 		if len(rule.RequiresAny) == 0 || len(rule.WithAny) == 0 {
 			continue
 		}
@@ -143,12 +174,30 @@ func (e *Engine) Evaluate(source model.RegistrySource, item parse.FeedItem) Deci
 
 	return Decision{
 		Outcome:            outcome,
-		PolicyVersion:      e.policy.Version,
+		PolicyVersion:      policy.Version,
+		PolicyVariant:      variant,
 		BlockScore:         round3(blockScore),
 		NoiseScore:         round3(noiseScore),
 		ActionabilityScore: round3(actionabilityScore),
 		Reasons:            reasons,
 	}
+}
+
+func (e *Engine) selectPolicy(source model.RegistrySource, item parse.FeedItem) (Policy, string) {
+	if e == nil || e.policyB == nil || e.bPercent <= 0 {
+		return e.policyA, "a"
+	}
+	key := strings.ToLower(strings.TrimSpace(source.Source.SourceID + "|" + source.FeedURL + "|" + item.Title + "|" + item.Link))
+	if key == "" {
+		key = strconv.FormatInt(int64(len(item.Title)+len(item.Link)), 10)
+	}
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(key))
+	bucket := int(h.Sum32() % 100)
+	if bucket < e.bPercent {
+		return *e.policyB, "b"
+	}
+	return e.policyA, "a"
 }
 
 func normalizePolicy(p *Policy) {

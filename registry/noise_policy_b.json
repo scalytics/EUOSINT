@@ -1,0 +1,47 @@
+{
+  "version": "v1.0.0-b",
+  "hard_block_terms": [
+    "casino bonus",
+    "sports betting",
+    "giveaway",
+    "lottery",
+    "sweepstakes",
+    "celebrity gossip",
+    "viral prank",
+    "game show",
+    "influencer drama"
+  ],
+  "downgrade_terms": [
+    "press conference",
+    "awareness campaign",
+    "workshop",
+    "partnership agreement",
+    "annual report",
+    "weekly summary",
+    "monthly review",
+    "policy dialogue"
+  ],
+  "actionable_overrides": [
+    "wanted",
+    "missing person",
+    "public appeal",
+    "sexual assault",
+    "sex trafficking",
+    "sextortion",
+    "homicide",
+    "kidnapping",
+    "terror",
+    "explosion",
+    "evacuation",
+    "interpol",
+    "cve-"
+  ],
+  "cooccurrence_rules": [
+    {
+      "name": "sexual-crime-intelligence",
+      "requires_any": ["sex", "sexual"],
+      "with_any": ["assault", "police", "investigation", "suspect", "witness", "wanted", "missing"],
+      "effect": "keep"
+    }
+  ]
+}

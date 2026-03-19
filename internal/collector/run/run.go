@@ -89,7 +89,7 @@ func (r Runner) watch(ctx context.Context, cfg config.Config) error {
 }
 
 func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
-	noiseEngine, err := noisegate.Load(cfg.NoisePolicyPath)
+	noiseEngine, err := noisegate.LoadAB(cfg.NoisePolicyPath, cfg.NoisePolicyBPath, cfg.NoisePolicyBPercent)
 	if err != nil {
 		fmt.Fprintf(r.stderr, "WARN noise policy load failed: %v\n", err)
 	} else {
@@ -1645,6 +1645,7 @@ func applyNoiseDecision(alert *model.Alert, decision noisegate.Decision) {
 	}
 	alert.Triage.Metadata.NoiseDecision = string(decision.Outcome)
 	alert.Triage.Metadata.NoisePolicyVersion = decision.PolicyVersion
+	alert.Triage.Metadata.NoisePolicyVariant = decision.PolicyVariant
 	alert.Triage.Metadata.NoiseBlockScore = decision.BlockScore
 	alert.Triage.Metadata.NoiseScore = decision.NoiseScore
 	alert.Triage.Metadata.NoiseActionability = decision.ActionabilityScore
