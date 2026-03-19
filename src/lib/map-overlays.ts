@@ -138,12 +138,13 @@ export async function loadOverlay(
   } else if (def.id === "bases") {
     L.geoJSON(geojson, {
       pointToLayer: (_feature, latlng) => {
-        return L.circleMarker(latlng, {
-          radius: 5,
-          fillColor: def.color,
-          color: `${def.color}e6`,
-          weight: 1.4,
-          fillOpacity: 0.95,
+        return L.marker(latlng, {
+          icon: L.divIcon({
+            html: `<span style="display:block;width:12px;height:12px;border-radius:999px;background:${def.color};box-shadow:0 0 0 2px rgba(10,15,30,.85),0 0 0 3px rgba(167,139,250,.35);"></span>`,
+            className: "overlay-base-pin",
+            iconSize: L.point(12, 12),
+            iconAnchor: L.point(6, 6),
+          }),
         });
       },
       onEachFeature: (feature, layer) => {
