@@ -174,6 +174,16 @@ func isDuplicateColumnError(err error) bool {
 }
 
 func (db *DB) ImportRegistry(ctx context.Context, registryPath string) error {
+	return db.importRegistry(ctx, registryPath, false)
+}
+
+// ReplaceRegistry performs a destructive full reload from JSON.
+// Use only for explicit maintenance/reset operations.
+func (db *DB) ReplaceRegistry(ctx context.Context, registryPath string) error {
+	return db.importRegistry(ctx, registryPath, true)
+}
+
+func (db *DB) importRegistry(ctx context.Context, registryPath string, replace bool) error {
 	if err := db.Init(ctx); err != nil {
 		return err
 	}
@@ -188,23 +198,25 @@ func (db *DB) ImportRegistry(ctx context.Context, registryPath string) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM source_categories`); err != nil {
-		return fmt.Errorf("clear source_categories: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM agency_category_coverage`); err != nil {
-		return fmt.Errorf("clear agency_category_coverage: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM sources`); err != nil {
-		return fmt.Errorf("clear sources: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM agency_aliases`); err != nil {
-		return fmt.Errorf("clear agency_aliases: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM agencies_fts`); err != nil {
-		return fmt.Errorf("clear agencies_fts: %w", err)
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM agencies`); err != nil {
-		return fmt.Errorf("clear agencies: %w", err)
+	if replace {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM source_categories`); err != nil {
+			return fmt.Errorf("clear source_categories: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM agency_category_coverage`); err != nil {
+			return fmt.Errorf("clear agency_category_coverage: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM sources`); err != nil {
+			return fmt.Errorf("clear sources: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM agency_aliases`); err != nil {
+			return fmt.Errorf("clear agency_aliases: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM agencies_fts`); err != nil {
+			return fmt.Errorf("clear agencies_fts: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM agencies`); err != nil {
+			return fmt.Errorf("clear agencies: %w", err)
+		}
 	}
 
 	for _, src := range sources {

@@ -196,6 +196,47 @@ func TestDeactivateSourcesRemovesThemFromActiveLoad(t *testing.T) {
 	}
 }
 
+func TestImportRegistryAppendsWithoutDumpingExistingSources(t *testing.T) {
+	dir := t.TempDir()
+	baseRegistryPath := filepath.Join(dir, "base.json")
+	patchRegistryPath := filepath.Join(dir, "patch.json")
+	dbPath := filepath.Join(dir, "sources.db")
+
+	baseContent := `[
+	  {"type":"rss","feed_url":"https://one.example/feed","category":"cyber_advisory","source":{"source_id":"agency-one-feed","authority_name":"Agency One","country":"France","country_code":"FR","region":"Europe","authority_type":"cert","base_url":"https://one.example"}}
+	]`
+	patchContent := `[
+	  {"type":"rss","feed_url":"https://two.example/feed","category":"public_safety","source":{"source_id":"agency-two-feed","authority_name":"Agency Two","country":"Germany","country_code":"DE","region":"Europe","authority_type":"police","base_url":"https://two.example"}}
+	]`
+	if err := os.WriteFile(baseRegistryPath, []byte(baseContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(patchRegistryPath, []byte(patchContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.ImportRegistry(context.Background(), baseRegistryPath); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.ImportRegistry(context.Background(), patchRegistryPath); err != nil {
+		t.Fatal(err)
+	}
+
+	sources, err := db.LoadActiveSources(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) != 2 {
+		t.Fatalf("expected append behavior with 2 active sources, got %d", len(sources))
+	}
+}
+
 func TestScopeAndCurationMetadataRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	registryPath := filepath.Join(dir, "registry.json")
