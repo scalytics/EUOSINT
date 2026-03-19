@@ -4,6 +4,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -460,6 +461,45 @@ func TestHealthEndpoint(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
+	}
+}
+
+func TestNoiseFeedbackCreateAndStats(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+	seedAlerts(t, db)
+
+	srv := New(db, ":0", os.Stderr)
+	handler := srv.srv.Handler
+
+	body := []byte(`{"alert_id":"a1","verdict":"false_positive","analyst":"ops","notes":"noise from broad source"}`)
+	req := httptest.NewRequest("POST", "/api/noise-feedback", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", w.Code, w.Body.String())
+	}
+
+	req = httptest.NewRequest("GET", "/api/noise-feedback/stats", nil)
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var stats struct {
+		Total     int            `json:"total"`
+		ByVerdict map[string]int `json:"by_verdict"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&stats); err != nil {
+		t.Fatal(err)
+	}
+	if stats.Total != 1 {
+		t.Fatalf("expected 1 feedback record, got %d", stats.Total)
+	}
+	if stats.ByVerdict["false_positive"] != 1 {
+		t.Fatalf("expected false_positive count 1, got %#v", stats.ByVerdict)
 	}
 }
 

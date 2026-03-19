@@ -176,6 +176,16 @@ CREATE TABLE IF NOT EXISTS alerts (
   triage_json TEXT NOT NULL DEFAULT 'null'
 );
 
+CREATE TABLE IF NOT EXISTS noise_feedback (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  alert_id TEXT NOT NULL,
+  source_id TEXT NOT NULL DEFAULT '',
+  verdict TEXT NOT NULL,
+  analyst TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_sources_agency_id ON sources(agency_id);
 CREATE INDEX IF NOT EXISTS idx_sources_status ON sources(status);
 CREATE INDEX IF NOT EXISTS idx_sources_feed_url ON sources(feed_url);
@@ -187,6 +197,9 @@ CREATE INDEX IF NOT EXISTS idx_source_term_overrides_source_id ON source_term_ov
 CREATE INDEX IF NOT EXISTS idx_agency_category_coverage_category ON agency_category_coverage(category);
 CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status);
 CREATE INDEX IF NOT EXISTS idx_alerts_source_id ON alerts(source_id);
+CREATE INDEX IF NOT EXISTS idx_noise_feedback_alert ON noise_feedback(alert_id);
+CREATE INDEX IF NOT EXISTS idx_noise_feedback_source ON noise_feedback(source_id);
+CREATE INDEX IF NOT EXISTS idx_noise_feedback_verdict ON noise_feedback(verdict);
 
 CREATE TABLE IF NOT EXISTS cities (
   id INTEGER PRIMARY KEY,

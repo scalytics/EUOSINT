@@ -58,6 +58,20 @@ type SourceRunInput struct {
 	Metadata      map[string]any
 }
 
+type NoiseFeedbackInput struct {
+	AlertID  string
+	SourceID string
+	Verdict  string
+	Analyst  string
+	Notes    string
+}
+
+type NoiseFeedbackStats struct {
+	Total            int            `json:"total"`
+	ByVerdict        map[string]int `json:"by_verdict"`
+	PerSourceSamples map[string]int `json:"per_source_samples"`
+}
+
 type SourceWatermark struct {
 	SourceID          string
 	LastRunStartedAt  string
@@ -1244,6 +1258,88 @@ WHERE id = ?`, "Dead source: "+strings.TrimSpace(reason), strings.TrimSpace(reas
 		return fmt.Errorf("commit deactivate tx: %w", err)
 	}
 	return nil
+}
+
+func (db *DB) SaveNoiseFeedback(ctx context.Context, in NoiseFeedbackInput) error {
+	alertID := strings.TrimSpace(in.AlertID)
+	verdict := strings.ToLower(strings.TrimSpace(in.Verdict))
+	if alertID == "" {
+		return fmt.Errorf("noise feedback alert_id is required")
+	}
+	switch verdict {
+	case "false_positive", "false_negative", "promote_to_alarm", "confirm":
+	default:
+		return fmt.Errorf("unsupported noise feedback verdict %q", in.Verdict)
+	}
+
+	sourceID := strings.TrimSpace(in.SourceID)
+	if sourceID == "" {
+		_ = db.sql.QueryRowContext(ctx, `SELECT source_id FROM alerts WHERE alert_id = ?`, alertID).Scan(&sourceID)
+	}
+	_, err := db.sql.ExecContext(ctx, `
+INSERT INTO noise_feedback (alert_id, source_id, verdict, analyst, notes)
+VALUES (?, ?, ?, ?, ?)`,
+		alertID,
+		sourceID,
+		verdict,
+		strings.TrimSpace(in.Analyst),
+		strings.TrimSpace(in.Notes),
+	)
+	if err != nil {
+		return fmt.Errorf("insert noise feedback: %w", err)
+	}
+	return nil
+}
+
+func (db *DB) NoiseFeedbackStats(ctx context.Context) (NoiseFeedbackStats, error) {
+	stats := NoiseFeedbackStats{
+		ByVerdict:        map[string]int{},
+		PerSourceSamples: map[string]int{},
+	}
+
+	row := db.sql.QueryRowContext(ctx, `SELECT COUNT(*) FROM noise_feedback`)
+	if err := row.Scan(&stats.Total); err != nil {
+		return stats, fmt.Errorf("noise feedback count: %w", err)
+	}
+
+	rows, err := db.sql.QueryContext(ctx, `SELECT verdict, COUNT(*) FROM noise_feedback GROUP BY verdict`)
+	if err != nil {
+		return stats, fmt.Errorf("noise feedback by verdict: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var verdict string
+		var count int
+		if err := rows.Scan(&verdict, &count); err != nil {
+			return stats, fmt.Errorf("scan noise feedback by verdict: %w", err)
+		}
+		stats.ByVerdict[verdict] = count
+	}
+	if err := rows.Err(); err != nil {
+		return stats, fmt.Errorf("noise feedback by verdict rows: %w", err)
+	}
+
+	rows, err = db.sql.QueryContext(ctx, `
+SELECT source_id, COUNT(*)
+FROM noise_feedback
+WHERE source_id <> ''
+GROUP BY source_id`)
+	if err != nil {
+		return stats, fmt.Errorf("noise feedback by source: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var sourceID string
+		var count int
+		if err := rows.Scan(&sourceID, &count); err != nil {
+			return stats, fmt.Errorf("scan noise feedback by source: %w", err)
+		}
+		stats.PerSourceSamples[sourceID] = count
+	}
+	if err := rows.Err(); err != nil {
+		return stats, fmt.Errorf("noise feedback by source rows: %w", err)
+	}
+	return stats, nil
 }
 
 func (db *DB) ExportRegistry(ctx context.Context, registryPath string) error {

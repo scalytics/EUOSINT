@@ -33,6 +33,8 @@ func New(db *sourcedb.DB, addr string, stderr io.Writer) *Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/search", s.handleSearch)
 	mux.HandleFunc("GET /api/digest", s.handleDigest)
+	mux.HandleFunc("GET /api/noise-feedback/stats", s.handleNoiseFeedbackStats)
+	mux.HandleFunc("POST /api/noise-feedback", s.handleNoiseFeedbackCreate)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	rl := newRateLimiter(30, 5, 10*time.Minute) // 30 requests burst, 5/sec refill
 	s.srv = &http.Server{
@@ -169,6 +171,42 @@ func filterLane(items []model.Alert, lane string) []model.Alert {
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (s *Server) handleNoiseFeedbackCreate(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		AlertID  string `json:"alert_id"`
+		SourceID string `json:"source_id,omitempty"`
+		Verdict  string `json:"verdict"`
+		Analyst  string `json:"analyst,omitempty"`
+		Notes    string `json:"notes,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON payload"})
+		return
+	}
+	if err := s.db.SaveNoiseFeedback(r.Context(), sourcedb.NoiseFeedbackInput{
+		AlertID:  payload.AlertID,
+		SourceID: payload.SourceID,
+		Verdict:  payload.Verdict,
+		Analyst:  payload.Analyst,
+		Notes:    payload.Notes,
+	}); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"status": "stored",
+	})
+}
+
+func (s *Server) handleNoiseFeedbackStats(w http.ResponseWriter, r *http.Request) {
+	stats, err := s.db.NoiseFeedbackStats(r.Context())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, stats)
 }
 
 // handleDigest returns the country intelligence digest — top trending

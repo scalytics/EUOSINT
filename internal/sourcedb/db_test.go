@@ -545,3 +545,58 @@ func TestLoadAlertsHydratesEventGeoAndSignalLaneFallbacks(t *testing.T) {
 		t.Fatalf("expected inferred alarm lane, got %q", loaded[0].SignalLane)
 	}
 }
+
+func TestSaveNoiseFeedbackAndStats(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "sources.db")
+	db, err := Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	if err := db.SaveAlerts(context.Background(), []model.Alert{
+		{
+			AlertID:      "a1",
+			SourceID:     "source-a",
+			Status:       "active",
+			Title:        "Alert one",
+			CanonicalURL: "https://example.test/a1",
+			Category:     "cyber_advisory",
+			Severity:     "high",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "source-a",
+				AuthorityName: "Source A",
+				CountryCode:   "DE",
+			},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := db.SaveNoiseFeedback(context.Background(), NoiseFeedbackInput{
+		AlertID: "a1",
+		Verdict: "false_positive",
+		Analyst: "qa",
+		Notes:   "spam-like",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	stats, err := db.NoiseFeedbackStats(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.Total != 1 {
+		t.Fatalf("expected 1 feedback row, got %d", stats.Total)
+	}
+	if stats.ByVerdict["false_positive"] != 1 {
+		t.Fatalf("expected false_positive=1, got %#v", stats.ByVerdict)
+	}
+	if stats.PerSourceSamples["source-a"] != 1 {
+		t.Fatalf("expected source-a sample=1, got %#v", stats.PerSourceSamples)
+	}
+}
