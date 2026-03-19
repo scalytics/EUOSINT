@@ -72,6 +72,15 @@ function formatSubcategory(raw: string | undefined): string {
     .join(" ");
 }
 
+function formatCategory(raw: string): string {
+  const value = raw.trim();
+  if (!value) return "Unknown";
+  return value
+    .split("_")
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(" ");
+}
+
 /* ── Props ────────────────────────────────────────────────────────── */
 
 interface Props {
@@ -463,22 +472,45 @@ export function GlobeView({
         });
       if (childAlerts.length === 0) return;
 
-      const rows = childAlerts
-        .slice(0, 16)
-        .map((alert: Alert, idx: number) => {
-          const title = escapeHtml(alert.title);
-          const subcategory = escapeHtml(formatSubcategory(alert.subcategory));
-          const meta = subcategory
-            ? `<div style="font-size:10px;line-height:1.2;color:#94a3b8;margin-top:2px;">${subcategory}</div>`
-            : "";
-          return `<button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:6px 0;cursor:pointer;border-bottom:1px solid rgba(148,163,184,.16);font-size:12px;line-height:1.3;color:#f3f4f6;"><div>${idx + 1}. ${title}</div>${meta}</button>`;
-        })
-        .join("");
-      const more = childAlerts.length > 16
-        ? `<div style="font-size:10px;color:#94a3b8;padding-top:6px;">+${childAlerts.length - 16} more alerts</div>`
-        : "";
       const countryLabel = escapeHtml(dominantCountryLabel(childAlerts));
-      const html = `<div style="min-width:280px;max-width:420px;"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">${countryLabel} AREA ALERTS (${childAlerts.length})</div><div style="max-height:260px;overflow:auto;">${rows}${more}</div></div>`;
+      const pageSize = 80;
+      let visibleLimit = Math.min(pageSize, childAlerts.length);
+
+      const renderContent = (limit: number): string => {
+        const grouped = new Map<string, Alert[]>();
+        for (const alert of childAlerts.slice(0, limit)) {
+          const key = alert.category || "unknown";
+          const list = grouped.get(key) ?? [];
+          list.push(alert);
+          grouped.set(key, list);
+        }
+        const sections = [...grouped.entries()]
+          .sort((a, b) => b[1].length - a[1].length)
+          .map(([category, items]) => {
+            const categoryLabel = escapeHtml(formatCategory(category).toUpperCase());
+            const rows = items
+              .map((alert: Alert, idx: number) => {
+                const title = escapeHtml(alert.title);
+                const subcategory = escapeHtml(formatSubcategory(alert.subcategory));
+                const sev = escapeHtml(alert.severity.toUpperCase());
+                const meta = subcategory
+                  ? `<div style="font-size:10px;line-height:1.2;color:#94a3b8;margin-top:2px;">${subcategory}</div>`
+                  : "";
+                return `<button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:6px 0;cursor:pointer;border-bottom:1px solid rgba(148,163,184,.16);font-size:12px;line-height:1.3;color:#f3f4f6;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;border:1px solid rgba(148,163,184,.35);padding:1px 4px;border-radius:4px;">${sev}</span><span>${idx + 1}. ${title}</span></div>${meta}</button>`;
+              })
+              .join("");
+            return `<div style="margin-bottom:8px;"><div style="display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#cbd5e1;border:1px solid rgba(148,163,184,.35);background:rgba(15,23,42,.45);padding:2px 8px;border-radius:999px;margin:4px 0 6px 0;">${categoryLabel}<span style="color:#94a3b8;">(${items.length})</span></div>${rows}</div>`;
+          })
+          .join("");
+
+        const hasMore = limit < childAlerts.length;
+        const remaining = childAlerts.length - limit;
+        const loadMore = hasMore
+          ? `<button data-load-more="1" style="display:block;width:100%;margin-top:4px;padding:6px 8px;border:1px solid rgba(148,163,184,.3);border-radius:8px;background:rgba(15,23,42,.45);color:#cbd5e1;font-size:11px;cursor:pointer;">Load more alerts (+${remaining})</button>`
+          : "";
+
+        return `<div style="min-width:300px;max-width:430px;"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">${countryLabel} AREA ALERTS (${childAlerts.length})</div><div style="max-height:300px;overflow:auto;padding-right:2px;">${sections}${loadMore}</div></div>`;
+      };
 
       const popup = L.popup({
         autoClose: false,
@@ -487,11 +519,11 @@ export function GlobeView({
         className: "siem-cluster-list-popup",
       })
         .setLatLng(cl.getLatLng())
-        .setContent(html)
+        .setContent(renderContent(visibleLimit))
         .openOn(map);
       clusterListPopupRef.current = popup;
 
-      popup.once("add", () => {
+      const bindPopupHandlers = () => {
         const el = popup.getElement();
         if (!el) return;
         el.querySelectorAll<HTMLButtonElement>(".cluster-list-row").forEach((btn) => {
@@ -504,7 +536,18 @@ export function GlobeView({
             }
           });
         });
-      });
+        el.querySelectorAll<HTMLButtonElement>("button[data-load-more='1']").forEach((btn) => {
+          btn.addEventListener("click", (evt) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            visibleLimit = Math.min(childAlerts.length, visibleLimit + pageSize);
+            popup.setContent(renderContent(visibleLimit));
+            bindPopupHandlers();
+          });
+        });
+      };
+
+      popup.once("add", bindPopupHandlers);
     };
 
     cluster.on("clusterclick", onClusterClick);
