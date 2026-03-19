@@ -118,16 +118,64 @@ To save tokens, disable vetting (`SOURCE_VETTING_ENABLED=false`). Discovery will
 
 Sources that return 404, 410, 403, DNS errors, or TLS failures are moved to the dead-letter queue (`source_dead_letter.json`). Dead sources are skipped on subsequent sweeps and retried once every 7 days. Discovery also skips dead-lettered URLs when evaluating candidates.
 
-## Stop Words (Global Noise Filter)
+## Noise Gate (Global Noise + Contextual Triage)
 
-The file `registry/stop_words.json` ships with default terms that exclude off-topic content (sports, entertainment, lifestyle) from all feeds. The collector loads this file on startup and merges the terms into the existing per-source keyword filter pipeline.
+Noise control now has two layers:
+
+1. `registry/stop_words.json` for hard-noise terms only (sports, giveaways, celebrity spam).
+2. `registry/noise_policy.json` for contextual scoring (`block`, `downgrade`, `keep`) with actionable overrides and co-occurrence rules.
+
+Optional A/B testing is supported with `registry/noise_policy_b.json`.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `STOP_WORDS_PATH` | `registry/stop_words.json` | Path to the stop-word JSON file |
-| `STOP_WORDS` | *(empty)* | Comma-separated extra terms added on top of the file |
+| `STOP_WORDS_PATH` | `registry/stop_words.json` | Path to the hard-noise stop-word file |
+| `STOP_WORDS` | *(empty)* | Comma-separated extra hard-noise terms |
+| `NOISE_POLICY_PATH` | `registry/noise_policy.json` | Primary scored noise policy |
+| `NOISE_POLICY_B_PATH` | `registry/noise_policy_b.json` | Secondary policy for A/B evaluation |
+| `NOISE_POLICY_B_PERCENT` | `0` | Percent of items routed to policy B (0–100) |
+| `NOISE_METRICS_OUTPUT_PATH` | `public/noise-metrics.json` | Output JSON for noise quality/drift metrics |
 
-Edit the JSON file to add or remove terms; restart the collector to apply. The `STOP_WORDS` env var is additive — it never replaces the file contents.
+Guidance:
+
+- Keep ambiguous security/crime terms out of `stop_words.json`.
+- Put contextual terms/rules in `noise_policy.json` so valid intelligence (for example sexual-assault police notices) is retained.
+- Restart the collector after policy or stop-word edits.
+
+### Analyst Feedback API
+
+The collector API now supports analyst feedback used for precision tracking:
+
+- `POST /api/noise-feedback`
+  - body: `{"alert_id":"...","verdict":"false_positive|false_negative|promote_to_alarm|confirm","analyst":"...","notes":"..."}`
+- `GET /api/noise-feedback/stats`
+  - returns aggregate counts by verdict and source sample counts.
+
+### Search API Default Behavior
+
+`/api/search` defaults to active/current records unless explicitly overridden.
+
+- default: `status=active` (if `status`, `include_filtered`, and `include_removed` are not provided)
+- supported flags:
+  - `include_filtered=true|false`
+  - `include_removed=true|false`
+  - `lane=alarm|intel|info|all`
+
+### Noise Metrics Output
+
+`NOISE_METRICS_OUTPUT_PATH` writes a periodic JSON snapshot including:
+
+- lane distribution + lane drift vs previous snapshot
+- average event geo confidence + drift
+- source-level lane distribution
+- source precision derived from analyst feedback
+
+## Database Schema Updates
+
+`sources.db` schema updates are applied at startup by the collector `Init()` path.
+
+- New tables are created via `CREATE TABLE IF NOT EXISTS` in `internal/sourcedb/schema.sql`.
+- New columns are migrated via `ALTER TABLE` in `internal/sourcedb/db.go`.
 
 ## Collector Lifecycle And Cadence Variables
 

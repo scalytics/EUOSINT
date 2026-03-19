@@ -1,5 +1,5 @@
 {
-  "_comment": "Global stop-word list. Any alert or feed item whose title (or summary/tags for RSS) contains one of these terms is excluded before scoring. Case-insensitive substring match. Add domain-specific noise terms as needed; restart the collector to pick up changes.",
+  "_comment": "Global hard-noise list. Use only high-confidence spam/noise terms here. Ambiguous security/crime words should be handled in noise_policy.json (scored context), not hard-filtered. Restart collector after changes.",
   "stop_words": [
     "football",
     "soccer",
@@ -29,10 +29,9 @@
     "olympic games",
     "medal tally",
     "sporting event",
-    "celebrity",
-    "entertainment",
-    "hollywood",
-    "bollywood",
+    "celebrity entertainment",
+    "hollywood gossip",
+    "bollywood gossip",
     "red carpet",
     "grammy",
     "oscar",
@@ -56,6 +55,15 @@
     "zodiac",
     "lottery",
     "sweepstakes",
-    "game show"
+    "game show",
+    "sex scandal",
+    "celebrity gossip",
+    "viral video",
+    "viral meme",
+    "prank challenge",
+    "social media influencer",
+    "influencer giveaway",
+    "tiktok challenge",
+    "instagram giveaway"
   ]
 }

@@ -49,7 +49,7 @@ services:
       CATEGORY_DICTIONARY_PATH: "/app/registry/category_dictionary.json"
       STOP_WORDS_PATH: "/app/registry/stop_words.json"
       NOISE_POLICY_PATH: "${NOISE_POLICY_PATH:-/app/registry/noise_policy.json}"
-      NOISE_POLICY_B_PATH: "${NOISE_POLICY_B_PATH:-}"
+      NOISE_POLICY_B_PATH: "${NOISE_POLICY_B_PATH:-/app/registry/noise_policy_b.json}"
       NOISE_POLICY_B_PERCENT: "${NOISE_POLICY_B_PERCENT:-0}"
       NOISE_METRICS_OUTPUT_PATH: "${NOISE_METRICS_OUTPUT_PATH:-/data/noise-metrics.json}"
       MISSING_PERSON_RELEVANCE_THRESHOLD: "0"

@@ -8,6 +8,7 @@ coverage/
 .tmp/
 /euosint-collector
 cmd/test-*/
+.claude/
 
 # Runtime logs
 logs/
@@ -37,6 +38,7 @@ docker-compose.override.yml
 
 # GeoNames dataset (downloaded at build time, ~30MB)
 registry/cities500.txt
+registry/sources.db
 
 # Tool caches
 .eslintcache

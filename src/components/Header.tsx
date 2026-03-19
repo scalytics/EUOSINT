@@ -502,7 +502,7 @@ export function Header({
                   className="text-siem-accent hover:text-siem-text transition-colors"
                   title="Open repository"
                 >
-                  {`v. ${__APP_VERSION__}`}
+                  {`${__APP_VERSION__}`}
                 </a>
               </div>
               <div className="mt-1 text-xl font-semibold tracking-[0.02em] text-siem-text">

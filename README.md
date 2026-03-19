@@ -82,6 +82,10 @@ Key collector variables:
 - `ALERT_COOLDOWN_HOURS`: first lifecycle step for missing alerts before stale (default `24`)
 - `ALERT_STALE_DAYS`: days before missing alerts become stale (default `14`)
 - `ALERT_ARCHIVE_DAYS`: days before stale alerts move to archived history (default `90`)
+- `NOISE_POLICY_PATH`: primary contextual noise-gate policy (default `registry/noise_policy.json`)
+- `NOISE_POLICY_B_PATH`: optional A/B policy file (default `registry/noise_policy_b.json`)
+- `NOISE_POLICY_B_PERCENT`: percentage routed to policy-B (default `0`)
+- `NOISE_METRICS_OUTPUT_PATH`: noise quality/drift output JSON (default `public/noise-metrics.json`)
 
 ## Operations
 
@@ -97,6 +101,7 @@ make docker-build
 - Release images are published as `ghcr.io/<owner>/<repo>-web` and `ghcr.io/<owner>/<repo>-collector`.
 - `docker-compose up --build` or `docker compose up --build` runs the Go collector as a background refresh service and serves generated JSON through the Caddy web container.
 - VM/domain deployment instructions live in [docs/operations.md](/Users/alo/Development/scalytics/EUOSINT/docs/operations.md).
+- Noise gate, search defaults, analyst feedback endpoints, and metrics output are documented in [docs/operations.md](/Users/alo/Development/scalytics/EUOSINT/docs/operations.md#noise-gate-global-noise--contextual-triage).
 
 ## Notes
 
