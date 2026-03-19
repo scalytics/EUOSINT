@@ -76,9 +76,9 @@ func TestDecodeVerdictAcceptsNoneScores(t *testing.T) {
 	}
 }
 
-func TestDeterministicRejectsLocalAndMissingSamples(t *testing.T) {
-	if _, reject := deterministicReject(Input{AuthorityName: "City of Valletta Police Department", Samples: []Sample{{Title: "x"}}}); !reject {
-		t.Fatal("expected local police deterministic reject")
+func TestDeterministicRejectsMissingSamplesOnly(t *testing.T) {
+	if _, reject := deterministicReject(Input{AuthorityName: "City of Valletta Police Department", Samples: []Sample{{Title: "x"}}}); reject {
+		t.Fatal("expected local police to be evaluated by the model, not deterministically rejected")
 	}
 	if _, reject := deterministicReject(Input{AuthorityName: "Europol", Samples: nil}); !reject {
 		t.Fatal("expected no-sample deterministic reject")

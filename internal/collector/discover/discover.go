@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/scalytics/euosint/internal/collector/config"
@@ -98,101 +99,159 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	fmt.Fprintf(stderr, "Candidate queue: %d sources queued for crawl\n", len(candidates))
 	remainingCandidates := make([]model.SourceCandidate, 0, len(candidates))
 	promotedSources := make([]model.RegistrySource, 0)
+	var mu sync.Mutex
+	addRemaining := func(candidate model.SourceCandidate) {
+		mu.Lock()
+		remainingCandidates = append(remainingCandidates, candidate)
+		mu.Unlock()
+	}
+	tryReserveFeedURL := func(raw string) bool {
+		norm := normalizeURL(raw)
+		if norm == "" {
+			return false
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		if _, ok := existing[norm]; ok {
+			return false
+		}
+		existing[norm] = struct{}{}
+		return true
+	}
 
+	workers := cfg.FetchWorkers
+	if workers <= 0 {
+		workers = 12
+	}
+	if workers > len(candidates) && len(candidates) > 0 {
+		workers = len(candidates)
+	}
+	work := make(chan model.SourceCandidate, len(candidates))
 	for _, candidate := range candidates {
-		totalCandidatesSeen++
-		if ctx.Err() != nil {
-			break
-		}
-		if !passesDiscoveryHygiene(candidate.AuthorityName, firstNonEmpty(candidate.BaseURL, candidate.URL), candidate.AuthorityType) {
-			remainingCandidates = append(remainingCandidates, candidate)
-			continue
-		}
-		if isDeadLettered(candidate, dead) {
-			continue
-		}
+		work <- candidate
+	}
+	close(work)
 
-		baseURL := candidateBaseURL(candidate)
-		if baseURL == "" {
-			remainingCandidates = append(remainingCandidates, candidate)
-			continue
-		}
-		promotedForCandidate := false
-		results := ProbeFeeds(ctx, client, baseURL)
-		for _, r := range results {
-			if _, ok := existing[normalizeURL(r.FeedURL)]; ok {
-				continue
-			}
-			existing[normalizeURL(r.FeedURL)] = struct{}{}
-			found := DiscoveredSource{
-				FeedURL:       r.FeedURL,
-				FeedType:      r.FeedType,
-				AuthorityType: candidate.AuthorityType,
-				Category:      candidate.Category,
-				OrgName:       candidate.AuthorityName,
-				Country:       candidate.Country,
-				CountryCode:   candidate.CountryCode,
-				TeamURL:       baseURL,
-				DiscoveredVia: "candidate-queue",
-			}
-			discovered = append(discovered, found)
-			if sourceVetter == nil {
-				continue
-			}
-			promoted, verdict, err := vetAndPromote(ctx, cfg, client, sourceVetter, candidate, found)
-			if err != nil {
-				fmt.Fprintf(stderr, "WARN source vetting failed for %s: %v\n", found.FeedURL, err)
-				continue
-			}
-			if promoted != nil {
-				promotedSources = append(promotedSources, *promoted)
-				promotedForCandidate = true
-				totalPromoted++
-				fmt.Fprintf(stderr, "Promoted source %s via %s (%s)\n", promoted.Source.SourceID, cfg.VettingProvider, verdict.Reason)
-			} else if strings.TrimSpace(verdict.Reason) != "" {
-				rejectionReasons[verdict.Reason]++
-			}
-			totalVetted++
-		}
-		if len(results) == 0 {
-			target := strings.TrimSpace(candidate.URL)
-			if target == "" {
-				target = baseURL
-			}
-			if _, ok := existing[normalizeURL(target)]; !ok && probeHTMLPage(ctx, client, target) {
-				existing[normalizeURL(target)] = struct{}{}
-				found := DiscoveredSource{
-					FeedURL:       target,
-					FeedType:      "html-list",
-					AuthorityType: candidate.AuthorityType,
-					Category:      candidate.Category,
-					OrgName:       candidate.AuthorityName,
-					Country:       candidate.Country,
-					CountryCode:   candidate.CountryCode,
-					TeamURL:       baseURL,
-					DiscoveredVia: "candidate-queue",
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for candidate := range work {
+				if ctx.Err() != nil {
+					return
 				}
-				discovered = append(discovered, found)
-				if sourceVetter != nil {
+
+				mu.Lock()
+				totalCandidatesSeen++
+				mu.Unlock()
+
+				if !passesDiscoveryHygiene(candidate.AuthorityName, firstNonEmpty(candidate.BaseURL, candidate.URL), candidate.AuthorityType) {
+					addRemaining(candidate)
+					continue
+				}
+				if isDeadLettered(candidate, dead) {
+					continue
+				}
+
+				baseURL := candidateBaseURL(candidate)
+				if baseURL == "" {
+					addRemaining(candidate)
+					continue
+				}
+				promotedForCandidate := false
+				results := ProbeFeeds(ctx, client, baseURL)
+				for _, r := range results {
+					if !tryReserveFeedURL(r.FeedURL) {
+						continue
+					}
+					found := DiscoveredSource{
+						FeedURL:       r.FeedURL,
+						FeedType:      r.FeedType,
+						AuthorityType: candidate.AuthorityType,
+						Category:      candidate.Category,
+						OrgName:       candidate.AuthorityName,
+						Country:       candidate.Country,
+						CountryCode:   candidate.CountryCode,
+						TeamURL:       baseURL,
+						DiscoveredVia: "candidate-queue",
+					}
+					mu.Lock()
+					discovered = append(discovered, found)
+					mu.Unlock()
+					if sourceVetter == nil {
+						continue
+					}
 					promoted, verdict, err := vetAndPromote(ctx, cfg, client, sourceVetter, candidate, found)
+					mu.Lock()
+					totalVetted++
+					mu.Unlock()
 					if err != nil {
 						fmt.Fprintf(stderr, "WARN source vetting failed for %s: %v\n", found.FeedURL, err)
-					} else if promoted != nil {
+						continue
+					}
+					if promoted != nil {
+						mu.Lock()
 						promotedSources = append(promotedSources, *promoted)
-						promotedForCandidate = true
 						totalPromoted++
+						mu.Unlock()
+						promotedForCandidate = true
 						fmt.Fprintf(stderr, "Promoted source %s via %s (%s)\n", promoted.Source.SourceID, cfg.VettingProvider, verdict.Reason)
 					} else if strings.TrimSpace(verdict.Reason) != "" {
+						mu.Lock()
 						rejectionReasons[verdict.Reason]++
+						mu.Unlock()
 					}
-					totalVetted++
+				}
+				if len(results) == 0 {
+					target := strings.TrimSpace(candidate.URL)
+					if target == "" {
+						target = baseURL
+					}
+					if probeHTMLPage(ctx, client, target) && tryReserveFeedURL(target) {
+						found := DiscoveredSource{
+							FeedURL:       target,
+							FeedType:      "html-list",
+							AuthorityType: candidate.AuthorityType,
+							Category:      candidate.Category,
+							OrgName:       candidate.AuthorityName,
+							Country:       candidate.Country,
+							CountryCode:   candidate.CountryCode,
+							TeamURL:       baseURL,
+							DiscoveredVia: "candidate-queue",
+						}
+						mu.Lock()
+						discovered = append(discovered, found)
+						mu.Unlock()
+						if sourceVetter != nil {
+							promoted, verdict, err := vetAndPromote(ctx, cfg, client, sourceVetter, candidate, found)
+							mu.Lock()
+							totalVetted++
+							mu.Unlock()
+							if err != nil {
+								fmt.Fprintf(stderr, "WARN source vetting failed for %s: %v\n", found.FeedURL, err)
+							} else if promoted != nil {
+								mu.Lock()
+								promotedSources = append(promotedSources, *promoted)
+								totalPromoted++
+								mu.Unlock()
+								promotedForCandidate = true
+								fmt.Fprintf(stderr, "Promoted source %s via %s (%s)\n", promoted.Source.SourceID, cfg.VettingProvider, verdict.Reason)
+							} else if strings.TrimSpace(verdict.Reason) != "" {
+								mu.Lock()
+								rejectionReasons[verdict.Reason]++
+								mu.Unlock()
+							}
+						}
+					}
+				}
+				if !promotedForCandidate {
+					addRemaining(candidate)
 				}
 			}
-		}
-		if !promotedForCandidate {
-			remainingCandidates = append(remainingCandidates, candidate)
-		}
+		}()
 	}
+	wg.Wait()
 
 	// Write results.
 	fmt.Fprintf(stderr, "Discovery finished: %d new candidates\n", len(discovered))
@@ -643,10 +702,19 @@ func vetAndPromote(ctx context.Context, cfg config.Config, client *fetch.Client,
 			verdict.Reason = fmt.Sprintf("below source quality threshold %.2f < %.2f", float64(verdict.SourceQuality), cfg.SourceMinQuality)
 			return nil, verdict, nil
 		}
-		if float64(verdict.OperationalRelevance) < cfg.SourceMinOperationalRelevance {
+		minOperationalRelevance := cfg.SourceMinOperationalRelevance
+		switch strings.ToLower(strings.TrimSpace(verdict.Level)) {
+		case "local":
+			// Local official law-enforcement is valuable for country-scoped views.
+			// Keep a lower operational floor so we can retain trusted local signals.
+			minOperationalRelevance = minFloat(minOperationalRelevance, 0.35)
+		case "regional":
+			minOperationalRelevance = minFloat(minOperationalRelevance, 0.5)
+		}
+		if float64(verdict.OperationalRelevance) < minOperationalRelevance {
 			verdict.Approve = false
 			verdict.PromotionStatus = "rejected"
-			verdict.Reason = fmt.Sprintf("below operational relevance threshold %.2f < %.2f", float64(verdict.OperationalRelevance), cfg.SourceMinOperationalRelevance)
+			verdict.Reason = fmt.Sprintf("below operational relevance threshold %.2f < %.2f", float64(verdict.OperationalRelevance), minOperationalRelevance)
 			return nil, verdict, nil
 		}
 	}
@@ -755,6 +823,13 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func minFloat(a float64, b float64) float64 {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func isSQLitePath(path string) bool {

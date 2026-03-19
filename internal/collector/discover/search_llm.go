@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/scalytics/euosint/internal/collector/config"
@@ -59,9 +60,18 @@ func selectSearchTargets(cfg config.Config, seeds []model.SourceCandidate) []mod
 	if maxTargets <= 0 {
 		return nil
 	}
+	ordered := append([]model.SourceCandidate(nil), seeds...)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		pi := searchTargetPriority(ordered[i])
+		pj := searchTargetPriority(ordered[j])
+		if pi != pj {
+			return pi < pj
+		}
+		return i < j
+	})
 	out := make([]model.SourceCandidate, 0, maxTargets)
 	seen := map[string]struct{}{}
-	for _, seed := range seeds {
+	for _, seed := range ordered {
 		if !passesDiscoveryHygiene(seed.AuthorityName, firstNonEmpty(seed.BaseURL, seed.URL), seed.AuthorityType) {
 			continue
 		}
@@ -84,6 +94,20 @@ func selectSearchTargets(cfg config.Config, seeds []model.SourceCandidate) []mod
 	return out
 }
 
+func searchTargetPriority(seed model.SourceCandidate) int {
+	notes := strings.ToLower(strings.TrimSpace(seed.Notes))
+	switch {
+	case strings.Contains(notes, "replacement-search"):
+		return 0
+	case strings.Contains(notes, "gap-analysis"):
+		return 1
+	case strings.Contains(notes, "trend-spike"):
+		return 2
+	default:
+		return 3
+	}
+}
+
 func searchCandidateTarget(ctx context.Context, client searchCompleter, cfg config.Config, target model.SourceCandidate) ([]model.SourceCandidate, error) {
 	maxURLs := cfg.SearchDiscoveryMaxURLsPerTarget
 	if maxURLs <= 0 {
@@ -91,7 +115,7 @@ func searchCandidateTarget(ctx context.Context, client searchCompleter, cfg conf
 	}
 
 	prompt := fmt.Sprintf(
-		"Find up to %d official RSS or ATOM feed URLs for %s in %s covering %s. Reject local or municipal sources. Return strict JSON only in the form {\"urls\":[{\"url\":\"https://...\",\"reason\":\"short\"}]}. If no official feed exists, return {\"urls\":[]}.",
+		"Find up to %d official RSS or ATOM feed URLs for %s in %s covering %s. Prefer national/supranational authorities, but include official local law-enforcement sources when clearly operational. Return strict JSON only in the form {\"urls\":[{\"url\":\"https://...\",\"reason\":\"short\"}]}. If no official feed exists, return {\"urls\":[]}.",
 		maxURLs,
 		firstNonEmpty(target.AuthorityName, "high-authority OSINT sources"),
 		firstNonEmpty(target.Country, "its jurisdiction"),

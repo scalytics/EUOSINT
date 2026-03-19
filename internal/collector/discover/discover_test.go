@@ -84,9 +84,12 @@ func TestPoliceAgencyQueryNotEmpty(t *testing.T) {
 	}
 }
 
-func TestDiscoveryHygieneRejectsLocalPolice(t *testing.T) {
+func TestDiscoveryHygieneAllowsOfficialPoliceHosts(t *testing.T) {
+	if !passesDiscoveryHygiene("New Zealand Police", "https://www.police.govt.nz", "police") {
+		t.Fatal("expected official police source to pass hygiene gate")
+	}
 	if passesDiscoveryHygiene("City of Valletta Police Department", "https://city.police.example", "police") {
-		t.Fatal("expected local police source to fail hygiene gate")
+		t.Fatal("expected city-scoped host to fail hygiene gate")
 	}
 	if !passesDiscoveryHygiene("Europol", "https://www.europol.europa.eu", "police") {
 		t.Fatal("expected supranational source to pass hygiene gate")

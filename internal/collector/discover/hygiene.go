@@ -9,20 +9,6 @@ import (
 	"unicode"
 )
 
-var localEntityTerms = []string{
-	"municipal",
-	"municipality",
-	"city of ",
-	"county ",
-	"sheriff",
-	"borough",
-	"township",
-	"village",
-	"metropolitan police",
-	"local police",
-	"police department",
-}
-
 var genericNewsroomTerms = []string{
 	"newsroom",
 	"press office",
@@ -73,11 +59,6 @@ func passesDiscoveryHygiene(name string, website string, authorityType string) b
 	if name == "" {
 		return false
 	}
-	for _, term := range localEntityTerms {
-		if strings.Contains(name, term) {
-			return false
-		}
-	}
 	for _, term := range nonOSINTTerms {
 		if containsTerm(name, term) {
 			return false
@@ -107,7 +88,6 @@ func hostLooksLocal(rawURL string) bool {
 	}
 	return strings.HasPrefix(host, "city.") ||
 		strings.HasPrefix(host, "county.") ||
-		strings.HasPrefix(host, "police.") ||
 		strings.Contains(host, ".city.") ||
 		strings.Contains(host, ".county.") ||
 		strings.Contains(host, ".municipal.")

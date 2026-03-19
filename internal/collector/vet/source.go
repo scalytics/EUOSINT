@@ -138,9 +138,10 @@ func (v *Vetter) Evaluate(ctx context.Context, input Input) (Verdict, error) {
 			Role: "system",
 			Content: `You vet intelligence source candidates for an OSINT dashboard.
 
-Approve only operationally relevant sources: supranational, federal, or national level sources that publish actionable intelligence — wanted/missing persons, public appeals, cyber advisories, vulnerability disclosures, humanitarian security, conflict monitoring, disease outbreaks, environmental disasters, fraud alerts, terrorism, travel warnings, emergency management, or public-safety intelligence.
+Approve only operationally relevant sources that publish actionable intelligence — wanted/missing persons, public appeals, cyber advisories, vulnerability disclosures, humanitarian security, conflict monitoring, disease outbreaks, environmental disasters, fraud alerts, terrorism, travel warnings, emergency management, or public-safety intelligence.
 
-Reject: generic PR, speeches, institutional updates, local police, municipal news, marketing, newsletters, or low-signal content.
+Reject: generic PR, speeches, institutional updates, marketing, newsletters, or low-signal content.
+Local/municipal law-enforcement sources are allowed when official and operationally actionable (these are used for country-scoped views, not global defaults).
 
 Valid categories (pick the best match):
 - cyber_advisory: vulnerability disclosures, patch advisories, threat intel from CERTs
@@ -259,20 +260,6 @@ func clamp01(v float64) float64 {
 }
 
 func deterministicReject(input Input) (string, bool) {
-	hay := strings.ToLower(strings.Join([]string{
-		input.AuthorityName,
-		input.AuthorityType,
-		input.Category,
-		input.URL,
-		input.BaseURL,
-	}, " "))
-	for _, needle := range []string{
-		"municipal", "municipality", "city of ", "county ", "sheriff", "police department", "local police",
-	} {
-		if strings.Contains(hay, needle) {
-			return "deterministic reject: local or municipal source", true
-		}
-	}
 	if len(input.Samples) == 0 {
 		return "deterministic reject: no sample items to assess", true
 	}

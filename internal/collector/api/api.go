@@ -73,6 +73,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	lane := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("lane")))
 	includeFiltered := parseBoolQuery(r, "include_filtered")
 	includeRemoved := parseBoolQuery(r, "include_removed")
+	includeLocal := parseBoolQuery(r, "include_local")
 	limitStr := strings.TrimSpace(r.URL.Query().Get("limit"))
 
 	limit := 100
@@ -116,6 +117,9 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	results = filterStatuses(results, status, includeFiltered, includeRemoved)
 	results = filterLane(results, lane)
+	// Global/default search suppresses local law-enforcement noise.
+	// Country-scoped search (region filter) keeps local sources visible.
+	results = filterLocalLawEnforcement(results, includeLocal || region != "")
 	writeJSON(w, http.StatusOK, map[string]any{
 		"query":   q,
 		"count":   len(results),
@@ -167,6 +171,38 @@ func filterLane(items []model.Alert, lane string) []model.Alert {
 		}
 	}
 	return out
+}
+
+func filterLocalLawEnforcement(items []model.Alert, includeLocal bool) []model.Alert {
+	if includeLocal {
+		return items
+	}
+	out := make([]model.Alert, 0, len(items))
+	for _, a := range items {
+		if isLocalLawEnforcement(a) {
+			continue
+		}
+		out = append(out, a)
+	}
+	return out
+}
+
+func isLocalLawEnforcement(a model.Alert) bool {
+	authorityType := strings.ToLower(strings.TrimSpace(a.Source.AuthorityType))
+	switch authorityType {
+	case "police", "law_enforcement", "gendarmerie", "sheriff", "border_guard":
+	default:
+		return false
+	}
+	level := strings.ToLower(strings.TrimSpace(a.Source.Level))
+	scope := strings.ToLower(strings.TrimSpace(a.Source.Scope))
+	if level == "local" || scope == "local" {
+		return true
+	}
+	if level == "regional" || scope == "regional" || scope == "state" || scope == "provincial" {
+		return true
+	}
+	return strings.TrimSpace(a.Source.JurisdictionName) != ""
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {

@@ -395,6 +395,126 @@ func TestSearchLaneFilter(t *testing.T) {
 	}
 }
 
+func TestSearchGlobalViewHidesLocalLawEnforcementByDefault(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	alerts := []model.Alert{
+		{
+			AlertID:      "local-police-1",
+			SourceID:     "accra-city-police",
+			Status:       "active",
+			Title:        "City police issue wanted notice",
+			CanonicalURL: "https://example.test/local-police",
+			Category:     "wanted_suspect",
+			Severity:     "high",
+			RegionTag:    "GH",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:         "accra-city-police",
+				AuthorityName:    "Accra City Police",
+				CountryCode:      "GH",
+				AuthorityType:    "police",
+				Level:            "local",
+				Scope:            "local",
+				JurisdictionName: "Accra",
+			},
+		},
+		{
+			AlertID:      "national-police-1",
+			SourceID:     "ghana-national-police",
+			Status:       "active",
+			Title:        "National police wanted bulletin",
+			CanonicalURL: "https://example.test/national-police",
+			Category:     "wanted_suspect",
+			Severity:     "medium",
+			RegionTag:    "GH",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "ghana-national-police",
+				AuthorityName: "Ghana Police Service",
+				CountryCode:   "GH",
+				AuthorityType: "police",
+				Level:         "national",
+				Scope:         "national",
+			},
+		},
+	}
+	if err := db.SaveAlerts(context.Background(), alerts); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := New(db, ":0", os.Stderr)
+	handler := srv.srv.Handler
+	req := httptest.NewRequest("GET", "/api/search?status=active&category=wanted_suspect", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Results []model.Alert `json:"results"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.Results) != 1 || resp.Results[0].AlertID != "national-police-1" {
+		t.Fatalf("expected local police to be hidden in global view, got %#v", resp.Results)
+	}
+}
+
+func TestSearchCountryViewIncludesLocalLawEnforcement(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	alert := model.Alert{
+		AlertID:      "local-police-gh",
+		SourceID:     "accra-city-police",
+		Status:       "active",
+		Title:        "City police issue wanted notice",
+		CanonicalURL: "https://example.test/local-police-gh",
+		Category:     "wanted_suspect",
+		Severity:     "high",
+		RegionTag:    "GH",
+		FirstSeen:    now,
+		LastSeen:     now,
+		Source: model.SourceMetadata{
+			SourceID:         "accra-city-police",
+			AuthorityName:    "Accra City Police",
+			CountryCode:      "GH",
+			AuthorityType:    "police",
+			Level:            "local",
+			Scope:            "local",
+			JurisdictionName: "Accra",
+		},
+	}
+	if err := db.SaveAlerts(context.Background(), []model.Alert{alert}); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := New(db, ":0", os.Stderr)
+	handler := srv.srv.Handler
+	req := httptest.NewRequest("GET", "/api/search?status=active&region=GH&category=wanted_suspect", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Results []model.Alert `json:"results"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.Results) != 1 || resp.Results[0].AlertID != "local-police-gh" {
+		t.Fatalf("expected local police in country-scoped view, got %#v", resp.Results)
+	}
+}
+
 func TestRateLimitReturns429(t *testing.T) {
 	db := testDB(t)
 	defer db.Close()
