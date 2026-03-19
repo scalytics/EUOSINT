@@ -49,6 +49,8 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	var browser *fetch.BrowserClient
 	if cfg.VettingEnabled {
 		sourceVetter = vet.New(cfg)
+	} else if cfg.SourceVettingRequired {
+		fmt.Fprintf(stderr, "Source vetting is required; discovery will not auto-promote candidates without SOURCE_VETTING_ENABLED=true\n")
 	}
 	if cfg.SearchDiscoveryEnabled {
 		searchClient = vet.NewClient(cfg)
@@ -81,6 +83,10 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	fmt.Fprintf(stderr, "Starting source discovery (existing registry has %d feed URLs)\n", len(existing))
 
 	var discovered []DiscoveredSource
+	totalCandidatesSeen := 0
+	totalVetted := 0
+	totalPromoted := 0
+	rejectionReasons := map[string]int{}
 	dead := loadDeadLetterQueue(cfg.ReplacementQueuePath)
 	fmt.Fprintf(stderr, "Dead-letter queue: %d sources will be skipped\n", len(dead))
 	seededCandidates, err := generateAutonomousCandidates(ctx, cfg, client, browser, searchClient, dead, registrySources, stderr)
@@ -93,6 +99,7 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 	promotedSources := make([]model.RegistrySource, 0)
 
 	for _, candidate := range candidates {
+		totalCandidatesSeen++
 		if ctx.Err() != nil {
 			break
 		}
@@ -139,8 +146,12 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 			if promoted != nil {
 				promotedSources = append(promotedSources, *promoted)
 				promotedForCandidate = true
+				totalPromoted++
 				fmt.Fprintf(stderr, "Promoted source %s via %s (%s)\n", promoted.Source.SourceID, cfg.VettingProvider, verdict.Reason)
+			} else if strings.TrimSpace(verdict.Reason) != "" {
+				rejectionReasons[verdict.Reason]++
 			}
+			totalVetted++
 		}
 		if len(results) == 0 {
 			target := strings.TrimSpace(candidate.URL)
@@ -168,8 +179,12 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 					} else if promoted != nil {
 						promotedSources = append(promotedSources, *promoted)
 						promotedForCandidate = true
+						totalPromoted++
 						fmt.Fprintf(stderr, "Promoted source %s via %s (%s)\n", promoted.Source.SourceID, cfg.VettingProvider, verdict.Reason)
+					} else if strings.TrimSpace(verdict.Reason) != "" {
+						rejectionReasons[verdict.Reason]++
 					}
+					totalVetted++
 				}
 			}
 		}
@@ -180,6 +195,12 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 
 	// Write results.
 	fmt.Fprintf(stderr, "Discovery finished: %d new candidates\n", len(discovered))
+	if sourceVetter != nil {
+		fmt.Fprintf(stderr, "Discovery KPI: candidates=%d vetted=%d promoted=%d\n", totalCandidatesSeen, totalVetted, totalPromoted)
+		for reason, count := range rejectionReasons {
+			fmt.Fprintf(stderr, "  rejection: %dx %s\n", count, reason)
+		}
+	}
 	if err := WriteReport(cfg.DiscoverOutputPath, discovered, len(existing), stdout); err != nil {
 		return err
 	}
@@ -541,11 +562,25 @@ func vetAndPromote(ctx context.Context, cfg config.Config, client *fetch.Client,
 	if !verdict.Approve || verdict.PromotionStatus == "rejected" {
 		return nil, verdict, nil
 	}
+	if cfg.SourceVettingRequired {
+		if float64(verdict.SourceQuality) < cfg.SourceMinQuality {
+			verdict.Approve = false
+			verdict.PromotionStatus = "rejected"
+			verdict.Reason = fmt.Sprintf("below source quality threshold %.2f < %.2f", float64(verdict.SourceQuality), cfg.SourceMinQuality)
+			return nil, verdict, nil
+		}
+		if float64(verdict.OperationalRelevance) < cfg.SourceMinOperationalRelevance {
+			verdict.Approve = false
+			verdict.PromotionStatus = "rejected"
+			verdict.Reason = fmt.Sprintf("below operational relevance threshold %.2f < %.2f", float64(verdict.OperationalRelevance), cfg.SourceMinOperationalRelevance)
+			return nil, verdict, nil
+		}
+	}
 
 	src := model.RegistrySource{
 		Type:            discoveredTypeToRegistryType(discovered.FeedType),
 		FeedURL:         discovered.FeedURL,
-		Category:        firstNonEmpty(candidate.Category, discovered.Category),
+		Category:        firstNonEmpty(verdict.Category, candidate.Category, discovered.Category),
 		RegionTag:       strings.ToUpper(strings.TrimSpace(candidate.CountryCode)),
 		SourceQuality:   float64(verdict.SourceQuality),
 		PromotionStatus: verdict.PromotionStatus,

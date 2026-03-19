@@ -294,3 +294,48 @@ func TestInferSeverityInformationalOverride(t *testing.T) {
 		t.Fatalf("expected critical severity for real pandemic, got %q", sev)
 	}
 }
+
+func TestApplySignalLanesSeparatesInfoIntelAlarm(t *testing.T) {
+	cfg := config.Default()
+	cfg.AlarmRelevanceThreshold = 0.72
+
+	alerts := []model.Alert{
+		{
+			AlertID:  "info-1",
+			Category: "informational",
+			Severity: "info",
+			Source: model.SourceMetadata{
+				AuthorityType: "osint",
+			},
+		},
+		{
+			AlertID:  "alarm-1",
+			Category: "missing_person",
+			Severity: "high",
+			Triage:   &model.Triage{RelevanceScore: 0.9},
+			Source: model.SourceMetadata{
+				AuthorityType: "police",
+			},
+		},
+		{
+			AlertID:  "intel-1",
+			Category: "cyber_advisory",
+			Severity: "medium",
+			Triage:   &model.Triage{RelevanceScore: 0.4},
+			Source: model.SourceMetadata{
+				AuthorityType: "cert",
+			},
+		},
+	}
+
+	got := ApplySignalLanes(cfg, alerts)
+	if got[0].SignalLane != model.SignalLaneInfo {
+		t.Fatalf("expected informational alert in info lane, got %q", got[0].SignalLane)
+	}
+	if got[1].SignalLane != model.SignalLaneAlarm {
+		t.Fatalf("expected missing_person high alert in alarm lane, got %q", got[1].SignalLane)
+	}
+	if got[2].SignalLane != model.SignalLaneIntel {
+		t.Fatalf("expected cyber advisory in intel lane, got %q", got[2].SignalLane)
+	}
+}

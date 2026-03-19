@@ -330,6 +330,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 
 	deduped, duplicateAudit := normalize.Deduplicate(alerts)
+	deduped = normalize.ApplySignalLanes(cfg, deduped)
 	active, filtered := normalize.FilterActive(cfg, deduped)
 	populateSourceHealth(sourceHealth, active, filtered)
 	if err := assertCriticalSourceCoverage(cfg, sourceHealth); err != nil {
@@ -422,6 +423,7 @@ func (r Runner) writeProgressSnapshot(cfg config.Config, freshAlerts []model.Ale
 	// yet fetched this cycle so the UI always sees the full feed list.
 	mergedHealth := mergeSourceHealth(sourceHealth, previousSourceHealth)
 	deduped, duplicateAudit := normalize.Deduplicate(merged)
+	deduped = normalize.ApplySignalLanes(cfg, deduped)
 	active, filtered := normalize.FilterActive(cfg, deduped)
 	if err := output.WriteWithTotal(cfg, active, filtered, active, mergedHealth, duplicateAudit, nil, totalRegistrySources); err != nil {
 		fmt.Fprintf(r.stderr, "WARN progress snapshot write failed: %v\n", err)
@@ -790,7 +792,7 @@ func (r Runner) fetchSource(ctx context.Context, fetcher fetch.Fetcher, browser 
 	case "travelwarning-atom":
 		return r.fetchTravelWarningAtom(ctx, fetcher, nctx, source)
 	case "telegram":
-		return r.fetchTelegram(ctx, fetcher, nctx, source)
+		return r.fetchTelegram(ctx, fetcher, nctx, source, categoryDictionary)
 	case "usgs-geojson":
 		return r.fetchUSGSGeoJSON(ctx, fetcher, nctx, source)
 	case "eonet-json":
@@ -895,7 +897,7 @@ func (r Runner) fetchHTML(ctx context.Context, fetcher fetch.Fetcher, nctx norma
 	return out, nil
 }
 
-func (r Runner) fetchTelegram(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+func (r Runner) fetchTelegram(ctx context.Context, fetcher fetch.Fetcher, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store) ([]model.Alert, error) {
 	body, err := fetcher.Text(ctx, source.FeedURL, true, "text/html,application/xhtml+xml,*/*;q=0.8")
 	if err != nil {
 		return nil, err
@@ -903,6 +905,7 @@ func (r Runner) fetchTelegram(ctx context.Context, fetcher fetch.Fetcher, nctx n
 	channel := extractTelegramChannel(source.FeedURL)
 	items := parse.ParseTelegram(string(body), channel)
 	items = filterKeywords(items, source.IncludeKeywords, source.ExcludeKeywords, nctx.Config.StopWords)
+	items = filterCategoryItems(items, source, categoryDictionary)
 	sortFeedItemsNewest(items)
 	limit := perSourceLimit(nctx.Config, source)
 	if len(items) > limit {
@@ -1673,8 +1676,11 @@ func downgradeNonActionable(alerts []model.Alert, source model.RegistrySource) [
 	switch source.Category {
 	case "public_safety", "public_appeal", "legislative", "conflict_monitoring",
 		"maritime_security", "logistics_incident", "humanitarian_tasking", "humanitarian_security":
-		// These categories are typically curated enough — skip.
-		return alerts
+		// Keep curated sources untouched; broad sources without include keywords
+		// still need title-level actionability checks.
+		if len(source.IncludeKeywords) > 0 {
+			return alerts
+		}
 	}
 	for i := range alerts {
 		if alerts[i].Severity == "info" || alerts[i].Category == "informational" {
@@ -2017,6 +2023,9 @@ func (r Runner) runDiscoveryLoop(ctx context.Context, cfg config.Config) {
 			fmt.Fprintf(r.stderr, "WARN background discovery failed: %v\n", err)
 		}
 	}
+
+	// Execute one pass immediately so discovery starts on boot.
+	runOnce()
 
 	interval := time.Duration(cfg.DiscoverIntervalMS) * time.Millisecond
 	if interval <= 0 {

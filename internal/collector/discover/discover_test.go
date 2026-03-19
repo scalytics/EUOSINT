@@ -7,12 +7,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/scalytics/euosint/internal/collector/config"
+	"github.com/scalytics/euosint/internal/collector/fetch"
 	"github.com/scalytics/euosint/internal/collector/model"
 	"github.com/scalytics/euosint/internal/collector/vet"
 )
@@ -291,5 +295,138 @@ func TestWikidataCacheRoundTrip(t *testing.T) {
 	}
 	if string(got) != string(want) {
 		t.Fatalf("unexpected cache body %q", string(got))
+	}
+}
+
+func TestVetAndPromoteUsesVettedCategory(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/feed", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, `<?xml version="1.0"?><rss><channel><item><title>Actionable update</title><link>https://example.test/item/1</link><pubDate>Mon, 02 Jan 2026 15:04:05 MST</pubDate><description>Operational bulletin</description></item></channel></rss>`)
+	})
+	mux.HandleFunc("/chat/completions", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"choices": []map[string]any{
+				{"message": map[string]any{"content": `{"approve":true,"promotion_status":"active","category":"informational","level":"national","mission_tags":["briefing"],"source_quality":0.9,"operational_relevance":0.85,"reason":"approved"}`}},
+			},
+		})
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	cfg := config.Default()
+	cfg.VettingBaseURL = server.URL
+	cfg.SourceVettingRequired = true
+	cfg.SourceMinQuality = 0.6
+	cfg.SourceMinOperationalRelevance = 0.6
+	cfg.VettingMaxSampleItems = 2
+
+	candidate := model.SourceCandidate{
+		URL:           server.URL + "/feed",
+		BaseURL:       server.URL,
+		AuthorityName: "Europol",
+		AuthorityType: "police",
+		Category:      "public_appeal",
+		Country:       "Netherlands",
+		CountryCode:   "NL",
+	}
+	discovered := DiscoveredSource{
+		FeedURL:       server.URL + "/feed",
+		FeedType:      "rss",
+		AuthorityType: "police",
+		Category:      "wanted_suspect",
+		OrgName:       "Europol",
+		Country:       "Netherlands",
+		CountryCode:   "NL",
+		TeamURL:       server.URL,
+	}
+
+	promoted, verdict, err := vetAndPromote(context.Background(), cfg, fetch.New(cfg), vet.New(cfg), candidate, discovered)
+	if err != nil {
+		t.Fatalf("vetAndPromote returned error: %v", err)
+	}
+	if promoted == nil {
+		t.Fatalf("expected promoted source, got nil (verdict=%#v)", verdict)
+	}
+	if promoted.Category != "informational" {
+		t.Fatalf("expected vetted category to be persisted, got %q", promoted.Category)
+	}
+}
+
+func TestVetAndPromoteThresholdGateRejectsLowQuality(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/feed", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, `<?xml version="1.0"?><rss><channel><item><title>Threat bulletin</title><link>https://example.test/item/2</link><pubDate>Mon, 02 Jan 2026 15:04:05 MST</pubDate><description>Operational bulletin</description></item></channel></rss>`)
+	})
+	mux.HandleFunc("/chat/completions", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"choices": []map[string]any{
+				{"message": map[string]any{"content": `{"approve":true,"promotion_status":"active","category":"cyber_advisory","level":"national","mission_tags":["threat-intel"],"source_quality":0.25,"operational_relevance":0.9,"reason":"approved"}`}},
+			},
+		})
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	cfg := config.Default()
+	cfg.VettingBaseURL = server.URL
+	cfg.SourceVettingRequired = true
+	cfg.SourceMinQuality = 0.6
+	cfg.SourceMinOperationalRelevance = 0.6
+	cfg.VettingMaxSampleItems = 2
+
+	candidate := model.SourceCandidate{
+		URL:           server.URL + "/feed",
+		BaseURL:       server.URL,
+		AuthorityName: "National CERT",
+		AuthorityType: "cert",
+		Category:      "cyber_advisory",
+		Country:       "Germany",
+		CountryCode:   "DE",
+	}
+	discovered := DiscoveredSource{
+		FeedURL:       server.URL + "/feed",
+		FeedType:      "rss",
+		AuthorityType: "cert",
+		Category:      "cyber_advisory",
+		OrgName:       "National CERT",
+		Country:       "Germany",
+		CountryCode:   "DE",
+		TeamURL:       server.URL,
+	}
+
+	promoted, verdict, err := vetAndPromote(context.Background(), cfg, fetch.New(cfg), vet.New(cfg), candidate, discovered)
+	if err != nil {
+		t.Fatalf("vetAndPromote returned error: %v", err)
+	}
+	if promoted != nil {
+		t.Fatalf("expected source to be rejected by threshold gate, got %+v", *promoted)
+	}
+	if verdict.Approve {
+		t.Fatalf("expected approve=false after threshold gate, got %+v", verdict)
+	}
+	if !strings.Contains(verdict.Reason, "below source quality threshold") {
+		t.Fatalf("expected quality-threshold reason, got %q", verdict.Reason)
+	}
+}
+
+func TestSampleSourceParsesRSSItems(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, `<?xml version="1.0"?><rss><channel><item><title>Bulletin A</title><link>https://example.test/a</link></item><item><title>Bulletin B</title><link>https://example.test/b</link></item></channel></rss>`)
+	}))
+	defer server.Close()
+
+	cfg := config.Default()
+	samples, err := sampleSource(context.Background(), fetch.New(cfg), DiscoveredSource{
+		FeedURL:  server.URL,
+		FeedType: "rss",
+	}, 1)
+	if err != nil {
+		t.Fatalf("sampleSource returned error: %v", err)
+	}
+	if len(samples) != 1 {
+		t.Fatalf("expected sample limit to apply, got %d samples", len(samples))
+	}
+	if samples[0].Title != "Bulletin A" {
+		t.Fatalf("unexpected sample title: %q", samples[0].Title)
 	}
 }

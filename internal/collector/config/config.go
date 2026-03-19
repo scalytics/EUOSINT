@@ -73,6 +73,9 @@ type Config struct {
 	WikidataCachePath               string
 	WikidataCacheTTLHours           int
 	VettingEnabled                  bool
+	SourceVettingRequired           bool
+	SourceMinQuality                float64
+	SourceMinOperationalRelevance   float64
 	VettingProvider                 string
 	VettingBaseURL                  string
 	VettingAPIKey                   string
@@ -83,6 +86,7 @@ type Config struct {
 	AlertLLMEnabled                 bool
 	AlertLLMModel                   string
 	AlertLLMMaxItemsPerSource       int
+	AlarmRelevanceThreshold         float64
 	CategoryDictionaryPath          string
 	ReplacementQueuePath            string
 	SourceDBPath                    string
@@ -148,6 +152,9 @@ func Default() Config {
 		WikidataCachePath:               "registry/wikidata_cache",
 		WikidataCacheTTLHours:           168,
 		VettingEnabled:                  false,
+		SourceVettingRequired:           true,
+		SourceMinQuality:                0.6,
+		SourceMinOperationalRelevance:   0.6,
 		VettingProvider:                 "openai-compatible",
 		VettingBaseURL:                  "https://api.openai.com/v1",
 		VettingModel:                    "gpt-4.1-mini",
@@ -157,6 +164,7 @@ func Default() Config {
 		AlertLLMEnabled:                 false,
 		AlertLLMModel:                   "gpt-4.1-mini",
 		AlertLLMMaxItemsPerSource:       4,
+		AlarmRelevanceThreshold:         0.72,
 		CategoryDictionaryPath:          "registry/category_dictionary.json",
 		ReplacementQueuePath:            "registry/source_dead_letter.json",
 		SourceDBPath:                    "registry/sources.db",
@@ -217,6 +225,9 @@ func FromEnv() Config {
 	cfg.WikidataCachePath = envString("WIKIDATA_CACHE_PATH", cfg.WikidataCachePath)
 	cfg.WikidataCacheTTLHours = envInt("WIKIDATA_CACHE_TTL_HOURS", cfg.WikidataCacheTTLHours)
 	cfg.VettingEnabled = envBool("SOURCE_VETTING_ENABLED", cfg.VettingEnabled)
+	cfg.SourceVettingRequired = envBool("SOURCE_VETTING_REQUIRED", cfg.SourceVettingRequired)
+	cfg.SourceMinQuality = envFloat("SOURCE_MIN_QUALITY", cfg.SourceMinQuality)
+	cfg.SourceMinOperationalRelevance = envFloat("SOURCE_MIN_OPERATIONAL_RELEVANCE", cfg.SourceMinOperationalRelevance)
 	cfg.VettingProvider = envString("SOURCE_VETTING_PROVIDER", cfg.VettingProvider)
 	cfg.VettingBaseURL = envString("SOURCE_VETTING_BASE_URL", cfg.VettingBaseURL)
 	cfg.VettingAPIKey = envString("SOURCE_VETTING_API_KEY", cfg.VettingAPIKey)
@@ -227,6 +238,7 @@ func FromEnv() Config {
 	cfg.AlertLLMEnabled = envBool("ALERT_LLM_ENABLED", cfg.AlertLLMEnabled)
 	cfg.AlertLLMModel = envString("ALERT_LLM_MODEL", cfg.AlertLLMModel)
 	cfg.AlertLLMMaxItemsPerSource = envInt("ALERT_LLM_MAX_ITEMS_PER_SOURCE", cfg.AlertLLMMaxItemsPerSource)
+	cfg.AlarmRelevanceThreshold = envFloat("ALARM_RELEVANCE_THRESHOLD", cfg.AlarmRelevanceThreshold)
 	cfg.CategoryDictionaryPath = envString("CATEGORY_DICTIONARY_PATH", cfg.CategoryDictionaryPath)
 	cfg.ReplacementQueuePath = envString("REPLACEMENT_QUEUE_PATH", cfg.ReplacementQueuePath)
 	cfg.SourceDBPath = envString("SOURCE_DB_PATH", cfg.SourceDBPath)

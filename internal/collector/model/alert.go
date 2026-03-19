@@ -4,23 +4,36 @@
 package model
 
 type Alert struct {
-	AlertID        string            `json:"alert_id"`
-	SourceID       string            `json:"source_id"`
-	Source         SourceMetadata    `json:"source"`
-	Title          string            `json:"title"`
-	CanonicalURL   string            `json:"canonical_url"`
-	FirstSeen      string            `json:"first_seen"`
-	LastSeen       string            `json:"last_seen"`
-	Status         string            `json:"status"`
-	Category       string            `json:"category"`
-	Severity       string            `json:"severity"`
-	RegionTag      string            `json:"region_tag"`
-	Lat            float64           `json:"lat"`
-	Lng            float64           `json:"lng"`
-	FreshnessHours int               `json:"freshness_hours"`
-	Reporting      ReportingMetadata `json:"reporting,omitempty"`
-	Triage         *Triage           `json:"triage,omitempty"`
+	AlertID            string            `json:"alert_id"`
+	SourceID           string            `json:"source_id"`
+	Source             SourceMetadata    `json:"source"`
+	Title              string            `json:"title"`
+	CanonicalURL       string            `json:"canonical_url"`
+	FirstSeen          string            `json:"first_seen"`
+	LastSeen           string            `json:"last_seen"`
+	Status             string            `json:"status"`
+	Category           string            `json:"category"`
+	Severity           string            `json:"severity"`
+	SignalLane         SignalLane        `json:"signal_lane,omitempty"`
+	RegionTag          string            `json:"region_tag"`
+	Lat                float64           `json:"lat"`
+	Lng                float64           `json:"lng"`
+	EventCountry       string            `json:"event_country,omitempty"`
+	EventCountryCode   string            `json:"event_country_code,omitempty"`
+	EventGeoSource     string            `json:"event_geo_source,omitempty"`
+	EventGeoConfidence float64           `json:"event_geo_confidence,omitempty"`
+	FreshnessHours     int               `json:"freshness_hours"`
+	Reporting          ReportingMetadata `json:"reporting,omitempty"`
+	Triage             *Triage           `json:"triage,omitempty"`
 }
+
+type SignalLane string
+
+const (
+	SignalLaneAlarm SignalLane = "alarm"
+	SignalLaneIntel SignalLane = "intel"
+	SignalLaneInfo  SignalLane = "info"
+)
 
 type Triage struct {
 	RelevanceScore  float64         `json:"relevance_score"`

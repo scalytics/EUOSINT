@@ -287,11 +287,15 @@ func InterpolAlert(ctx Context, meta model.RegistrySource, noticeID string, titl
 		alert.Source.CountryCode = code
 		if name := countryNameFromCode(code); name != "" {
 			alert.Source.Country = name
+			alert.EventCountry = name
 		}
+		alert.EventCountryCode = code
 		// Override lat/lng to the person's nationality country instead of
 		// Interpol HQ (Lyon, France).
 		if gLat, gLng, _, ok := geocodeCountryCode(code); ok {
 			alert.Lat, alert.Lng = jitterCC(gLat, gLng, meta.Source.SourceID+":"+link, "capital", code)
+			alert.EventGeoSource = "capital"
+			alert.EventGeoConfidence = eventGeoConfidence("capital")
 		}
 	}
 	alert.Triage = score(ctx.Config, alert, FeedContext{
@@ -339,6 +343,10 @@ func ACLEDAlert(ctx Context, meta model.RegistrySource, ev parse.ACLEDItem) *mod
 		alert.Source.CountryCode = iso2
 		alert.Source.Country = ev.Country
 		alert.RegionTag = iso2
+		alert.EventCountry = ev.Country
+		alert.EventCountryCode = iso2
+		alert.EventGeoSource = "coordinates"
+		alert.EventGeoConfidence = eventGeoConfidence("coordinates")
 	}
 	if ev.Region != "" {
 		alert.Source.Region = ev.Region
@@ -448,11 +456,15 @@ func GDELTAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem, sou
 	if iso2 := parse.GDELTCountryISO2(sourceCountry); iso2 != "" {
 		if gLat, gLng, _, ok := geocodeCountryCode(iso2); ok {
 			alert.Lat, alert.Lng = jitterCC(gLat, gLng, meta.Source.SourceID+":"+item.Link, "capital", iso2)
+			alert.EventGeoSource = "capital"
+			alert.EventGeoConfidence = eventGeoConfidence("capital")
 		}
 		alert.Source.CountryCode = iso2
 		if name := countryNameFromCode(iso2); name != "" {
 			alert.Source.Country = name
+			alert.EventCountry = name
 		}
+		alert.EventCountryCode = iso2
 		alert.RegionTag = iso2
 	}
 	triage := score(ctx.Config, alert, FeedContext{
@@ -480,11 +492,15 @@ func FeodoAlert(ctx Context, meta model.RegistrySource, ev parse.FeodoItem) *mod
 	if code := normalizeCountryCode(ev.Country); code != "" {
 		if gLat, gLng, _, ok := geocodeCountryCode(code); ok {
 			alert.Lat, alert.Lng = jitterCC(gLat, gLng, meta.Source.SourceID+":"+ev.IPAddress, "capital", code)
+			alert.EventGeoSource = "capital"
+			alert.EventGeoConfidence = eventGeoConfidence("capital")
 		}
 		alert.Source.CountryCode = code
 		if name := countryNameFromCode(code); name != "" {
 			alert.Source.Country = name
+			alert.EventCountry = name
 		}
+		alert.EventCountryCode = code
 		alert.RegionTag = code
 	}
 	triage := score(ctx.Config, alert, FeedContext{
@@ -498,20 +514,25 @@ func FeodoAlert(ctx Context, meta model.RegistrySource, ev parse.FeodoItem) *mod
 
 func StaticInterpolEntry(now time.Time) model.Alert {
 	return model.Alert{
-		AlertID:        "interpol-hub-static",
-		SourceID:       "interpol-hub",
-		Source:         model.SourceMetadata{SourceID: "interpol-hub", AuthorityName: "INTERPOL Notices Hub", Country: "France", CountryCode: "FR", Region: "International", AuthorityType: "police", BaseURL: "https://www.interpol.int"},
-		Title:          "INTERPOL Red & Yellow Notices - Browse Wanted & Missing Persons",
-		CanonicalURL:   "https://www.interpol.int/How-we-work/Notices/View-Red-Notices",
-		FirstSeen:      now.UTC().Format(time.RFC3339),
-		LastSeen:       now.UTC().Format(time.RFC3339),
-		Status:         "active",
-		Category:       "wanted_suspect",
-		Severity:       "critical",
-		RegionTag:      "INT",
-		Lat:            45.764,
-		Lng:            4.8357,
-		FreshnessHours: 1,
+		AlertID:            "interpol-hub-static",
+		SourceID:           "interpol-hub",
+		Source:             model.SourceMetadata{SourceID: "interpol-hub", AuthorityName: "INTERPOL Notices Hub", Country: "France", CountryCode: "FR", Region: "International", AuthorityType: "police", BaseURL: "https://www.interpol.int"},
+		Title:              "INTERPOL Red & Yellow Notices - Browse Wanted & Missing Persons",
+		CanonicalURL:       "https://www.interpol.int/How-we-work/Notices/View-Red-Notices",
+		FirstSeen:          now.UTC().Format(time.RFC3339),
+		LastSeen:           now.UTC().Format(time.RFC3339),
+		Status:             "active",
+		Category:           "wanted_suspect",
+		Severity:           "critical",
+		SignalLane:         model.SignalLaneAlarm,
+		RegionTag:          "INT",
+		Lat:                45.764,
+		Lng:                4.8357,
+		EventCountry:       "France",
+		EventCountryCode:   "FR",
+		EventGeoSource:     "capital",
+		EventGeoConfidence: eventGeoConfidence("capital"),
+		FreshnessHours:     1,
 		Reporting: model.ReportingMetadata{
 			Label: "Browse INTERPOL Notices",
 			URL:   "https://www.interpol.int/How-we-work/Notices/View-Red-Notices",
@@ -613,22 +634,32 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	}
 
 	lat, lng := jitterCC(baseLat, baseLng, meta.Source.SourceID+":"+link, geoSource, source.CountryCode)
+	eventCountry := source.Country
+	eventCountryCode := source.CountryCode
+	if eventCountryCode == "INT" {
+		eventCountry = ""
+		eventCountryCode = ""
+	}
 	return model.Alert{
-		AlertID:        meta.Source.SourceID + "-" + hashID(link),
-		SourceID:       meta.Source.SourceID,
-		Source:         source,
-		Title:          strings.TrimSpace(title),
-		CanonicalURL:   strings.TrimSpace(link),
-		FirstSeen:      publishedAt.UTC().Format(time.RFC3339),
-		LastSeen:       ctx.Now.UTC().Format(time.RFC3339),
-		Status:         "active",
-		Category:       meta.Category,
-		Severity:       inferSeverity(title, defaultSeverity(meta.Category)),
-		RegionTag:      meta.RegionTag,
-		Lat:            lat,
-		Lng:            lng,
-		FreshnessHours: hoursBetween(ctx.Now, publishedAt),
-		Reporting:      meta.Reporting,
+		AlertID:            meta.Source.SourceID + "-" + hashID(link),
+		SourceID:           meta.Source.SourceID,
+		Source:             source,
+		Title:              strings.TrimSpace(title),
+		CanonicalURL:       strings.TrimSpace(link),
+		FirstSeen:          publishedAt.UTC().Format(time.RFC3339),
+		LastSeen:           ctx.Now.UTC().Format(time.RFC3339),
+		Status:             "active",
+		Category:           meta.Category,
+		Severity:           inferSeverity(title, defaultSeverity(meta.Category)),
+		RegionTag:          meta.RegionTag,
+		Lat:                lat,
+		Lng:                lng,
+		EventCountry:       eventCountry,
+		EventCountryCode:   eventCountryCode,
+		EventGeoSource:     geoSource,
+		EventGeoConfidence: eventGeoConfidence(geoSource),
+		FreshnessHours:     hoursBetween(ctx.Now, publishedAt),
+		Reporting:          meta.Reporting,
 	}
 }
 
@@ -1190,6 +1221,57 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+// ApplySignalLanes computes signal lanes (alarm/intel/info) for alert routing.
+func ApplySignalLanes(cfg config.Config, alerts []model.Alert) []model.Alert {
+	for i := range alerts {
+		alerts[i].SignalLane = classifySignalLane(cfg, alerts[i])
+	}
+	return alerts
+}
+
+func classifySignalLane(cfg config.Config, alert model.Alert) model.SignalLane {
+	if strings.EqualFold(alert.Category, "informational") || strings.EqualFold(alert.Severity, "info") {
+		return model.SignalLaneInfo
+	}
+	score := 0.0
+	if alert.Triage != nil {
+		score = alert.Triage.RelevanceScore
+	}
+	alarmThreshold := clamp01(cfg.AlarmRelevanceThreshold)
+	if alarmThreshold == 0 {
+		alarmThreshold = 0.72
+	}
+	if score >= alarmThreshold || strings.EqualFold(alert.Severity, "critical") || strings.EqualFold(alert.Severity, "high") {
+		switch strings.ToLower(strings.TrimSpace(alert.Category)) {
+		case "missing_person", "wanted_suspect", "conflict_monitoring", "maritime_security",
+			"logistics_incident", "travel_warning", "health_emergency", "disease_outbreak",
+			"environmental_disaster", "emergency_management", "terrorism_tip", "public_safety":
+			return model.SignalLaneAlarm
+		}
+		if strings.EqualFold(alert.Source.AuthorityType, "police") || strings.EqualFold(alert.Source.AuthorityType, "national_security") {
+			return model.SignalLaneAlarm
+		}
+	}
+	return model.SignalLaneIntel
+}
+
+func eventGeoConfidence(source string) float64 {
+	switch source {
+	case "coordinates", "georss", "city-db":
+		return 0.95
+	case "nominatim":
+		return 0.85
+	case "llm":
+		return 0.65
+	case "capital", "country-text":
+		return 0.55
+	case "registry":
+		return 0.35
+	default:
+		return 0
+	}
 }
 
 func Deduplicate(alerts []model.Alert) ([]model.Alert, model.DuplicateAudit) {
