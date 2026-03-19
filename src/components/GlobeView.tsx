@@ -45,6 +45,24 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
+function dominantCountryLabel(alerts: Alert[]): string {
+  const counts = new Map<string, number>();
+  for (const alert of alerts) {
+    const label = (alert.event_country || alert.source.country || "").trim();
+    if (!label) continue;
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  let best = "";
+  let max = 0;
+  for (const [label, n] of counts.entries()) {
+    if (n > max) {
+      best = label;
+      max = n;
+    }
+  }
+  return best || "Unknown";
+}
+
 /* ── Props ────────────────────────────────────────────────────────── */
 
 interface Props {
@@ -446,7 +464,8 @@ export function GlobeView({
       const more = childAlerts.length > 16
         ? `<div style="font-size:10px;color:#94a3b8;padding-top:6px;">+${childAlerts.length - 16} more alerts</div>`
         : "";
-      const html = `<div style="min-width:280px;max-width:420px;"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">Area Alerts (${childAlerts.length})</div><div style="max-height:260px;overflow:auto;">${rows}${more}</div></div>`;
+      const countryLabel = escapeHtml(dominantCountryLabel(childAlerts));
+      const html = `<div style="min-width:280px;max-width:420px;"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">${countryLabel} AREA ALERTS (${childAlerts.length})</div><div style="max-height:260px;overflow:auto;">${rows}${more}</div></div>`;
 
       const popup = L.popup({
         autoClose: false,
