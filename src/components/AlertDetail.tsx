@@ -27,6 +27,12 @@ interface Props {
 
 export function AlertDetail({ alert, onClose }: Props) {
   if (!alert) return null;
+  const eventCountry = alert.event_country || alert.source.country;
+  const sourceCountry = alert.source.country;
+  const geoSource = alert.event_geo_source || "registry";
+  const geoConfidence = typeof alert.event_geo_confidence === "number" ? alert.event_geo_confidence : 0;
+  const lowGeoConfidence = geoConfidence < 0.6;
+
   const playbook =
     alert.category === "cyber_advisory"
       ? [
@@ -107,11 +113,20 @@ export function AlertDetail({ alert, onClose }: Props) {
           </div>
           <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
             <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">
-              Country
+              Event Country
             </div>
             <div className="flex items-center gap-1.5 text-sm">
               <MapPin size={12} className="text-siem-neutral" />
-              {alert.event_country || alert.source.country}
+              {eventCountry}
+            </div>
+          </div>
+          <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
+            <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">
+              Source Country
+            </div>
+            <div className="flex items-center gap-1.5 text-sm">
+              <MapPin size={12} className="text-siem-neutral" />
+              {sourceCountry}
             </div>
           </div>
           <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
@@ -119,6 +134,19 @@ export function AlertDetail({ alert, onClose }: Props) {
               Category
             </div>
             <div className="text-sm">{categoryLabels[alert.category]}</div>
+          </div>
+          <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
+            <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">
+              Geo Confidence
+            </div>
+            <div className="text-sm">
+              {Math.round(geoConfidence * 100)}% ({geoSource})
+            </div>
+            {lowGeoConfidence && (
+              <div className="mt-1 text-2xs text-amber-300 uppercase tracking-wider">
+                Source-country fallback
+              </div>
+            )}
           </div>
           <div className="bg-white/5 rounded-lg p-3 border border-siem-border">
             <div className="text-2xs uppercase tracking-wider text-siem-muted mb-1">

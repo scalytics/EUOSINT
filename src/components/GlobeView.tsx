@@ -60,6 +60,7 @@ export function GlobeView({
   visibleNowAlertIds,
   visibleHistoryAlertIds,
 }: Props) {
+  const HISTORY_CONFIDENCE_THRESHOLD = 0.6;
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
@@ -67,6 +68,7 @@ export function GlobeView({
   const overlayLayers = useRef<Map<OverlayId, L.LayerGroup>>(new Map());
   const [overlayDefs, setOverlayDefs] = useState<OverlayDef[]>([]);
   const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set());
+  const [hideLowConfidenceHistory, setHideLowConfidenceHistory] = useState(true);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
@@ -156,6 +158,14 @@ export function GlobeView({
     [historicalAlerts, regionFilter, visibleHistoryIdSet],
   );
 
+  const visibleHistoryAlertsRendered = useMemo(
+    () =>
+      hideLowConfidenceHistory
+        ? visibleHistoryAlerts.filter((a) => (a.event_geo_confidence ?? 0) >= HISTORY_CONFIDENCE_THRESHOLD)
+        : visibleHistoryAlerts,
+    [hideLowConfidenceHistory, visibleHistoryAlerts],
+  );
+
   /* ── Initialise Leaflet once ──────────────────────────────────── */
 
   useEffect(() => {
@@ -238,7 +248,7 @@ export function GlobeView({
     markerLookup.current.clear();
 
     const markers: L.CircleMarker[] = [];
-    for (const alert of visibleHistoryAlerts) {
+    for (const alert of visibleHistoryAlertsRendered) {
       // Skip alerts with no resolved location (0,0).
       if (alert.lat === 0 && alert.lng === 0) continue;
       const selected = alert.alert_id === selectedId;
@@ -286,7 +296,7 @@ export function GlobeView({
     }
 
     cluster.addLayers(markers);
-  }, [visibleNowAlerts, visibleHistoryAlerts, selectedId]);
+  }, [visibleNowAlerts, visibleHistoryAlertsRendered, selectedId]);
 
   /* ── Fly to region on filter change ───────────────────────────── */
 
@@ -303,7 +313,7 @@ export function GlobeView({
     lastRegionRef.current = regionFilter;
 
     // For country filters, fit map bounds to visible markers.
-    const focusAlerts = visibleNowAlerts.length > 0 ? visibleNowAlerts : visibleHistoryAlerts;
+    const focusAlerts = visibleNowAlerts.length > 0 ? visibleNowAlerts : visibleHistoryAlertsRendered;
     if (regionFilter.startsWith("country:") && focusAlerts.length > 0) {
       const lats = focusAlerts.map((a) => a.lat);
       const lngs = focusAlerts.map((a) => a.lng);
@@ -317,12 +327,12 @@ export function GlobeView({
 
     const vp = REGION_VIEWPORTS[regionFilter] ?? REGION_VIEWPORTS.Europe;
     map.flyTo(vp.center, vp.zoom, { duration: 0.8 });
-  }, [regionFilter, visibleNowAlerts, visibleHistoryAlerts]);
+  }, [regionFilter, visibleNowAlerts, visibleHistoryAlertsRendered]);
 
   /* ── Stats for sidebar ────────────────────────────────────────── */
 
   const topClusters = useMemo(() => {
-    const combinedVisibleAlerts = [...visibleNowAlerts, ...visibleHistoryAlerts];
+    const combinedVisibleAlerts = [...visibleNowAlerts, ...visibleHistoryAlertsRendered];
     const bins = new Map<string, { sourceId: string; title: string; count: number }>();
     for (const alert of combinedVisibleAlerts) {
       const key = alert.source.source_id;
@@ -334,7 +344,7 @@ export function GlobeView({
       }
     }
     return [...bins.values()].sort((a, b) => b.count - a.count).slice(0, 6);
-  }, [visibleNowAlerts, visibleHistoryAlerts]);
+  }, [visibleNowAlerts, visibleHistoryAlertsRendered]);
 
   const activitySpikes = useMemo(() => detectSpikes([...alerts, ...historicalAlerts]), [alerts, historicalAlerts]);
 
@@ -354,7 +364,7 @@ export function GlobeView({
                 : `${regionFilter} operating picture`}
           </div>
           <div className="mt-1 text-sm text-siem-muted">
-            {visibleNowAlerts.length + visibleHistoryAlerts.length} visible alerts across official feeds
+            {visibleNowAlerts.length + visibleHistoryAlertsRendered.length} visible alerts across official feeds
           </div>
         </div>
 
@@ -418,6 +428,31 @@ export function GlobeView({
                 </span>
               ))}
             </div>
+          </div>
+
+          <div className="absolute right-3 top-3 z-[1000] space-y-2">
+            <div className="rounded-lg border border-siem-border/80 bg-siem-panel/92 px-3 py-2 text-2xs text-siem-muted shadow-[0_10px_24px_rgba(0,0,0,0.24)] backdrop-blur-sm">
+              <div className="uppercase tracking-[0.14em]">Layers</div>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-siem-accent" />
+                <span>Now (solid)</span>
+              </div>
+              <div className="mt-0.5 flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full border border-siem-muted/80 bg-transparent" />
+                <span>History (faded)</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setHideLowConfidenceHistory((v) => !v)}
+              className={`rounded-lg border px-3 py-2 text-2xs uppercase tracking-[0.14em] shadow-[0_10px_24px_rgba(0,0,0,0.24)] backdrop-blur-sm transition-colors ${
+                hideLowConfidenceHistory
+                  ? "border-amber-500/45 bg-amber-500/12 text-amber-300"
+                  : "border-siem-border/80 bg-siem-panel/92 text-siem-muted"
+              }`}
+            >
+              {hideLowConfidenceHistory ? "Hide Low-Confidence History: On" : "Hide Low-Confidence History: Off"}
+            </button>
           </div>
         </div>
 

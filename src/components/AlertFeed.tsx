@@ -320,8 +320,18 @@ export function AlertFeed({
         <div className="mt-1.5 flex items-center gap-1.5 text-2xs">
           <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-siem-accent/10 text-siem-accent border border-siem-accent/20">
             <Globe size={9} />
-            {alert.source.region}
+            {alert.event_country || alert.source.country}
           </span>
+          {(alert.event_country || alert.source.country) !== alert.source.country && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded border border-siem-border text-siem-muted bg-white/5">
+              Source {alert.source.country}
+            </span>
+          )}
+          {(alert.event_geo_confidence ?? 0) < 0.6 && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10">
+              Low geo confidence
+            </span>
+          )}
           <span
             className={`inline-flex items-center px-1.5 py-0.5 rounded border ${categoryBadge[alert.category]}`}
             style={{ fontSize: "0.6rem" }}
