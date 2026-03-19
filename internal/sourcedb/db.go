@@ -115,6 +115,11 @@ func (db *DB) Init(ctx context.Context) error {
 		`ALTER TABLE sources ADD COLUMN rejection_reason TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE sources ADD COLUMN is_mirror INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE sources ADD COLUMN preferred_source_rank INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE alerts ADD COLUMN signal_lane TEXT NOT NULL DEFAULT 'intel'`,
+		`ALTER TABLE alerts ADD COLUMN event_country TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE alerts ADD COLUMN event_country_code TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE alerts ADD COLUMN event_geo_source TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE alerts ADD COLUMN event_geo_confidence REAL NOT NULL DEFAULT 0`,
 	} {
 		if _, err := db.sql.ExecContext(ctx, stmt); err != nil && !isDuplicateColumnError(err) {
 			return fmt.Errorf("migrate source DB schema: %w", err)
@@ -447,20 +452,25 @@ func (db *DB) LoadAlerts(ctx context.Context) ([]model.Alert, error) {
 		return nil, err
 	}
 	rows, err := db.sql.QueryContext(ctx, `
-SELECT
-  alert_id,
+	SELECT
+	  alert_id,
   source_id,
   status,
   first_seen,
   last_seen,
   title,
   canonical_url,
-  category,
-  severity,
-  region_tag,
-  lat,
-  lng,
-  freshness_hours,
+	  category,
+	  severity,
+	  signal_lane,
+	  region_tag,
+	  lat,
+	  lng,
+	  event_country,
+	  event_country_code,
+	  event_geo_source,
+	  event_geo_confidence,
+	  freshness_hours,
   source_json,
   reporting_json,
   triage_json
@@ -487,9 +497,14 @@ ORDER BY last_seen DESC`)
 			&alert.CanonicalURL,
 			&alert.Category,
 			&alert.Severity,
+			&alert.SignalLane,
 			&alert.RegionTag,
 			&alert.Lat,
 			&alert.Lng,
+			&alert.EventCountry,
+			&alert.EventCountryCode,
+			&alert.EventGeoSource,
+			&alert.EventGeoConfidence,
 			&alert.FreshnessHours,
 			&sourceJSON,
 			&reportingJSON,
@@ -512,6 +527,7 @@ ORDER BY last_seen DESC`)
 			}
 			alert.Triage = &triage
 		}
+		alert = hydrateDerivedFields(alert)
 		out = append(out, alert)
 	}
 	if err := rows.Err(); err != nil {
@@ -767,28 +783,34 @@ func (db *DB) SaveAlerts(ctx context.Context, alerts []model.Alert) error {
 		reportingJSON, _ := json.Marshal(alert.Reporting)
 		triageJSON, _ := json.Marshal(alert.Triage)
 		if _, err := tx.ExecContext(ctx, `
-INSERT INTO alerts (
-  alert_id, source_id, status, first_seen, last_seen, title, canonical_url,
-  category, severity, region_tag, lat, lng, freshness_hours, source_json,
-  reporting_json, triage_json
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-ON CONFLICT(alert_id) DO UPDATE SET
-  source_id = excluded.source_id,
-  status = excluded.status,
-  first_seen = excluded.first_seen,
-  last_seen = excluded.last_seen,
-  title = excluded.title,
-  canonical_url = excluded.canonical_url,
-  category = excluded.category,
-  severity = excluded.severity,
-  region_tag = excluded.region_tag,
-  lat = excluded.lat,
-  lng = excluded.lng,
-  freshness_hours = excluded.freshness_hours,
-  source_json = excluded.source_json,
-  reporting_json = excluded.reporting_json,
-  triage_json = excluded.triage_json
-`, alert.AlertID, alert.SourceID, alert.Status, alert.FirstSeen, alert.LastSeen, alert.Title, alert.CanonicalURL, alert.Category, alert.Severity, alert.RegionTag, alert.Lat, alert.Lng, alert.FreshnessHours, string(sourceJSON), string(reportingJSON), string(triageJSON)); err != nil {
+	INSERT INTO alerts (
+	  alert_id, source_id, status, first_seen, last_seen, title, canonical_url,
+	  category, severity, signal_lane, region_tag, lat, lng, event_country, event_country_code,
+	  event_geo_source, event_geo_confidence, freshness_hours, source_json,
+	  reporting_json, triage_json
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	ON CONFLICT(alert_id) DO UPDATE SET
+	  source_id = excluded.source_id,
+	  status = excluded.status,
+	  first_seen = excluded.first_seen,
+	  last_seen = excluded.last_seen,
+	  title = excluded.title,
+	  canonical_url = excluded.canonical_url,
+	  category = excluded.category,
+	  severity = excluded.severity,
+	  signal_lane = excluded.signal_lane,
+	  region_tag = excluded.region_tag,
+	  lat = excluded.lat,
+	  lng = excluded.lng,
+	  event_country = excluded.event_country,
+	  event_country_code = excluded.event_country_code,
+	  event_geo_source = excluded.event_geo_source,
+	  event_geo_confidence = excluded.event_geo_confidence,
+	  freshness_hours = excluded.freshness_hours,
+	  source_json = excluded.source_json,
+	  reporting_json = excluded.reporting_json,
+	  triage_json = excluded.triage_json
+	`, alert.AlertID, alert.SourceID, alert.Status, alert.FirstSeen, alert.LastSeen, alert.Title, alert.CanonicalURL, alert.Category, alert.Severity, alert.SignalLane, alert.RegionTag, alert.Lat, alert.Lng, alert.EventCountry, alert.EventCountryCode, alert.EventGeoSource, alert.EventGeoConfidence, alert.FreshnessHours, string(sourceJSON), string(reportingJSON), string(triageJSON)); err != nil {
 			return fmt.Errorf("upsert alert %s: %w", alert.AlertID, err)
 		}
 	}
@@ -943,7 +965,8 @@ var corpusQueryStopwords = map[string]bool{
 
 // SearchAlerts performs full-text search against the alerts FTS index.
 // The query supports FTS5 syntax: bare words, "quoted phrases", prefix*, AND/OR/NOT.
-// Results are ordered by BM25 relevance. Limit 0 means default (100).
+// Results are ranked using BM25 plus recency, source trust, and triage relevance.
+// Limit 0 means default (100).
 func (db *DB) SearchAlerts(ctx context.Context, query string, category string, region string, status string, limit int) ([]model.Alert, error) {
 	if limit <= 0 {
 		limit = 100
@@ -977,7 +1000,8 @@ func (db *DB) SearchAlerts(ctx context.Context, query string, category string, r
 		args = append(args, limit)
 		rows, err = db.sql.QueryContext(ctx, `
 SELECT a.alert_id, a.source_id, a.status, a.first_seen, a.last_seen, a.title,
-  a.canonical_url, a.category, a.severity, a.region_tag, a.lat, a.lng,
+  a.canonical_url, a.category, a.severity, a.signal_lane, a.region_tag, a.lat, a.lng,
+  a.event_country, a.event_country_code, a.event_geo_source, a.event_geo_confidence,
   a.freshness_hours, a.source_json, a.reporting_json, a.triage_json,
   bm25(alerts_fts, 0, 10.0, 0, 3.0, 0, 2.0, 2.0, 2.0, 1.0) AS rank
 FROM alerts_fts
@@ -1004,7 +1028,8 @@ LIMIT ?`, args...)
 		args = append(args, limit)
 		rows, err = db.sql.QueryContext(ctx, `
 SELECT a.alert_id, a.source_id, a.status, a.first_seen, a.last_seen, a.title,
-  a.canonical_url, a.category, a.severity, a.region_tag, a.lat, a.lng,
+  a.canonical_url, a.category, a.severity, a.signal_lane, a.region_tag, a.lat, a.lng,
+  a.event_country, a.event_country_code, a.event_geo_source, a.event_geo_confidence,
   a.freshness_hours, a.source_json, a.reporting_json, a.triage_json,
   0 AS rank
 FROM alerts a
@@ -1017,7 +1042,12 @@ LIMIT ?`, args...)
 	}
 	defer rows.Close()
 
-	var results []model.Alert
+	type scoredAlert struct {
+		alert model.Alert
+		rank  float64
+		score float64
+	}
+	scored := make([]scoredAlert, 0, limit)
 	for rows.Next() {
 		var (
 			a          model.Alert
@@ -1027,8 +1057,9 @@ LIMIT ?`, args...)
 			rank       float64
 		)
 		if err := rows.Scan(&a.AlertID, &a.SourceID, &a.Status, &a.FirstSeen, &a.LastSeen,
-			&a.Title, &a.CanonicalURL, &a.Category, &a.Severity, &a.RegionTag,
-			&a.Lat, &a.Lng, &a.FreshnessHours, &sourceJSON, &reportJSON, &triageJSON, &rank); err != nil {
+			&a.Title, &a.CanonicalURL, &a.Category, &a.Severity, &a.SignalLane, &a.RegionTag,
+			&a.Lat, &a.Lng, &a.EventCountry, &a.EventCountryCode, &a.EventGeoSource, &a.EventGeoConfidence,
+			&a.FreshnessHours, &sourceJSON, &reportJSON, &triageJSON, &rank); err != nil {
 			return nil, fmt.Errorf("scan search result: %w", err)
 		}
 		_ = json.Unmarshal([]byte(sourceJSON), &a.Source)
@@ -1039,9 +1070,147 @@ LIMIT ?`, args...)
 				a.Triage = &t
 			}
 		}
-		results = append(results, a)
+		a = hydrateDerivedFields(a)
+		scored = append(scored, scoredAlert{alert: a, rank: rank})
 	}
-	return results, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(scored) == 0 {
+		return nil, nil
+	}
+
+	rankMin := scored[0].rank
+	rankMax := scored[0].rank
+	for _, item := range scored[1:] {
+		if item.rank < rankMin {
+			rankMin = item.rank
+		}
+		if item.rank > rankMax {
+			rankMax = item.rank
+		}
+	}
+
+	hasQuery := strings.TrimSpace(query) != ""
+	now := time.Now().UTC()
+	for i := range scored {
+		bm25 := bm25Score(scored[i].rank, rankMin, rankMax, hasQuery)
+		recency := recencyScore(scored[i].alert.LastSeen, now)
+		trust := trustScore(scored[i].alert)
+		relevance := 0.5
+		if scored[i].alert.Triage != nil {
+			relevance = clamp01(scored[i].alert.Triage.RelevanceScore)
+		}
+		if hasQuery {
+			scored[i].score = 0.45*bm25 + 0.25*recency + 0.2*trust + 0.1*relevance
+		} else {
+			scored[i].score = 0.45*recency + 0.35*trust + 0.2*relevance
+		}
+	}
+
+	sort.SliceStable(scored, func(i, j int) bool {
+		if scored[i].score != scored[j].score {
+			return scored[i].score > scored[j].score
+		}
+		if scored[i].alert.LastSeen != scored[j].alert.LastSeen {
+			return scored[i].alert.LastSeen > scored[j].alert.LastSeen
+		}
+		return scored[i].alert.AlertID < scored[j].alert.AlertID
+	})
+
+	results := make([]model.Alert, 0, len(scored))
+	for _, item := range scored {
+		results = append(results, item.alert)
+	}
+	return results, nil
+}
+
+func bm25Score(rank, minRank, maxRank float64, hasQuery bool) float64 {
+	if !hasQuery {
+		return 0.5
+	}
+	if maxRank <= minRank {
+		return 1
+	}
+	return clamp01((maxRank - rank) / (maxRank - minRank))
+}
+
+func recencyScore(lastSeen string, now time.Time) float64 {
+	t, err := time.Parse(time.RFC3339, strings.TrimSpace(lastSeen))
+	if err != nil {
+		return 0.5
+	}
+	ageHours := now.Sub(t).Hours()
+	if ageHours < 0 {
+		ageHours = 0
+	}
+	return clamp01(math.Exp(-ageHours / 72.0))
+}
+
+func trustScore(a model.Alert) float64 {
+	score := 0.45 + 0.35*clamp01(a.Source.OperationalRelevance)
+	if a.Source.IsCurated {
+		score += 0.1
+	}
+	if a.Source.IsHighValue {
+		score += 0.1
+	}
+	switch strings.ToLower(strings.TrimSpace(a.Source.AuthorityType)) {
+	case "police", "national_security", "cert", "intelligence":
+		score += 0.05
+	}
+	return clamp01(score)
+}
+
+func clamp01(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
+}
+
+func hydrateDerivedFields(a model.Alert) model.Alert {
+	if strings.TrimSpace(a.EventCountryCode) == "" {
+		a.EventCountryCode = strings.TrimSpace(a.Source.CountryCode)
+	}
+	if strings.TrimSpace(a.EventCountry) == "" {
+		a.EventCountry = strings.TrimSpace(a.Source.Country)
+	}
+	if strings.TrimSpace(a.EventGeoSource) == "" {
+		if a.Lat != 0 || a.Lng != 0 {
+			a.EventGeoSource = "registry"
+			a.EventGeoConfidence = 0.35
+		}
+	}
+	if strings.TrimSpace(string(a.SignalLane)) == "" {
+		a.SignalLane = inferSignalLane(a)
+	}
+	return a
+}
+
+func inferSignalLane(a model.Alert) model.SignalLane {
+	if strings.EqualFold(a.Category, "informational") || strings.EqualFold(a.Severity, "info") {
+		return model.SignalLaneInfo
+	}
+	score := 0.0
+	if a.Triage != nil {
+		score = a.Triage.RelevanceScore
+	}
+	if score >= 0.72 || strings.EqualFold(a.Severity, "critical") || strings.EqualFold(a.Severity, "high") {
+		switch strings.ToLower(strings.TrimSpace(a.Category)) {
+		case "missing_person", "wanted_suspect", "conflict_monitoring", "maritime_security",
+			"logistics_incident", "travel_warning", "health_emergency", "disease_outbreak",
+			"environmental_disaster", "emergency_management", "terrorism_tip", "public_safety":
+			return model.SignalLaneAlarm
+		}
+		if strings.EqualFold(a.Source.AuthorityType, "police") || strings.EqualFold(a.Source.AuthorityType, "national_security") {
+			return model.SignalLaneAlarm
+		}
+	}
+	return model.SignalLaneIntel
 }
 
 func (db *DB) DeactivateSources(ctx context.Context, reasons map[string]string) error {

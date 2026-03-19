@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/scalytics/euosint/internal/collector/model"
 	"github.com/scalytics/euosint/internal/collector/trends"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
@@ -67,6 +68,9 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	category := strings.TrimSpace(r.URL.Query().Get("category"))
 	region := strings.TrimSpace(r.URL.Query().Get("region"))
 	status := strings.TrimSpace(r.URL.Query().Get("status"))
+	lane := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("lane")))
+	includeFiltered := parseBoolQuery(r, "include_filtered")
+	includeRemoved := parseBoolQuery(r, "include_removed")
 	limitStr := strings.TrimSpace(r.URL.Query().Get("limit"))
 
 	limit := 100
@@ -79,6 +83,10 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	if q == "" && category == "" && region == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "q, category, or region parameter required"})
 		return
+	}
+	if status == "" && !includeFiltered && !includeRemoved {
+		// Intelligence-default view: active/current only.
+		status = "active"
 	}
 
 	// Sanitize FTS query: if user passes bare text without operators, wrap words for prefix matching.
@@ -104,11 +112,59 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	results = filterStatuses(results, status, includeFiltered, includeRemoved)
+	results = filterLane(results, lane)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"query":   q,
 		"count":   len(results),
 		"results": results,
 	})
+}
+
+func parseBoolQuery(r *http.Request, key string) bool {
+	v := strings.TrimSpace(strings.ToLower(r.URL.Query().Get(key)))
+	return v == "1" || v == "true" || v == "yes"
+}
+
+func filterStatuses(items []model.Alert, explicitStatus string, includeFiltered bool, includeRemoved bool) []model.Alert {
+	if explicitStatus != "" {
+		return items
+	}
+	out := make([]model.Alert, 0, len(items))
+	for _, a := range items {
+		switch strings.ToLower(strings.TrimSpace(a.Status)) {
+		case "filtered":
+			if includeFiltered {
+				out = append(out, a)
+			}
+		case "removed":
+			if includeRemoved {
+				out = append(out, a)
+			}
+		default:
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
+func filterLane(items []model.Alert, lane string) []model.Alert {
+	lane = strings.ToLower(strings.TrimSpace(lane))
+	if lane == "" || lane == "all" {
+		return items
+	}
+	out := make([]model.Alert, 0, len(items))
+	for _, a := range items {
+		switch lane {
+		case "alarm", "intel", "info":
+			if string(a.SignalLane) == lane {
+				out = append(out, a)
+			}
+		default:
+			return items
+		}
+	}
+	return out
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {

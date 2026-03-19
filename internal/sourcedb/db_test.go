@@ -491,3 +491,57 @@ func TestCorpusScoresDistinguishesDistinctiveFromCommon(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadAlertsHydratesEventGeoAndSignalLaneFallbacks(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "sources.db")
+	db, err := Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	alerts := []model.Alert{
+		{
+			AlertID:      "fallback-1",
+			SourceID:     "source-1",
+			Status:       "active",
+			Title:        "Wanted suspect bulletin",
+			CanonicalURL: "https://example.test/wanted",
+			Category:     "wanted_suspect",
+			Severity:     "high",
+			Lat:          52.52,
+			Lng:          13.40,
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "source-1",
+				AuthorityName: "Federal Police",
+				Country:       "Germany",
+				CountryCode:   "DE",
+				AuthorityType: "police",
+			},
+		},
+	}
+	if err := db.SaveAlerts(context.Background(), alerts); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, err := db.LoadAlerts(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(loaded) != 1 {
+		t.Fatalf("expected 1 alert, got %d", len(loaded))
+	}
+	if loaded[0].EventCountryCode != "DE" || loaded[0].EventCountry != "Germany" {
+		t.Fatalf("expected event country fallback to source country, got %q/%q", loaded[0].EventCountryCode, loaded[0].EventCountry)
+	}
+	if loaded[0].EventGeoSource != "registry" || loaded[0].EventGeoConfidence != 0.35 {
+		t.Fatalf("expected event geo fallback metadata, got source=%q confidence=%v", loaded[0].EventGeoSource, loaded[0].EventGeoConfidence)
+	}
+	if loaded[0].SignalLane != model.SignalLaneAlarm {
+		t.Fatalf("expected inferred alarm lane, got %q", loaded[0].SignalLane)
+	}
+}

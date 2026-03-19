@@ -166,6 +166,234 @@ func TestSearchEmptyQueryReturns400(t *testing.T) {
 	}
 }
 
+func TestSearchDefaultsToActiveStatus(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	alerts := []model.Alert{
+		{
+			AlertID:      "active-1",
+			SourceID:     "src",
+			Status:       "active",
+			Title:        "Active cyber alert",
+			CanonicalURL: "https://example.test/active",
+			Category:     "cyber_advisory",
+			Severity:     "high",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "src",
+				AuthorityName: "Source",
+				Country:       "Germany",
+				CountryCode:   "DE",
+			},
+		},
+		{
+			AlertID:      "filtered-1",
+			SourceID:     "src",
+			Status:       "filtered",
+			Title:        "Filtered cyber alert",
+			CanonicalURL: "https://example.test/filtered",
+			Category:     "cyber_advisory",
+			Severity:     "low",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "src",
+				AuthorityName: "Source",
+				Country:       "Germany",
+				CountryCode:   "DE",
+			},
+		},
+		{
+			AlertID:      "removed-1",
+			SourceID:     "src",
+			Status:       "removed",
+			Title:        "Removed cyber alert",
+			CanonicalURL: "https://example.test/removed",
+			Category:     "cyber_advisory",
+			Severity:     "medium",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "src",
+				AuthorityName: "Source",
+				Country:       "Germany",
+				CountryCode:   "DE",
+			},
+		},
+	}
+	if err := db.SaveAlerts(context.Background(), alerts); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := New(db, ":0", os.Stderr)
+	handler := srv.srv.Handler
+	req := httptest.NewRequest("GET", "/api/search?category=cyber_advisory", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Results []model.Alert `json:"results"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.Results) != 1 || resp.Results[0].AlertID != "active-1" {
+		t.Fatalf("expected only active alert by default, got %#v", resp.Results)
+	}
+}
+
+func TestSearchIncludeFilteredAndRemovedOptIn(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	alerts := []model.Alert{
+		{
+			AlertID:      "active-1",
+			SourceID:     "src",
+			Status:       "active",
+			Title:        "Active alert",
+			CanonicalURL: "https://example.test/active",
+			Category:     "cyber_advisory",
+			Severity:     "high",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "src",
+				AuthorityName: "Source",
+				CountryCode:   "DE",
+			},
+		},
+		{
+			AlertID:      "filtered-1",
+			SourceID:     "src",
+			Status:       "filtered",
+			Title:        "Filtered alert",
+			CanonicalURL: "https://example.test/filtered",
+			Category:     "cyber_advisory",
+			Severity:     "low",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "src",
+				AuthorityName: "Source",
+				CountryCode:   "DE",
+			},
+		},
+		{
+			AlertID:      "removed-1",
+			SourceID:     "src",
+			Status:       "removed",
+			Title:        "Removed alert",
+			CanonicalURL: "https://example.test/removed",
+			Category:     "cyber_advisory",
+			Severity:     "low",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "src",
+				AuthorityName: "Source",
+				CountryCode:   "DE",
+			},
+		},
+	}
+	if err := db.SaveAlerts(context.Background(), alerts); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := New(db, ":0", os.Stderr)
+	handler := srv.srv.Handler
+	req := httptest.NewRequest("GET", "/api/search?category=cyber_advisory&include_filtered=true&include_removed=true", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Results []model.Alert `json:"results"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.Results) != 3 {
+		t.Fatalf("expected active + filtered + removed, got %d", len(resp.Results))
+	}
+}
+
+func TestSearchLaneFilter(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	alerts := []model.Alert{
+		{
+			AlertID:      "alarm-1",
+			SourceID:     "src",
+			Status:       "active",
+			Title:        "Alarm lane alert",
+			CanonicalURL: "https://example.test/alarm",
+			Category:     "missing_person",
+			Severity:     "critical",
+			SignalLane:   model.SignalLaneAlarm,
+			RegionTag:    "EU",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "src",
+				AuthorityName: "Source",
+				CountryCode:   "DE",
+			},
+		},
+		{
+			AlertID:      "intel-1",
+			SourceID:     "src",
+			Status:       "active",
+			Title:        "Intel lane alert",
+			CanonicalURL: "https://example.test/intel",
+			Category:     "cyber_advisory",
+			Severity:     "medium",
+			SignalLane:   model.SignalLaneIntel,
+			RegionTag:    "EU",
+			FirstSeen:    now,
+			LastSeen:     now,
+			Source: model.SourceMetadata{
+				SourceID:      "src",
+				AuthorityName: "Source",
+				CountryCode:   "DE",
+			},
+		},
+	}
+	if err := db.SaveAlerts(context.Background(), alerts); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := New(db, ":0", os.Stderr)
+	handler := srv.srv.Handler
+	req := httptest.NewRequest("GET", "/api/search?region=EU&status=active&lane=intel", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Results []model.Alert `json:"results"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.Results) != 1 || resp.Results[0].AlertID != "intel-1" {
+		t.Fatalf("expected only intel lane results, got %#v", resp.Results)
+	}
+}
+
 func TestRateLimitReturns429(t *testing.T) {
 	db := testDB(t)
 	defer db.Close()
