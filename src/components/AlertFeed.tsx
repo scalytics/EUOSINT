@@ -83,16 +83,16 @@ export function AlertFeed({
     return categoryMatch && severityMatch;
   });
 
-  // Separate briefing (info severity) from actionable alerts.
+  // Separate briefing lane from actionable lanes.
   const actionableAlerts = useMemo(
-    () => facetFiltered.filter((a) => a.severity !== "info"),
+    () => facetFiltered.filter((a) => (a.signal_lane ?? (a.severity === "info" ? "info" : "intel")) !== "info"),
     [facetFiltered],
   );
 
   const briefingAlerts = useMemo(
     () =>
       facetFiltered
-        .filter((a) => a.severity === "info")
+        .filter((a) => (a.signal_lane ?? (a.severity === "info" ? "info" : "intel")) === "info")
         .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime()),
     [facetFiltered],
   );
@@ -149,7 +149,10 @@ export function AlertFeed({
 
   // Keep globe visibility aligned — only live alerts show pins.
   const visibleAlertIds = useMemo(
-    () => liveAlerts.filter((a) => a.severity !== "info").map((a) => a.alert_id),
+    () =>
+      liveAlerts
+        .filter((a) => (a.signal_lane ?? (a.severity === "info" ? "info" : "intel")) !== "info")
+        .map((a) => a.alert_id),
     [liveAlerts],
   );
 

@@ -6,6 +6,7 @@
 
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
 export type AlertStatus = "active" | "updated" | "removed" | "filtered";
+export type SignalLane = "alarm" | "intel" | "info";
 export type AlertCategory =
   | "informational"
   | "missing_person"
@@ -60,9 +61,14 @@ export interface Alert {
   status: AlertStatus;
   category: AlertCategory;
   severity: Severity;
+  signal_lane?: SignalLane;
   region_tag: string;
   lat: number;
   lng: number;
+  event_country?: string;
+  event_country_code?: string;
+  event_geo_source?: string;
+  event_geo_confidence?: number;
   freshness_hours: number;
   reporting?: ReportingInfo;
   triage?: AlertTriage;
