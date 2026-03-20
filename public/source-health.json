@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-03-20T09:41:14Z",
+  "generated_at": "2026-03-20T09:50:49Z",
   "critical_source_prefixes": [
     "cisa"
   ],
   "fail_on_critical_source_gap": false,
   "total_sources": 346,
-  "sources_ok": 92,
-  "sources_error": 83,
+  "sources_ok": 135,
+  "sources_error": 115,
   "duplicate_audit": {
     "suppressed_variant_duplicates": 1,
-    "repeated_title_groups_in_active": 6,
+    "repeated_title_groups_in_active": 8,
     "repeated_title_samples": [
       {
         "title": "green forest fire notification in china",
@@ -24,15 +24,23 @@
         "count": 3
       },
       {
+        "title": "hra akstur h fu borgarsv inu",
+        "count": 3
+      },
+      {
         "title": "google chrome mehrere schwachstellen",
         "count": 3
       },
       {
-        "title": "update hoch linux kernel mehrere schwachstellen erm glichen denial of service",
+        "title": "justice on the move mobile courts offer hope for communities in south sudan",
         "count": 2
       },
       {
         "title": "update mittel golang go mehrere schwachstellen",
+        "count": 2
+      },
+      {
+        "title": "update hoch linux kernel mehrere schwachstellen erm glichen denial of service",
         "count": 2
       }
     ]
@@ -2106,6 +2114,879 @@
       "finished_at": "2026-03-20T09:41:14Z"
     },
     {
+      "source_id": "pnp-ph",
+      "authority_name": "PNP Philippines",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.pnp.gov.ph/rss",
+      "error": "fetch https://www.pnp.gov.ph/category/press-release/feed/: status 403",
+      "error_class": "blocked",
+      "discovery_action": "retry",
+      "started_at": "2026-03-20T09:41:14Z",
+      "finished_at": "2026-03-20T09:41:15Z"
+    },
+    {
+      "source_id": "nz-police-alerts",
+      "authority_name": "NZ Police",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://www.police.govt.nz/rss/alerts",
+      "started_at": "2026-03-20T09:40:08Z",
+      "finished_at": "2026-03-20T09:41:17Z"
+    },
+    {
+      "source_id": "gnews-disaster-eu",
+      "authority_name": "Google News — Natural Disasters EU",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://news.google.com/rss/search?q=%22earthquake%22+OR+%22tsunami%22+OR+%22flood%22+OR+%22wildfire%22+OR+%22volcanic+eruption%22+Europe\u0026hl=en\u0026gl=US\u0026ceid=US:en",
+      "started_at": "2026-03-20T09:34:59Z",
+      "finished_at": "2026-03-20T09:41:26Z"
+    },
+    {
+      "source_id": "policia-bo",
+      "authority_name": "Policía Boliviana",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.policia.bo/feed/",
+      "error": "fetch https://www.policia.bo/category/noticias/feed/: status 500",
+      "error_class": "transient",
+      "discovery_action": "retry",
+      "started_at": "2026-03-20T09:41:15Z",
+      "finished_at": "2026-03-20T09:41:37Z"
+    },
+    {
+      "source_id": "ncmec",
+      "authority_name": "NCMEC",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 5,
+      "feed_url": "https://api.missingkids.org/missingkids/servlet/XmlServlet?LanguageCountry=en_US\u0026act=rss\u0026orgPrefix=NCMC",
+      "started_at": "2026-03-20T09:39:27Z",
+      "finished_at": "2026-03-20T09:41:58Z"
+    },
+    {
+      "source_id": "poliisi-fi",
+      "authority_name": "Finnish Police",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://poliisi.fi/en/rss/news",
+      "error": "fetch https://poliisi.fi/rss/uutiset: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:41:58Z",
+      "finished_at": "2026-03-20T09:41:59Z"
+    },
+    {
+      "source_id": "polisen-se",
+      "authority_name": "Polisen Sweden",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://polisen.se/aktuellt/rss/hela-landet/",
+      "error": "fetch https://polisen.se/aktuellt/rss/hela-landet/: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:41:59Z",
+      "finished_at": "2026-03-20T09:42:00Z"
+    },
+    {
+      "source_id": "politi-dk",
+      "authority_name": "Danish Police",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://politi.dk/rss",
+      "error": "fetch https://politi.dk/nyheder/rss: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:42:00Z",
+      "finished_at": "2026-03-20T09:42:01Z"
+    },
+    {
+      "source_id": "politiet-no",
+      "authority_name": "Politiet Norway",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.politiet.no/rss/",
+      "started_at": "2026-03-20T09:42:01Z",
+      "finished_at": "2026-03-20T09:42:01Z"
+    },
+    {
+      "source_id": "promed-alerts",
+      "authority_name": "ProMED Alerts",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://promedmail.org/feed/",
+      "error": "fetch https://promedmail.org/feed/: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:42:01Z",
+      "finished_at": "2026-03-20T09:42:02Z"
+    },
+    {
+      "source_id": "policia-ec",
+      "authority_name": "Policía Nacional Ecuador",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 2,
+      "feed_url": "https://www.policia.gob.ec/feed/",
+      "started_at": "2026-03-20T09:41:26Z",
+      "finished_at": "2026-03-20T09:42:29Z"
+    },
+    {
+      "source_id": "iaea-news",
+      "authority_name": "IAEA Nuclear News",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 20,
+      "feed_url": "https://www.iaea.org/feeds/news",
+      "started_at": "2026-03-20T09:35:25Z",
+      "finished_at": "2026-03-20T09:42:40Z"
+    },
+    {
+      "source_id": "policia-py",
+      "authority_name": "Policía Nacional Paraguay",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 5,
+      "feed_url": "https://www.policianacional.gov.py/feed/",
+      "started_at": "2026-03-20T09:41:37Z",
+      "finished_at": "2026-03-20T09:43:01Z"
+    },
+    {
+      "source_id": "rcmp-ca",
+      "authority_name": "RCMP Canada",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.rcmp-grc.gc.ca/en/news/rss",
+      "started_at": "2026-03-20T09:43:01Z",
+      "finished_at": "2026-03-20T09:43:02Z"
+    },
+    {
+      "source_id": "pt-cncs",
+      "authority_name": "CNCS (CERT Portugal)",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.cncs.gov.pt/pt/feed/",
+      "error": "fetch https://www.cncs.gov.pt/pt/feed/: Get \"https://www.cncs.gov.pt/pt/feed/\": context deadline exceeded",
+      "error_class": "transient",
+      "discovery_action": "retry",
+      "started_at": "2026-03-20T09:42:02Z",
+      "finished_at": "2026-03-20T09:43:07Z"
+    },
+    {
+      "source_id": "qa-ncsa",
+      "authority_name": "Qatar NCSA",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.ncsa.gov.qa/en/rss",
+      "error": "fetch https://www.ncsa.gov.qa/en/rss: Get \"https://www.ncsa.gov.qa/en/rss\": net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)",
+      "error_class": "timeout",
+      "discovery_action": "retry",
+      "started_at": "2026-03-20T09:42:29Z",
+      "finished_at": "2026-03-20T09:43:34Z"
+    },
+    {
+      "source_id": "rs-mup",
+      "authority_name": "Serbian Interior Ministry",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.mup.gov.rs/wps/rss",
+      "error": "fetch https://www.mup.gov.rs/wps/rss: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:43:34Z",
+      "finished_at": "2026-03-20T09:43:35Z"
+    },
+    {
+      "source_id": "ru-gov-cert",
+      "authority_name": "GOV-CERT Russia",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.gov-cert.ru/rss",
+      "error": "fetch https://www.gov-cert.ru/rss: Get \"https://www.gov-cert.ru/rss\": tls: failed to verify certificate: x509: certificate is valid for *.gossopka.ru, gossopka.ru, not www.gov-cert.ru",
+      "error_class": "transient",
+      "discovery_action": "retry",
+      "started_at": "2026-03-20T09:43:35Z",
+      "finished_at": "2026-03-20T09:43:39Z"
+    },
+    {
+      "source_id": "msf-news",
+      "authority_name": "Médecins Sans Frontières",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://www.msf.org/rss/all",
+      "started_at": "2026-03-20T09:39:08Z",
+      "finished_at": "2026-03-20T09:43:39Z"
+    },
+    {
+      "source_id": "rw-police",
+      "authority_name": "Rwanda National Police",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.police.gov.rw/rss/",
+      "error": "fetch https://www.police.gov.rw/rss/: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:43:39Z",
+      "finished_at": "2026-03-20T09:43:41Z"
+    },
+    {
+      "source_id": "sa-cert",
+      "authority_name": "Saudi CERT (NCA)",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://cert.gov.sa/en/rss/",
+      "started_at": "2026-03-20T09:43:41Z",
+      "finished_at": "2026-03-20T09:43:44Z"
+    },
+    {
+      "source_id": "sans-isc",
+      "authority_name": "SANS Internet Storm Center",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://isc.sans.edu/rssfeed.xml",
+      "started_at": "2026-03-20T09:43:44Z",
+      "finished_at": "2026-03-20T09:43:45Z"
+    },
+    {
+      "source_id": "sapo-news",
+      "authority_name": "SÄPO (Swedish Security Service)",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.sakerhetspolisen.se/rss/nyheter.xml",
+      "error": "fetch https://www.sakerhetspolisen.se/rss/nyheter.xml: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:43:45Z",
+      "finished_at": "2026-03-20T09:43:45Z"
+    },
+    {
+      "source_id": "saps-za",
+      "authority_name": "SAPS South Africa",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.saps.gov.za/newsroom/rss.php",
+      "error": "fetch https://www.saps.gov.za/newsroom/rss.php: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:43:45Z",
+      "finished_at": "2026-03-20T09:43:46Z"
+    },
+    {
+      "source_id": "se-ud-travel",
+      "authority_name": "Sweden MFA Travel Advice",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.government.se/rss/travel-advisories/",
+      "error": "fetch https://www.government.se/rss/travel-advisories/: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:43:46Z",
+      "finished_at": "2026-03-20T09:43:47Z"
+    },
+    {
+      "source_id": "sec-alerts",
+      "authority_name": "SEC Investor Alerts",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.sec.gov/rss/investor_alerts.xml",
+      "error": "fetch https://www.sec.gov/rss/investor_alerts.xml: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:43:47Z",
+      "finished_at": "2026-03-20T09:43:48Z"
+    },
+    {
+      "source_id": "sec-enforcement",
+      "authority_name": "SEC Enforcement Actions",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.sec.gov/rss/litigation/litreleases.xml",
+      "error": "fetch https://www.sec.gov/rss/litigation/litreleases.xml: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:43:48Z",
+      "finished_at": "2026-03-20T09:43:49Z"
+    },
+    {
+      "source_id": "policia-colombia",
+      "authority_name": "Policía Nacional de Colombia",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://www.policia.gov.co/rss.xml",
+      "started_at": "2026-03-20T09:41:17Z",
+      "finished_at": "2026-03-20T09:43:49Z"
+    },
+    {
+      "source_id": "sfo-uk",
+      "authority_name": "Serious Fraud Office (UK)",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.sfo.gov.uk/feed/",
+      "started_at": "2026-03-20T09:43:49Z",
+      "finished_at": "2026-03-20T09:43:50Z"
+    },
+    {
+      "source_id": "si-cert",
+      "authority_name": "SI-CERT",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 1,
+      "feed_url": "https://www.cert.si/en/feed/",
+      "started_at": "2026-03-20T09:43:49Z",
+      "finished_at": "2026-03-20T09:43:50Z"
+    },
+    {
+      "source_id": "si-police",
+      "authority_name": "Slovenian Police",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.policija.si/eng/rss",
+      "started_at": "2026-03-20T09:43:50Z",
+      "finished_at": "2026-03-20T09:43:51Z"
+    },
+    {
+      "source_id": "singcert",
+      "authority_name": "SingCERT",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.csa.gov.sg/singcert/Alerts/rss",
+      "error": "fetch https://www.csa.gov.sg/alerts-and-advisories/advisories/rss: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:43:50Z",
+      "finished_at": "2026-03-20T09:43:54Z"
+    },
+    {
+      "source_id": "sk-police",
+      "authority_name": "Slovak Police",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.minv.sk/?rss",
+      "started_at": "2026-03-20T09:43:54Z",
+      "finished_at": "2026-03-20T09:43:55Z"
+    },
+    {
+      "source_id": "ru-mvd",
+      "authority_name": "MVD Russia (Interior Ministry)",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://мвд.рф/news/feed",
+      "started_at": "2026-03-20T09:43:39Z",
+      "finished_at": "2026-03-20T09:44:05Z"
+    },
+    {
+      "source_id": "sn-police",
+      "authority_name": "Senegal Police Nationale",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.police.gouv.sn/feed/",
+      "error": "fetch https://www.police.gouv.sn/feed/: Get \"https://www.police.gouv.sn/feed/\": dial tcp: lookup www.police.gouv.sn: no such host",
+      "error_class": "dns_error",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:44:05Z",
+      "finished_at": "2026-03-20T09:44:05Z"
+    },
+    {
+      "source_id": "spf-sg",
+      "authority_name": "Singapore Police",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.police.gov.sg/media-room/news/feed",
+      "error": "fetch https://www.police.gov.sg/media-room/news/rss.xml: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:44:05Z",
+      "finished_at": "2026-03-20T09:44:10Z"
+    },
+    {
+      "source_id": "thaicert",
+      "authority_name": "ThaiCERT",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://www.thaicert.or.th/RSS/feed-en.xml",
+      "started_at": "2026-03-20T09:44:10Z",
+      "finished_at": "2026-03-20T09:44:18Z"
+    },
+    {
+      "source_id": "transparency-intl",
+      "authority_name": "Transparency International",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.transparency.org/en/rss",
+      "error": "fetch https://www.transparency.org/en/rss: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:44:18Z",
+      "finished_at": "2026-03-20T09:44:18Z"
+    },
+    {
+      "source_id": "ttps",
+      "authority_name": "Trinidad \u0026 Tobago Police",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.ttps.gov.tt/rss",
+      "error": "fetch https://www.ttps.gov.tt/rss: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:44:18Z",
+      "finished_at": "2026-03-20T09:44:20Z"
+    },
+    {
+      "source_id": "tw-cert",
+      "authority_name": "Taiwan CERT (TWCERT/CC)",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.twcert.org.tw/en/rss/",
+      "error": "fetch https://www.twcert.org.tw/en/rss/: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:44:20Z",
+      "finished_at": "2026-03-20T09:44:22Z"
+    },
+    {
+      "source_id": "ua-npu",
+      "authority_name": "National Police of Ukraine",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.npu.gov.ua/rss",
+      "error": "fetch https://www.npu.gov.ua/rss: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:44:22Z",
+      "finished_at": "2026-03-20T09:44:22Z"
+    },
+    {
+      "source_id": "noaa-incidents",
+      "authority_name": "NOAA Incident News",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://incidentnews.noaa.gov/incidents.rss",
+      "started_at": "2026-03-20T09:39:39Z",
+      "finished_at": "2026-03-20T09:45:02Z"
+    },
+    {
+      "source_id": "ua-ssu",
+      "authority_name": "SBU (Security Service of Ukraine)",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://ssu.gov.ua/en/rss",
+      "error": "fetch https://ssu.gov.ua/en/rss: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:45:02Z",
+      "finished_at": "2026-03-20T09:45:04Z"
+    },
+    {
+      "source_id": "uk-parliament-lords",
+      "authority_name": "UK Parliament — Lords",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://lordsbusiness.parliament.uk/ItemOfBusiness/atom",
+      "started_at": "2026-03-20T09:45:04Z",
+      "finished_at": "2026-03-20T09:45:04Z"
+    },
+    {
+      "source_id": "un-humanitarian-aid",
+      "authority_name": "UN News Humanitarian Aid",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 20,
+      "feed_url": "https://news.un.org/feed/subscribe/en/news/topic/humanitarian-aid/feed/rss.xml",
+      "started_at": "2026-03-20T09:45:04Z",
+      "finished_at": "2026-03-20T09:45:05Z"
+    },
+    {
+      "source_id": "nca-uk",
+      "authority_name": "NCA UK",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 20,
+      "feed_url": "https://nationalcrimeagency.gov.uk/news?format=feed\u0026type=rss",
+      "started_at": "2026-03-20T09:39:18Z",
+      "finished_at": "2026-03-20T09:45:14Z"
+    },
+    {
+      "source_id": "ua-nsdc",
+      "authority_name": "NSDC Ukraine",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 2,
+      "feed_url": "https://www.rnbo.gov.ua/en/rss.xml",
+      "started_at": "2026-03-20T09:44:22Z",
+      "finished_at": "2026-03-20T09:45:21Z"
+    },
+    {
+      "source_id": "pj-pt",
+      "authority_name": "Polícia Judiciária",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://www.policiajudiciaria.pt/feed/",
+      "started_at": "2026-03-20T09:40:46Z",
+      "finished_at": "2026-03-20T09:45:49Z"
+    },
+    {
+      "source_id": "un-sanctions",
+      "authority_name": "UN Security Council Sanctions",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://scsanctions.un.org/resources/xml/en/consolidated.xml",
+      "started_at": "2026-03-20T09:45:49Z",
+      "finished_at": "2026-03-20T09:45:52Z"
+    },
+    {
+      "source_id": "nz-police-news",
+      "authority_name": "NZ Police",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://www.police.govt.nz/rss/news",
+      "started_at": "2026-03-20T09:40:28Z",
+      "finished_at": "2026-03-20T09:46:08Z"
+    },
+    {
+      "source_id": "un-sc-sanctions",
+      "authority_name": "UN Security Council — Sanctions Committees",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.un.org/securitycouncil/content/news/rss.xml",
+      "error": "fetch https://www.un.org/securitycouncil/content/news/rss.xml: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:46:08Z",
+      "finished_at": "2026-03-20T09:46:09Z"
+    },
+    {
+      "source_id": "un-security-council",
+      "authority_name": "UN Security Council",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://press.un.org/en/taxonomy/term/10/feed",
+      "error": "fetch https://press.un.org/en/taxonomy/term/10/feed: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:46:09Z",
+      "finished_at": "2026-03-20T09:46:09Z"
+    },
+    {
+      "source_id": "maib-uk",
+      "authority_name": "UK Marine Accident Investigation Branch",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 20,
+      "feed_url": "https://www.gov.uk/government/organisations/marine-accident-investigation-branch.atom",
+      "started_at": "2026-03-20T09:39:05Z",
+      "finished_at": "2026-03-20T09:46:48Z"
+    },
+    {
+      "source_id": "unodc-news",
+      "authority_name": "UNODC (UN Office on Drugs \u0026 Crime)",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.unodc.org/rss/press.xml",
+      "error": "fetch https://www.unodc.org/rss/press.xml: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:46:48Z",
+      "finished_at": "2026-03-20T09:46:48Z"
+    },
+    {
+      "source_id": "us-congress-bills",
+      "authority_name": "US Congress — Bills",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.congress.gov/rss/most-viewed-bills.xml",
+      "started_at": "2026-03-20T09:46:48Z",
+      "finished_at": "2026-03-20T09:46:49Z"
+    },
+    {
+      "source_id": "us-dhs-ntas",
+      "authority_name": "US DHS NTAS (National Terrorism Advisory System)",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.dhs.gov/ntas/1.1/feed.xml",
+      "started_at": "2026-03-20T09:46:49Z",
+      "finished_at": "2026-03-20T09:46:49Z"
+    },
+    {
+      "source_id": "us-dhs-ntas-alerts",
+      "authority_name": "US DHS NTAS Alerts",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.dhs.gov/ntas/1.1/alerts.xml",
+      "started_at": "2026-03-20T09:46:49Z",
+      "finished_at": "2026-03-20T09:46:49Z"
+    },
+    {
+      "source_id": "ro-politia",
+      "authority_name": "Romanian Police",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://www.politiaromana.ro/ro/rss",
+      "started_at": "2026-03-20T09:43:07Z",
+      "finished_at": "2026-03-20T09:48:39Z"
+    },
+    {
+      "source_id": "us-navy-news",
+      "authority_name": "US Navy News",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.navy.mil/DesktopModules/ArticleCS/RSS.ashx?ContentType=1\u0026Site=1\u0026max=10",
+      "started_at": "2026-03-20T09:48:39Z",
+      "finished_at": "2026-03-20T09:48:40Z"
+    },
+    {
+      "source_id": "us-nctc-alerts",
+      "authority_name": "US NCTC / ODNI Press",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.dni.gov/index.php?option=com_content\u0026view=category\u0026id=5\u0026Itemid=222\u0026format=feed\u0026type=rss",
+      "started_at": "2026-03-20T09:48:40Z",
+      "finished_at": "2026-03-20T09:48:41Z"
+    },
+    {
+      "source_id": "us-state-dept-press",
+      "authority_name": "US State Department Press",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 9,
+      "feed_url": "https://www.state.gov/rss-feed/press-releases/feed/",
+      "started_at": "2026-03-20T09:48:41Z",
+      "finished_at": "2026-03-20T09:48:41Z"
+    },
+    {
+      "source_id": "unocha",
+      "authority_name": "UN OCHA",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://www.unocha.org/rss.xml",
+      "started_at": "2026-03-20T09:46:09Z",
+      "finished_at": "2026-03-20T09:49:10Z"
+    },
+    {
+      "source_id": "us-state-fto",
+      "authority_name": "US State Dept — Foreign Terrorist Organizations",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.state.gov/rss/channels/bureau-of-counterterrorism.xml",
+      "error": "fetch https://www.state.gov/rss/channels/bureau-of-counterterrorism.xml: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:49:10Z",
+      "finished_at": "2026-03-20T09:49:11Z"
+    },
+    {
+      "source_id": "sipri-news",
+      "authority_name": "SIPRI News",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://www.sipri.org/rss/combined.xml",
+      "started_at": "2026-03-20T09:43:51Z",
+      "finished_at": "2026-03-20T09:49:17Z"
+    },
+    {
+      "source_id": "usms",
+      "authority_name": "US Marshals",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.usmarshals.gov/news/news-releases.rss",
+      "error": "fetch https://www.usmarshals.gov/news/news-releases.rss: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:49:17Z",
+      "finished_at": "2026-03-20T09:49:18Z"
+    },
+    {
+      "source_id": "usom-tr",
+      "authority_name": "TR-CERT / USOM",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 15,
+      "feed_url": "https://www.usom.gov.tr/rss/tehdit.rss",
+      "started_at": "2026-03-20T09:49:18Z",
+      "finished_at": "2026-03-20T09:49:19Z"
+    },
+    {
+      "source_id": "usss",
+      "authority_name": "US Secret Service",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 0,
+      "feed_url": "https://www.secretservice.gov/rss.xml",
+      "started_at": "2026-03-20T09:49:19Z",
+      "finished_at": "2026-03-20T09:49:20Z"
+    },
+    {
+      "source_id": "vn-cert",
+      "authority_name": "VNCERT/CC (Vietnam CERT)",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://vncert.vn/feed/",
+      "error": "fetch https://vncert.vn/feed/: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:49:20Z",
+      "finished_at": "2026-03-20T09:49:20Z"
+    },
+    {
+      "source_id": "smithsonian-volcanoes",
+      "authority_name": "Smithsonian Global Volcanism Program",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 20,
+      "feed_url": "https://volcano.si.edu/news/WeeklyVolcanoRSS.xml",
+      "started_at": "2026-03-20T09:43:55Z",
+      "finished_at": "2026-03-20T09:50:01Z"
+    },
+    {
+      "source_id": "who-disease-outbreak",
+      "authority_name": "WHO Disease Outbreak News",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.who.int/feeds/entity/don/en/rss.xml",
+      "error": "fetch https://www.who.int/feeds/entity/don/en/rss.xml: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:50:01Z",
+      "finished_at": "2026-03-20T09:50:02Z"
+    },
+    {
+      "source_id": "who-emergencies",
+      "authority_name": "WHO Health Emergencies",
+      "type": "rss",
+      "status": "error",
+      "fetched_count": 0,
+      "feed_url": "https://www.who.int/feeds/entity/hac/en/rss.xml",
+      "error": "fetch https://www.who.int/feeds/entity/hac/en/rss.xml: status 404",
+      "error_class": "not_found",
+      "needs_replacement": true,
+      "discovery_action": "dead_letter",
+      "started_at": "2026-03-20T09:50:02Z",
+      "finished_at": "2026-03-20T09:50:02Z"
+    },
+    {
+      "source_id": "is-logreglan",
+      "authority_name": "Icelandic Police",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 20,
+      "feed_url": "https://www.logreglan.is/feed/",
+      "started_at": "2026-03-20T09:38:08Z",
+      "finished_at": "2026-03-20T09:50:03Z"
+    },
+    {
+      "source_id": "un-peacekeeping",
+      "authority_name": "UN Peacekeeping (Blue Helmets)",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 10,
+      "feed_url": "https://peacekeeping.un.org/en/rss.xml",
+      "started_at": "2026-03-20T09:45:14Z",
+      "finished_at": "2026-03-20T09:50:17Z"
+    },
+    {
+      "source_id": "vpd-ca",
+      "authority_name": "Vancouver Police Department",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 9,
+      "feed_url": "https://vpd.ca/feed/",
+      "started_at": "2026-03-20T09:49:20Z",
+      "finished_at": "2026-03-20T09:50:45Z"
+    },
+    {
+      "source_id": "woah-animal-health",
+      "authority_name": "WOAH Animal Health",
+      "type": "rss",
+      "status": "ok",
+      "fetched_count": 3,
+      "feed_url": "https://www.woah.org/en/feed/",
+      "started_at": "2026-03-20T09:50:03Z",
+      "finished_at": "2026-03-20T09:50:49Z"
+    },
+    {
       "source_id": "fbi",
       "authority_name": "FBI",
       "type": "rss",
@@ -2128,50 +3009,6 @@
       "active_count": 20
     },
     {
-      "source_id": "nz-police-news",
-      "authority_name": "NZ Police",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 10,
-      "feed_url": "https://www.police.govt.nz/rss/news",
-      "started_at": "2026-03-16T06:02:25.225Z",
-      "finished_at": "2026-03-16T06:02:25.759Z",
-      "active_count": 10
-    },
-    {
-      "source_id": "nz-police-alerts",
-      "authority_name": "NZ Police",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 10,
-      "feed_url": "https://www.police.govt.nz/rss/alerts",
-      "started_at": "2026-03-16T06:02:25.759Z",
-      "finished_at": "2026-03-16T06:02:26.195Z",
-      "active_count": 10
-    },
-    {
-      "source_id": "ncmec",
-      "authority_name": "NCMEC",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 6,
-      "feed_url": "https://api.missingkids.org/missingkids/servlet/XmlServlet?LanguageCountry=en_US\u0026act=rss\u0026orgPrefix=NCMC",
-      "started_at": "2026-03-16T06:02:26.195Z",
-      "finished_at": "2026-03-16T06:02:26.743Z",
-      "active_count": 6
-    },
-    {
-      "source_id": "policia-colombia",
-      "authority_name": "Policía Nacional de Colombia",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 10,
-      "feed_url": "https://www.policia.gov.co/rss.xml",
-      "started_at": "2026-03-16T06:02:28.782Z",
-      "finished_at": "2026-03-16T06:02:29.572Z",
-      "active_count": 10
-    },
-    {
       "source_id": "dhs",
       "authority_name": "DHS",
       "type": "rss",
@@ -2180,16 +3017,6 @@
       "feed_url": "https://www.dhs.gov/news/rss.xml",
       "started_at": "2026-03-16T06:02:29.624Z",
       "finished_at": "2026-03-16T06:02:30.143Z"
-    },
-    {
-      "source_id": "usss",
-      "authority_name": "US Secret Service",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.secretservice.gov/rss.xml",
-      "started_at": "2026-03-16T06:02:30.143Z",
-      "finished_at": "2026-03-16T06:02:30.298Z"
     },
     {
       "source_id": "dea",
@@ -2210,26 +3037,6 @@
       "feed_url": "https://www.atf.gov/news/rss.xml",
       "started_at": "2026-03-16T06:02:30.376Z",
       "finished_at": "2026-03-16T06:02:30.402Z"
-    },
-    {
-      "source_id": "usms",
-      "authority_name": "US Marshals",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.usmarshals.gov/news/news-releases.rss",
-      "started_at": "2026-03-16T06:02:30.402Z",
-      "finished_at": "2026-03-16T06:02:30.431Z"
-    },
-    {
-      "source_id": "nca-uk",
-      "authority_name": "NCA UK",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://nationalcrimeagency.gov.uk/news?format=feed\u0026type=rss",
-      "started_at": "2026-03-16T06:02:30.431Z",
-      "finished_at": "2026-03-16T06:02:30.445Z"
     },
     {
       "source_id": "met-police-uk",
@@ -2304,16 +3111,6 @@
       "finished_at": "2026-03-16T06:03:24.321Z"
     },
     {
-      "source_id": "rcmp-ca",
-      "authority_name": "RCMP Canada",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.rcmp-grc.gc.ca/en/news/rss",
-      "started_at": "2026-03-16T06:03:24.321Z",
-      "finished_at": "2026-03-16T06:03:24.490Z"
-    },
-    {
       "source_id": "cnp-es",
       "authority_name": "Policía Nacional Spain",
       "type": "rss",
@@ -2322,36 +3119,6 @@
       "feed_url": "https://www.policia.es/rss/rss_prensa.xml",
       "started_at": "2026-03-16T06:03:24.490Z",
       "finished_at": "2026-03-16T06:03:25.486Z"
-    },
-    {
-      "source_id": "singcert",
-      "authority_name": "SingCERT",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.csa.gov.sg/singcert/Alerts/rss",
-      "started_at": "2026-03-16T06:03:35.979Z",
-      "finished_at": "2026-03-16T06:03:37.770Z"
-    },
-    {
-      "source_id": "spf-sg",
-      "authority_name": "Singapore Police",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.police.gov.sg/media-room/news/feed",
-      "started_at": "2026-03-16T06:03:37.770Z",
-      "finished_at": "2026-03-16T06:03:40.651Z"
-    },
-    {
-      "source_id": "saps-za",
-      "authority_name": "SAPS South Africa",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.saps.gov.za/newsroom/rss.php",
-      "started_at": "2026-03-16T06:03:41.209Z",
-      "finished_at": "2026-03-16T06:03:43.224Z"
     },
     {
       "source_id": "missing-children-za",
@@ -2384,26 +3151,6 @@
       "finished_at": "2026-03-16T06:03:48.536Z"
     },
     {
-      "source_id": "polisen-se",
-      "authority_name": "Polisen Sweden",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://polisen.se/aktuellt/rss/hela-landet/",
-      "started_at": "2026-03-16T06:03:48.536Z",
-      "finished_at": "2026-03-16T06:03:49.359Z"
-    },
-    {
-      "source_id": "politiet-no",
-      "authority_name": "Politiet Norway",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.politiet.no/rss/",
-      "started_at": "2026-03-16T06:03:49.359Z",
-      "finished_at": "2026-03-16T06:03:50.421Z"
-    },
-    {
       "source_id": "carabineros-cl",
       "authority_name": "Carabineros Chile",
       "type": "rss",
@@ -2412,38 +3159,6 @@
       "feed_url": "https://www.carabineros.cl/feed/",
       "started_at": "2026-03-16T06:03:52.268Z",
       "finished_at": "2026-03-16T06:03:53.348Z"
-    },
-    {
-      "source_id": "policia-ec",
-      "authority_name": "Policía Nacional Ecuador",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 2,
-      "feed_url": "https://www.policia.gob.ec/feed/",
-      "started_at": "2026-03-16T06:04:14.844Z",
-      "finished_at": "2026-03-16T06:04:16.141Z",
-      "active_count": 2
-    },
-    {
-      "source_id": "policia-bo",
-      "authority_name": "Policía Boliviana",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.policia.bo/feed/",
-      "started_at": "2026-03-16T06:04:16.141Z",
-      "finished_at": "2026-03-16T06:04:24.980Z"
-    },
-    {
-      "source_id": "policia-py",
-      "authority_name": "Policía Nacional Paraguay",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 5,
-      "feed_url": "https://www.policianacional.gov.py/feed/",
-      "started_at": "2026-03-16T06:04:24.980Z",
-      "finished_at": "2026-03-16T06:04:29.664Z",
-      "active_count": 5
     },
     {
       "source_id": "fiscales-ar",
@@ -2546,26 +3261,6 @@
       "filtered_count": 17
     },
     {
-      "source_id": "pnp-ph",
-      "authority_name": "PNP Philippines",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.pnp.gov.ph/rss",
-      "started_at": "2026-03-16T06:04:55.779Z",
-      "finished_at": "2026-03-16T06:04:56.021Z"
-    },
-    {
-      "source_id": "ttps",
-      "authority_name": "Trinidad \u0026 Tobago Police",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.ttps.gov.tt/rss",
-      "started_at": "2026-03-16T06:05:02.700Z",
-      "finished_at": "2026-03-16T06:05:04.028Z"
-    },
-    {
       "source_id": "fgr-mx",
       "authority_name": "FGR Mexico",
       "type": "html-list",
@@ -2594,16 +3289,6 @@
       "feed_url": "https://www.canadasmissing.ca/rss/index-eng.xml",
       "started_at": "2026-03-16T06:05:09.735Z",
       "finished_at": "2026-03-16T06:05:09.915Z"
-    },
-    {
-      "source_id": "thaicert",
-      "authority_name": "ThaiCERT",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 0,
-      "feed_url": "https://www.thaicert.or.th/RSS/feed-en.xml",
-      "started_at": "2026-03-16T06:05:10.473Z",
-      "finished_at": "2026-03-16T06:05:11.416Z"
     },
     {
       "source_id": "bleepingcomputer",
@@ -2650,17 +3335,6 @@
       "active_count": 10
     },
     {
-      "source_id": "vpd-ca",
-      "authority_name": "Vancouver Police Department",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 10,
-      "feed_url": "https://vpd.ca/feed/",
-      "started_at": "2026-03-16T06:05:33.431Z",
-      "finished_at": "2026-03-16T06:05:33.507Z",
-      "active_count": 10
-    },
-    {
       "source_id": "cbc-canada",
       "authority_name": "CBC Canada News",
       "type": "rss",
@@ -2681,17 +3355,6 @@
       "finished_at": "2026-03-16T06:05:50.081Z",
       "active_count": 9,
       "filtered_count": 1
-    },
-    {
-      "source_id": "usom-tr",
-      "authority_name": "TR-CERT / USOM",
-      "type": "rss",
-      "status": "pending",
-      "fetched_count": 20,
-      "feed_url": "https://www.usom.gov.tr/rss/tehdit.rss",
-      "started_at": "2026-03-16T06:05:50.081Z",
-      "finished_at": "2026-03-16T06:05:52.424Z",
-      "active_count": 20
     },
     {
       "source_id": "timesofisrael-il",

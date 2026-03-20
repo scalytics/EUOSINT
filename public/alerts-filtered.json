@@ -63,6 +63,119 @@
     }
   },
   {
+    "alert_id": "noaa-incidents-cad13ba7c822",
+    "source_id": "noaa-incidents",
+    "source": {
+      "source_id": "noaa-incidents",
+      "authority_name": "NOAA Incident News",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://incidentnews.noaa.gov",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Flowline Leak, Grand Pass; Pilottown, Louisiana",
+    "canonical_url": "https://incidentnews.noaa.gov/incident/11126",
+    "first_seen": "2026-03-04T00:00:00Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "environmental_disaster",
+    "subcategory": "natural_hazard",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "US",
+    "lat": 29.15574,
+    "lng": -89.34442,
+    "event_country": "United States",
+    "event_country_code": "US",
+    "event_geo_source": "llm",
+    "event_geo_confidence": 0.65,
+    "freshness_hours": 393,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.12,
+      "threshold": 0.42,
+      "confidence": "high",
+      "disposition": "filtered_review",
+      "publication_type": "public_safety_bulletin",
+      "weak_signals": [
+        "-0.18 opinion/commentary phrasing",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "NOAA",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:43:12Z"
+      }
+    }
+  },
+  {
+    "alert_id": "nz-police-news-9b31ad72c8ca",
+    "source_id": "nz-police-news",
+    "source": {
+      "source_id": "nz-police-news",
+      "authority_name": "NZ Police",
+      "country": "New Zealand",
+      "country_code": "NZ",
+      "region": "Oceania",
+      "authority_type": "police",
+      "base_url": "https://www.police.govt.nz",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Multi-agency Search and Rescue exercise in Canterbury this weekend",
+    "canonical_url": "https://www.police.govt.nz/news/release/multi-agency-search-and-rescue-exercise-canterbury-weekend",
+    "first_seen": "2026-03-18T22:29:28Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "public_safety_bulletin",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "NZ",
+    "lat": -43.98941,
+    "lng": 170.45661,
+    "event_country": "New Zealand",
+    "event_country_code": "NZ",
+    "event_geo_source": "llm",
+    "event_geo_confidence": 0.65,
+    "freshness_hours": 35,
+    "reporting": {
+      "label": "Report to NZ Police",
+      "url": "https://www.police.govt.nz/use-105",
+      "phone": "111 (Emergency) / 105 (Non-emergency)"
+    },
+    "triage": {
+      "relevance_score": 0.14,
+      "threshold": 0.42,
+      "confidence": "high",
+      "disposition": "filtered_review",
+      "publication_type": "law_enforcement",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "+0.06 law-enforcement source metadata",
+        "-0.22 certification/training/standards content",
+        "-0.2 routine local crime without cross-border significance"
+      ],
+      "metadata": {
+        "author": "JREE15",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:45:24Z"
+      }
+    }
+  },
+  {
     "alert_id": "fbi-national-press-be94fe342bb9",
     "source_id": "fbi-national-press",
     "source": {
@@ -234,6 +347,59 @@
     }
   },
   {
+    "alert_id": "sipri-news-0a0302c5c568",
+    "source_id": "sipri-news",
+    "source": {
+      "source_id": "sipri-news",
+      "authority_name": "SIPRI News",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.sipri.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "SIPRI to co-host intensive course on WMD non-proliferation and disarmament in June",
+    "canonical_url": "https://www.sipri.org/news/2026/sipri-co-host-intensive-course-wmd-non-proliferation-and-disarmament-june",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "conflict_monitoring",
+    "subcategory": "conflict_event",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 0,
+    "lng": 0,
+    "event_country": "Sweden",
+    "event_country_code": "SE",
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.16,
+      "threshold": 0.42,
+      "confidence": "high",
+      "disposition": "filtered_review",
+      "publication_type": "public_safety_bulletin",
+      "weak_signals": [
+        "+0.08 humanitarian incident/tasking category",
+        "-0.12 general institutional/news language",
+        "-0.22 certification/training/standards content",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "SIPRI",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:44:47Z"
+      }
+    }
+  },
+  {
     "alert_id": "fca-warnings-33eb80e5a51e",
     "source_id": "fca-warnings",
     "source": {
@@ -353,6 +519,60 @@
         "noise_policy_variant": "a",
         "noise_actionability_score": 0.15,
         "noise_decision_ts": "2026-03-20T09:38:07Z"
+      }
+    }
+  },
+  {
+    "alert_id": "un-peacekeeping-b02107b3f68d",
+    "source_id": "un-peacekeeping",
+    "source": {
+      "source_id": "un-peacekeeping",
+      "authority_name": "UN Peacekeeping (Blue Helmets)",
+      "country": "South Africa",
+      "country_code": "ZA",
+      "region": "International",
+      "authority_type": "national_security",
+      "base_url": "https://peacekeeping.un.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "UN mourns constitutional lawyer-turned top crisis diplomat, Nicholas Haysom",
+    "canonical_url": "https://peacekeeping.un.org/en/un-mourns-constitutional-lawyer-turned-top-crisis-diplomat-nicholas-haysom",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "conflict_monitoring",
+    "subcategory": "conflict_event",
+    "severity": "medium",
+    "signal_lane": "intel",
+    "region_tag": "INT",
+    "lat": -25.73584,
+    "lng": 28.37751,
+    "event_country": "South Africa",
+    "event_country_code": "ZA",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.2,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "security_bulletin",
+      "weak_signals": [
+        "+0.08 humanitarian incident/tasking category",
+        "-0.18 opinion/commentary phrasing",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:45:45Z"
       }
     }
   },
@@ -1040,6 +1260,58 @@
     }
   },
   {
+    "alert_id": "ua-nsdc-359febe678d8",
+    "source_id": "ua-nsdc",
+    "source": {
+      "source_id": "ua-nsdc",
+      "authority_name": "NSDC Ukraine",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.rnbo.gov.ua",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Overview of developments in artificial intelligence for February 2026",
+    "canonical_url": "https://www.rnbo.gov.ua/en/Diialnist/7488.html",
+    "first_seen": "2026-03-19T11:49:00Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "public_safety",
+    "subcategory": "public_safety_bulletin",
+    "severity": "medium",
+    "signal_lane": "intel",
+    "region_tag": "UA",
+    "lat": 50.34947,
+    "lng": 30.51351,
+    "event_country": "Ukraine",
+    "event_country_code": "UA",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 22,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.24,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "security_bulletin",
+      "weak_signals": [
+        "-0.18 opinion/commentary phrasing",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:44:49Z"
+      }
+    }
+  },
+  {
     "alert_id": "ca-oag-be99a8af2187",
     "source_id": "ca-oag",
     "source": {
@@ -1097,6 +1369,125 @@
         "noise_policy_variant": "a",
         "noise_actionability_score": 0.15,
         "noise_decision_ts": "2026-03-20T09:30:49Z"
+      }
+    }
+  },
+  {
+    "alert_id": "un-peacekeeping-ab5df15b47ec",
+    "source_id": "un-peacekeeping",
+    "source": {
+      "source_id": "un-peacekeeping",
+      "authority_name": "UN Peacekeeping (Blue Helmets)",
+      "country": "South Sudan",
+      "country_code": "SS",
+      "region": "International",
+      "authority_type": "national_security",
+      "base_url": "https://peacekeeping.un.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Justice on the move: Mobile courts offer hope for communities in South Sudan",
+    "canonical_url": "https://peacekeeping.un.org/en/justice-move-mobile-courts-offer-hope-communities-south-sudan",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "ground_clash",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 4.78415,
+    "lng": 31.71867,
+    "event_country": "South Sudan",
+    "event_country_code": "SS",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.26,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "security_bulletin",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "+0.08 humanitarian incident/tasking category",
+        "+0.08 specific impact/timeline/system details",
+        "-0.12 general institutional/news language",
+        "-0.2 routine local crime without cross-border significance",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.667,
+        "noise_reasons": [
+          "cooccurrence:sexual-crime-intelligence",
+          "actionable-override"
+        ],
+        "noise_decision_ts": "2026-03-20T09:48:53Z"
+      }
+    }
+  },
+  {
+    "alert_id": "un-peacekeeping-0aeb28c66300",
+    "source_id": "un-peacekeeping",
+    "source": {
+      "source_id": "un-peacekeeping",
+      "authority_name": "UN Peacekeeping (Blue Helmets)",
+      "country": "Lebanon",
+      "country_code": "LB",
+      "region": "International",
+      "authority_type": "national_security",
+      "base_url": "https://peacekeeping.un.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Lebanon ‘dragged back into turmoil’, UN envoy warns",
+    "canonical_url": "https://peacekeeping.un.org/en/lebanon-dragged-back-turmoil-un-envoy-warns",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "airstrike",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 33.80688,
+    "lng": 35.49003,
+    "event_country": "Lebanon",
+    "event_country_code": "LB",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.26,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "security_bulletin",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "+0.08 humanitarian incident/tasking category",
+        "+0.1 contains response/reporting actions",
+        "-0.12 general institutional/news language",
+        "-0.22 certification/training/standards content",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.333,
+        "noise_reasons": [
+          "actionable-override"
+        ],
+        "noise_decision_ts": "2026-03-20T09:47:18Z"
       }
     }
   },
@@ -1159,6 +1550,59 @@
     }
   },
   {
+    "alert_id": "noaa-incidents-1b8d817a7243",
+    "source_id": "noaa-incidents",
+    "source": {
+      "source_id": "noaa-incidents",
+      "authority_name": "NOAA Incident News",
+      "country": "Taiwan",
+      "country_code": "TW",
+      "region": "North America",
+      "authority_type": "public_safety_program",
+      "base_url": "https://incidentnews.noaa.gov",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Container Ship Loses 32 Containers; south of Aleutian Islands, Alaska",
+    "canonical_url": "https://incidentnews.noaa.gov/incident/11131",
+    "first_seen": "2026-03-09T00:00:00Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "natural_hazard",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "US",
+    "lat": 46.59995,
+    "lng": -179.63417,
+    "event_country": "United States",
+    "event_country_code": "US",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 273,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.28,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "public_safety_bulletin",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "-0.22 certification/training/standards content"
+      ],
+      "metadata": {
+        "author": "NOAA",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:40:45Z"
+      }
+    }
+  },
+  {
     "alert_id": "icrc-field-ops-56e42ab3b811",
     "source_id": "icrc-field-ops",
     "source": {
@@ -1214,6 +1658,443 @@
         "noise_policy_variant": "a",
         "noise_actionability_score": 0.15,
         "noise_decision_ts": "2026-03-20T09:37:36Z"
+      }
+    }
+  },
+  {
+    "alert_id": "iaea-news-dd433f29d8fc",
+    "source_id": "iaea-news",
+    "source": {
+      "source_id": "iaea-news",
+      "authority_name": "IAEA Nuclear News",
+      "country": "France",
+      "country_code": "FR",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.iaea.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Global Leaders Convene in France for Nuclear Energy Summit",
+    "canonical_url": "http://www.iaea.org/newscenter/news/global-leaders-convene-in-france-for-nuclear-energy-summit",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "natural_hazard",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 48.90294,
+    "lng": 2.07172,
+    "event_country": "France",
+    "event_country_code": "FR",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.3,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "tags": [
+          "News Story"
+        ],
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:38:53Z"
+      }
+    }
+  },
+  {
+    "alert_id": "iaea-news-e123636a0091",
+    "source_id": "iaea-news",
+    "source": {
+      "source_id": "iaea-news",
+      "authority_name": "IAEA Nuclear News",
+      "country": "Iran",
+      "country_code": "IR",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.iaea.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "IAEA Director General's Introductory Statement to the Special Session of the Board of Governors",
+    "canonical_url": "http://www.iaea.org/newscenter/statements/iaea-director-generals-introductory-statement-to-the-special-session-of-the-board-of-governors",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "natural_hazard",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 35.7975,
+    "lng": 51.41981,
+    "event_country": "Iran",
+    "event_country_code": "IR",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.3,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "tags": [
+          "Statement"
+        ],
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:42:40Z"
+      }
+    }
+  },
+  {
+    "alert_id": "iaea-news-e1a5fbbecb18",
+    "source_id": "iaea-news",
+    "source": {
+      "source_id": "iaea-news",
+      "authority_name": "IAEA Nuclear News",
+      "country": "Austria",
+      "country_code": "AT",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.iaea.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Global Leaders Affirm Central Role for Nuclear at 2026 Nuclear Energy Summit",
+    "canonical_url": "http://www.iaea.org/newscenter/news/global-leaders-affirm-central-role-for-nuclear-at-2026-nuclear-energy-summit",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "natural_hazard",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 0,
+    "lng": 0,
+    "event_country": "Austria",
+    "event_country_code": "AT",
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.3,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "tags": [
+          "News Story"
+        ],
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:38:53Z"
+      }
+    }
+  },
+  {
+    "alert_id": "iaea-news-3d71a74acd65",
+    "source_id": "iaea-news",
+    "source": {
+      "source_id": "iaea-news",
+      "authority_name": "IAEA Nuclear News",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.iaea.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Update 344 – IAEA Director General Statement on Situation in Ukraine",
+    "canonical_url": "http://www.iaea.org/newscenter/pressreleases/update-344-iaea-director-general-statement-on-situation-in-ukraine",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "natural_hazard",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 50.63911,
+    "lng": 30.55528,
+    "event_country": "Ukraine",
+    "event_country_code": "UA",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.3,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "tags": [
+          "Press Release"
+        ],
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:35:56Z"
+      }
+    }
+  },
+  {
+    "alert_id": "iaea-news-8741c28109e7",
+    "source_id": "iaea-news",
+    "source": {
+      "source_id": "iaea-news",
+      "authority_name": "IAEA Nuclear News",
+      "country": "Austria",
+      "country_code": "AT",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.iaea.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "IAEA Director General's Introductory Statement to the Board of Governors",
+    "canonical_url": "http://www.iaea.org/newscenter/statements/iaea-director-generals-introductory-statement-to-the-board-of-governors-2-6-march-2026",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "natural_hazard",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 0,
+    "lng": 0,
+    "event_country": "Austria",
+    "event_country_code": "AT",
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.3,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "tags": [
+          "Statement"
+        ],
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:41:32Z"
+      }
+    }
+  },
+  {
+    "alert_id": "iaea-news-f163fb305dd4",
+    "source_id": "iaea-news",
+    "source": {
+      "source_id": "iaea-news",
+      "authority_name": "IAEA Nuclear News",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.iaea.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Update 343 – IAEA Director General Statement on Situation in Ukraine",
+    "canonical_url": "http://www.iaea.org/newscenter/pressreleases/update-343-iaea-director-general-statement-on-situation-in-ukraine",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "natural_hazard",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 50.26667,
+    "lng": 30.58571,
+    "event_country": "Ukraine",
+    "event_country_code": "UA",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.3,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "tags": [
+          "Press Release"
+        ],
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:39:17Z"
+      }
+    }
+  },
+  {
+    "alert_id": "un-humanitarian-aid-d517fabb8a13",
+    "source_id": "un-humanitarian-aid",
+    "source": {
+      "source_id": "un-humanitarian-aid",
+      "authority_name": "UN News Humanitarian Aid",
+      "country": "United States",
+      "country_code": "US",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://news.un.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "UN chief launches major humanitarian appeal from war-torn Lebanon",
+    "canonical_url": "https://news.un.org/feed/view/en/story/2026/03/1167131",
+    "first_seen": "2026-03-13T12:00:00Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "context_update",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 38.93718,
+    "lng": -76.85524,
+    "event_country": "United States",
+    "event_country_code": "US",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 165,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.3,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "public_safety_bulletin",
+      "weak_signals": [
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:45:04Z"
+      }
+    }
+  },
+  {
+    "alert_id": "ua-nsdc-4a842dd8265c",
+    "source_id": "ua-nsdc",
+    "source": {
+      "source_id": "ua-nsdc",
+      "authority_name": "NSDC Ukraine",
+      "country": "Ukraine",
+      "country_code": "UA",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.rnbo.gov.ua",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Ukrainian Delegation and Tallinn Mechanism Partners Meet in London to Strengthen Cyber Support for Ukraine",
+    "canonical_url": "https://www.rnbo.gov.ua/en/Diialnist/7477.html",
+    "first_seen": "2026-03-12T11:57:00Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "public_safety_bulletin",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "UA",
+    "lat": 50.28583,
+    "lng": 30.62251,
+    "event_country": "Ukraine",
+    "event_country_code": "UA",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 190,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.3,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "security_bulletin",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:45:21Z"
       }
     }
   },
@@ -1505,6 +2386,57 @@
     }
   },
   {
+    "alert_id": "woah-animal-health-52b3d68d5dd6",
+    "source_id": "woah-animal-health",
+    "source": {
+      "source_id": "woah-animal-health",
+      "authority_name": "WOAH Animal Health",
+      "country": "France",
+      "country_code": "FR",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.woah.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Mitigating Disease Transmission Risk at the Wildlife–Livestock Interface to Facilitate Safe Trade",
+    "canonical_url": "https://www.woah.org/en/mitigating-disease-transmission-risk-at-the-wildlife-livestock-interface-to-facilitate-safe-trade/",
+    "first_seen": "2026-01-23T11:47:05Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "disease_outbreak",
+    "subcategory": "public_health",
+    "severity": "high",
+    "signal_lane": "alarm",
+    "region_tag": "INT",
+    "lat": 0,
+    "lng": 0,
+    "event_country": "France",
+    "event_country_code": "FR",
+    "freshness_hours": 1342,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.3,
+      "threshold": 0.42,
+      "confidence": "medium",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "\u003c![CDATA[Tamara Benicasa]]\u003e",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:50:49Z"
+      }
+    }
+  },
+  {
     "alert_id": "emsa-maritime-a5e3f6ab6a20",
     "source_id": "emsa-maritime",
     "source": {
@@ -1674,6 +2606,61 @@
         "noise_policy_variant": "a",
         "noise_actionability_score": 0.15,
         "noise_decision_ts": "2026-03-20T09:37:45Z"
+      }
+    }
+  },
+  {
+    "alert_id": "sipri-news-31a422d7a00c",
+    "source_id": "sipri-news",
+    "source": {
+      "source_id": "sipri-news",
+      "authority_name": "SIPRI News",
+      "country": "Iran",
+      "country_code": "IR",
+      "region": "Europe",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.sipri.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "The role of imported arms in the Iran war: A Q\u0026A with Zain Hussain and Pieter Wezeman",
+    "canonical_url": "https://www.sipri.org/commentary/topical-backgrounder/2026/role-imported-arms-iran-war-qa-zain-hussain-and-pieter-wezeman",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "conflict_event",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 35.73336,
+    "lng": 51.31127,
+    "event_country": "Iran",
+    "event_country_code": "IR",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.32,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "public_safety_bulletin",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "+0.08 humanitarian incident/tasking category",
+        "-0.18 opinion/commentary phrasing",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "Zain Hussain;Pieter D. Wezeman",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:46:05Z"
       }
     }
   },
@@ -2145,6 +3132,67 @@
     }
   },
   {
+    "alert_id": "nca-uk-dee5e55387fb",
+    "source_id": "nca-uk",
+    "source": {
+      "source_id": "nca-uk",
+      "authority_name": "NCA UK",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.nationalcrimeagency.gov.uk",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Murderer led scheme from behind bars to help drug traffickers walk free",
+    "canonical_url": "https://www.nationalcrimeagency.gov.uk/news/murderer-led-scheme-from-behind-bars-to-help-drug-traffickers-walk-free",
+    "first_seen": "2026-03-13T16:16:10Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "public_safety_bulletin",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "GB",
+    "lat": 51.28968,
+    "lng": -0.15741,
+    "event_country": "United Kingdom",
+    "event_country_code": "GB",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 161,
+    "reporting": {
+      "label": "Report to NCA",
+      "url": "https://www.nationalcrimeagency.gov.uk/what-we-do/crime-threats/cyber-crime/reporting-cyber-crime",
+      "phone": "0370 496 7622"
+    },
+    "triage": {
+      "relevance_score": 0.34,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "law_enforcement",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "+0.06 law-enforcement source metadata",
+        "-0.22 certification/training/standards content"
+      ],
+      "metadata": {
+        "author": "cms23@nca.gov.uk (cms-user23)",
+        "tags": [
+          "News"
+        ],
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:41:12Z"
+      }
+    }
+  },
+  {
     "alert_id": "fbi-national-press-a8afdedadf8f",
     "source_id": "fbi-national-press",
     "source": {
@@ -2434,6 +3482,64 @@
     }
   },
   {
+    "alert_id": "nz-police-news-ebb61c60bc08",
+    "source_id": "nz-police-news",
+    "source": {
+      "source_id": "nz-police-news",
+      "authority_name": "NZ Police",
+      "country": "New Zealand",
+      "country_code": "NZ",
+      "region": "Oceania",
+      "authority_type": "police",
+      "base_url": "https://www.police.govt.nz",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Investigation launched following serious injuries, Christchurch",
+    "canonical_url": "https://www.police.govt.nz/news/release/investigation-launched-following-serious-injuries-christchurch",
+    "first_seen": "2026-03-19T21:26:45Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "public_safety",
+    "subcategory": "public_safety_bulletin",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "NZ",
+    "lat": -43.50408,
+    "lng": 172.68704,
+    "event_country": "New Zealand",
+    "event_country_code": "NZ",
+    "event_geo_source": "llm",
+    "event_geo_confidence": 0.65,
+    "freshness_hours": 12,
+    "reporting": {
+      "label": "Report to NZ Police",
+      "url": "https://www.police.govt.nz/use-105",
+      "phone": "111 (Emergency) / 105 (Non-emergency)"
+    },
+    "triage": {
+      "relevance_score": 0.36,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "law_enforcement",
+      "weak_signals": [
+        "+0.06 law-enforcement source metadata",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "CCNRS7",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:43:54Z"
+      }
+    }
+  },
+  {
     "alert_id": "calgary-police-ca-5df47b9cd603",
     "source_id": "calgary-police-ca",
     "source": {
@@ -2554,6 +3660,242 @@
         "noise_policy_variant": "a",
         "noise_actionability_score": 0.15,
         "noise_decision_ts": "2026-03-20T09:34:06Z"
+      }
+    }
+  },
+  {
+    "alert_id": "nca-uk-bc994fcbf366",
+    "source_id": "nca-uk",
+    "source": {
+      "source_id": "nca-uk",
+      "authority_name": "NCA UK",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.nationalcrimeagency.gov.uk",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "NCA launches the National Strategic Assessment 2026",
+    "canonical_url": "https://www.nationalcrimeagency.gov.uk/news/nca-launches-the-national-strategic-assessment-2026",
+    "first_seen": "2026-03-17T15:29:31Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "public_safety_bulletin",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "GB",
+    "lat": 51.64213,
+    "lng": -0.38019,
+    "event_country": "United Kingdom",
+    "event_country_code": "GB",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 66,
+    "reporting": {
+      "label": "Report to NCA",
+      "url": "https://www.nationalcrimeagency.gov.uk/what-we-do/crime-threats/cyber-crime/reporting-cyber-crime",
+      "phone": "0370 496 7622"
+    },
+    "triage": {
+      "relevance_score": 0.36,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "law_enforcement",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "+0.06 law-enforcement source metadata",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "cms26@nca.gov.uk (cms-user26)",
+        "tags": [
+          "News"
+        ],
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:40:14Z"
+      }
+    }
+  },
+  {
+    "alert_id": "nca-uk-2661143a1813",
+    "source_id": "nca-uk",
+    "source": {
+      "source_id": "nca-uk",
+      "authority_name": "NCA UK",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.nationalcrimeagency.gov.uk",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Prolific people smuggler brought down after NCA investigation",
+    "canonical_url": "https://www.nationalcrimeagency.gov.uk/news/prolific-people-smuggler-brought-down-after-nca-investigation",
+    "first_seen": "2026-02-25T18:27:20Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "public_safety_bulletin",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "GB",
+    "lat": 51.62405,
+    "lng": 0.13519,
+    "event_country": "United Kingdom",
+    "event_country_code": "GB",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 543,
+    "reporting": {
+      "label": "Report to NCA",
+      "url": "https://www.nationalcrimeagency.gov.uk/what-we-do/crime-threats/cyber-crime/reporting-cyber-crime",
+      "phone": "0370 496 7622"
+    },
+    "triage": {
+      "relevance_score": 0.36,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "law_enforcement",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "+0.06 law-enforcement source metadata",
+        "-0.2 routine local crime without cross-border significance"
+      ],
+      "metadata": {
+        "author": "cms23@nca.gov.uk (cms-user23)",
+        "tags": [
+          "News"
+        ],
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:43:57Z"
+      }
+    }
+  },
+  {
+    "alert_id": "nca-uk-c0f680402ca9",
+    "source_id": "nca-uk",
+    "source": {
+      "source_id": "nca-uk",
+      "authority_name": "NCA UK",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://www.nationalcrimeagency.gov.uk",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Lake District armourer who planned industrial supply of crystal meth jailed for more than 22 years",
+    "canonical_url": "https://www.nationalcrimeagency.gov.uk/news/lake-district-armourer-who-planned-industrial-supply-of-crystal-meth-jailed-for-more-than-22-years",
+    "first_seen": "2026-02-23T12:45:37Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "public_safety_bulletin",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "GB",
+    "lat": 51.45445,
+    "lng": 0.09753,
+    "event_country": "United Kingdom",
+    "event_country_code": "GB",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 597,
+    "reporting": {
+      "label": "Report to NCA",
+      "url": "https://www.nationalcrimeagency.gov.uk/what-we-do/crime-threats/cyber-crime/reporting-cyber-crime",
+      "phone": "0370 496 7622"
+    },
+    "triage": {
+      "relevance_score": 0.36,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "law_enforcement",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "+0.06 law-enforcement source metadata",
+        "-0.2 routine local crime without cross-border significance"
+      ],
+      "metadata": {
+        "author": "cms23@nca.gov.uk (cms-user23)",
+        "tags": [
+          "News"
+        ],
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:44:16Z"
+      }
+    }
+  },
+  {
+    "alert_id": "maib-uk-33bd09dc2e34",
+    "source_id": "maib-uk",
+    "source": {
+      "source_id": "maib-uk",
+      "authority_name": "UK Marine Accident Investigation Branch",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.gov.uk/government/organisations/marine-accident-investigation-branch",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Collision between the bulk carrier Polesie and the general cargo ship Verity resulting in the sinking of Verity and loss of five lives",
+    "canonical_url": "https://www.gov.uk/maib-reports/collision-between-the-bulk-carrier-polesie-and-the-general-cargo-ship-verity-resulting-in-the-sinking-of-verity-and-loss-of-five-lives",
+    "first_seen": "2026-02-11T09:59:27Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "logistics_incident",
+    "subcategory": "supply_chain_disruption",
+    "severity": "high",
+    "signal_lane": "alarm",
+    "region_tag": "GB",
+    "lat": 51.41313,
+    "lng": 0.13568,
+    "event_country": "United Kingdom",
+    "event_country_code": "GB",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 887,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.36,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "+0.08 logistics/transportation incident category",
+        "-0.22 certification/training/standards content"
+      ],
+      "metadata": {
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:41:51Z"
       }
     }
   },
@@ -2724,6 +4066,61 @@
     }
   },
   {
+    "alert_id": "sipri-news-3d9bf5040e3f",
+    "source_id": "sipri-news",
+    "source": {
+      "source_id": "sipri-news",
+      "authority_name": "SIPRI News",
+      "country": "India",
+      "country_code": "IN",
+      "region": "Europe",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.sipri.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "SIPRI experts contribute to the Raisina Dialogue 2026",
+    "canonical_url": "https://www.sipri.org/news/2026/sipri-experts-contribute-raisina-dialogue-2026",
+    "first_seen": "2026-03-20T09:29:15Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "informational",
+    "subcategory": "conflict_event",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 28.5586,
+    "lng": 77.38966,
+    "event_country": "India",
+    "event_country_code": "IN",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 1,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.38,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "public_safety_bulletin",
+      "weak_signals": [
+        "downgraded: non-actionable title from broad source",
+        "+0.08 humanitarian incident/tasking category",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "SIPRI",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:45:19Z"
+      }
+    }
+  },
+  {
     "alert_id": "gnews-conflict-global-f63a66d49574",
     "source_id": "gnews-conflict-global",
     "source": {
@@ -2881,6 +4278,58 @@
     }
   },
   {
+    "alert_id": "woah-animal-health-8f12153cd7b7",
+    "source_id": "woah-animal-health",
+    "source": {
+      "source_id": "woah-animal-health",
+      "authority_name": "WOAH Animal Health",
+      "country": "France",
+      "country_code": "FR",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.woah.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Surveillance of High Pathogenicity Avian Influenza for Smallholder Poultry Systems in Resource-Limited Settings",
+    "canonical_url": "https://www.woah.org/en/surveillance-of-high-pathogenicity-avian-influenza-for-smallholder-poultry-systems-in-resource-limited-settings/",
+    "first_seen": "2026-03-19T16:09:18Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "disease_outbreak",
+    "subcategory": "public_health",
+    "severity": "high",
+    "signal_lane": "alarm",
+    "region_tag": "INT",
+    "lat": 0,
+    "lng": 0,
+    "event_country": "France",
+    "event_country_code": "FR",
+    "freshness_hours": 17,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.38,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "+0.08 specific impact/timeline/system details",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "\u003c![CDATA[Tamara Benicasa]]\u003e",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:50:40Z"
+      }
+    }
+  },
+  {
     "alert_id": "uk-fcdo-travel-ef1935fe51d3",
     "source_id": "uk-fcdo-travel",
     "source": {
@@ -2929,6 +4378,113 @@
         "-0.08 weak incident evidence relative to narrative cues"
       ],
       "metadata": {}
+    }
+  },
+  {
+    "alert_id": "unocha-0026c484b659",
+    "source_id": "unocha",
+    "source": {
+      "source_id": "unocha",
+      "authority_name": "UN OCHA",
+      "country": "Lebanon",
+      "country_code": "LB",
+      "region": "International",
+      "authority_type": "public_safety_program",
+      "base_url": "https://www.unocha.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Today's top news: 87 million lives campaign, Lebanon, Occupied Palestinian Territory, Democratic Republic of the Congo, Ukraine",
+    "canonical_url": "https://www.unocha.org/news/todays-top-news-87-million-lives-campaign-lebanon-occupied-palestinian-territory-democratic",
+    "first_seen": "2026-03-11T16:19:37Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "conflict_monitoring",
+    "subcategory": "conflict_event",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "INT",
+    "lat": 33.89785,
+    "lng": 35.37942,
+    "event_country": "Lebanon",
+    "event_country_code": "LB",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 209,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.38,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "public_safety_bulletin",
+      "weak_signals": [
+        "+0.08 humanitarian incident/tasking category",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "Jaspreet Kindra",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:49:10Z"
+      }
+    }
+  },
+  {
+    "alert_id": "maib-uk-a48263362012",
+    "source_id": "maib-uk",
+    "source": {
+      "source_id": "maib-uk",
+      "authority_name": "UK Marine Accident Investigation Branch",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "regulatory",
+      "base_url": "https://www.gov.uk/government/organisations/marine-accident-investigation-branch",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Rob Loder appointed as Chief Inspector of Marine Accidents",
+    "canonical_url": "https://www.gov.uk/government/news/rob-loder-appointed-as-chief-inspector-of-marine-accidents",
+    "first_seen": "2026-03-04T10:00:01Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "logistics_incident",
+    "subcategory": "supply_chain_disruption",
+    "severity": "info",
+    "signal_lane": "info",
+    "region_tag": "GB",
+    "lat": 50.93392,
+    "lng": -1.36189,
+    "event_country": "United Kingdom",
+    "event_country_code": "GB",
+    "event_geo_source": "llm",
+    "event_geo_confidence": 0.65,
+    "freshness_hours": 383,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.38,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "+0.08 logistics/transportation incident category",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:39:23Z"
+      }
     }
   },
   {
@@ -3045,6 +4601,58 @@
     }
   },
   {
+    "alert_id": "woah-animal-health-e51729fcc64a",
+    "source_id": "woah-animal-health",
+    "source": {
+      "source_id": "woah-animal-health",
+      "authority_name": "WOAH Animal Health",
+      "country": "France",
+      "country_code": "FR",
+      "region": "International",
+      "authority_type": "regulatory",
+      "base_url": "https://www.woah.org",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Statement on the impact of HPAI on wildlife worldwide",
+    "canonical_url": "https://www.woah.org/en/statement-on-the-impact-of-hpai-on-wildlife-worldwide/",
+    "first_seen": "2025-12-18T09:44:35Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "disease_outbreak",
+    "subcategory": "public_health",
+    "severity": "high",
+    "signal_lane": "alarm",
+    "region_tag": "INT",
+    "lat": 0,
+    "lng": 0,
+    "event_country": "France",
+    "event_country_code": "FR",
+    "freshness_hours": 2208,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.38,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "official_update",
+      "weak_signals": [
+        "+0.08 specific impact/timeline/system details",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "\u003c![CDATA[Paula Pinet]]\u003e",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:50:49Z"
+      }
+    }
+  },
+  {
     "alert_id": "emsa-maritime-4d01103281d0",
     "source_id": "emsa-maritime",
     "source": {
@@ -3098,6 +4706,60 @@
         "noise_policy_variant": "a",
         "noise_actionability_score": 0.15,
         "noise_decision_ts": "2026-03-20T09:35:24Z"
+      }
+    }
+  },
+  {
+    "alert_id": "us-state-dept-press-cfd2a1678728",
+    "source_id": "us-state-dept-press",
+    "source": {
+      "source_id": "us-state-dept-press",
+      "authority_name": "US State Department Press",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.state.gov",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "On the Death of Ilia II, Catholicos-Patriarch of the Georgian Orthodox Church",
+    "canonical_url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/03/on-the-death-of-ilia-ii-catholicos-patriarch-of-the-georgian-orthodox-church/",
+    "first_seen": "2026-03-19T20:05:40Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "legislative",
+    "subcategory": "official_statement",
+    "severity": "high",
+    "signal_lane": "alarm",
+    "region_tag": "US",
+    "lat": 38.77341,
+    "lng": -77.19166,
+    "event_country": "United States",
+    "event_country_code": "US",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 13,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.4,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "security_bulletin",
+      "weak_signals": [
+        "+0.1 contains response/reporting actions",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "\u003c![CDATA[Marco Rubio, Secretary of State]]\u003e",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:48:41Z"
       }
     }
   },
@@ -3164,6 +4826,114 @@
         "noise_policy_variant": "a",
         "noise_actionability_score": 0.15,
         "noise_decision_ts": "2026-03-20T09:38:05Z"
+      }
+    }
+  },
+  {
+    "alert_id": "us-state-dept-press-c7502c38325e",
+    "source_id": "us-state-dept-press",
+    "source": {
+      "source_id": "us-state-dept-press",
+      "authority_name": "US State Department Press",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.state.gov",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Joint Statement by the Governments of the United States of America, the Democratic Republic of the Congo, and the Republic of Rwanda on Advancing the Washington Accords",
+    "canonical_url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/03/joint-statement-by-the-governments-of-the-united-states-of-america-the-democratic-republic-of-the-congo-and-the-republic-of-rwanda-on-advancing-the-washington-accords/",
+    "first_seen": "2026-03-19T00:28:25Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "legislative",
+    "subcategory": "official_statement",
+    "severity": "medium",
+    "signal_lane": "intel",
+    "region_tag": "US",
+    "lat": 39.00039,
+    "lng": -77.12673,
+    "event_country": "United States",
+    "event_country_code": "US",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 33,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.4,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "security_bulletin",
+      "weak_signals": [
+        "+0.1 contains response/reporting actions",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "\u003c![CDATA[Office of the Spokesperson]]\u003e",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:48:41Z"
+      }
+    }
+  },
+  {
+    "alert_id": "us-state-dept-press-432065083265",
+    "source_id": "us-state-dept-press",
+    "source": {
+      "source_id": "us-state-dept-press",
+      "authority_name": "US State Department Press",
+      "country": "United States",
+      "country_code": "US",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.state.gov",
+      "scope": "national",
+      "level": "national",
+      "operational_relevance": 0.82
+    },
+    "title": "Deputy Secretary Landau’s Call with Nauruan President Adeang",
+    "canonical_url": "https://www.state.gov/releases/office-of-the-spokesperson/2026/03/deputy-secretary-landaus-call-with-nauruan-president-adeang/",
+    "first_seen": "2026-03-17T20:57:34Z",
+    "last_seen": "2026-03-20T09:29:15Z",
+    "status": "active",
+    "category": "legislative",
+    "subcategory": "official_statement",
+    "severity": "medium",
+    "signal_lane": "intel",
+    "region_tag": "US",
+    "lat": 38.92568,
+    "lng": -76.93502,
+    "event_country": "United States",
+    "event_country_code": "US",
+    "event_geo_source": "capital",
+    "event_geo_confidence": 0.55,
+    "freshness_hours": 61,
+    "reporting": {},
+    "triage": {
+      "relevance_score": 0.4,
+      "threshold": 0.42,
+      "confidence": "low",
+      "disposition": "filtered_review",
+      "publication_type": "security_bulletin",
+      "weak_signals": [
+        "+0.1 contains response/reporting actions",
+        "-0.12 general institutional/news language",
+        "-0.08 weak incident evidence relative to narrative cues"
+      ],
+      "metadata": {
+        "author": "\u003c![CDATA[Office of the Spokesperson]]\u003e",
+        "noise_decision": "keep",
+        "noise_policy_version": "v1.0.0",
+        "noise_policy_variant": "a",
+        "noise_actionability_score": 0.15,
+        "noise_decision_ts": "2026-03-20T09:48:41Z"
       }
     }
   },
@@ -3282,7 +5052,7 @@
     }
   },
   {
-    "alert_id": "esma-warnings-169f8fb6b6d6",
+    "alert_id": "esma-warnings-9012fbe8319d",
     "source_id": "esma-warnings",
     "source": {
       "source_id": "esma-warnings",
@@ -3296,8 +5066,8 @@
       "level": "national",
       "operational_relevance": 0.82
     },
-    "title": "New investment funds drive reduction in costs to investors",
-    "canonical_url": "https://www.esma.europa.eu/press-news/esma-news/new-investment-funds-drive-reduction-costs-investors",
+    "title": "ESMA sets out actions to simplify the retail investor journey and make investing more accessible",
+    "canonical_url": "https://www.esma.europa.eu/press-news/esma-news/esma-sets-out-actions-simplify-retail-investor-journey-and-make-investing-more",
     "first_seen": "2026-03-20T09:29:15Z",
     "last_seen": "2026-03-20T09:29:15Z",
     "status": "active",
@@ -3306,8 +5076,8 @@
     "severity": "info",
     "signal_lane": "info",
     "region_tag": "EU",
-    "lat": 48.84299,
-    "lng": 2.54858,
+    "lat": 48.81475,
+    "lng": 2.44064,
     "event_country": "France",
     "event_country_code": "FR",
     "event_geo_source": "capital",
@@ -3337,7 +5107,7 @@
     }
   },
   {
-    "alert_id": "esma-warnings-9012fbe8319d",
+    "alert_id": "esma-warnings-169f8fb6b6d6",
     "source_id": "esma-warnings",
     "source": {
       "source_id": "esma-warnings",
@@ -3351,8 +5121,8 @@
       "level": "national",
       "operational_relevance": 0.82
     },
-    "title": "ESMA sets out actions to simplify the retail investor journey and make investing more accessible",
-    "canonical_url": "https://www.esma.europa.eu/press-news/esma-news/esma-sets-out-actions-simplify-retail-investor-journey-and-make-investing-more",
+    "title": "New investment funds drive reduction in costs to investors",
+    "canonical_url": "https://www.esma.europa.eu/press-news/esma-news/new-investment-funds-drive-reduction-costs-investors",
     "first_seen": "2026-03-20T09:29:15Z",
     "last_seen": "2026-03-20T09:29:15Z",
     "status": "active",
@@ -3361,8 +5131,8 @@
     "severity": "info",
     "signal_lane": "info",
     "region_tag": "EU",
-    "lat": 48.81475,
-    "lng": 2.44064,
+    "lat": 48.84299,
+    "lng": 2.54858,
     "event_country": "France",
     "event_country_code": "FR",
     "event_geo_source": "capital",
