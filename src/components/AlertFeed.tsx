@@ -23,6 +23,12 @@ import { Clock, Building2, ChevronDown, Globe } from "lucide-react";
 const LIVE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
 const PREFERRED_REGION_ORDER = ["Europe", "Africa", "North America", "Asia"] as const;
 
+function isUCDPAlert(alert: Alert): boolean {
+  const sourceID = (alert.source_id || "").trim().toLowerCase();
+  if (sourceID === "ucdp-ged") return true;
+  return (alert.source.authority_name || "").toLowerCase().includes("ucdp");
+}
+
 interface Props {
   alerts: Alert[];
   historicalAlerts: Alert[];
@@ -174,27 +180,13 @@ export function AlertFeed({
 
   const contextAlerts = useMemo(() => {
     const combined = [...alerts, ...historicalAlerts]
-      .filter((alert) => (alert.signal_lane ?? (alert.severity === "info" ? "info" : "intel")) === "info")
+      .filter((alert) => isUCDPAlert(alert))
       .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime());
     const deduped = new Map<string, Alert>();
     for (const alert of combined) {
       if (!deduped.has(alert.alert_id)) {
         deduped.set(alert.alert_id, alert);
       }
-    }
-    const infoItems = [...deduped.values()];
-    if (infoItems.length >= 8) {
-      return infoItems;
-    }
-
-    const supplement = [...alerts, ...historicalAlerts]
-      .filter((alert) => (alert.signal_lane ?? (alert.severity === "info" ? "info" : "intel")) !== "info")
-      .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime());
-    for (const alert of supplement) {
-      if (!deduped.has(alert.alert_id)) {
-        deduped.set(alert.alert_id, alert);
-      }
-      if (deduped.size >= 12) break;
     }
     return [...deduped.values()];
   }, [alerts, historicalAlerts]);
