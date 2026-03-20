@@ -1,6 +1,6 @@
 import type { Alert, AlertCategory, Severity } from "@/types/alert";
 import type { ConflictLens } from "@/lib/conflict-lenses";
-import type { ZoneBriefingHotspot, ZoneBriefingRecord } from "@/types/zone-briefing";
+import type { ZoneBriefingHotspot, ZoneBriefingRecord, ZoneBriefingConflict, ZoneBriefingACLED } from "@/types/zone-briefing";
 import { alertMatchesConflictLens } from "@/lib/conflict-lenses";
 import { categoryLabels } from "@/lib/severity";
 
@@ -37,6 +37,10 @@ export interface ConflictBrief {
   recent7d: number;
   prior7d: number;
   trendLabel: string;
+  conflictIntensity?: string;
+  conflictType?: string;
+  activeConflicts?: ZoneBriefingConflict[];
+  acledRecency?: ZoneBriefingACLED;
 }
 
 function buildRankedList(entries: Map<string, { label: string; count: number }>, limit: number) {
@@ -206,5 +210,9 @@ export function mergeZoneBriefing(
     actors: override.actors && override.actors.length > 0 ? override.actors : brief.actors,
     violenceTypes: override.violenceTypes && override.violenceTypes.length > 0 ? override.violenceTypes : brief.violenceTypes,
     hotspots: override.hotspots && override.hotspots.length > 0 ? override.hotspots : brief.hotspots,
+    conflictIntensity: override.conflictIntensity,
+    conflictType: override.conflictType,
+    activeConflicts: override.activeConflicts,
+    acledRecency: override.acledRecency,
   };
 }

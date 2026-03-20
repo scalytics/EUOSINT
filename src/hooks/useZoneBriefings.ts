@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ZoneBriefingRecord, ZoneBriefingHotspot } from "@/types/zone-briefing";
+import type { ZoneBriefingRecord, ZoneBriefingHotspot, ZoneBriefingConflict, ZoneBriefingACLED } from "@/types/zone-briefing";
 
 const ZONE_BRIEFINGS_URL = `${import.meta.env.BASE_URL}zone-briefings.json`;
 
@@ -12,10 +12,33 @@ function mapHotspot(raw: Record<string, unknown>): ZoneBriefingHotspot {
   };
 }
 
+function mapConflict(raw: Record<string, unknown>): ZoneBriefingConflict {
+  return {
+    conflictId: (raw.conflict_id as string) ?? (raw.conflictId as string) ?? "",
+    name: (raw.name as string) ?? "",
+    type: (raw.type as string) ?? "",
+    intensity: (raw.intensity as number) ?? 0,
+  };
+}
+
+function mapACLED(raw: Record<string, unknown>): ZoneBriefingACLED {
+  return {
+    events7d: (raw.events_7d as number) ?? (raw.events7d as number) ?? 0,
+    fatalities7d: (raw.fatalities_7d as number) ?? (raw.fatalities7d as number) ?? 0,
+    topEvent: (raw.top_event as string) ?? (raw.topEvent as string),
+    asOf: (raw.as_of as string) ?? (raw.asOf as string),
+  };
+}
+
 function mapRecord(raw: Record<string, unknown>): ZoneBriefingRecord {
   const hotspots = Array.isArray(raw.hotspots)
     ? (raw.hotspots as Record<string, unknown>[]).map(mapHotspot)
     : undefined;
+  const activeConflicts = Array.isArray(raw.active_conflicts ?? raw.activeConflicts)
+    ? ((raw.active_conflicts ?? raw.activeConflicts) as Record<string, unknown>[]).map(mapConflict)
+    : undefined;
+  const acledRaw = (raw.acled_recency ?? raw.acledRecency) as Record<string, unknown> | undefined;
+  const acledRecency = acledRaw && typeof acledRaw === "object" ? mapACLED(acledRaw) : undefined;
   return {
     lensId: (raw.lens_id as string) ?? (raw.lensId as string) ?? "",
     source: (raw.source as string) ?? "",
@@ -28,6 +51,10 @@ function mapRecord(raw: Record<string, unknown>): ZoneBriefingRecord {
     actors: (raw.actors as string[]),
     violenceTypes: (raw.violence_types as string[]) ?? (raw.violenceTypes as string[]),
     hotspots,
+    conflictIntensity: (raw.conflict_intensity as string) ?? (raw.conflictIntensity as string),
+    conflictType: (raw.conflict_type as string) ?? (raw.conflictType as string),
+    activeConflicts,
+    acledRecency,
   };
 }
 
