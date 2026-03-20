@@ -2035,15 +2035,18 @@ func (r Runner) fetchUCDP(ctx context.Context, nctx normalize.Context, source mo
 func (r Runner) fetchUCDPItems(ctx context.Context, nctx normalize.Context, source model.RegistrySource) ([]parse.UCDPItem, error) {
 	token := strings.TrimSpace(nctx.Config.UCDPAccessToken)
 	if token == "" {
-		// Silent drop by configuration: no token means UCDP is disabled.
 		return nil, nil
 	}
 	client := r.clientFactory(nctx.Config)
 	headers := map[string]string{
 		"x-ucdp-access-token": token,
 	}
-	feedURL, explicitPage := ensureUCDPQuery(source.FeedURL, 100)
-	body, err := client.TextWithHeaders(ctx, feedURL, source.FollowRedirects, "application/json", headers)
+
+	// Override version from config so the alert pipeline also uses the latest candidate.
+	feedURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/gedevents/%s?pagesize=500",
+		url.QueryEscape(nctx.Config.UCDPAPIVersion))
+
+	body, err := client.TextWithHeaders(ctx, feedURL+"&page=0", false, "application/json", headers)
 	if err != nil {
 		return nil, err
 	}
@@ -2051,15 +2054,25 @@ func (r Runner) fetchUCDPItems(ctx context.Context, nctx normalize.Context, sour
 	if err != nil {
 		return nil, err
 	}
-	if !explicitPage {
-		if totalPages := parseUCDPTotalPages(body); totalPages > 1 {
-			lastPageURL := setUCDPPage(feedURL, totalPages-1)
-			if tailBody, tailErr := client.TextWithHeaders(ctx, lastPageURL, source.FollowRedirects, "application/json", headers); tailErr == nil {
-				if tailItems, parseErr := parse.ParseUCDP(tailBody); parseErr == nil && len(tailItems) > 0 {
-					items = tailItems
-				}
-			}
+
+	// Full pagination.
+	totalPages := parseUCDPTotalPages(body)
+	for page := 1; page < totalPages; page++ {
+		select {
+		case <-ctx.Done():
+			return items, nil
+		case <-time.After(200 * time.Millisecond):
 		}
+		pageURL := fmt.Sprintf("%s&page=%d", feedURL, page)
+		pageBody, err := client.TextWithHeaders(ctx, pageURL, false, "application/json", headers)
+		if err != nil {
+			break
+		}
+		pageItems, err := parse.ParseUCDP(pageBody)
+		if err != nil {
+			break
+		}
+		items = append(items, pageItems...)
 	}
 	return items, nil
 }
@@ -2068,22 +2081,78 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	if strings.TrimSpace(cfg.ZoneBriefingsOutputPath) == "" {
 		return nil
 	}
-	var ucdpSource *model.RegistrySource
-	for i := range sources {
-		if sources[i].Type == "ucdp-json" {
-			ucdpSource = &sources[i]
-			break
+
+	// Staleness check: skip if output file is fresh enough.
+	if info, err := os.Stat(cfg.ZoneBriefingsOutputPath); err == nil {
+		age := time.Since(info.ModTime())
+		if age < time.Duration(cfg.ZoneBriefingRefreshHours)*time.Hour {
+			fmt.Fprintf(r.stderr, "zone briefings: skipping, file is %.1fh old (threshold %dh)\n", age.Hours(), cfg.ZoneBriefingRefreshHours)
+			return nil
 		}
 	}
-	if ucdpSource == nil {
+
+	token := strings.TrimSpace(cfg.UCDPAccessToken)
+	if token == "" {
 		return output.WriteZoneBriefings(cfg.ZoneBriefingsOutputPath, []model.ZoneBriefingRecord{})
 	}
-	nctx := normalize.Context{Config: cfg, Now: time.Now().UTC()}
-	items, err := r.fetchUCDPItems(ctx, nctx, *ucdpSource)
-	if err != nil {
-		return err
+	headers := map[string]string{"x-ucdp-access-token": token}
+	now := time.Now().UTC()
+
+	// Discover latest UCDP dataset versions from the docs page.
+	gedVersion := cfg.UCDPAPIVersion
+	conflictVersion := "25.1"
+	if versions, err := discoverUCDPVersions(ctx); err != nil {
+		fmt.Fprintf(r.stderr, "WARN UCDP version discovery: %v (using defaults %s / %s)\n", err, gedVersion, conflictVersion)
+	} else {
+		if versions.candidate != "" {
+			gedVersion = versions.candidate
+		}
+		if versions.annual != "" {
+			conflictVersion = versions.annual
+		}
+		fmt.Fprintf(r.stderr, "UCDP versions: GED candidate=%s, yearly=%s\n", gedVersion, conflictVersion)
 	}
-	briefings := zonebrief.Build(items, nctx.Now)
+
+	// Fetch conflict metadata (global, paginated).
+	conflicts, err := r.fetchUCDPConflicts(ctx, cfg, headers, conflictVersion)
+	if err != nil {
+		fmt.Fprintf(r.stderr, "WARN ucdpprioconflict fetch: %v\n", err)
+	}
+
+	// Fetch UCDP events per lens.
+	var allItems []parse.UCDPItem
+	seen := map[string]struct{}{}
+	for _, lens := range zonebrief.SupportedLenses {
+		lensItems, err := r.fetchUCDPItemsForLens(ctx, cfg, lens, headers, gedVersion)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN UCDP fetch for %s: %v\n", lens.ID, err)
+			continue
+		}
+		for _, item := range lensItems {
+			key := item.Link
+			if key == "" {
+				key = item.Title + "|" + item.Published
+			}
+			if _, dup := seen[key]; dup {
+				continue
+			}
+			seen[key] = struct{}{}
+			allItems = append(allItems, item)
+		}
+	}
+
+	// Fetch ACLED recency data if enabled.
+	var acledItems []parse.ACLEDItem
+	if cfg.ZoneBriefingACLEDEnabled {
+		items, err := r.fetchACLEDItemsForBriefings(ctx, cfg)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN ACLED briefing fetch: %v\n", err)
+		} else {
+			acledItems = items
+		}
+	}
+
+	briefings := zonebrief.Build(allItems, conflicts, acledItems, now)
 	if err := output.WriteZoneBriefings(cfg.ZoneBriefingsOutputPath, briefings); err != nil {
 		return err
 	}
@@ -2104,6 +2173,208 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 		return err
 	}
 	return nil
+}
+
+// ucdpVersions holds discovered UCDP dataset versions.
+type ucdpVersions struct {
+	candidate string // monthly candidate for GED (e.g. "26.0.1")
+	annual    string // yearly release for conflict tables (e.g. "25.1")
+}
+
+// discoverUCDPVersions scrapes the UCDP API docs page to find the latest dataset versions.
+func discoverUCDPVersions(ctx context.Context) (ucdpVersions, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://ucdp.uu.se/apidocs/", nil)
+	if err != nil {
+		return ucdpVersions{}, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return ucdpVersions{}, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 512*1024))
+	if err != nil {
+		return ucdpVersions{}, err
+	}
+	html := string(body)
+	v := ucdpVersions{}
+	if m := regexp.MustCompile(`Monthly release:\s*<code>([^<]+)</code>`).FindStringSubmatch(html); len(m) > 1 {
+		v.candidate = strings.TrimSpace(m[1])
+	}
+	if m := regexp.MustCompile(`latest version of the yearly datasets:\s*<code>([^<]+)</code>`).FindStringSubmatch(html); len(m) > 1 {
+		v.annual = strings.TrimSpace(m[1])
+	}
+	if v.candidate == "" && v.annual == "" {
+		return v, fmt.Errorf("could not parse UCDP versions from docs page")
+	}
+	return v, nil
+}
+
+// fetchUCDPItemsForLens fetches UCDP GED events filtered by lens countries with full pagination.
+func (r Runner) fetchUCDPItemsForLens(ctx context.Context, cfg config.Config, lens zonebrief.LensDef, headers map[string]string, version string) ([]parse.UCDPItem, error) {
+	// Build country filter from lens gwno IDs.
+	var gwnos []string
+	for cc := range lens.CountryCodes {
+		if ref, ok := zonebrief.UCDPCountryRefs[cc]; ok && ref.ID != "" {
+			gwnos = append(gwnos, ref.ID)
+		}
+	}
+	if len(gwnos) == 0 {
+		return nil, nil
+	}
+
+	now := time.Now().UTC()
+	startDate := now.AddDate(0, 0, -90).Format("2006-01-02")
+	endDate := now.Format("2006-01-02")
+
+	baseURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/gedevents/%s?Country=%s&StartDate=%s&EndDate=%s&pagesize=500",
+		url.QueryEscape(version),
+		url.QueryEscape(strings.Join(gwnos, ",")),
+		url.QueryEscape(startDate),
+		url.QueryEscape(endDate))
+
+	client := r.clientFactory(cfg)
+
+	// Page 1.
+	body, err := client.TextWithHeaders(ctx, baseURL+"&page=0", false, "application/json", headers)
+	if err != nil {
+		return nil, err
+	}
+	items, err := parse.ParseUCDP(body)
+	if err != nil {
+		return nil, err
+	}
+	totalPages := parseUCDPTotalPages(body)
+	if totalPages <= 1 {
+		return items, nil
+	}
+
+	// Remaining pages.
+	for page := 1; page < totalPages; page++ {
+		select {
+		case <-ctx.Done():
+			return items, nil
+		case <-time.After(200 * time.Millisecond):
+		}
+		pageURL := fmt.Sprintf("%s&page=%d", baseURL, page)
+		pageBody, err := client.TextWithHeaders(ctx, pageURL, false, "application/json", headers)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN UCDP page %d for %s: %v\n", page, lens.ID, err)
+			break
+		}
+		pageItems, err := parse.ParseUCDP(pageBody)
+		if err != nil {
+			break
+		}
+		items = append(items, pageItems...)
+	}
+	return items, nil
+}
+
+// fetchUCDPConflicts fetches the ucdpprioconflict dataset with full pagination.
+// The conflict table only exists for annual releases (e.g. 25.1), not monthly candidates.
+func (r Runner) fetchUCDPConflicts(ctx context.Context, cfg config.Config, headers map[string]string, version string) ([]parse.UCDPConflict, error) {
+	baseURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/ucdpprioconflict/%s?pagesize=500",
+		url.QueryEscape(version))
+	client := r.clientFactory(cfg)
+
+	// Page 0.
+	body, err := client.TextWithHeaders(ctx, baseURL+"&page=0", false, "application/json", headers)
+	if err != nil {
+		return nil, err
+	}
+	conflicts, err := parse.ParseUCDPConflicts(body)
+	if err != nil {
+		return nil, err
+	}
+	totalPages := parseUCDPTotalPages(body)
+	if totalPages <= 1 {
+		return conflicts, nil
+	}
+
+	// Remaining pages.
+	for page := 1; page < totalPages; page++ {
+		select {
+		case <-ctx.Done():
+			return conflicts, nil
+		case <-time.After(200 * time.Millisecond):
+		}
+		pageURL := fmt.Sprintf("%s&page=%d", baseURL, page)
+		pageBody, err := client.TextWithHeaders(ctx, pageURL, false, "application/json", headers)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN ucdpprioconflict page %d: %v\n", page, err)
+			break
+		}
+		pageConflicts, err := parse.ParseUCDPConflicts(pageBody)
+		if err != nil {
+			break
+		}
+		conflicts = append(conflicts, pageConflicts...)
+	}
+	// ParseUCDPConflicts already deduplicates by conflict_id (keeps highest year),
+	// but since we call it per-page we need a final dedup pass.
+	return deduplicateConflicts(conflicts), nil
+}
+
+func deduplicateConflicts(conflicts []parse.UCDPConflict) []parse.UCDPConflict {
+	best := map[string]parse.UCDPConflict{}
+	for _, c := range conflicts {
+		if existing, ok := best[c.ConflictID]; !ok || c.Year > existing.Year {
+			best[c.ConflictID] = c
+		}
+	}
+	out := make([]parse.UCDPConflict, 0, len(best))
+	for _, c := range best {
+		out = append(out, c)
+	}
+	return out
+}
+
+// fetchACLEDItemsForBriefings fetches raw ACLED items for briefing enrichment (7-day window).
+func (r Runner) fetchACLEDItemsForBriefings(ctx context.Context, cfg config.Config) ([]parse.ACLEDItem, error) {
+	if cfg.ACLEDUsername == "" || cfg.ACLEDPassword == "" {
+		return nil, nil
+	}
+	token, err := acledOAuthToken(ctx, cfg.ACLEDUsername, cfg.ACLEDPassword)
+	if err != nil {
+		return nil, fmt.Errorf("ACLED OAuth: %w", err)
+	}
+	now := time.Now().UTC()
+	from := now.AddDate(0, 0, -7).Format("2006-01-02")
+	to := now.Format("2006-01-02")
+
+	var allItems []parse.ACLEDItem
+	for page := 1; ; page++ {
+		pageURL := fmt.Sprintf("https://api.acleddata.com/acled/read?_format=json&event_date=%s|%s&event_date_where=BETWEEN&order=desc&sort=event_date&page=%d&limit=500",
+			from, to, page)
+		body, err := acledAuthGet(ctx, pageURL, token)
+		if err != nil {
+			if page == 1 {
+				return nil, err
+			}
+			break
+		}
+		items, total, err := parse.ParseACLED(body)
+		if err != nil {
+			if page == 1 {
+				return nil, err
+			}
+			break
+		}
+		allItems = append(allItems, items...)
+		if total > 0 && page*500 >= total {
+			break
+		}
+		if len(items) < 500 {
+			break
+		}
+		select {
+		case <-time.After(200 * time.Millisecond):
+		case <-ctx.Done():
+			return allItems, nil
+		}
+	}
+	return allItems, nil
 }
 
 func writeJSONArtifact(path string, value any) error {
