@@ -14,14 +14,20 @@ import (
 )
 
 type lensDef struct {
-	ID                  string
-	Title               string
-	OverlayType         string
-	CoverageNote        string
-	ReferenceCountryID  string
-	MatchCountryCodes   map[string]struct{}
-	OverlayCountryCodes map[string]struct{}
-	Bounds              bounds
+	ID                 string
+	Title              string
+	OverlayType        string
+	CoverageNote       string
+	ReferenceCountryID string
+	CountryCodes       map[string]struct{}
+	Bounds             bounds
+}
+
+type ucdpCountryRef struct {
+	ID    string
+	ISO2  string
+	ISO3  string
+	Label string
 }
 
 type bounds struct {
@@ -32,12 +38,44 @@ type bounds struct {
 }
 
 var supportedLenses = []lensDef{
-	{ID: "gaza", Title: "Gaza", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "666", MatchCountryCodes: makeSet("PS", "IL", "EG", "LB", "JO"), Bounds: bounds{29.5, 32.0, 34.8, 36.5}},
-	{ID: "sudan", Title: "Sudan", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "625", MatchCountryCodes: makeSet("SD", "SS", "TD", "CF", "ET", "ER"), OverlayCountryCodes: makeSet("SD"), Bounds: bounds{3.0, 21.5, 23.5, 39.5}},
-	{ID: "ukraine", Title: "Ukraine South", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "369", MatchCountryCodes: makeSet("UA", "RU", "RO", "BG", "TR"), Bounds: bounds{43.0, 27.0, 49.5, 39.5}},
-	{ID: "red-sea", Title: "Red Sea", OverlayType: "maritime", CoverageNote: "Structured conflict context from UCDP GED; maritime live feeds remain primary for immediate route risk.", ReferenceCountryID: "679", MatchCountryCodes: makeSet("YE", "SA", "EG", "SD", "ER", "DJ", "SO"), Bounds: bounds{10.0, 31.0, 31.8, 45.5}},
-	{ID: "sahel", Title: "Sahel", OverlayType: "terror", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "432", MatchCountryCodes: makeSet("ML", "NE", "BF", "MR", "DZ", "TD"), Bounds: bounds{10.0, -17.5, 24.5, 25.0}},
-	{ID: "drc-east", Title: "DRC East", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "490", MatchCountryCodes: makeSet("CD", "RW", "UG", "BI"), Bounds: bounds{-8.5, 27.0, 4.5, 31.8}},
+	{ID: "gaza", Title: "Gaza", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "666", CountryCodes: makeSet("PS", "IL", "EG", "LB", "JO"), Bounds: bounds{29.5, 32.0, 34.8, 36.5}},
+	{ID: "sudan", Title: "Sudan", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "625", CountryCodes: makeSet("SD", "SS", "TD", "CF", "ET", "ER"), Bounds: bounds{3.0, 21.5, 23.5, 39.5}},
+	{ID: "ukraine", Title: "Ukraine South", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "369", CountryCodes: makeSet("UA", "RU", "RO", "BG", "TR"), Bounds: bounds{43.0, 27.0, 49.5, 39.5}},
+	{ID: "red-sea", Title: "Red Sea", OverlayType: "maritime", CoverageNote: "Structured conflict context from UCDP GED; maritime live feeds remain primary for immediate route risk.", ReferenceCountryID: "679", CountryCodes: makeSet("YE", "SA", "EG", "SD", "ER", "DJ", "SO"), Bounds: bounds{10.0, 31.0, 31.8, 45.5}},
+	{ID: "sahel", Title: "Sahel", OverlayType: "terror", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "432", CountryCodes: makeSet("ML", "NE", "BF", "MR", "DZ", "TD"), Bounds: bounds{10.0, -17.5, 24.5, 25.0}},
+	{ID: "drc-east", Title: "DRC East", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "490", CountryCodes: makeSet("CD", "RW", "UG", "BI"), Bounds: bounds{-8.5, 27.0, 4.5, 31.8}},
+}
+
+var ucdpCountryRefs = map[string]ucdpCountryRef{
+	"DZ": {ID: "615", ISO2: "DZ", ISO3: "DZA", Label: "Algeria"},
+	"BF": {ID: "439", ISO2: "BF", ISO3: "BFA", Label: "Burkina Faso"},
+	"BI": {ID: "516", ISO2: "BI", ISO3: "BDI", Label: "Burundi"},
+	"BG": {ID: "355", ISO2: "BG", ISO3: "BGR", Label: "Bulgaria"},
+	"CD": {ID: "490", ISO2: "CD", ISO3: "COD", Label: "Democratic Republic of the Congo"},
+	"CF": {ID: "482", ISO2: "CF", ISO3: "CAF", Label: "Central African Republic"},
+	"DJ": {ID: "522", ISO2: "DJ", ISO3: "DJI", Label: "Djibouti"},
+	"EG": {ID: "651", ISO2: "EG", ISO3: "EGY", Label: "Egypt"},
+	"ER": {ID: "531", ISO2: "ER", ISO3: "ERI", Label: "Eritrea"},
+	"ET": {ID: "530", ISO2: "ET", ISO3: "ETH", Label: "Ethiopia"},
+	"IL": {ID: "666", ISO2: "IL", ISO3: "ISR", Label: "Israel"},
+	"JO": {ID: "663", ISO2: "JO", ISO3: "JOR", Label: "Jordan"},
+	"LB": {ID: "660", ISO2: "LB", ISO3: "LBN", Label: "Lebanon"},
+	"ML": {ID: "432", ISO2: "ML", ISO3: "MLI", Label: "Mali"},
+	"MR": {ID: "435", ISO2: "MR", ISO3: "MRT", Label: "Mauritania"},
+	"NE": {ID: "436", ISO2: "NE", ISO3: "NER", Label: "Niger"},
+	"PS": {ISO2: "PS", ISO3: "PSE", Label: "Palestine"},
+	"RO": {ID: "360", ISO2: "RO", ISO3: "ROU", Label: "Romania"},
+	"RU": {ID: "365", ISO2: "RU", ISO3: "RUS", Label: "Russia"},
+	"RW": {ID: "517", ISO2: "RW", ISO3: "RWA", Label: "Rwanda"},
+	"SA": {ID: "670", ISO2: "SA", ISO3: "SAU", Label: "Saudi Arabia"},
+	"SD": {ID: "625", ISO2: "SD", ISO3: "SDN", Label: "Sudan"},
+	"SO": {ID: "520", ISO2: "SO", ISO3: "SOM", Label: "Somalia"},
+	"SS": {ID: "626", ISO2: "SS", ISO3: "SSD", Label: "South Sudan"},
+	"TD": {ID: "483", ISO2: "TD", ISO3: "TCD", Label: "Chad"},
+	"TR": {ID: "640", ISO2: "TR", ISO3: "TUR", Label: "Turkey"},
+	"UA": {ID: "369", ISO2: "UA", ISO3: "UKR", Label: "Ukraine"},
+	"UG": {ID: "500", ISO2: "UG", ISO3: "UGA", Label: "Uganda"},
+	"YE": {ID: "679", ISO2: "YE", ISO3: "YEM", Label: "Yemen"},
 }
 
 func Build(items []parse.UCDPItem, now time.Time) []model.ZoneBriefingRecord {
@@ -62,8 +100,7 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 	dyadCounts := map[string]int{}
 	admin1Counts := map[string]int{}
 	admin2Counts := map[string]int{}
-	countryIDCounts := map[string]int{}
-	countryLabelByID := map[string]string{}
+	countryCodeCounts := map[string]int{}
 	hotspots := map[string]*hotspotAgg{}
 
 	var latest time.Time
@@ -117,18 +154,8 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 		if item.Admin2 != "" {
 			admin2Counts[item.Admin2]++
 		}
-		if strings.TrimSpace(item.CountryID) != "" {
-			countryIDCounts[strings.TrimSpace(item.CountryID)]++
-			if ref, ok := parse.UCDPCountryRefByID(item.CountryID); ok {
-				countryLabelByID[item.CountryID] = ref.Label
-			} else if strings.TrimSpace(item.Country) != "" {
-				countryLabelByID[item.CountryID] = strings.TrimSpace(item.Country)
-			}
-		} else if strings.TrimSpace(item.CountryCode) != "" {
-			if ref, ok := parse.UCDPCountryRefByISO2(item.CountryCode); ok && strings.TrimSpace(ref.ID) != "" {
-				countryIDCounts[ref.ID]++
-				countryLabelByID[ref.ID] = ref.Label
-			}
+		if strings.TrimSpace(item.CountryCode) != "" {
+			countryCodeCounts[strings.TrimSpace(item.CountryCode)]++
 		}
 		if item.WherePrecision > 0 {
 			wherePrecSum += float64(item.WherePrecision)
@@ -159,10 +186,18 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 	topDyads := topKeys(dyadCounts, 3)
 	topAdmin1 := topKeys(admin1Counts, 3)
 	topAdmin2 := topKeys(admin2Counts, 4)
-	topCountryIDs := topKeys(countryIDCounts, 6)
-	countryLabels := make([]string, 0, len(topCountryIDs))
-	for _, id := range topCountryIDs {
-		countryLabels = append(countryLabels, firstNonEmpty(countryLabelByID[id], id))
+	topCountryCodes := topKeys(countryCodeCounts, 6)
+	countryIDs := make([]string, 0, len(topCountryCodes))
+	countryLabels := make([]string, 0, len(topCountryCodes))
+	for _, code := range topCountryCodes {
+		if ref, ok := ucdpCountryRefs[code]; ok {
+			if ref.ID != "" {
+				countryIDs = append(countryIDs, ref.ID)
+			}
+			countryLabels = append(countryLabels, ref.Label)
+			continue
+		}
+		countryLabels = append(countryLabels, code)
 	}
 	hotspotList := make([]model.ZoneBriefingHotspot, 0, len(hotspots))
 	for _, hotspot := range hotspots {
@@ -208,7 +243,7 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 	if fatalities30d > 0 {
 		civilianShare = float64(civilians30d) / float64(fatalities30d)
 	}
-	sourceURL := lensSourceURL(lens, topCountryIDs)
+	sourceURL := lensSourceURL(lens, topCountryCodes)
 
 	return model.ZoneBriefingRecord{
 		LensID:        lens.ID,
@@ -218,7 +253,7 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 		Status:        deriveStatus(events7d, events30d),
 		UpdatedAt:     asOf,
 		CoverageNote:  lens.CoverageNote,
-		CountryIDs:    topCountryIDs,
+		CountryIDs:    countryIDs,
 		CountryLabels: countryLabels,
 		Actors:        topActors,
 		ViolenceTypes: topViolence,
@@ -260,14 +295,14 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 	}
 }
 
-func lensSourceURL(lens lensDef, topCountryIDs []string) string {
+func lensSourceURL(lens lensDef, topCountryCodes []string) string {
+	for _, code := range topCountryCodes {
+		if ref, ok := ucdpCountryRefs[code]; ok && strings.TrimSpace(ref.ID) != "" {
+			return "https://ucdp.uu.se/country/" + ref.ID
+		}
+	}
 	if strings.TrimSpace(lens.ReferenceCountryID) != "" {
 		return "https://ucdp.uu.se/country/" + lens.ReferenceCountryID
-	}
-	for _, id := range topCountryIDs {
-		if strings.TrimSpace(id) != "" {
-			return "https://ucdp.uu.se/country/" + id
-		}
 	}
 	return ""
 }
@@ -290,7 +325,7 @@ func matchesLens(lens lensDef, item parse.UCDPItem) bool {
 		}
 	}
 	code := strings.ToUpper(strings.TrimSpace(item.CountryCode))
-	if _, ok := lens.MatchCountryCodes[code]; ok {
+	if _, ok := lens.CountryCodes[code]; ok {
 		return true
 	}
 	return false

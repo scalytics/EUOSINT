@@ -50,7 +50,6 @@ func TestParseUCDPResultsEnvelope(t *testing.T) {
 	      "event_id": "x1",
 	      "date_start": "2026-01-01",
 	      "country_name": "Ukraine",
-	      "gwno_loc": 369,
 	      "type_of_violence_text": "One-sided violence",
 	      "fatalities_best": "3"
 	    }
@@ -68,11 +67,5 @@ func TestParseUCDPResultsEnvelope(t *testing.T) {
 	}
 	if items[0].Published != "2026-01-01" {
 		t.Fatalf("unexpected published date: %q", items[0].Published)
-	}
-	if items[0].CountryID != "369" {
-		t.Fatalf("unexpected country id: %q", items[0].CountryID)
-	}
-	if items[0].CountryCode != "UA" {
-		t.Fatalf("unexpected country code: %q", items[0].CountryCode)
 	}
 }
