@@ -35,7 +35,6 @@ func New(db *sourcedb.DB, addr string, stderr io.Writer) *Server {
 	mux.HandleFunc("GET /api/digest", s.handleDigest)
 	mux.HandleFunc("GET /api/noise-feedback/stats", s.handleNoiseFeedbackStats)
 	mux.HandleFunc("POST /api/noise-feedback", s.handleNoiseFeedbackCreate)
-	mux.HandleFunc("GET /api/zone-briefings", s.handleZoneBriefings)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	rl := newRateLimiter(30, 5, 10*time.Minute) // 30 requests burst, 5/sec refill
 	s.srv = &http.Server{
@@ -244,19 +243,6 @@ func (s *Server) handleNoiseFeedbackStats(w http.ResponseWriter, r *http.Request
 		return
 	}
 	writeJSON(w, http.StatusOK, stats)
-}
-
-func (s *Server) handleZoneBriefings(w http.ResponseWriter, r *http.Request) {
-	cached, err := s.db.LoadZoneBriefingsCache(r.Context(), time.Now().UTC())
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		return
-	}
-	if !cached.Found {
-		writeJSON(w, http.StatusOK, []model.ZoneBriefingRecord{})
-		return
-	}
-	writeJSON(w, http.StatusOK, cached.Briefings)
 }
 
 // handleDigest returns the country intelligence digest — top trending

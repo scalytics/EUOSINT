@@ -30,8 +30,6 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	fs.StringVar(&cfg.StateOutputPath, "state-output", cfg.StateOutputPath, "Path for collector state JSON file")
 	fs.StringVar(&cfg.SourceHealthOutputPath, "source-health-output", cfg.SourceHealthOutputPath, "Path for source health JSON file")
 	fs.StringVar(&cfg.ZoneBriefingsOutputPath, "zone-briefings-output", cfg.ZoneBriefingsOutputPath, "Path for zone briefings JSON file")
-	fs.IntVar(&cfg.ZoneBriefingsTTLHours, "zone-briefings-ttl-hours", cfg.ZoneBriefingsTTLHours, "TTL in hours for cached zone briefings")
-	fs.BoolVar(&cfg.ZoneBriefingsSyncOnly, "zone-briefings-sync-only", cfg.ZoneBriefingsSyncOnly, "Run only zone-briefings cache sync and exit")
 	fs.BoolVar(&cfg.Watch, "watch", cfg.Watch, "Run continuously with the configured interval")
 	fs.IntVar(&cfg.IntervalMS, "interval-ms", cfg.IntervalMS, "Polling interval in milliseconds when watch mode is enabled")
 	fs.IntVar(&cfg.MaxPerSource, "max-per-source", cfg.MaxPerSource, "Maximum items retained per source fetch")
@@ -115,9 +113,6 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 
 	if cfg.DiscoverMode {
 		return discover.Run(ctx, cfg, stdout, stderr)
-	}
-	if cfg.ZoneBriefingsSyncOnly {
-		return run.New(stdout, stderr).SyncZoneBriefings(ctx, cfg)
 	}
 	if cfg.SourceDBInit || cfg.SourceDBImportRegistry || cfg.SourceDBMergeRegistry || cfg.SourceDBExportRegistry {
 		db, err := sourcedb.Open(cfg.SourceDBPath)

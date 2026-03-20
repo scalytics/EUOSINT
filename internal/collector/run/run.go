@@ -72,27 +72,6 @@ func (r Runner) Run(ctx context.Context, cfg config.Config) error {
 	return r.runOnce(ctx, cfg)
 }
 
-func (r Runner) SyncZoneBriefings(ctx context.Context, cfg config.Config) error {
-	sources, err := registry.Load(cfg.RegistryPath)
-	if err != nil {
-		return err
-	}
-	var runStore *sourcedb.DB
-	if isSQLiteRegistryPath(cfg.RegistryPath) {
-		db, err := sourcedb.Open(cfg.RegistryPath)
-		if err != nil {
-			return err
-		}
-		runStore = db
-		defer runStore.Close()
-	}
-	if err := r.syncZoneBriefings(ctx, cfg, sources, runStore, true); err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(r.stdout, "Zone briefings cache sync completed -> %s\n", cfg.ZoneBriefingsOutputPath)
-	return err
-}
-
 func (r Runner) watch(ctx context.Context, cfg config.Config) error {
 	// Discovery is fully independent — start it immediately on boot
 	// instead of waiting for the first collection sweep to finish.
@@ -153,9 +132,6 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 			runStore = db
 			defer runStore.Close()
 		}
-	}
-	if err := r.syncZoneBriefings(ctx, cfg, sources, runStore, false); err != nil {
-		fmt.Fprintf(r.stderr, "WARN zone briefings: %v\n", err)
 	}
 
 	var browser *fetch.BrowserClient
@@ -535,6 +511,9 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 
 	if err := output.Write(cfg, currentActive, currentFiltered, fullState, sourceHealth, duplicateAudit, replacementQueue); err != nil {
 		return err
+	}
+	if err := r.writeZoneBriefings(ctx, cfg, sources); err != nil {
+		fmt.Fprintf(r.stderr, "WARN zone briefings: %v\n", err)
 	}
 	if err := r.writeNoiseMetrics(ctx, cfg, currentActive, runStore); err != nil {
 		fmt.Fprintf(r.stderr, "WARN noise metrics: %v\n", err)
@@ -2085,28 +2064,9 @@ func (r Runner) fetchUCDPItems(ctx context.Context, nctx normalize.Context, sour
 	return items, nil
 }
 
-func (r Runner) syncZoneBriefings(ctx context.Context, cfg config.Config, sources []model.RegistrySource, store *sourcedb.DB, forceRefresh bool) error {
+func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sources []model.RegistrySource) error {
 	if strings.TrimSpace(cfg.ZoneBriefingsOutputPath) == "" {
 		return nil
-	}
-	now := time.Now().UTC()
-	ttl := time.Duration(cfg.ZoneBriefingsTTLHours) * time.Hour
-	if ttl <= 0 {
-		ttl = 168 * time.Hour
-	}
-	if store != nil {
-		cached, err := store.LoadZoneBriefingsCache(ctx, now)
-		if err != nil {
-			return err
-		}
-		if cached.Found {
-			if err := r.renderZoneBriefingsArtifacts(cfg, cached.Briefings); err != nil {
-				return err
-			}
-			if !forceRefresh && !cached.Stale {
-				return nil
-			}
-		}
 	}
 	var ucdpSource *model.RegistrySource
 	for i := range sources {
@@ -2116,31 +2076,14 @@ func (r Runner) syncZoneBriefings(ctx context.Context, cfg config.Config, source
 		}
 	}
 	if ucdpSource == nil {
-		if store != nil {
-			if err := store.UpsertZoneBriefingsCache(ctx, []model.ZoneBriefingRecord{}, now, ttl); err != nil {
-				return err
-			}
-		}
-		return r.renderZoneBriefingsArtifacts(cfg, []model.ZoneBriefingRecord{})
+		return output.WriteZoneBriefings(cfg.ZoneBriefingsOutputPath, []model.ZoneBriefingRecord{})
 	}
-	nctx := normalize.Context{Config: cfg, Now: now}
+	nctx := normalize.Context{Config: cfg, Now: time.Now().UTC()}
 	items, err := r.fetchUCDPItems(ctx, nctx, *ucdpSource)
 	if err != nil {
 		return err
 	}
 	briefings := zonebrief.Build(items, nctx.Now)
-	if store != nil {
-		if err := store.UpsertZoneBriefingsCache(ctx, briefings, now, ttl); err != nil {
-			return err
-		}
-	}
-	if err := r.renderZoneBriefingsArtifacts(cfg, briefings); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r Runner) renderZoneBriefingsArtifacts(cfg config.Config, briefings []model.ZoneBriefingRecord) error {
 	if err := output.WriteZoneBriefings(cfg.ZoneBriefingsOutputPath, briefings); err != nil {
 		return err
 	}

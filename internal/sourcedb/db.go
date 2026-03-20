@@ -100,12 +100,6 @@ type RegistrySyncState struct {
 	SourceCount  int
 }
 
-type ZoneBriefingsCacheResult struct {
-	Briefings []model.ZoneBriefingRecord
-	Found     bool
-	Stale     bool
-}
-
 func Open(path string) (*DB, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, fmt.Errorf("create source DB directory: %w", err)
@@ -878,114 +872,6 @@ func (db *DB) CountSources(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("count sources: %w", err)
 	}
 	return count, nil
-}
-
-func (db *DB) LoadZoneBriefingsCache(ctx context.Context, now time.Time) (ZoneBriefingsCacheResult, error) {
-	if err := db.Init(ctx); err != nil {
-		return ZoneBriefingsCacheResult{}, err
-	}
-	rows, err := db.sql.QueryContext(ctx, `
-SELECT payload_json, expires_at
-FROM zone_briefings_cache
-ORDER BY lens_id`)
-	if err != nil {
-		return ZoneBriefingsCacheResult{}, fmt.Errorf("query zone briefings cache: %w", err)
-	}
-	defer rows.Close()
-
-	out := ZoneBriefingsCacheResult{Briefings: make([]model.ZoneBriefingRecord, 0)}
-	for rows.Next() {
-		var payloadJSON string
-		var expiresAt string
-		if err := rows.Scan(&payloadJSON, &expiresAt); err != nil {
-			return ZoneBriefingsCacheResult{}, fmt.Errorf("scan zone briefing cache row: %w", err)
-		}
-		var record model.ZoneBriefingRecord
-		if err := json.Unmarshal([]byte(payloadJSON), &record); err != nil {
-			return ZoneBriefingsCacheResult{}, fmt.Errorf("decode zone briefing cache row: %w", err)
-		}
-		out.Briefings = append(out.Briefings, record)
-		out.Found = true
-		expiry, err := time.Parse(time.RFC3339, strings.TrimSpace(expiresAt))
-		if err != nil || !expiry.After(now.UTC()) {
-			out.Stale = true
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return ZoneBriefingsCacheResult{}, fmt.Errorf("iterate zone briefing cache rows: %w", err)
-	}
-	return out, nil
-}
-
-func (db *DB) UpsertZoneBriefingsCache(ctx context.Context, briefings []model.ZoneBriefingRecord, now time.Time, ttl time.Duration) error {
-	if err := db.Init(ctx); err != nil {
-		return err
-	}
-	if ttl <= 0 {
-		ttl = 168 * time.Hour
-	}
-	now = now.UTC()
-	updatedAt := now.Format(time.RFC3339)
-	expiresAt := now.Add(ttl).Format(time.RFC3339)
-
-	tx, err := db.sql.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("begin zone briefing cache tx: %w", err)
-	}
-	defer tx.Rollback()
-
-	if len(briefings) == 0 {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM zone_briefings_cache`); err != nil {
-			return fmt.Errorf("clear zone briefings cache: %w", err)
-		}
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("commit zone briefing cache tx: %w", err)
-		}
-		return nil
-	}
-
-	keepLensIDs := make([]string, 0, len(briefings))
-	for _, brief := range briefings {
-		lensID := strings.TrimSpace(brief.LensID)
-		if lensID == "" {
-			continue
-		}
-		raw, err := json.Marshal(brief)
-		if err != nil {
-			return fmt.Errorf("marshal zone briefing %s: %w", lensID, err)
-		}
-		if _, err := tx.ExecContext(ctx, `
-INSERT INTO zone_briefings_cache (lens_id, payload_json, updated_at, expires_at)
-VALUES (?, ?, ?, ?)
-ON CONFLICT(lens_id) DO UPDATE SET
-  payload_json = excluded.payload_json,
-  updated_at = excluded.updated_at,
-  expires_at = excluded.expires_at
-`, lensID, string(raw), updatedAt, expiresAt); err != nil {
-			return fmt.Errorf("upsert zone briefing cache %s: %w", lensID, err)
-		}
-		keepLensIDs = append(keepLensIDs, lensID)
-	}
-
-	if len(keepLensIDs) == 0 {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM zone_briefings_cache`); err != nil {
-			return fmt.Errorf("clear zone briefing cache: %w", err)
-		}
-	} else {
-		placeholders := strings.TrimSuffix(strings.Repeat("?,", len(keepLensIDs)), ",")
-		args := make([]any, 0, len(keepLensIDs))
-		for _, id := range keepLensIDs {
-			args = append(args, id)
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM zone_briefings_cache WHERE lens_id NOT IN (`+placeholders+`)`, args...); err != nil {
-			return fmt.Errorf("trim zone briefing cache: %w", err)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit zone briefing cache tx: %w", err)
-	}
-	return nil
 }
 
 func (db *DB) SaveAlerts(ctx context.Context, alerts []model.Alert) error {
