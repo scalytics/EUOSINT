@@ -2043,8 +2043,14 @@ func (r Runner) fetchUCDPItems(ctx context.Context, nctx normalize.Context, sour
 	}
 
 	// Override version from config so the alert pipeline also uses the latest candidate.
-	feedURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/gedevents/%s?pagesize=500",
-		url.QueryEscape(nctx.Config.UCDPAPIVersion))
+	// Filter to last 7 days for alerts (briefings use 90d separately).
+	now := time.Now().UTC()
+	startDate := now.AddDate(0, 0, -7).Format("2006-01-02")
+	endDate := now.Format("2006-01-02")
+	feedURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/gedevents/%s?StartDate=%s&EndDate=%s&pagesize=500",
+		url.QueryEscape(nctx.Config.UCDPAPIVersion),
+		url.QueryEscape(startDate),
+		url.QueryEscape(endDate))
 
 	body, err := client.TextWithHeaders(ctx, feedURL+"&page=0", false, "application/json", headers)
 	if err != nil {
@@ -2183,6 +2189,8 @@ type ucdpVersions struct {
 
 // discoverUCDPVersions scrapes the UCDP API docs page to find the latest dataset versions.
 func discoverUCDPVersions(ctx context.Context) (ucdpVersions, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://ucdp.uu.se/apidocs/", nil)
 	if err != nil {
 		return ucdpVersions{}, err
@@ -2345,7 +2353,7 @@ func (r Runner) fetchACLEDItemsForBriefings(ctx context.Context, cfg config.Conf
 
 	var allItems []parse.ACLEDItem
 	for page := 1; ; page++ {
-		pageURL := fmt.Sprintf("https://api.acleddata.com/acled/read?_format=json&event_date=%s|%s&event_date_where=BETWEEN&order=desc&sort=event_date&page=%d&limit=500",
+		pageURL := fmt.Sprintf("https://acleddata.com/api/acled/read?_format=json&event_date=%s|%s&event_date_where=BETWEEN&order=desc&sort=event_date&page=%d&limit=500",
 			from, to, page)
 		body, err := acledAuthGet(ctx, pageURL, token)
 		if err != nil {
