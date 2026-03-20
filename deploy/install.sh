@@ -184,6 +184,9 @@ refresh_watchdog_files_direct() {
   local watchdog_script="$INSTALL_DIR/scripts/browser_watchdog.sh"
   local watchdog_service="$INSTALL_DIR/docs/euosint-browser-watchdog.service"
   local watchdog_timer="$INSTALL_DIR/docs/euosint-browser-watchdog.timer"
+  local zone_sync_script="$INSTALL_DIR/scripts/zone_briefings_sync.sh"
+  local zone_sync_service="$INSTALL_DIR/docs/euosint-zone-briefings-sync.service"
+  local zone_sync_timer="$INSTALL_DIR/docs/euosint-zone-briefings-sync.timer"
   local tmp_file
 
   mkdir -p "$INSTALL_DIR/scripts" "$INSTALL_DIR/docs"
@@ -201,7 +204,20 @@ refresh_watchdog_files_direct() {
   fetch_repo_file "docs/euosint-browser-watchdog.timer" "$tmp_file"
   mv "$tmp_file" "$watchdog_timer"
 
-  info "Refreshed browser watchdog files from repository ref '$REPO_REF'."
+  tmp_file="$(mktemp)"
+  fetch_repo_file "scripts/zone_briefings_sync.sh" "$tmp_file"
+  mv "$tmp_file" "$zone_sync_script"
+  chmod +x "$zone_sync_script"
+
+  tmp_file="$(mktemp)"
+  fetch_repo_file "docs/euosint-zone-briefings-sync.service" "$tmp_file"
+  mv "$tmp_file" "$zone_sync_service"
+
+  tmp_file="$(mktemp)"
+  fetch_repo_file "docs/euosint-zone-briefings-sync.timer" "$tmp_file"
+  mv "$tmp_file" "$zone_sync_timer"
+
+  info "Refreshed watchdog + zone-sync files from repository ref '$REPO_REF'."
 }
 
 upsert_env() {
@@ -310,7 +326,7 @@ configure_env() {
 
 print_runtime_summary() {
   local env_file="$INSTALL_DIR/.env"
-  local site_addr host_name http_port https_port live_url compose_url watchdog_url
+  local site_addr host_name http_port https_port live_url compose_url watchdog_url zone_sync_url
 
   site_addr="$(grep -E '^EUOSINT_SITE_ADDRESS=' "$env_file" | head -1 | cut -d= -f2- || true)"
   http_port="$(grep -E '^EUOSINT_HTTP_PORT=' "$env_file" | head -1 | cut -d= -f2- || echo "8080")"
@@ -325,6 +341,7 @@ print_runtime_summary() {
 
   compose_url="$(raw_repo_url "docker-compose.yml")"
   watchdog_url="$(raw_repo_url "scripts/browser_watchdog.sh")"
+  zone_sync_url="$(raw_repo_url "scripts/zone_briefings_sync.sh")"
 
   echo ""
   echo "================ EUOSINT Setup Summary ================"
@@ -339,6 +356,7 @@ print_runtime_summary() {
   echo "Compose Cmd  : ${COMPOSE_CMD}"
   echo "Compose YAML : ${compose_url}"
   echo "Watchdog Src : ${watchdog_url}"
+  echo "Zone Sync Src: ${zone_sync_url}"
   echo "======================================================="
   echo ""
 }
@@ -488,6 +506,36 @@ install_user_watchdog_timer() {
   info "  sudo loginctl enable-linger $USER"
 }
 
+install_user_zone_sync_timer() {
+  local choice user_unit_dir svc_file timer_file
+  choice="$(read_prompt "Install zone-briefings sync as user systemd timer? [yes]: ")"
+  choice="${choice:-yes}"
+  choice="$(echo "$choice" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$choice" != "yes" && "$choice" != "y" ]]; then
+    info "Skipped zone-briefings sync timer setup."
+    return 0
+  fi
+
+  command -v systemctl >/dev/null 2>&1 || {
+    warn "systemctl not found; skipping user zone-briefings timer setup."
+    return 0
+  }
+
+  user_unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+  mkdir -p "$user_unit_dir"
+  svc_file="$user_unit_dir/euosint-zone-briefings-sync.service"
+  timer_file="$user_unit_dir/euosint-zone-briefings-sync.timer"
+
+  cp "$INSTALL_DIR/docs/euosint-zone-briefings-sync.service" "$svc_file"
+  cp "$INSTALL_DIR/docs/euosint-zone-briefings-sync.timer" "$timer_file"
+  sed -i.bak -E "s|^WorkingDirectory=.*$|WorkingDirectory=${INSTALL_DIR}|" "$svc_file"
+  sed -i.bak -E "s|^ExecStart=.*$|ExecStart=/bin/bash ${INSTALL_DIR}/scripts/zone_briefings_sync.sh|" "$svc_file"
+
+  systemctl --user daemon-reload
+  systemctl --user enable --now euosint-zone-briefings-sync.timer
+  info "Enabled user timer: euosint-zone-briefings-sync.timer"
+}
+
 main() {
   ensure_docker
   INSTALL_MODE="$(prompt_install_mode)"
@@ -510,6 +558,7 @@ main() {
   print_runtime_summary
   start_stack
   install_user_watchdog_timer
+  install_user_zone_sync_timer
 }
 
 main "$@"

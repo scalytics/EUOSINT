@@ -1,0 +1,9 @@
+[Unit]
+Description=EUOSINT zone briefings cache sync
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/euosint
+ExecStart=/bin/bash /opt/euosint/scripts/zone_briefings_sync.sh

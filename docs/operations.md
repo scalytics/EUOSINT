@@ -94,6 +94,27 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now euosint-browser-watchdog.timer
 ```
 
+## Zone Briefings Cache Sync
+
+Run [scripts/zone_briefings_sync.sh](/Users/alo/Development/scalytics/EUOSINT/scripts/zone_briefings_sync.sh) on the host to refresh UCDP zone-briefing cache with TTL semantics. The sync command only refreshes when cache is stale or missing.
+
+One-shot run:
+
+```bash
+./scripts/zone_briefings_sync.sh
+```
+
+user systemd timer install (non-root):
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp docs/euosint-zone-briefings-sync.service ~/.config/systemd/user/
+cp docs/euosint-zone-briefings-sync.timer ~/.config/systemd/user/
+sed -i "s|/opt/euosint|$(pwd)|g" ~/.config/systemd/user/euosint-zone-briefings-sync.service
+systemctl --user daemon-reload
+systemctl --user enable --now euosint-zone-briefings-sync.timer
+```
+
 ## Operational Notes
 
 - The collector writes feed output into the `feed-data` volume shared with the web container.
