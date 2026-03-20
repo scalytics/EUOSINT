@@ -462,14 +462,6 @@ start_stack() {
     $COMPOSE_CMD up -d --no-build
   )
 
-  if [[ "${EUOSINT_SKIP_PRUNE:-0}" != "1" ]]; then
-    info "Pruning stale Docker images and build cache (volumes preserved)..."
-    docker image prune -af >/dev/null 2>&1 || warn "docker image prune failed"
-    docker builder prune -af >/dev/null 2>&1 || warn "docker builder prune failed"
-  else
-    info "Skipping Docker prune (EUOSINT_SKIP_PRUNE=1)."
-  fi
-
   local site_addr http_port host_name live_url
   site_addr="$(grep -E '^EUOSINT_SITE_ADDRESS=' "$INSTALL_DIR/.env" | head -1 | cut -d= -f2- || true)"
   http_port="$(grep -E '^EUOSINT_HTTP_PORT=' "$INSTALL_DIR/.env" | cut -d= -f2 || echo "8080")"

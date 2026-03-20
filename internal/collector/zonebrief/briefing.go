@@ -50,29 +50,6 @@ func Build(items []parse.UCDPItem, now time.Time) []model.ZoneBriefingRecord {
 	return out
 }
 
-func SupportedLensCountryIDs() []string {
-	uniq := map[string]struct{}{}
-	for _, lens := range supportedLenses {
-		for code := range lens.MatchCountryCodes {
-			ref, ok := parse.UCDPCountryRefByISO2(code)
-			if !ok {
-				continue
-			}
-			id := strings.TrimSpace(ref.ID)
-			if id == "" {
-				continue
-			}
-			uniq[id] = struct{}{}
-		}
-	}
-	out := make([]string, 0, len(uniq))
-	for id := range uniq {
-		out = append(out, id)
-	}
-	sort.Strings(out)
-	return out
-}
-
 func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.ZoneBriefingRecord {
 	type hotspotAgg struct {
 		label string
@@ -114,47 +91,6 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 		if eventTime.After(latest) {
 			latest = eventTime
 		}
-	}
-
-	// Metrics window should reflect the latest available UCDP context for this lens,
-	// not the wall-clock "now", otherwise stale-but-valid datasets collapse to zeros.
-	metricsEnd := now
-	if !latest.IsZero() {
-		metricsEnd = latest
-	}
-	metrics30dStart := metricsEnd.Add(-30 * 24 * time.Hour)
-	metrics7dStart := metricsEnd.Add(-7 * 24 * time.Hour)
-	status30dStart := now.Add(-30 * 24 * time.Hour)
-	status7dStart := now.Add(-7 * 24 * time.Hour)
-
-	for _, item := range matched {
-		eventTime := parseTime(item.Published)
-		if eventTime.IsZero() {
-			continue
-		}
-		inLatestWindow30d := !eventTime.Before(metrics30dStart) && !eventTime.After(metricsEnd)
-		if !eventTime.Before(metrics30dStart) && !eventTime.After(metricsEnd) {
-			events30d++
-			fatalities30d += item.Fatalities
-			civilians30d += item.CivilianDeaths
-			if strings.EqualFold(item.ViolenceType, "One-sided violence") {
-				oneSided30d++
-			}
-		}
-		if !eventTime.Before(metrics7dStart) && !eventTime.After(metricsEnd) {
-			events7d++
-			fatalities7d += item.Fatalities
-		}
-		if eventTime.After(status30dStart) {
-			statusEvents30d++
-		}
-		if eventTime.After(status7dStart) {
-			statusEvents7d++
-		}
-		// All briefing aggregations are scoped to the latest available 30d window.
-		if !inLatestWindow30d {
-			continue
-		}
 		if item.ViolenceType != "" {
 			catCounts[item.ViolenceType]++
 		}
@@ -176,12 +112,11 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 			admin2Counts[item.Admin2]++
 		}
 		if strings.TrimSpace(item.CountryID) != "" {
-			cid := strings.TrimSpace(item.CountryID)
-			countryIDCounts[cid]++
-			if ref, ok := parse.UCDPCountryRefByID(cid); ok {
-				countryLabelByID[cid] = ref.Label
+			countryIDCounts[strings.TrimSpace(item.CountryID)]++
+			if ref, ok := parse.UCDPCountryRefByID(item.CountryID); ok {
+				countryLabelByID[item.CountryID] = ref.Label
 			} else if strings.TrimSpace(item.Country) != "" {
-				countryLabelByID[cid] = strings.TrimSpace(item.Country)
+				countryLabelByID[item.CountryID] = strings.TrimSpace(item.Country)
 			}
 		} else if strings.TrimSpace(item.CountryCode) != "" {
 			if ref, ok := parse.UCDPCountryRefByISO2(item.CountryCode); ok && strings.TrimSpace(ref.ID) != "" {
@@ -210,6 +145,42 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 				hotspots[key] = current
 			}
 			current.count++
+		}
+	}
+
+	// Metrics window should reflect the latest available UCDP context for this lens,
+	// not the wall-clock "now", otherwise stale-but-valid datasets collapse to zeros.
+	metricsEnd := now
+	if !latest.IsZero() {
+		metricsEnd = latest
+	}
+	metrics30dStart := metricsEnd.Add(-30 * 24 * time.Hour)
+	metrics7dStart := metricsEnd.Add(-7 * 24 * time.Hour)
+	status30dStart := now.Add(-30 * 24 * time.Hour)
+	status7dStart := now.Add(-7 * 24 * time.Hour)
+
+	for _, item := range matched {
+		eventTime := parseTime(item.Published)
+		if eventTime.IsZero() {
+			continue
+		}
+		if !eventTime.Before(metrics30dStart) && !eventTime.After(metricsEnd) {
+			events30d++
+			fatalities30d += item.Fatalities
+			civilians30d += item.CivilianDeaths
+			if strings.EqualFold(item.ViolenceType, "One-sided violence") {
+				oneSided30d++
+			}
+		}
+		if !eventTime.Before(metrics7dStart) && !eventTime.After(metricsEnd) {
+			events7d++
+			fatalities7d += item.Fatalities
+		}
+		if eventTime.After(status30dStart) {
+			statusEvents30d++
+		}
+		if eventTime.After(status7dStart) {
+			statusEvents7d++
 		}
 	}
 
@@ -278,7 +249,7 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 		headline = fmt.Sprintf("%s is currently dominated by %s in the UCDP event record.", lens.Title, topViolence[0])
 	}
 	bullets := []string{
-		fmt.Sprintf("Latest available event count: %d, fatalities: %d.", events30d, fatalities30d),
+		fmt.Sprintf("30d event count: %d, fatalities: %d.", events30d, fatalities30d),
 	}
 	if len(topAdmin2) > 0 {
 		bullets = append(bullets, "Hotspots: "+strings.Join(topAdmin2, ", ")+".")

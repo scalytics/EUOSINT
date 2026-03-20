@@ -595,7 +595,7 @@ export function AlertFeed({
 
               {activeConflictBrief.recentEvents.length > 0 && (
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Latest 5 articles / events</div>
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Latest 5 UCDP events</div>
                   <div className="mt-1 space-y-1">
                     {activeConflictBrief.recentEvents.map((event, idx) => (
                       <div key={`${event.title}-${event.published ?? idx}`} className="rounded border border-siem-border bg-white/5 px-2 py-1.5 text-2xs">

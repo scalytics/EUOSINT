@@ -5,23 +5,8 @@ FROM golang:1.25-alpine AS build
 
 WORKDIR /app
 
-RUN apk add --no-cache git ca-certificates
-
 COPY go.mod go.sum ./
-RUN set -eux; \
-    i=0; \
-    until [ "$i" -ge 5 ]; do \
-      if GOPROXY=https://proxy.golang.org,direct go mod download; then \
-        break; \
-      fi; \
-      i=$((i + 1)); \
-      if [ "$i" -ge 5 ]; then \
-        echo "ERROR: go mod download failed after 5 attempts" >&2; \
-        exit 1; \
-      fi; \
-      echo "WARN: go mod download failed, retrying in 5s..." >&2; \
-      sleep 5; \
-    done
+RUN go mod download
 COPY cmd ./cmd
 COPY internal ./internal
 COPY registry ./registry

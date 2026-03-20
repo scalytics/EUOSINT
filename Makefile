@@ -133,16 +133,6 @@ docker-shell: ## Open a shell in the running container
 
 dev-start: ## Start the local HTTP dev stack on localhost
 	$(DOCKER_COMPOSE) up --build -d
-	@echo "Running one-shot UCDP zone-briefings sync..."
-	@attempt=0; \
-	until $(DOCKER_COMPOSE) exec -T collector euosint-collector --zone-briefings-sync-only --registry /data/sources.db --zone-briefings-output /data/zone-briefings.json; do \
-		attempt=$$((attempt + 1)); \
-		if [ $$attempt -ge 20 ]; then \
-			echo "zone-briefings sync failed after $$attempt attempts"; \
-			exit 1; \
-		fi; \
-		sleep 3; \
-	done
 	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 
