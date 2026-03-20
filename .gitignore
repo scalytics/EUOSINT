@@ -41,6 +41,19 @@ docker-compose.override.yml
 registry/cities500.txt
 registry/sources.db
 
+# Runtime-generated collector state
+public/alerts.json
+public/alerts-filtered.json
+public/alerts-state.json
+public/source-health.json
+public/noise-metrics.json
+public/cursors.json
+public/zone-briefings.json
+public/geo/conflict-zones.geojson
+public/geo/terrorism-zones.geojson
+registry/source_dead_letter.json
+internal/collector/app/public/
+
 # Tool caches
 .eslintcache
 .npm/
