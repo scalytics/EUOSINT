@@ -2107,131 +2107,6 @@ func (r Runner) fetchUCDPItems(ctx context.Context, nctx normalize.Context, sour
 	return items, nil
 }
 
-func (r Runner) fetchUCDPCurrentConflictCountryIDs(ctx context.Context, nctx normalize.Context, source model.RegistrySource, windowDays int) ([]string, error) {
-	token := strings.TrimSpace(nctx.Config.UCDPAccessToken)
-	if token == "" {
-		return nil, nil
-	}
-	ucdpCfg := nctx.Config
-	if ucdpCfg.HTTPTimeoutMS < 30000 {
-		ucdpCfg.HTTPTimeoutMS = 30000
-	}
-	client := r.clientFactory(ucdpCfg)
-	headers := map[string]string{
-		"x-ucdp-access-token": token,
-	}
-	endDate := nctx.Now.UTC().Format("2006-01-02")
-	startDate := nctx.Now.UTC().AddDate(0, 0, -windowDays).Format("2006-01-02")
-	filteredURL := withUCDPFilters(source.FeedURL, map[string]string{
-		"StartDate": startDate,
-		"EndDate":   endDate,
-	})
-	feedURL, explicitPage := ensureUCDPQuery(filteredURL, 1000)
-	body, err := client.TextWithHeaders(ctx, feedURL, source.FollowRedirects, "application/json", headers)
-	if err != nil {
-		return nil, err
-	}
-	items, err := parse.ParseUCDP(body)
-	if err != nil {
-		return nil, err
-	}
-	countryIDs := collectUCDPCountryIDs(items)
-	if !explicitPage {
-		totalPages := parseUCDPTotalPages(body)
-		const maxPages = 64
-		if totalPages > 1 {
-			if totalPages > maxPages {
-				totalPages = maxPages
-			}
-			for page := 1; page < totalPages; page++ {
-				pageURL := setUCDPPage(feedURL, page)
-				pageBody, pageErr := client.TextWithHeaders(ctx, pageURL, source.FollowRedirects, "application/json", headers)
-				if pageErr != nil {
-					continue
-				}
-				pageItems, parseErr := parse.ParseUCDP(pageBody)
-				if parseErr != nil {
-					continue
-				}
-				countryIDs = append(countryIDs, collectUCDPCountryIDs(pageItems)...)
-			}
-		}
-	}
-	uniq := map[string]struct{}{}
-	for _, id := range countryIDs {
-		id = strings.TrimSpace(id)
-		if id == "" {
-			continue
-		}
-		uniq[id] = struct{}{}
-	}
-	out := make([]string, 0, len(uniq))
-	for id := range uniq {
-		out = append(out, id)
-	}
-	sort.Strings(out)
-	return out, nil
-}
-
-func (r Runner) fetchUCDPItemsForCountries(ctx context.Context, nctx normalize.Context, source model.RegistrySource, countryIDs []string, windowDays int) ([]parse.UCDPItem, error) {
-	token := strings.TrimSpace(nctx.Config.UCDPAccessToken)
-	if token == "" || len(countryIDs) == 0 {
-		return nil, nil
-	}
-	ucdpCfg := nctx.Config
-	if ucdpCfg.HTTPTimeoutMS < 30000 {
-		ucdpCfg.HTTPTimeoutMS = 30000
-	}
-	client := r.clientFactory(ucdpCfg)
-	headers := map[string]string{
-		"x-ucdp-access-token": token,
-	}
-	endDate := nctx.Now.UTC().Format("2006-01-02")
-	startDate := nctx.Now.UTC().AddDate(0, 0, -windowDays).Format("2006-01-02")
-	const maxPagesPerCountry = 64
-	all := make([]parse.UCDPItem, 0)
-	for _, countryID := range countryIDs {
-		countryID = strings.TrimSpace(countryID)
-		if countryID == "" {
-			continue
-		}
-		filteredURL := withUCDPFilters(source.FeedURL, map[string]string{
-			"Country":   countryID,
-			"StartDate": startDate,
-			"EndDate":   endDate,
-		})
-		feedURL, explicitPage := ensureUCDPQuery(filteredURL, 1000)
-		body, err := client.TextWithHeaders(ctx, feedURL, source.FollowRedirects, "application/json", headers)
-		if err != nil {
-			return nil, err
-		}
-		items, err := parse.ParseUCDP(body)
-		if err != nil {
-			return nil, err
-		}
-		all = append(all, items...)
-		if !explicitPage {
-			totalPages := parseUCDPTotalPages(body)
-			if totalPages > maxPagesPerCountry {
-				totalPages = maxPagesPerCountry
-			}
-			for page := 1; page < totalPages; page++ {
-				pageURL := setUCDPPage(feedURL, page)
-				pageBody, pageErr := client.TextWithHeaders(ctx, pageURL, source.FollowRedirects, "application/json", headers)
-				if pageErr != nil {
-					continue
-				}
-				pageItems, parseErr := parse.ParseUCDP(pageBody)
-				if parseErr != nil {
-					continue
-				}
-				all = append(all, pageItems...)
-			}
-		}
-	}
-	return dedupeUCDPItems(all), nil
-}
-
 func (r Runner) syncZoneBriefings(ctx context.Context, cfg config.Config, sources []model.RegistrySource, store *sourcedb.DB, forceRefresh bool) error {
 	if strings.TrimSpace(cfg.ZoneBriefingsOutputPath) == "" {
 		return nil
@@ -2239,7 +2114,7 @@ func (r Runner) syncZoneBriefings(ctx context.Context, cfg config.Config, source
 	now := time.Now().UTC()
 	ttl := time.Duration(cfg.ZoneBriefingsTTLHours) * time.Hour
 	if ttl <= 0 {
-		ttl = 24 * time.Hour
+		ttl = 168 * time.Hour
 	}
 	if store != nil {
 		cached, err := store.LoadZoneBriefingsCache(ctx, now)
@@ -2271,11 +2146,7 @@ func (r Runner) syncZoneBriefings(ctx context.Context, cfg config.Config, source
 		return r.renderZoneBriefingsArtifacts(cfg, []model.ZoneBriefingRecord{})
 	}
 	nctx := normalize.Context{Config: cfg, Now: now}
-	countryIDs, err := r.fetchUCDPCurrentConflictCountryIDs(ctx, nctx, *ucdpSource, 30)
-	if err != nil {
-		return err
-	}
-	items, err := r.fetchUCDPItemsForCountries(ctx, nctx, *ucdpSource, countryIDs, 120)
+	items, err := r.fetchUCDPItems(ctx, nctx, *ucdpSource)
 	if err != nil {
 		return err
 	}
@@ -2289,64 +2160,6 @@ func (r Runner) syncZoneBriefings(ctx context.Context, cfg config.Config, source
 		return err
 	}
 	return nil
-}
-
-func withUCDPFilters(raw string, filters map[string]string) string {
-	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || u == nil {
-		return raw
-	}
-	q := u.Query()
-	for k, v := range filters {
-		if strings.TrimSpace(v) == "" {
-			continue
-		}
-		q.Set(k, strings.TrimSpace(v))
-	}
-	u.RawQuery = q.Encode()
-	return u.String()
-}
-
-func collectUCDPCountryIDs(items []parse.UCDPItem) []string {
-	out := make([]string, 0, len(items))
-	for _, item := range items {
-		id := strings.TrimSpace(item.CountryID)
-		if id == "" {
-			if ref, ok := parse.UCDPCountryRefByISO2(item.CountryCode); ok && strings.TrimSpace(ref.ID) != "" {
-				id = strings.TrimSpace(ref.ID)
-			}
-		}
-		if id != "" {
-			out = append(out, id)
-		}
-	}
-	return out
-}
-
-func dedupeUCDPItems(items []parse.UCDPItem) []parse.UCDPItem {
-	out := make([]parse.UCDPItem, 0, len(items))
-	seen := map[string]struct{}{}
-	for _, item := range items {
-		key := strings.Join([]string{
-			strings.TrimSpace(item.Link),
-			strings.TrimSpace(item.Published),
-			strings.TrimSpace(item.CountryID),
-			strings.TrimSpace(item.SideA),
-			strings.TrimSpace(item.SideB),
-		}, "|")
-		if strings.Trim(key, "|") == "" {
-			key = strings.TrimSpace(item.Title)
-		}
-		if key == "" {
-			continue
-		}
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		out = append(out, item)
-	}
-	return out
 }
 
 func (r Runner) renderZoneBriefingsArtifacts(cfg config.Config, briefings []model.ZoneBriefingRecord) error {

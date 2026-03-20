@@ -67,7 +67,6 @@ export default function App() {
   const [visibleHistoryAlertIds, setVisibleHistoryAlertIds] = useState<string[]>([]);
   const [mobilePane, setMobilePane] = useState<"intel" | "map" | "alerts">("map");
   const panelRef = useRef<HTMLDivElement>(null);
-  const regionBeforeLensRef = useRef<string>("Europe");
   const [utcTime, setUtcTime] = useState(() => new Date().toISOString().slice(0, 19).replace("T", " ") + "Z");
 
   useEffect(() => {
@@ -108,19 +107,14 @@ export default function App() {
   }, []);
 
   const handleConflictLensChange = useCallback((nextLensId: string | null) => {
-    const lens = getConflictLensById(nextLensId);
     setConflictLensId(nextLensId);
+    const lens = getConflictLensById(nextLensId);
     if (lens) {
-      if (!conflictLensId) {
-        regionBeforeLensRef.current = regionFilter;
-      }
       setRegionFilter(lens.regionFilter);
-    } else if (conflictLensId) {
-      setRegionFilter(regionBeforeLensRef.current || "all");
     }
     setSelectedSourceIds([]);
     setSelectedId(null);
-  }, [conflictLensId, regionFilter]);
+  }, []);
 
   const regionScopedAlerts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();

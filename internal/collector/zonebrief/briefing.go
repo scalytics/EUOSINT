@@ -19,7 +19,6 @@ type lensDef struct {
 	OverlayType         string
 	CoverageNote        string
 	ReferenceCountryID  string
-	ForcedTopActors     []string
 	MatchCountryCodes   map[string]struct{}
 	OverlayCountryCodes map[string]struct{}
 	Bounds              bounds
@@ -36,7 +35,7 @@ var supportedLenses = []lensDef{
 	{ID: "gaza", Title: "Gaza", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "666", MatchCountryCodes: makeSet("PS", "IL", "EG", "LB", "JO"), OverlayCountryCodes: makeSet("PS"), Bounds: bounds{29.5, 32.0, 34.8, 36.5}},
 	{ID: "sudan", Title: "Sudan", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "625", MatchCountryCodes: makeSet("SD", "SS", "TD", "CF", "ET", "ER"), OverlayCountryCodes: makeSet("SD"), Bounds: bounds{3.0, 21.5, 23.5, 39.5}},
 	{ID: "ukraine", Title: "Ukraine South", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "369", MatchCountryCodes: makeSet("UA", "RU", "RO", "BG", "TR"), OverlayCountryCodes: makeSet("UA"), Bounds: bounds{43.0, 27.0, 49.5, 39.5}},
-	{ID: "red-sea", Title: "Red Sea", OverlayType: "maritime", CoverageNote: "Structured conflict context from UCDP GED; maritime live feeds remain primary for immediate route risk.", ReferenceCountryID: "520", ForcedTopActors: []string{"Somali pirate networks"}, MatchCountryCodes: makeSet("YE", "SA", "EG", "SD", "ER", "DJ", "SO"), OverlayCountryCodes: makeSet("YE"), Bounds: bounds{10.0, 31.0, 31.8, 45.5}},
+	{ID: "red-sea", Title: "Red Sea", OverlayType: "maritime", CoverageNote: "Structured conflict context from UCDP GED; maritime live feeds remain primary for immediate route risk.", ReferenceCountryID: "679", MatchCountryCodes: makeSet("YE", "SA", "EG", "SD", "ER", "DJ", "SO"), OverlayCountryCodes: makeSet("YE"), Bounds: bounds{10.0, 31.0, 31.8, 45.5}},
 	{ID: "sahel", Title: "Sahel", OverlayType: "terror", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "432", MatchCountryCodes: makeSet("ML", "NE", "BF", "MR", "DZ", "TD"), OverlayCountryCodes: makeSet("ML", "NE", "BF"), Bounds: bounds{10.0, -17.5, 24.5, 25.0}},
 	{ID: "drc-east", Title: "DRC East", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "490", MatchCountryCodes: makeSet("CD", "RW", "UG", "BI"), OverlayCountryCodes: makeSet("CD"), Bounds: bounds{-8.5, 27.0, 4.5, 31.8}},
 }
@@ -57,12 +56,7 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 		lng   float64
 		count int
 	}
-	type recentEvent struct {
-		item parse.UCDPItem
-		time time.Time
-	}
 	matched := make([]parse.UCDPItem, 0)
-	recentEvents := make([]recentEvent, 0)
 	catCounts := map[string]int{}
 	actorCounts := map[string]int{}
 	dyadCounts := map[string]int{}
@@ -77,7 +71,6 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 	var fatalities7d, fatalities30d int
 	var civilians30d int
 	var oneSided30d int
-	var statusEvents7d, statusEvents30d int
 	var wherePrecSum, datePrecSum, claritySum float64
 	var wherePrecN, datePrecN, clarityN float64
 
@@ -87,9 +80,22 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 		}
 		matched = append(matched, item)
 		eventTime := parseTime(item.Published)
-		recentEvents = append(recentEvents, recentEvent{item: item, time: eventTime})
 		if eventTime.After(latest) {
 			latest = eventTime
+		}
+		if !eventTime.IsZero() {
+			if eventTime.After(now.Add(-30 * 24 * time.Hour)) {
+				events30d++
+				fatalities30d += item.Fatalities
+				civilians30d += item.CivilianDeaths
+				if strings.EqualFold(item.ViolenceType, "One-sided violence") {
+					oneSided30d++
+				}
+			}
+			if eventTime.After(now.Add(-7 * 24 * time.Hour)) {
+				events7d++
+				fatalities7d += item.Fatalities
+			}
 		}
 		if item.ViolenceType != "" {
 			catCounts[item.ViolenceType]++
@@ -148,45 +154,8 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 		}
 	}
 
-	// Metrics window should reflect the latest available UCDP context for this lens,
-	// not the wall-clock "now", otherwise stale-but-valid datasets collapse to zeros.
-	metricsEnd := now
-	if !latest.IsZero() {
-		metricsEnd = latest
-	}
-	metrics30dStart := metricsEnd.Add(-30 * 24 * time.Hour)
-	metrics7dStart := metricsEnd.Add(-7 * 24 * time.Hour)
-	status30dStart := now.Add(-30 * 24 * time.Hour)
-	status7dStart := now.Add(-7 * 24 * time.Hour)
-
-	for _, item := range matched {
-		eventTime := parseTime(item.Published)
-		if eventTime.IsZero() {
-			continue
-		}
-		if !eventTime.Before(metrics30dStart) && !eventTime.After(metricsEnd) {
-			events30d++
-			fatalities30d += item.Fatalities
-			civilians30d += item.CivilianDeaths
-			if strings.EqualFold(item.ViolenceType, "One-sided violence") {
-				oneSided30d++
-			}
-		}
-		if !eventTime.Before(metrics7dStart) && !eventTime.After(metricsEnd) {
-			events7d++
-			fatalities7d += item.Fatalities
-		}
-		if eventTime.After(status30dStart) {
-			statusEvents30d++
-		}
-		if eventTime.After(status7dStart) {
-			statusEvents7d++
-		}
-	}
-
 	topViolence := topKeys(catCounts, 2)
 	topActors := topKeys(actorCounts, 4)
-	topActors = applyForcedActors(topActors, lens.ForcedTopActors, 4)
 	topDyads := topKeys(dyadCounts, 3)
 	topAdmin1 := topKeys(admin1Counts, 3)
 	topAdmin2 := topKeys(admin2Counts, 4)
@@ -207,37 +176,6 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 	sort.Slice(hotspotList, func(i, j int) bool { return hotspotList[i].EventCount > hotspotList[j].EventCount })
 	if len(hotspotList) > 4 {
 		hotspotList = hotspotList[:4]
-	}
-	sort.Slice(recentEvents, func(i, j int) bool {
-		ti := recentEvents[i].time
-		tj := recentEvents[j].time
-		if ti.IsZero() && tj.IsZero() {
-			return recentEvents[i].item.Title < recentEvents[j].item.Title
-		}
-		if ti.IsZero() {
-			return false
-		}
-		if tj.IsZero() {
-			return true
-		}
-		return ti.After(tj)
-	})
-	zoneRecent := make([]model.ZoneBriefingEvent, 0, min(5, len(recentEvents)))
-	for idx, entry := range recentEvents {
-		if idx >= 5 {
-			break
-		}
-		zoneRecent = append(zoneRecent, model.ZoneBriefingEvent{
-			Title:          strings.TrimSpace(entry.item.Title),
-			Published:      strings.TrimSpace(entry.item.Published),
-			Country:        strings.TrimSpace(entry.item.Country),
-			CountryCode:    strings.ToUpper(strings.TrimSpace(entry.item.CountryCode)),
-			Fatalities:     entry.item.Fatalities,
-			CivilianDeaths: entry.item.CivilianDeaths,
-			Lat:            entry.item.Lat,
-			Lng:            entry.item.Lng,
-			Link:           strings.TrimSpace(entry.item.Link),
-		})
 	}
 
 	asOf := ""
@@ -277,7 +215,7 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 		Title:         lens.Title,
 		Source:        "UCDP GED",
 		SourceURL:     sourceURL,
-		Status:        deriveStatus(statusEvents7d, statusEvents30d),
+		Status:        deriveStatus(events7d, events30d),
 		UpdatedAt:     asOf,
 		CoverageNote:  lens.CoverageNote,
 		CountryIDs:    topCountryIDs,
@@ -319,7 +257,6 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 			Bullets:    bullets,
 			WatchItems: watchItems,
 		},
-		RecentEvents: zoneRecent,
 	}
 }
 
@@ -458,46 +395,4 @@ func min(a, b int) int {
 		return a
 	}
 	return b
-}
-
-func applyForcedActors(actors []string, forced []string, limit int) []string {
-	if len(forced) == 0 {
-		if len(actors) > limit {
-			return actors[:limit]
-		}
-		return actors
-	}
-	seen := make(map[string]struct{}, len(actors)+len(forced))
-	out := make([]string, 0, limit)
-	for _, actor := range forced {
-		actor = strings.TrimSpace(actor)
-		if actor == "" {
-			continue
-		}
-		key := strings.ToLower(actor)
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		out = append(out, actor)
-		if len(out) >= limit {
-			return out
-		}
-	}
-	for _, actor := range actors {
-		actor = strings.TrimSpace(actor)
-		if actor == "" {
-			continue
-		}
-		key := strings.ToLower(actor)
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		out = append(out, actor)
-		if len(out) >= limit {
-			break
-		}
-	}
-	return out
 }

@@ -5,5 +5,3 @@ dist
 npm-debug.log
 public/alerts-state.json
 registry/sources.db
-.tmp
-euosint-collector

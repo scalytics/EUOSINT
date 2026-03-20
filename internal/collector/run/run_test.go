@@ -1012,19 +1012,19 @@ func TestSyncZoneBriefingsUsesCacheTTL(t *testing.T) {
 	if err := runner.syncZoneBriefings(context.Background(), cfg, sources, store, false); err != nil {
 		t.Fatal(err)
 	}
-	if calls != 2 {
-		t.Fatalf("expected first sync to fetch twice (discover countries + fetch country events), got %d", calls)
+	if calls != 1 {
+		t.Fatalf("expected first sync to fetch once, got %d", calls)
 	}
 	if err := runner.syncZoneBriefings(context.Background(), cfg, sources, store, false); err != nil {
 		t.Fatal(err)
 	}
-	if calls != 2 {
+	if calls != 1 {
 		t.Fatalf("expected second sync to use cache, got %d network calls", calls)
 	}
 	if err := runner.syncZoneBriefings(context.Background(), cfg, sources, store, true); err != nil {
 		t.Fatal(err)
 	}
-	if calls != 4 {
-		t.Fatalf("expected forced sync to fetch again for both stages, got %d calls", calls)
+	if calls != 2 {
+		t.Fatalf("expected forced sync to fetch again, got %d calls", calls)
 	}
 }

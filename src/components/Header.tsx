@@ -124,7 +124,6 @@ function FeedFocus({
     if (selectedSourceIds.length <= 2) return labels.join(", ");
     return `${labels.join(", ")} +${selectedSourceIds.length - 2}`;
   }, [selectedSourceIds, sourceCount, sources]);
-  const hasFeedFilter = selectedSourceIds.length > 0;
 
   const toggleSource = (sourceId: string) => {
     if (selectedSourceIds.includes(sourceId)) {
@@ -141,33 +140,18 @@ function FeedFocus({
           <Radar size={11} />
           Feed focus
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setOpen((current) => !current);
-              setQuery("");
-              setTimeout(() => inputRef.current?.focus(), 50);
-            }}
-            className="flex min-w-0 flex-1 items-center gap-2 bg-transparent text-left text-sm text-siem-text outline-none cursor-pointer"
-          >
-            <span className="max-w-[14rem] truncate">{selectedLabels}</span>
-            <Search size={12} className="shrink-0 text-siem-muted" />
-          </button>
-          {hasFeedFilter && (
-            <button
-              type="button"
-              aria-label="Reset feed focus"
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectedSourceIdsChange([]);
-              }}
-              className="rounded-md border border-siem-border px-1.5 py-0.5 text-siem-muted transition-colors hover:border-siem-accent/45 hover:text-siem-text"
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen((current) => !current);
+            setQuery("");
+            setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+          className="flex items-center gap-2 bg-transparent text-left text-sm text-siem-text outline-none cursor-pointer"
+        >
+          <span className="max-w-[14rem] truncate">{selectedLabels}</span>
+          <Search size={12} className="shrink-0 text-siem-muted" />
+        </button>
       </div>
 
       {open && (
@@ -404,7 +388,6 @@ function RegionSearch({
     }
     return regionFilter === "all" ? "Global" : regionFilter;
   }, [regionFilter, items]);
-  const hasRegionFilter = regionFilter !== "all";
 
   return (
     <div ref={containerRef} className="relative">
@@ -413,33 +396,18 @@ function RegionSearch({
           <Globe2 size={11} />
           Region scope
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(!open);
-              setQuery("");
-              setTimeout(() => inputRef.current?.focus(), 50);
-            }}
-            className="flex min-w-0 flex-1 items-center gap-2 bg-transparent text-sm text-siem-text outline-none cursor-pointer"
-          >
-            <span className="truncate max-w-[14rem]">{currentLabel}</span>
-            <Search size={12} className="text-siem-muted shrink-0" />
-          </button>
-          {hasRegionFilter && (
-            <button
-              type="button"
-              aria-label="Reset region scope"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRegionChange("all");
-              }}
-              className="rounded-md border border-siem-border px-1.5 py-0.5 text-siem-muted transition-colors hover:border-siem-accent/45 hover:text-siem-text"
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(!open);
+            setQuery("");
+            setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+          className="flex items-center gap-2 bg-transparent text-sm text-siem-text outline-none cursor-pointer"
+        >
+          <span className="truncate max-w-[14rem]">{currentLabel}</span>
+          <Search size={12} className="text-siem-muted shrink-0" />
+        </button>
       </div>
 
       {open && (
@@ -545,7 +513,6 @@ function ConflictLensSearch({
     const current = CONFLICT_LENSES.find((lens) => lens.id === conflictLensId);
     return current?.label ?? "None";
   }, [conflictLensId]);
-  const hasConflictLens = conflictLensId !== null;
 
   return (
     <div ref={containerRef} className="relative">
@@ -554,33 +521,18 @@ function ConflictLensSearch({
           <Radar size={11} />
           Conflict lens
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setOpen((current) => !current);
-              setQuery("");
-              setTimeout(() => inputRef.current?.focus(), 50);
-            }}
-            className="flex min-w-0 flex-1 items-center gap-2 bg-transparent text-left text-sm text-siem-text outline-none cursor-pointer"
-          >
-            <span className="max-w-[14rem] truncate">{currentLabel}</span>
-            <Search size={12} className="shrink-0 text-siem-muted" />
-          </button>
-          {hasConflictLens && (
-            <button
-              type="button"
-              aria-label="Reset conflict lens"
-              onClick={(e) => {
-                e.stopPropagation();
-                onConflictLensChange(null);
-              }}
-              className="rounded-md border border-siem-border px-1.5 py-0.5 text-siem-muted transition-colors hover:border-siem-accent/45 hover:text-siem-text"
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen((current) => !current);
+            setQuery("");
+            setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+          className="flex items-center gap-2 bg-transparent text-left text-sm text-siem-text outline-none cursor-pointer"
+        >
+          <span className="max-w-[14rem] truncate">{currentLabel}</span>
+          <Search size={12} className="shrink-0 text-siem-muted" />
+        </button>
       </div>
 
       {open && (
