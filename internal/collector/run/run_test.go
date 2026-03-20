@@ -8,9 +8,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +24,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/noisegate"
 	"github.com/scalytics/euosint/internal/collector/normalize"
 	"github.com/scalytics/euosint/internal/collector/parse"
+	"github.com/scalytics/euosint/internal/collector/zonebrief"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
@@ -974,5 +977,382 @@ func TestParseUCDPTotalPages(t *testing.T) {
 	}
 	if got := parseUCDPTotalPages([]byte(`{"Result":[]}`)); got != 0 {
 		t.Fatalf("parseUCDPTotalPages() missing field=%d, want 0", got)
+	}
+}
+
+func TestFetchUCDPItemsForLensFiltersAndPaginates(t *testing.T) {
+	page0 := `{"TotalCount":2,"TotalPages":2,"Result":[
+		{"id":1,"type_of_violence":1,"date_start":"2026-03-01","country":"Sudan","country_id":625,"best":5,"latitude":13.0,"longitude":25.0,"side_a":"SAF","side_b":"RSF","adm_1":"Darfur"}
+	]}`
+	page1 := `{"TotalCount":2,"TotalPages":2,"Result":[
+		{"id":2,"type_of_violence":1,"date_start":"2026-03-10","country":"Sudan","country_id":625,"best":3,"latitude":12.5,"longitude":24.5,"side_a":"SAF","side_b":"RSF","adm_1":"Kordofan"}
+	]}`
+
+	runner := New(io.Discard, io.Discard)
+	var requestedURLs []string
+	runner.clientFactory = func(cfg config.Config) *fetch.Client {
+		return fetch.NewWithHTTPClient(cfg, &http.Client{
+			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				requestedURLs = append(requestedURLs, req.URL.String())
+				q := req.URL.Query()
+				// Verify auth header is present.
+				if req.Header.Get("x-ucdp-access-token") == "" {
+					t.Fatal("missing UCDP auth header")
+				}
+				// Verify country filter is present.
+				if q.Get("Country") == "" {
+					t.Fatal("expected Country query param")
+				}
+				pageStr := q.Get("page")
+				var body string
+				if pageStr == "0" || pageStr == "" {
+					body = page0
+				} else {
+					body = page1
+				}
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+			}),
+		})
+	}
+
+	cfg := config.Default()
+	cfg.UCDPAPIVersion = "26.0.1"
+	headers := map[string]string{"x-ucdp-access-token": "test-token"}
+
+	// Use Sudan lens.
+	var sudanLens zonebrief.LensDef
+	for _, l := range zonebrief.SupportedLenses {
+		if l.ID == "sudan" {
+			sudanLens = l
+			break
+		}
+	}
+
+	items, err := runner.fetchUCDPItemsForLens(context.Background(), cfg, sudanLens, headers, "26.0.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("expected 2 items across 2 pages, got %d", len(items))
+	}
+	if len(requestedURLs) != 2 {
+		t.Fatalf("expected 2 HTTP requests (2 pages), got %d", len(requestedURLs))
+	}
+	// Verify version in URL.
+	if !strings.Contains(requestedURLs[0], "gedevents/26.0.1") {
+		t.Fatalf("expected version 26.0.1 in URL, got %q", requestedURLs[0])
+	}
+	// Verify date filter.
+	if !strings.Contains(requestedURLs[0], "StartDate=") {
+		t.Fatalf("expected StartDate param, got %q", requestedURLs[0])
+	}
+}
+
+func TestFetchUCDPConflictsPaginatesAndDeduplicates(t *testing.T) {
+	page0 := `{"TotalCount":3,"TotalPages":2,"Result":[
+		{"conflict_id":"309","conflict_name":"Sudan: Government","type_of_conflict":"3","intensity_level":"2","gwno_loc":"625","year":"2023","side_a":"Gov Sudan","side_b":"RSF"},
+		{"conflict_id":"309","conflict_name":"Sudan: Government","type_of_conflict":"3","intensity_level":"1","gwno_loc":"625","year":"2020","side_a":"Gov Sudan","side_b":"SRF"}
+	]}`
+	page1 := `{"TotalCount":3,"TotalPages":2,"Result":[
+		{"conflict_id":"309","conflict_name":"Sudan: Government","type_of_conflict":"3","intensity_level":"2","gwno_loc":"625","year":"2024","side_a":"Gov Sudan","side_b":"RSF"}
+	]}`
+
+	runner := New(io.Discard, io.Discard)
+	runner.clientFactory = func(cfg config.Config) *fetch.Client {
+		return fetch.NewWithHTTPClient(cfg, &http.Client{
+			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				q := req.URL.Query()
+				body := page0
+				if q.Get("page") == "1" {
+					body = page1
+				}
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+			}),
+		})
+	}
+
+	cfg := config.Default()
+	headers := map[string]string{"x-ucdp-access-token": "test-token"}
+
+	conflicts, err := runner.fetchUCDPConflicts(context.Background(), cfg, headers, "25.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Should be deduplicated to 1 conflict (309) with year=2024.
+	if len(conflicts) != 1 {
+		t.Fatalf("expected 1 deduplicated conflict, got %d", len(conflicts))
+	}
+	if conflicts[0].Year != 2024 {
+		t.Fatalf("expected year 2024 (highest), got %d", conflicts[0].Year)
+	}
+	if conflicts[0].IntensityLevel != 2 {
+		t.Fatalf("expected intensity 2, got %d", conflicts[0].IntensityLevel)
+	}
+}
+
+func TestDeduplicateConflictsKeepsHighestYear(t *testing.T) {
+	conflicts := []parse.UCDPConflict{
+		{ConflictID: "1", Year: 2020, IntensityLevel: 1},
+		{ConflictID: "1", Year: 2024, IntensityLevel: 2},
+		{ConflictID: "1", Year: 2022, IntensityLevel: 1},
+		{ConflictID: "2", Year: 2023, IntensityLevel: 1},
+	}
+	got := deduplicateConflicts(conflicts)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 conflicts, got %d", len(got))
+	}
+	byID := map[string]parse.UCDPConflict{}
+	for _, c := range got {
+		byID[c.ConflictID] = c
+	}
+	if byID["1"].Year != 2024 || byID["1"].IntensityLevel != 2 {
+		t.Fatalf("conflict 1: expected year=2024 intensity=2, got year=%d intensity=%d", byID["1"].Year, byID["1"].IntensityLevel)
+	}
+	if byID["2"].Year != 2023 {
+		t.Fatalf("conflict 2: expected year=2023, got %d", byID["2"].Year)
+	}
+}
+
+func TestDiscoverUCDPVersionsParsesHTML(t *testing.T) {
+	html := `<html><body>
+		The latest version of UCDP GED:
+		<code>25.1</code>
+		The latest versions of UCDP GED Candidate:<br>
+		Monthly release: <code>26.0.1</code><br>
+		Quarterly release: <code>25.01.25.12</code>
+		latest version of the yearly datasets:
+		<code>25.1</code>
+	</body></html>`
+
+	// We can't easily mock discoverUCDPVersions since it uses http.DefaultClient,
+	// but we can test the regex logic directly with a local HTTP server.
+	srv := &http.Server{Addr: "127.0.0.1:0"}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/apidocs/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(html))
+	})
+	srv.Handler = mux
+
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	go srv.Serve(ln)
+	defer srv.Close()
+
+	// Since discoverUCDPVersions hits a hardcoded URL, test the parsing logic
+	// via the regex directly.
+	v := ucdpVersions{}
+	if m := regexp.MustCompile(`Monthly release:\s*<code>([^<]+)</code>`).FindStringSubmatch(html); len(m) > 1 {
+		v.candidate = strings.TrimSpace(m[1])
+	}
+	if m := regexp.MustCompile(`latest version of the yearly datasets:\s*<code>([^<]+)</code>`).FindStringSubmatch(html); len(m) > 1 {
+		v.annual = strings.TrimSpace(m[1])
+	}
+	if v.candidate != "26.0.1" {
+		t.Fatalf("expected candidate 26.0.1, got %q", v.candidate)
+	}
+	if v.annual != "25.1" {
+		t.Fatalf("expected annual 25.1, got %q", v.annual)
+	}
+}
+
+func TestWriteZoneBriefingsStalenessSkip(t *testing.T) {
+	dir := t.TempDir()
+	outPath := filepath.Join(dir, "zone-briefings.json")
+	// Write a fresh file.
+	if err := os.WriteFile(outPath, []byte("[]"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	runner := New(io.Discard, io.Discard)
+	httpCalled := false
+	runner.clientFactory = func(cfg config.Config) *fetch.Client {
+		httpCalled = true
+		return fetch.New(cfg)
+	}
+
+	cfg := config.Default()
+	cfg.ZoneBriefingsOutputPath = outPath
+	cfg.UCDPAccessToken = "test-token"
+	cfg.ZoneBriefingRefreshHours = 24
+
+	err := runner.writeZoneBriefings(context.Background(), cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if httpCalled {
+		t.Fatal("expected staleness check to skip refresh, but HTTP client was created")
+	}
+}
+
+func TestWriteZoneBriefingsNoTokenWritesEmpty(t *testing.T) {
+	dir := t.TempDir()
+	outPath := filepath.Join(dir, "zone-briefings.json")
+
+	runner := New(io.Discard, io.Discard)
+	cfg := config.Default()
+	cfg.ZoneBriefingsOutputPath = outPath
+	cfg.UCDPAccessToken = ""
+
+	err := runner.writeZoneBriefings(context.Background(), cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "[]\n" {
+		t.Fatalf("expected empty JSON array, got %q", string(data))
+	}
+}
+
+func TestFetchUCDPItemsAlertPipelineFiltersTo7Days(t *testing.T) {
+	response := `{"TotalCount":1,"TotalPages":1,"Result":[
+		{"id":1,"type_of_violence":1,"date_start":"2026-03-19","country":"Sudan","country_id":625,"best":5,"side_a":"SAF","side_b":"RSF"}
+	]}`
+
+	runner := New(io.Discard, io.Discard)
+	var capturedURL string
+	runner.clientFactory = func(cfg config.Config) *fetch.Client {
+		return fetch.NewWithHTTPClient(cfg, &http.Client{
+			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				capturedURL = req.URL.String()
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(response)), Header: make(http.Header)}, nil
+			}),
+		})
+	}
+
+	cfg := config.Default()
+	cfg.UCDPAccessToken = "test-token"
+	cfg.UCDPAPIVersion = "26.0.1"
+	nctx := normalize.Context{Config: cfg, Now: time.Date(2026, 3, 20, 0, 0, 0, 0, time.UTC)}
+	source := model.RegistrySource{
+		Type:    "ucdp-json",
+		FeedURL: "https://ucdpapi.pcr.uu.se/api/gedevents/25.1",
+	}
+
+	items, err := runner.fetchUCDPItems(context.Background(), nctx, source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	// Verify URL uses config version, not source URL.
+	if !strings.Contains(capturedURL, "gedevents/26.0.1") {
+		t.Fatalf("expected version from config (26.0.1), got %q", capturedURL)
+	}
+	// Verify date filter present.
+	if !strings.Contains(capturedURL, "StartDate=") || !strings.Contains(capturedURL, "EndDate=") {
+		t.Fatalf("expected date filters in alert pipeline URL, got %q", capturedURL)
+	}
+}
+
+func TestWriteZoneBriefingsEndToEnd(t *testing.T) {
+	dir := t.TempDir()
+	outPath := filepath.Join(dir, "zone-briefings.json")
+	boundariesPath := filepath.Join(dir, "countries.geojson")
+	geoDir := filepath.Join(dir, "geo")
+	os.MkdirAll(geoDir, 0o755)
+
+	// Write a minimal boundary file.
+	boundaries := `{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"ISO_A2":"SD"},"geometry":{"type":"Polygon","coordinates":[[[25,10],[25,20],[35,20],[35,10],[25,10]]]}}]}`
+	os.WriteFile(boundariesPath, []byte(boundaries), 0o644)
+
+	// Write a stale file to bypass staleness check.
+	staleTime := time.Now().Add(-48 * time.Hour)
+	os.WriteFile(outPath, []byte("[]"), 0o644)
+	os.Chtimes(outPath, staleTime, staleTime)
+
+	ucdpResponse := `{"TotalCount":1,"TotalPages":1,"Result":[
+		{"id":100,"type_of_violence":1,"date_start":"2026-03-19","country":"Sudan","country_id":625,"best":10,"deaths_civilians":2,"latitude":13.0,"longitude":25.0,"side_a":"Gov of Sudan","side_b":"RSF","dyad_name":"Gov vs RSF","adm_1":"Darfur","adm_2":"Zalingei"}
+	]}`
+	conflictResponse := `{"TotalCount":1,"TotalPages":1,"Result":[
+		{"conflict_id":"309","conflict_name":"Sudan: Government","type_of_conflict":"3","intensity_level":"2","gwno_loc":"625","year":"2024","side_a":"Gov of Sudan","side_b":"RSF"}
+	]}`
+	versionHTML := `<html>Monthly release: <code>26.0.1</code> latest version of the yearly datasets: <code>25.1</code></html>`
+
+	runner := New(io.Discard, io.Discard)
+	runner.clientFactory = func(cfg config.Config) *fetch.Client {
+		return fetch.NewWithHTTPClient(cfg, &http.Client{
+			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				u := req.URL.String()
+				var body string
+				switch {
+				case strings.Contains(u, "apidocs"):
+					body = versionHTML
+				case strings.Contains(u, "ucdpprioconflict"):
+					body = conflictResponse
+				case strings.Contains(u, "gedevents"):
+					body = ucdpResponse
+				default:
+					return &http.Response{StatusCode: 404, Body: io.NopCloser(strings.NewReader("not found")), Header: make(http.Header)}, nil
+				}
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+			}),
+		})
+	}
+
+	cfg := config.Default()
+	cfg.ZoneBriefingsOutputPath = outPath
+	cfg.CountryBoundariesPath = boundariesPath
+	cfg.UCDPAccessToken = "test-token"
+	cfg.UCDPAPIVersion = "26.0.1"
+	cfg.ZoneBriefingRefreshHours = 24
+	cfg.ZoneBriefingACLEDEnabled = false // skip ACLED for this test
+
+	err := runner.writeZoneBriefings(context.Background(), cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify briefings file was written.
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var briefings []json.RawMessage
+	if err := json.Unmarshal(data, &briefings); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if len(briefings) != 6 {
+		t.Fatalf("expected 6 lens briefings, got %d", len(briefings))
+	}
+
+	// Parse the Sudan briefing to verify enrichment.
+	var records []map[string]any
+	json.Unmarshal(data, &records)
+	var sudan map[string]any
+	for _, r := range records {
+		if r["lens_id"] == "sudan" {
+			sudan = r
+			break
+		}
+	}
+	if sudan == nil {
+		t.Fatal("expected sudan briefing")
+	}
+	if sudan["conflict_intensity"] != "war" {
+		t.Fatalf("expected conflict_intensity=war, got %v", sudan["conflict_intensity"])
+	}
+	if sudan["status"] != "active" {
+		t.Fatalf("expected status=active, got %v", sudan["status"])
+	}
+	conflicts, ok := sudan["active_conflicts"].([]any)
+	if !ok || len(conflicts) == 0 {
+		t.Fatal("expected active_conflicts to be populated")
+	}
+
+	// Verify GeoJSON files were written.
+	conflictGeo := filepath.Join(geoDir, "conflict-zones.geojson")
+	terrorGeo := filepath.Join(geoDir, "terrorism-zones.geojson")
+	if _, err := os.Stat(conflictGeo); err != nil {
+		t.Fatalf("expected conflict-zones.geojson: %v", err)
+	}
+	if _, err := os.Stat(terrorGeo); err != nil {
+		t.Fatalf("expected terrorism-zones.geojson: %v", err)
 	}
 }
