@@ -59,6 +59,13 @@ func WriteWithTotal(cfg config.Config, active []model.Alert, filtered []model.Al
 	return writeJSON(cfg.SourceHealthOutputPath, doc)
 }
 
+func WriteZoneBriefings(path string, briefings []model.ZoneBriefingRecord) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return writeJSON(path, briefings)
+}
+
 func writeJSON(path string, value any) error {
 	data, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {

@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-03-20T09:28:34Z",
+  "lane_distribution": {
+    "alarm": 1,
+    "info": 0,
+    "intel": 0
+  },
+  "lane_distribution_drift": {
+    "alarm": 0,
+    "info": 0,
+    "intel": 0
+  },
+  "geo_confidence_average": 0.55,
+  "geo_confidence_by_source": {
+    "interpol-hub": 0.55
+  },
+  "source_lane_distribution": {
+    "interpol-hub": {
+      "alarm": 1,
+      "info": 0,
+      "intel": 0
+    }
+  }
+}

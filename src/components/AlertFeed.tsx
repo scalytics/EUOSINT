@@ -15,6 +15,9 @@ import {
   freshnessLabel,
 } from "@/lib/severity";
 import { alertMatchesRegionFilter } from "@/lib/regions";
+import { buildConflictBrief, mergeZoneBriefing } from "@/lib/conflict-briefs";
+import { getConflictLensById } from "@/lib/conflict-lenses";
+import { useZoneBriefings } from "@/hooks/useZoneBriefings";
 import { Clock, Building2, ChevronDown, Globe } from "lucide-react";
 
 const LIVE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
@@ -27,6 +30,7 @@ interface Props {
   onSelect: (id: string) => void;
   categoryFilter: AlertCategory | "all";
   regionFilter: string;
+  conflictLensId: string | null;
   onRegionChange: (region: string) => void;
   onVisibleAlertIdsChange: (payload: {
     nowIds: string[];
@@ -42,6 +46,7 @@ export function AlertFeed({
   onSelect,
   categoryFilter,
   regionFilter,
+  conflictLensId,
   onRegionChange,
   onVisibleAlertIdsChange,
 }: Props) {
@@ -53,6 +58,16 @@ export function AlertFeed({
   const lastVisibleSigRef = useRef("");
   const refreshTimeoutRef = useRef<number | null>(null);
   const glowTimeoutsRef = useRef<number[]>([]);
+  const activeConflictLens = useMemo(() => getConflictLensById(conflictLensId), [conflictLensId]);
+  const { briefings: zoneBriefings } = useZoneBriefings();
+  const activeConflictBrief = useMemo(() => {
+    const derived = buildConflictBrief([...alerts, ...historicalAlerts], activeConflictLens);
+    const override = activeConflictLens
+      ? zoneBriefings.find((briefing) => briefing.lensId === activeConflictLens.id)
+      : null;
+    return mergeZoneBriefing(derived, override);
+  }, [activeConflictLens, alerts, historicalAlerts, zoneBriefings]);
+  const isConflictContextMode = activeConflictLens !== null;
 
   const regions = useMemo(() => {
     const set = new Map<string, number>();
@@ -157,6 +172,33 @@ export function AlertFeed({
     return [...byId.values()].sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime());
   }, [nowAlerts, historyAlerts]);
 
+  const contextAlerts = useMemo(() => {
+    const combined = [...alerts, ...historicalAlerts]
+      .filter((alert) => (alert.signal_lane ?? (alert.severity === "info" ? "info" : "intel")) === "info")
+      .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime());
+    const deduped = new Map<string, Alert>();
+    for (const alert of combined) {
+      if (!deduped.has(alert.alert_id)) {
+        deduped.set(alert.alert_id, alert);
+      }
+    }
+    const infoItems = [...deduped.values()];
+    if (infoItems.length >= 8) {
+      return infoItems;
+    }
+
+    const supplement = [...alerts, ...historicalAlerts]
+      .filter((alert) => (alert.signal_lane ?? (alert.severity === "info" ? "info" : "intel")) !== "info")
+      .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime());
+    for (const alert of supplement) {
+      if (!deduped.has(alert.alert_id)) {
+        deduped.set(alert.alert_id, alert);
+      }
+      if (deduped.size >= 12) break;
+    }
+    return [...deduped.values()];
+  }, [alerts, historicalAlerts]);
+
   // History grouped by day.
   const historyGroups = useMemo(() => {
     const todayStart = new Date();
@@ -257,8 +299,15 @@ export function AlertFeed({
       onVisibleAlertIdsChange({ nowIds: visibleNowIds, historyIds: visibleHistoryIds, mode: "now_history" });
       return;
     }
-    onVisibleAlertIdsChange({ nowIds: [], historyIds: [], mode: "briefing" });
+    onVisibleAlertIdsChange({ nowIds: visibleNowIds, historyIds: visibleHistoryIds, mode: "briefing" });
   }, [viewMode, visibleNowIds, visibleHistoryIds, onVisibleAlertIdsChange]);
+
+  useEffect(() => {
+    if (!activeConflictLens) return;
+    if (viewMode !== "briefing") {
+      setViewMode("briefing");
+    }
+  }, [activeConflictLens, viewMode]);
 
   const renderAlertCard = (alert: Alert, position: number) => {
     const isSelected = selectedId === alert.alert_id;
@@ -345,7 +394,9 @@ export function AlertFeed({
   };
 
   const currentAlerts =
-    viewMode === "now"
+    isConflictContextMode
+      ? contextAlerts
+      : viewMode === "now"
       ? nowAlerts
       : viewMode === "history"
         ? historyAlerts
@@ -375,7 +426,7 @@ export function AlertFeed({
       <div className="px-3 py-3 border-b border-siem-border bg-siem-panel/95 space-y-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-xxs font-bold uppercase tracking-[0.18em] text-siem-muted">
-            Intelligence Feed
+            {isConflictContextMode ? "Context" : "Intelligence Feed"}
           </h2>
           <div className="text-2xs uppercase tracking-[0.18em] text-siem-muted">
             {regionFilter === "all"
@@ -386,55 +437,179 @@ export function AlertFeed({
           </div>
         </div>
 
-        {/* Now / History / Combined / Briefing tabs */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setViewMode("now")}
-            className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
-              viewMode === "now"
-                ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
-                : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
-            }`}
-          >
-            Now ({nowAlerts.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("history")}
-            className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
-              viewMode === "history"
-                ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
-                : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
-            }`}
-          >
-            History ({historyAlerts.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode((current) => (current === "now_history" ? "now" : "now_history"))}
-            className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
-              viewMode === "now_history"
-                ? "bg-cyan-500/18 text-cyan-300 border-cyan-500/35"
-                : "bg-white/5 text-siem-muted border-siem-border hover:bg-cyan-500/10 hover:text-cyan-300"
-            }`}
-          >
-            Now + History ({nowAndHistoryAlerts.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("briefing")}
-            className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
-              viewMode === "briefing"
-                ? "bg-sky-500/18 text-sky-300 border-sky-500/35"
-                : "bg-white/5 text-siem-muted border-siem-border hover:bg-sky-500/10 hover:text-sky-300"
-            }`}
-          >
-            Briefing ({briefingAlerts.length})
-          </button>
-        </div>
+        {isConflictContextMode ? (
+          <div className="rounded border border-sky-500/25 bg-sky-500/10 px-2 py-2 text-2xs">
+            <div className="font-mono uppercase tracking-[0.16em] text-sky-200">
+              Context for {activeConflictLens.label}
+            </div>
+            <div className="mt-1 text-siem-muted">{activeConflictLens.description}</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setViewMode("now")}
+              className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
+                viewMode === "now"
+                  ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
+                  : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
+              }`}
+            >
+              Now ({nowAlerts.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("history")}
+              className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
+                viewMode === "history"
+                  ? "bg-siem-accent/18 text-siem-accent border-siem-accent/35"
+                  : "bg-white/5 text-siem-muted border-siem-border hover:bg-siem-accent/10 hover:text-siem-accent"
+              }`}
+            >
+              History ({historyAlerts.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode((current) => (current === "now_history" ? "now" : "now_history"))}
+              className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
+                viewMode === "now_history"
+                  ? "bg-cyan-500/18 text-cyan-300 border-cyan-500/35"
+                  : "bg-white/5 text-siem-muted border-siem-border hover:bg-cyan-500/10 hover:text-cyan-300"
+              }`}
+            >
+              Now + History ({nowAndHistoryAlerts.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("briefing")}
+              className={`rounded border px-2 py-1.5 text-2xs font-mono uppercase tracking-wider transition-colors ${
+                viewMode === "briefing"
+                  ? "bg-sky-500/18 text-sky-300 border-sky-500/35"
+                  : "bg-white/5 text-siem-muted border-siem-border hover:bg-sky-500/10 hover:text-sky-300"
+              }`}
+            >
+              Context ({briefingAlerts.length})
+            </button>
+          </div>
+        )}
 
-        {viewMode === "now_history" && (
+        {isConflictContextMode && activeConflictBrief && (
+          <div className="rounded-lg border border-siem-border bg-siem-panel-strong px-3 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-2xs uppercase tracking-[0.16em] text-siem-muted">Zone brief</div>
+                <div className="mt-1 text-sm text-siem-text">{activeConflictBrief.lens.label}</div>
+                <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-siem-muted">
+                  {activeConflictBrief.sourceLabel}
+                </div>
+                {activeConflictBrief.sourceURL && (
+                  <a
+                    href={activeConflictBrief.sourceURL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-flex text-[10px] uppercase tracking-[0.14em] text-siem-accent hover:text-siem-text"
+                  >
+                    More about this zone
+                  </a>
+                )}
+              </div>
+              <div className="text-2xs uppercase tracking-[0.14em] text-siem-muted">
+                {activeConflictBrief.asOf ? `As of ${new Date(activeConflictBrief.asOf).toISOString().slice(0, 10)}` : "No dated context"}
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {activeConflictBrief.metrics.map((metric) => (
+                <div key={metric.label} className="rounded border border-siem-border bg-white/5 px-2 py-1.5">
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">{metric.label}</div>
+                  <div className="mt-1 text-xs font-mono text-siem-text">{metric.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Dominant categories</div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {activeConflictBrief.topCategories.map((item) => (
+                    <span key={item.key} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
+                      <span>{item.label}</span>
+                      <span className="text-siem-muted">{item.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Hot countries</div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {activeConflictBrief.topCountries.map((item) => (
+                    <span key={item.code} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
+                      <span>{item.label}</span>
+                      <span className="text-siem-muted">{item.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Actors / entities</div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {activeConflictBrief.actors.map((item) => (
+                    <span key={item} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Violence / focus</div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {activeConflictBrief.violenceTypes.map((item) => (
+                    <span key={item} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Top sources</div>
+                <div className="mt-1 space-y-1">
+                  {activeConflictBrief.topSources.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between rounded border border-siem-border bg-white/5 px-2 py-1.5 text-2xs">
+                      <span className="truncate text-siem-text">{item.label}</span>
+                      <span className="shrink-0 font-mono text-siem-muted">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {activeConflictBrief.coverageNote && (
+                <div className="rounded border border-siem-border bg-white/5 px-2 py-2 text-2xs text-siem-muted">
+                  {activeConflictBrief.coverageNote}
+                </div>
+              )}
+
+              {activeConflictBrief.latestAlert && (
+                <button
+                  type="button"
+                  onClick={() => onSelect(activeConflictBrief.latestAlert!.alert_id)}
+                  className="w-full rounded-lg border border-siem-accent/35 bg-siem-accent/10 px-3 py-2 text-left transition-colors hover:bg-siem-accent/14"
+                >
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Latest alert in lens</div>
+                  <div className="mt-1 text-xs text-siem-text line-clamp-2">{activeConflictBrief.latestAlert.title}</div>
+                  <div className="mt-1 text-2xs text-siem-muted">
+                    {activeConflictBrief.latestAlert.source.authority_name} · {freshnessLabel(activeConflictBrief.latestAlert.freshness_hours)}
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!isConflictContextMode && viewMode === "now_history" && (
           <div className="rounded border border-siem-border bg-white/5 px-2 py-1.5 text-2xs font-mono uppercase tracking-wide">
             <span className="text-siem-muted">Delta 24h vs baseline:</span>{" "}
             <span
@@ -457,7 +632,18 @@ export function AlertFeed({
             <span className="text-siem-muted">Total</span>{" "}
             <span className="text-siem-text">{currentAlerts.length}</span>
           </div>
-          {viewMode === "briefing" ? (
+          {isConflictContextMode ? (
+            <>
+              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+                <span className="text-siem-muted">7d</span>{" "}
+                <span className="text-sky-300">{activeConflictBrief?.recent7d ?? 0}</span>
+              </div>
+              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+                <span className="text-siem-muted">Trend</span>{" "}
+                <span className="text-sky-300">{activeConflictBrief?.trendLabel ?? "flat"}</span>
+              </div>
+            </>
+          ) : viewMode === "briefing" ? (
             <>
               <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
                 <span className="text-siem-muted">Sources</span>{" "}
@@ -539,7 +725,17 @@ export function AlertFeed({
           isRefreshingList ? "animate-alert-list-refresh" : ""
         }`}
       >
-        {viewMode === "now" ? (
+        {isConflictContextMode ? (
+          currentAlerts.length > 0 ? (
+            currentAlerts.map((alert, idx) => renderAlertCard(alert, idx))
+          ) : (
+            <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
+              <p className="text-xs text-siem-muted uppercase tracking-wider">
+                No context items in this conflict lens
+              </p>
+            </div>
+          )
+        ) : viewMode === "now" ? (
           nowAlerts.length > 0 ? (
             nowAlerts.map((alert, idx) => renderAlertCard(alert, idx))
           ) : (
@@ -583,7 +779,7 @@ export function AlertFeed({
         ) : (
           <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
             <p className="text-xs text-siem-muted uppercase tracking-wider">
-              No briefing items matching current filters
+              No context items matching current filters
             </p>
           </div>
         )}

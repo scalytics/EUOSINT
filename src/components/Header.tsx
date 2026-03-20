@@ -8,12 +8,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Globe2, Radar, Search, Shield, X } from "lucide-react";
 import type { Alert } from "@/types/alert";
 import { alertMatchesRegionFilter } from "@/lib/regions";
+import { CONFLICT_LENSES } from "@/lib/conflict-lenses";
+import { useZoneBriefings } from "@/hooks/useZoneBriefings";
 
 type MenuView = "overview" | "feeds" | "sources" | "health";
 
 interface Props {
   regionFilter: string;
   onRegionChange: (region: string) => void;
+  conflictLensId: string | null;
+  onConflictLensChange: (lensId: string | null) => void;
   sourceCount: number;
   selectedSourceIds: string[];
   onSelectedSourceIdsChange: (sourceIds: string[]) => void;
@@ -465,9 +469,141 @@ function RegionSearch({
   );
 }
 
+function ConflictLensSearch({
+  conflictLensId,
+  onConflictLensChange,
+}: {
+  conflictLensId: string | null;
+  onConflictLensChange: (lensId: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { briefings } = useZoneBriefings();
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const availableLenses = useMemo(() => {
+    const activeBriefings = briefings.filter((briefing) => (briefing.status ?? "active") !== "inactive");
+    if (activeBriefings.length === 0) {
+      return CONFLICT_LENSES;
+    }
+    const activeIDs = new Set(activeBriefings.map((briefing) => briefing.lensId));
+    return CONFLICT_LENSES.filter((lens) => activeIDs.has(lens.id));
+  }, [briefings]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return availableLenses;
+    return availableLenses.filter((lens) =>
+      `${lens.label} ${lens.description} ${lens.regionFilter}`.toLowerCase().includes(q),
+    );
+  }, [availableLenses, query]);
+
+  const currentLabel = useMemo(() => {
+    const current = CONFLICT_LENSES.find((lens) => lens.id === conflictLensId);
+    return current?.label ?? "None";
+  }, [conflictLensId]);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div className="rounded-2xl border border-siem-border bg-siem-panel-strong px-3 py-2">
+        <div className="mb-1 flex items-center gap-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
+          <Radar size={11} />
+          Conflict lens
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen((current) => !current);
+            setQuery("");
+            setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+          className="flex items-center gap-2 bg-transparent text-left text-sm text-siem-text outline-none cursor-pointer"
+        >
+          <span className="max-w-[14rem] truncate">{currentLabel}</span>
+          <Search size={12} className="shrink-0 text-siem-muted" />
+        </button>
+      </div>
+
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-1 w-80 rounded-xl border border-siem-border bg-siem-panel-strong shadow-[0_16px_48px_rgba(0,0,0,0.4)]">
+          <div className="relative border-b border-siem-border p-2">
+            <Search size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-siem-muted" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search conflict zones..."
+              className="w-full bg-transparent pl-7 pr-7 py-1.5 text-xs text-siem-text placeholder:text-siem-muted/60 outline-none"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-siem-muted hover:text-siem-text"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <div className="border-b border-siem-border p-2">
+            <button
+              type="button"
+              onClick={() => {
+                onConflictLensChange(null);
+                setOpen(false);
+              }}
+              className="w-full rounded-lg border border-siem-accent/35 bg-siem-accent/12 px-3 py-2 text-left text-xxs uppercase tracking-[0.16em] text-siem-text"
+            >
+              No lens
+            </button>
+          </div>
+          <div className="max-h-72 overflow-y-auto p-1">
+            {filtered.length === 0 && (
+              <div className="px-3 py-4 text-center text-xxs text-siem-muted">No matching zones</div>
+            )}
+            {filtered.map((lens) => (
+              <button
+                key={lens.id}
+                type="button"
+                onClick={() => {
+                  onConflictLensChange(lens.id);
+                  setOpen(false);
+                  setQuery("");
+                }}
+                className={`w-full rounded-lg px-3 py-2 text-left text-xs transition-colors ${
+                  conflictLensId === lens.id
+                    ? "bg-siem-accent/14 text-siem-text"
+                    : "text-siem-text hover:bg-siem-accent/8"
+                }`}
+              >
+                <div className="truncate">{lens.label}</div>
+                <div className="mt-0.5 text-2xs text-siem-muted">{lens.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Header({
   regionFilter,
   onRegionChange,
+  conflictLensId,
+  onConflictLensChange,
   sourceCount,
   selectedSourceIds,
   onSelectedSourceIdsChange,
@@ -515,6 +651,11 @@ export function Header({
               regionFilter={regionFilter}
               onRegionChange={onRegionChange}
               alerts={alerts}
+            />
+
+            <ConflictLensSearch
+              conflictLensId={conflictLensId}
+              onConflictLensChange={onConflictLensChange}
             />
 
             <FeedFocus

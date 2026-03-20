@@ -15,6 +15,7 @@ import { useAlertState } from "@/hooks/useAlertState";
 import { useSearch } from "@/hooks/useSearch";
 import { useSourceHealth } from "@/hooks/useSourceHealth";
 import { alertMatchesRegionFilter } from "@/lib/regions";
+import { alertMatchesConflictLens, getConflictLensById } from "@/lib/conflict-lenses";
 import type { AlertCategory } from "@/types/alert";
 
 type SeverityFilter = "critical" | "high" | null;
@@ -54,6 +55,7 @@ export default function App() {
   const [categoryFilter, setCategoryFilter] = useState<AlertCategory | "all">("all");
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>(null);
   const [regionFilter, setRegionFilter] = useState<string>("Europe");
+  const [conflictLensId, setConflictLensId] = useState<string | null>(null);
   const { query: searchQuery, setQuery: setSearchQuery, results: searchResults, isApiAvailable } = useSearch();
   const [visibleNowAlertIds, setVisibleNowAlertIds] = useState<string[]>([]);
   const [visibleHistoryAlertIds, setVisibleHistoryAlertIds] = useState<string[]>([]);
@@ -93,18 +95,33 @@ export default function App() {
 
   const handleRegionChange = useCallback((nextRegion: string) => {
     setRegionFilter(nextRegion);
+    setConflictLensId(null);
+    setSelectedSourceIds([]);
+    setSelectedId(null);
+  }, []);
+
+  const handleConflictLensChange = useCallback((nextLensId: string | null) => {
+    setConflictLensId(nextLensId);
+    const lens = getConflictLensById(nextLensId);
+    if (lens) {
+      setRegionFilter(lens.regionFilter);
+    }
     setSelectedSourceIds([]);
     setSelectedId(null);
   }, []);
 
   const regionScopedAlerts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+    const activeLens = getConflictLensById(conflictLensId);
 
     // When API search returned results, use those (already ranked by BM25).
     if (query && isApiAvailable && searchResults.length > 0) {
       let filtered = searchResults;
       if (regionFilter !== "all") {
         filtered = filtered.filter((alert) => alertMatchesRegionFilter(alert, regionFilter));
+      }
+      if (activeLens) {
+        filtered = filtered.filter((alert) => alertMatchesConflictLens(alert, activeLens));
       }
       return filtered;
     }
@@ -113,6 +130,9 @@ export default function App() {
     let filtered = alerts;
     if (regionFilter !== "all") {
       filtered = filtered.filter((alert) => alertMatchesRegionFilter(alert, regionFilter));
+    }
+    if (activeLens) {
+      filtered = filtered.filter((alert) => alertMatchesConflictLens(alert, activeLens));
     }
     if (query) {
       filtered = filtered.filter((alert) => {
@@ -131,7 +151,7 @@ export default function App() {
       });
     }
     return filtered;
-  }, [alerts, regionFilter, searchQuery, searchResults, isApiAvailable]);
+  }, [alerts, conflictLensId, regionFilter, searchQuery, searchResults, isApiAvailable]);
 
   const scopedAlerts = useMemo(() => {
     let filtered = regionScopedAlerts;
@@ -150,9 +170,13 @@ export default function App() {
 
   const stateRegionScopedAlerts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+    const activeLens = getConflictLensById(conflictLensId);
     let filtered = stateAlerts;
     if (regionFilter !== "all") {
       filtered = filtered.filter((alert) => alertMatchesRegionFilter(alert, regionFilter));
+    }
+    if (activeLens) {
+      filtered = filtered.filter((alert) => alertMatchesConflictLens(alert, activeLens));
     }
     if (query) {
       filtered = filtered.filter((alert) => {
@@ -171,7 +195,7 @@ export default function App() {
       });
     }
     return filtered;
-  }, [stateAlerts, regionFilter, searchQuery]);
+  }, [conflictLensId, regionFilter, searchQuery, stateAlerts]);
 
   const scopedStateAlerts = useMemo(() => {
     let filtered = stateRegionScopedAlerts;
@@ -238,6 +262,8 @@ export default function App() {
       <Header
         regionFilter={regionFilter}
         onRegionChange={handleRegionChange}
+        conflictLensId={conflictLensId}
+        onConflictLensChange={handleConflictLensChange}
         sourceCount={sourceCount}
         selectedSourceIds={selectedSourceIds}
         onSelectedSourceIdsChange={handleSourceSelectionChange}
@@ -278,6 +304,7 @@ export default function App() {
             onSelect={setSelectedId}
             regionFilter={regionFilter}
             onRegionChange={handleRegionChange}
+            conflictLensId={conflictLensId}
             visibleNowAlertIds={visibleNowAlertIds}
             visibleHistoryAlertIds={visibleHistoryAlertIds}
             onSelectSourceIdsChange={handleSourceSelectionChange}
@@ -297,10 +324,11 @@ export default function App() {
                 alerts={scopedAlerts}
                 historicalAlerts={scopedStateAlerts}
                 selectedId={selectedId}
-                onSelect={setSelectedId}
-                categoryFilter={categoryFilter}
-                regionFilter={regionFilter}
-                onRegionChange={handleRegionChange}
+            onSelect={setSelectedId}
+            categoryFilter={categoryFilter}
+            regionFilter={regionFilter}
+            conflictLensId={conflictLensId}
+            onRegionChange={handleRegionChange}
                 onVisibleAlertIdsChange={({ nowIds, historyIds }) => {
                   setVisibleNowAlertIds(nowIds);
                   setVisibleHistoryAlertIds(historyIds);

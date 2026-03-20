@@ -91,6 +91,9 @@ func TestDefaultNoisePolicyPath(t *testing.T) {
 	if cfg.NoiseMetricsOutputPath != "public/noise-metrics.json" {
 		t.Fatalf("unexpected default noise metrics path %q", cfg.NoiseMetricsOutputPath)
 	}
+	if cfg.ZoneBriefingsOutputPath != "public/zone-briefings.json" {
+		t.Fatalf("unexpected default zone briefings path %q", cfg.ZoneBriefingsOutputPath)
+	}
 }
 
 func TestNoisePolicyPathFromEnv(t *testing.T) {
@@ -98,6 +101,7 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	t.Setenv("NOISE_POLICY_B_PATH", "/tmp/noise_policy_b.json")
 	t.Setenv("NOISE_POLICY_B_PERCENT", "25")
 	t.Setenv("NOISE_METRICS_OUTPUT_PATH", "/tmp/noise_metrics.json")
+	t.Setenv("ZONE_BRIEFINGS_OUTPUT_PATH", "/tmp/zone_briefings.json")
 	cfg := FromEnv()
 	if cfg.NoisePolicyPath != "/tmp/noise_policy.json" {
 		t.Fatalf("expected NOISE_POLICY_PATH override, got %q", cfg.NoisePolicyPath)
@@ -110,5 +114,8 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	}
 	if cfg.NoiseMetricsOutputPath != "/tmp/noise_metrics.json" {
 		t.Fatalf("expected NOISE_METRICS_OUTPUT_PATH override, got %q", cfg.NoiseMetricsOutputPath)
+	}
+	if cfg.ZoneBriefingsOutputPath != "/tmp/zone_briefings.json" {
+		t.Fatalf("expected ZONE_BRIEFINGS_OUTPUT_PATH override, got %q", cfg.ZoneBriefingsOutputPath)
 	}
 }

@@ -9,6 +9,11 @@ export interface OverlayDef {
   url: string;
 }
 
+const OVERLAY_FALLBACK_URLS: Record<string, string> = {
+  conflicts: "/geo/conflict-zones.seed.geojson",
+  terrorism: "/geo/terrorism-zones.seed.geojson",
+};
+
 const BASES_REGION_URLS: Record<string, string> = {
   Europe: "/geo/military-bases.europe.geojson",
   Africa: "/geo/military-bases.africa.geojson",
@@ -160,7 +165,20 @@ export async function loadOverlay(
     ? (BASES_REGION_URLS[regionFilter] ?? BASES_REGION_URLS.all)
     : def.url;
   const resp = await fetch(url);
-  const geojson = await resp.json();
+  let geojson = await resp.json();
+  if (
+    (def.id === "conflicts" || def.id === "terrorism") &&
+    Array.isArray((geojson as { features?: unknown[] })?.features) &&
+    ((geojson as { features?: unknown[] }).features?.length ?? 0) === 0
+  ) {
+    const fallbackURL = OVERLAY_FALLBACK_URLS[def.id];
+    if (fallbackURL) {
+      const fallbackResp = await fetch(fallbackURL);
+      if (fallbackResp.ok) {
+        geojson = await fallbackResp.json();
+      }
+    }
+  }
   const group = L.layerGroup();
 
   if (def.id === "conflicts") {

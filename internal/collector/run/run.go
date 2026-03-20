@@ -36,6 +36,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/translate"
 	"github.com/scalytics/euosint/internal/collector/trends"
 	"github.com/scalytics/euosint/internal/collector/vet"
+	"github.com/scalytics/euosint/internal/collector/zonebrief"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
@@ -425,6 +426,9 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 
 	if err := output.Write(cfg, currentActive, currentFiltered, fullState, sourceHealth, duplicateAudit, replacementQueue); err != nil {
 		return err
+	}
+	if err := r.writeZoneBriefings(ctx, cfg, sources); err != nil {
+		fmt.Fprintf(r.stderr, "WARN zone briefings: %v\n", err)
 	}
 	if err := r.writeNoiseMetrics(ctx, cfg, currentActive, runStore); err != nil {
 		fmt.Fprintf(r.stderr, "WARN noise metrics: %v\n", err)
@@ -1902,6 +1906,25 @@ func (r Runner) fetchGDELT(ctx context.Context, fetcher fetch.Fetcher, nctx norm
 }
 
 func (r Runner) fetchUCDP(ctx context.Context, nctx normalize.Context, source model.RegistrySource) ([]model.Alert, error) {
+	items, err := r.fetchUCDPItems(ctx, nctx, source)
+	if err != nil {
+		return nil, err
+	}
+	limit := perSourceLimit(nctx.Config, source)
+	out := make([]model.Alert, 0, limit)
+	for _, item := range items {
+		if len(out) == limit {
+			break
+		}
+		alert := normalize.UCDPAlert(nctx, source, item)
+		if alert != nil {
+			out = append(out, *alert)
+		}
+	}
+	return out, nil
+}
+
+func (r Runner) fetchUCDPItems(ctx context.Context, nctx normalize.Context, source model.RegistrySource) ([]parse.UCDPItem, error) {
 	token := strings.TrimSpace(nctx.Config.UCDPAccessToken)
 	if token == "" {
 		// Silent drop by configuration: no token means UCDP is disabled.
@@ -1930,18 +1953,52 @@ func (r Runner) fetchUCDP(ctx context.Context, nctx normalize.Context, source mo
 			}
 		}
 	}
-	limit := perSourceLimit(nctx.Config, source)
-	out := make([]model.Alert, 0, limit)
-	for _, item := range items {
-		if len(out) == limit {
+	return items, nil
+}
+
+func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sources []model.RegistrySource) error {
+	if strings.TrimSpace(cfg.ZoneBriefingsOutputPath) == "" {
+		return nil
+	}
+	var ucdpSource *model.RegistrySource
+	for i := range sources {
+		if sources[i].Type == "ucdp-json" {
+			ucdpSource = &sources[i]
 			break
 		}
-		alert := normalize.UCDPAlert(nctx, source, item)
-		if alert != nil {
-			out = append(out, *alert)
-		}
 	}
-	return out, nil
+	if ucdpSource == nil {
+		return output.WriteZoneBriefings(cfg.ZoneBriefingsOutputPath, []model.ZoneBriefingRecord{})
+	}
+	nctx := normalize.Context{Config: cfg, Now: time.Now().UTC()}
+	items, err := r.fetchUCDPItems(ctx, nctx, *ucdpSource)
+	if err != nil {
+		return err
+	}
+	briefings := zonebrief.Build(items, nctx.Now)
+	if err := output.WriteZoneBriefings(cfg.ZoneBriefingsOutputPath, briefings); err != nil {
+		return err
+	}
+	geoDir := filepath.Join(filepath.Dir(cfg.ZoneBriefingsOutputPath), "geo")
+	if err := writeJSONArtifact(filepath.Join(geoDir, "conflict-zones.geojson"), zonebrief.BuildConflictZonesGeoJSON(briefings)); err != nil {
+		return err
+	}
+	if err := writeJSONArtifact(filepath.Join(geoDir, "terrorism-zones.geojson"), zonebrief.BuildTerrorZonesGeoJSON(briefings)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeJSONArtifact(path string, value any) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	body, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return err
+	}
+	body = append(body, '\n')
+	return os.WriteFile(path, body, 0o644)
 }
 
 func ensureUCDPQuery(raw string, defaultPageSize int) (string, bool) {

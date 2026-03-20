@@ -15,6 +15,7 @@ const (
 	defaultFilteredPath     = "public/alerts-filtered.json"
 	defaultStatePath        = "public/alerts-state.json"
 	defaultSourceHealthPath = "public/source-health.json"
+	defaultZoneBriefingsPath = "public/zone-briefings.json"
 	defaultRegistryPath     = "registry/sources.db"
 	defaultTimeoutMS        = 15000
 	defaultIntervalMS       = 900000
@@ -36,6 +37,7 @@ type Config struct {
 	FilteredOutputPath               string
 	StateOutputPath                  string
 	SourceHealthOutputPath           string
+	ZoneBriefingsOutputPath          string
 	MaxPerSource                     int
 	MaxAgeDays                       int
 	RemovedRetentionDays             int
@@ -135,6 +137,7 @@ func Default() Config {
 		FilteredOutputPath:               defaultFilteredPath,
 		StateOutputPath:                  defaultStatePath,
 		SourceHealthOutputPath:           defaultSourceHealthPath,
+		ZoneBriefingsOutputPath:          defaultZoneBriefingsPath,
 		MaxPerSource:                     defaultMaxPerSource,
 		MaxAgeDays:                       defaultMaxAgeDays,
 		RemovedRetentionDays:             defaultRemovedDays,
@@ -230,6 +233,7 @@ func FromEnv() Config {
 	cfg.FilteredOutputPath = envString("FILTERED_OUTPUT_PATH", cfg.FilteredOutputPath)
 	cfg.StateOutputPath = envString("STATE_OUTPUT_PATH", cfg.StateOutputPath)
 	cfg.SourceHealthOutputPath = envString("SOURCE_HEALTH_OUTPUT_PATH", cfg.SourceHealthOutputPath)
+	cfg.ZoneBriefingsOutputPath = envString("ZONE_BRIEFINGS_OUTPUT_PATH", cfg.ZoneBriefingsOutputPath)
 	cfg.RegistryPath = envString("SOURCE_REGISTRY_PATH", cfg.RegistryPath)
 	cfg.MaxPerSource = envInt("MAX_PER_SOURCE", cfg.MaxPerSource)
 	cfg.MaxAgeDays = envInt("MAX_AGE_DAYS", cfg.MaxAgeDays)

@@ -15,8 +15,18 @@ type UCDPItem struct {
 	FeedItem
 	ViolenceType string
 	Fatalities   int
+	CivilianDeaths int
 	Country      string
+	CountryCode  string
 	Region       string
+	SideA        string
+	SideB        string
+	DyadName     string
+	Admin1       string
+	Admin2       string
+	WherePrecision int
+	DatePrecision  int
+	EventClarity   int
 }
 
 // ParseUCDP parses UCDP API responses with flexible envelope keys.
@@ -44,13 +54,21 @@ func ParseUCDP(body []byte) ([]UCDPItem, error) {
 			dateStart = firstString(ev, "date_start_prec", "date_end")
 		}
 		country := firstString(ev, "country", "country_name")
+		countryCode := firstString(ev, "country_code", "gwno_loc")
 		region := firstString(ev, "region")
 		sideA := firstString(ev, "side_a", "actor1")
 		sideB := firstString(ev, "side_b", "actor2")
+		dyadName := firstString(ev, "dyad_name")
 		violenceType := normalizeUCDPViolenceType(firstString(ev, "type_of_violence", "type_of_violence_text", "event_type"))
 		fatalities := firstInt(ev, "best", "fatalities_best", "deaths_a", "deaths_b")
+		civilianDeaths := firstInt(ev, "deaths_civilians", "deaths_civilian")
 		lat := firstFloat(ev, "latitude", "lat")
 		lng := firstFloat(ev, "longitude", "lon", "lng")
+		admin1 := firstString(ev, "adm_1", "admin1")
+		admin2 := firstString(ev, "adm_2", "admin2")
+		wherePrecision := firstInt(ev, "where_prec", "where_precision")
+		datePrecision := firstInt(ev, "date_prec", "date_precision")
+		eventClarity := firstInt(ev, "event_clarity")
 		id := firstString(ev, "id", "event_id", "dyad_id")
 		if id == "" {
 			id = firstString(ev, "source_article")
@@ -100,8 +118,18 @@ func ParseUCDP(body []byte) ([]UCDPItem, error) {
 			},
 			ViolenceType: violenceType,
 			Fatalities:   fatalities,
+			CivilianDeaths: civilianDeaths,
 			Country:      country,
+			CountryCode:  countryCode,
 			Region:       region,
+			SideA:        sideA,
+			SideB:        sideB,
+			DyadName:     dyadName,
+			Admin1:       admin1,
+			Admin2:       admin2,
+			WherePrecision: wherePrecision,
+			DatePrecision:  datePrecision,
+			EventClarity:   eventClarity,
 		})
 	}
 	return out, nil

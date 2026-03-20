@@ -1,0 +1,17 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"name":"Sahel Belt (JNIM / ISGS)","type":"active","threat":"JNIM, ISGS, Boko Haram","since":"2015"},"geometry":{"type":"Polygon","coordinates":[[[-5,10],[-5,17],[0,20],[5,20],[10,18],[15,16],[16,12],[12,10],[5,10],[-5,10]]]}},
+    {"type":"Feature","properties":{"name":"Lake Chad Basin (Boko Haram / ISWAP)","type":"active","threat":"Boko Haram, ISWAP","since":"2009"},"geometry":{"type":"Polygon","coordinates":[[[10,8],[10,14],[16,14],[16,8],[10,8]]]}},
+    {"type":"Feature","properties":{"name":"Somalia (Al-Shabaab)","type":"active","threat":"Al-Shabaab","since":"2006"},"geometry":{"type":"Polygon","coordinates":[[[40,-2],[40,5],[42,10],[46,12],[50,10],[51,5],[49,0],[44,-2],[40,-2]]]}},
+    {"type":"Feature","properties":{"name":"Afghanistan-Pakistan (TTP / ISIS-K)","type":"active","threat":"Taliban, ISIS-K, TTP","since":"2001"},"geometry":{"type":"Polygon","coordinates":[[[60,28],[60,37],[66,38],[72,37],[74,33],[72,28],[66,25],[60,28]]]}},
+    {"type":"Feature","properties":{"name":"Iraq-Syria (ISIS remnants)","type":"degraded","threat":"ISIS sleeper cells","since":"2014"},"geometry":{"type":"Polygon","coordinates":[[[36,33],[36,37],[42,37],[46,37],[46,33],[42,32],[36,33]]]}},
+    {"type":"Feature","properties":{"name":"Sinai Peninsula","type":"degraded","threat":"ISIS-Sinai Province","since":"2014"},"geometry":{"type":"Polygon","coordinates":[[[32,28],[32,31],[34,31.5],[35,30],[34,28],[32,28]]]}},
+    {"type":"Feature","properties":{"name":"Cabo Delgado (ISIS-Mozambique)","type":"active","threat":"ISIS-Mozambique (ASWJ)","since":"2017"},"geometry":{"type":"Polygon","coordinates":[[[37,-15],[37,-10],[41,-10],[41,-15],[37,-15]]]}},
+    {"type":"Feature","properties":{"name":"North Caucasus","type":"degraded","threat":"ISIS-aligned cells","since":"2007"},"geometry":{"type":"Polygon","coordinates":[[[42,42],[42,44],[46,44],[48,43],[47,42],[42,42]]]}},
+    {"type":"Feature","properties":{"name":"Southern Philippines (Mindanao)","type":"degraded","threat":"Abu Sayyaf, ISIS-Philippines","since":"2016"},"geometry":{"type":"Polygon","coordinates":[[[121,5],[121,9],[125,9],[127,7],[126,5],[121,5]]]}},
+    {"type":"Feature","properties":{"name":"Balochistan (BLA / TTP)","type":"active","threat":"BLA, TTP cross-border","since":"2018"},"geometry":{"type":"Polygon","coordinates":[[[60,25],[60,30],[65,30],[68,28],[67,25],[60,25]]]}},
+    {"type":"Feature","properties":{"name":"Yemen","type":"active","threat":"AQAP, Houthi","since":"2011"},"geometry":{"type":"Polygon","coordinates":[[[43,12],[43,17],[46,18],[50,18],[53,16],[52,12],[43,12]]]}},
+    {"type":"Feature","properties":{"name":"Northern Mozambique / Tanzania border","type":"elevated","threat":"ASWJ expansion","since":"2020"},"geometry":{"type":"Polygon","coordinates":[[[36,-12],[36,-8],[40,-8],[40,-12],[36,-12]]]}}
+  ]
+}
