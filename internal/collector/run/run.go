@@ -747,10 +747,25 @@ func usesFastLane(s model.RegistrySource) bool {
 // browser bridge or need browser/cadence-aware handling.
 func usesBrowserLane(s model.RegistrySource) bool {
 	switch s.Type {
-	case "html-list", "x", "interpol-red-json", "interpol-yellow-json":
+	case "html-list", "telegram", "x", "interpol-red-json", "interpol-yellow-json":
 		return true
 	}
 	return strings.EqualFold(strings.TrimSpace(s.FetchMode), "browser")
+}
+
+// fetcherForSource selects the transport that best matches the source shape.
+// Social surfaces should prefer the browser bridge when available so the
+// collector sees the same rendered page an analyst would.
+func fetcherForSource(source model.RegistrySource, client *fetch.Client, browser *fetch.BrowserClient) fetch.Fetcher {
+	if browser == nil {
+		return client
+	}
+	switch source.Type {
+	case "telegram", "x":
+		return browser
+	default:
+		return fetch.FetcherFor(source.FetchMode, client, browser)
+	}
 }
 
 // fetchOneSource fetches a single source with retry logic, returning the
@@ -903,7 +918,7 @@ func acceptForType(sourceType string) string {
 // Interpol and browser-mode sources.
 func (r Runner) fetchOneSourceSlow(ctx context.Context, client *fetch.Client, browser *fetch.BrowserClient, nctx normalize.Context, source model.RegistrySource, categoryDictionary *dictionary.Store, cursors state.Cursors) ([]model.Alert, model.SourceHealthEntry) {
 	startedAt := time.Now().UTC()
-	fetcher := fetch.FetcherFor(source.FetchMode, client, browser)
+	fetcher := fetcherForSource(source, client, browser)
 
 	batch, err := r.fetchSource(ctx, fetcher, browser, nctx, source, categoryDictionary, cursors)
 

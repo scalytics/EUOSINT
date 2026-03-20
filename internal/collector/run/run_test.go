@@ -210,6 +210,11 @@ func TestUsesBrowserLaneForBrowserBoundSources(t *testing.T) {
 			want:   true,
 		},
 		{
+			name:   "telegram stays in browser lane",
+			source: model.RegistrySource{Type: "telegram"},
+			want:   true,
+		},
+		{
 			name:   "x stays in browser lane",
 			source: model.RegistrySource{Type: "x"},
 			want:   true,
@@ -254,6 +259,12 @@ func TestLaneClassificationIsExclusive(t *testing.T) {
 			wantBrowser: false,
 		},
 		{
+			name:        "telegram browser only",
+			source:      model.RegistrySource{Type: "telegram"},
+			wantFast:    false,
+			wantBrowser: true,
+		},
+		{
 			name:        "gdelt api only",
 			source:      model.RegistrySource{Type: "gdelt-json"},
 			wantFast:    false,
@@ -279,6 +290,56 @@ func TestLaneClassificationIsExclusive(t *testing.T) {
 			}
 			if gotFast && gotBrowser {
 				t.Fatalf("source %q classified into both fast and browser lanes", tc.source.Type)
+			}
+		})
+	}
+}
+
+func TestFetcherForSourcePrefersBrowserForSocialSources(t *testing.T) {
+	client := &fetch.Client{}
+	browser := &fetch.BrowserClient{}
+
+	tests := []struct {
+		name   string
+		source model.RegistrySource
+		want   any
+	}{
+		{
+			name:   "telegram prefers browser",
+			source: model.RegistrySource{Type: "telegram"},
+			want:   browser,
+		},
+		{
+			name:   "x prefers browser",
+			source: model.RegistrySource{Type: "x"},
+			want:   browser,
+		},
+		{
+			name:   "html list stays on declared mode",
+			source: model.RegistrySource{Type: "html-list"},
+			want:   client,
+		},
+		{
+			name:   "explicit browser mode still uses browser",
+			source: model.RegistrySource{Type: "html-list", FetchMode: "browser"},
+			want:   browser,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := fetcherForSource(tc.source, client, browser)
+			switch want := tc.want.(type) {
+			case *fetch.Client:
+				if got != want {
+					t.Fatalf("fetcherForSource(%q) did not return client", tc.source.Type)
+				}
+			case *fetch.BrowserClient:
+				if got != want {
+					t.Fatalf("fetcherForSource(%q) did not return browser", tc.source.Type)
+				}
+			default:
+				t.Fatalf("unsupported expected fetcher type %T", tc.want)
 			}
 		})
 	}
