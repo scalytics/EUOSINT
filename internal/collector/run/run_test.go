@@ -156,6 +156,134 @@ func TestPrioritizeSourcesPrefersRankedCuratedHighValue(t *testing.T) {
 	}
 }
 
+func TestUsesFastLaneOnlyForDocumentFeeds(t *testing.T) {
+	tests := []struct {
+		name   string
+		source model.RegistrySource
+		want   bool
+	}{
+		{
+			name:   "rss stays in fast lane",
+			source: model.RegistrySource{Type: "rss"},
+			want:   true,
+		},
+		{
+			name:   "atom stays in fast lane",
+			source: model.RegistrySource{Type: "travelwarning-atom"},
+			want:   true,
+		},
+		{
+			name:   "gdelt api moves out of fast lane",
+			source: model.RegistrySource{Type: "gdelt-json"},
+			want:   false,
+		},
+		{
+			name:   "interpol api stays out of fast lane",
+			source: model.RegistrySource{Type: "interpol-red-json"},
+			want:   false,
+		},
+		{
+			name:   "browser feeds stay out of fast lane",
+			source: model.RegistrySource{Type: "html-list", FetchMode: "browser"},
+			want:   false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := usesFastLane(tc.source); got != tc.want {
+				t.Fatalf("usesFastLane(%q) = %v, want %v", tc.source.Type, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestUsesBrowserLaneForBrowserBoundSources(t *testing.T) {
+	tests := []struct {
+		name   string
+		source model.RegistrySource
+		want   bool
+	}{
+		{
+			name:   "html list stays in browser lane",
+			source: model.RegistrySource{Type: "html-list"},
+			want:   true,
+		},
+		{
+			name:   "x stays in browser lane",
+			source: model.RegistrySource{Type: "x"},
+			want:   true,
+		},
+		{
+			name:   "interpol stays in browser lane",
+			source: model.RegistrySource{Type: "interpol-red-json"},
+			want:   true,
+		},
+		{
+			name:   "explicit browser fetch mode uses browser lane",
+			source: model.RegistrySource{Type: "telegram", FetchMode: "browser"},
+			want:   true,
+		},
+		{
+			name:   "gdelt api does not use browser lane",
+			source: model.RegistrySource{Type: "gdelt-json"},
+			want:   false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := usesBrowserLane(tc.source); got != tc.want {
+				t.Fatalf("usesBrowserLane(%q) = %v, want %v", tc.source.Type, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestLaneClassificationIsExclusive(t *testing.T) {
+	tests := []struct {
+		name          string
+		source        model.RegistrySource
+		wantFast      bool
+		wantBrowser   bool
+	}{
+		{
+			name:        "rss fast only",
+			source:      model.RegistrySource{Type: "rss"},
+			wantFast:    true,
+			wantBrowser: false,
+		},
+		{
+			name:        "gdelt api only",
+			source:      model.RegistrySource{Type: "gdelt-json"},
+			wantFast:    false,
+			wantBrowser: false,
+		},
+		{
+			name:        "html browser only",
+			source:      model.RegistrySource{Type: "html-list"},
+			wantFast:    false,
+			wantBrowser: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotFast := usesFastLane(tc.source)
+			gotBrowser := usesBrowserLane(tc.source)
+			if gotFast != tc.wantFast {
+				t.Fatalf("usesFastLane(%q) = %v, want %v", tc.source.Type, gotFast, tc.wantFast)
+			}
+			if gotBrowser != tc.wantBrowser {
+				t.Fatalf("usesBrowserLane(%q) = %v, want %v", tc.source.Type, gotBrowser, tc.wantBrowser)
+			}
+			if gotFast && gotBrowser {
+				t.Fatalf("source %q classified into both fast and browser lanes", tc.source.Type)
+			}
+		})
+	}
+}
+
 func TestBuildReplacementQueueFromPermanentFailures(t *testing.T) {
 	sources := []model.RegistrySource{
 		{

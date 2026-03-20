@@ -178,13 +178,18 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	// carry forward their previous alerts without re-parsing.
 	watermarks := loadAllWatermarks(ctx, runStore)
 
-	// Split sources into fast (RSS/JSON — parallel) and slow (browser/HTML — sequential).
-	var fastSources, slowSources []model.RegistrySource
+	// Split sources into explicit execution lanes:
+	//   - fast: cheap document feeds with short timeouts
+	//   - api: structured/API-backed sources with full HTTP timeout
+	//   - browser: browser-backed or cadence-sensitive sources
+	var fastSources, apiSources, browserSources []model.RegistrySource
 	for _, s := range sources {
-		if needsBrowser(s) {
-			slowSources = append(slowSources, s)
-		} else {
+		if usesFastLane(s) {
 			fastSources = append(fastSources, s)
+		} else if usesBrowserLane(s) {
+			browserSources = append(browserSources, s)
+		} else {
+			apiSources = append(apiSources, s)
 		}
 	}
 
@@ -280,9 +285,89 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth, previousSourceHealth, len(sources))
 	}
 
-	// Slow sequential pass — browser/HTML sources with full timeout.
+	// API pass — structured sources with full timeout, but no browser transport.
+	apiWorkers := cfg.FetchWorkers
+	if apiWorkers <= 0 {
+		apiWorkers = 12
+	}
+	if apiWorkers > len(apiSources) && len(apiSources) > 0 {
+		apiWorkers = len(apiSources)
+	}
+
+	if len(apiSources) > 0 {
+		work := make(chan model.RegistrySource, len(apiSources))
+		for _, s := range apiSources {
+			work <- s
+		}
+		close(work)
+
+		var wg sync.WaitGroup
+		for i := 0; i < apiWorkers; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for source := range work {
+					if ctx.Err() != nil {
+						return
+					}
+					if dlq.ShouldSkip(source.Source.SourceID, now) {
+						entry := model.SourceHealthEntry{
+							SourceID:      source.Source.SourceID,
+							AuthorityName: source.Source.AuthorityName,
+							Type:          source.Type,
+							FeedURL:       source.FeedURL,
+							Status:        "skipped",
+							Error:         "dead letter queue",
+							ErrorClass:    "dlq",
+							StartedAt:     now.Format(time.RFC3339),
+							FinishedAt:    time.Now().UTC().Format(time.RFC3339),
+						}
+						mu.Lock()
+						sourceHealth = append(sourceHealth, entry)
+						completed++
+						mu.Unlock()
+						recordSourceRun(ctx, runStore, source, entry, nil, 0, map[string]any{"reason": "dlq"})
+						continue
+					}
+
+					wm := watermarks[source.Source.SourceID]
+					batch, entry := r.fetchOneSource(ctx, client, nil, nctx, source, categoryDictionary, cursors, wm)
+					mu.Lock()
+					sourceHealth = append(sourceHealth, entry)
+					alerts = append(alerts, batch...)
+					completed++
+					if entry.Status == "error" && entry.DiscoveryAction == "dead_letter" {
+						dlq.Add(buildDLQEntry(entry, source))
+					} else if entry.Status == "error" && dlq.DueForRetry(source.Source.SourceID, now) {
+						dlq.UpdateAttempt(source.Source.SourceID, now)
+					} else if entry.Status != "error" {
+						dlq.Remove(source.Source.SourceID)
+					}
+					if completed%25 == 0 {
+						r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth, previousSourceHealth, len(sources))
+						_ = dlq.Write(cfg.ReplacementQueuePath)
+					}
+					mu.Unlock()
+					var runMeta map[string]any
+					if entry.ErrorClass == "not_modified" {
+						runMeta = map[string]any{"not_modified": true}
+					}
+					recordSourceRun(ctx, runStore, source, entry, batch, inferHTTPStatus(entry), runMeta)
+					if entry.Status == "error" && entry.DiscoveryAction == "dead_letter" {
+						fmt.Fprintf(r.stderr, "WARN %s: %s (added to DLQ)\n", source.Source.AuthorityName, entry.Error)
+					} else if entry.Status == "error" {
+						fmt.Fprintf(r.stderr, "WARN %s: %s\n", source.Source.AuthorityName, entry.Error)
+					}
+				}
+			}()
+		}
+		wg.Wait()
+		r.writeProgressSnapshot(cfg, alerts, previousAlerts, sourceHealth, previousSourceHealth, len(sources))
+	}
+
+	// Browser pass — sequential, with cadence/rate-limit handling.
 	var lastXFetch time.Time
-	for _, source := range slowSources {
+	for _, source := range browserSources {
 		if ctx.Err() != nil {
 			break
 		}
@@ -648,16 +733,24 @@ func prioritizeSources(sources []model.RegistrySource) []model.RegistrySource {
 	return out
 }
 
-// needsBrowser returns true for source types that require a headless browser
-// or need the full HTTP timeout (HTML scraping, Interpol API with WAF, etc.).
-func needsBrowser(s model.RegistrySource) bool {
+// usesFastLane returns true only for cheap document feeds that are expected to
+// respond quickly and do not fan out into multiple API calls.
+func usesFastLane(s model.RegistrySource) bool {
 	switch s.Type {
-	case "html-list", "telegram", "x":
+	case "rss", "travelwarning-atom":
 		return true
-	case "interpol-red-json", "interpol-yellow-json":
-		return true // Akamai WAF, needs special headers + browser fallback
 	}
-	return s.FetchMode == "browser"
+	return false
+}
+
+// usesBrowserLane returns true for sources that either explicitly fetch via the
+// browser bridge or need browser/cadence-aware handling.
+func usesBrowserLane(s model.RegistrySource) bool {
+	switch s.Type {
+	case "html-list", "x", "interpol-red-json", "interpol-yellow-json":
+		return true
+	}
+	return strings.EqualFold(strings.TrimSpace(s.FetchMode), "browser")
 }
 
 // fetchOneSource fetches a single source with retry logic, returning the
