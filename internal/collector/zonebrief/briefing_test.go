@@ -16,6 +16,7 @@ func TestBuildGeneratesLensBriefings(t *testing.T) {
 			Fatalities:     12,
 			CivilianDeaths: 4,
 			Country:        "Palestine",
+			CountryID:      "999",
 			CountryCode:    "PS",
 			SideA:          "Actor A",
 			SideB:          "Actor B",

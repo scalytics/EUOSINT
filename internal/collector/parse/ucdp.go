@@ -13,21 +13,64 @@ import (
 // UCDPItem extends FeedItem with UCDP conflict metadata.
 type UCDPItem struct {
 	FeedItem
-	ViolenceType string
-	Fatalities   int
+	ViolenceType   string
+	Fatalities     int
 	CivilianDeaths int
-	Country      string
-	CountryCode  string
-	Region       string
-	SideA        string
-	SideB        string
-	DyadName     string
-	Admin1       string
-	Admin2       string
+	Country        string
+	CountryID      string
+	CountryCode    string
+	Region         string
+	SideA          string
+	SideB          string
+	DyadName       string
+	Admin1         string
+	Admin2         string
 	WherePrecision int
 	DatePrecision  int
 	EventClarity   int
 }
+
+type UCDPCountryRef struct {
+	ID    string
+	ISO2  string
+	ISO3  string
+	Label string
+}
+
+var ucdpCountryRefsByISO2 = map[string]UCDPCountryRef{
+	"DZ": {ID: "615", ISO2: "DZ", ISO3: "DZA", Label: "Algeria"},
+	"BF": {ID: "439", ISO2: "BF", ISO3: "BFA", Label: "Burkina Faso"},
+	"BI": {ID: "516", ISO2: "BI", ISO3: "BDI", Label: "Burundi"},
+	"BG": {ID: "355", ISO2: "BG", ISO3: "BGR", Label: "Bulgaria"},
+	"CD": {ID: "490", ISO2: "CD", ISO3: "COD", Label: "Democratic Republic of the Congo"},
+	"CF": {ID: "482", ISO2: "CF", ISO3: "CAF", Label: "Central African Republic"},
+	"DJ": {ID: "522", ISO2: "DJ", ISO3: "DJI", Label: "Djibouti"},
+	"EG": {ID: "651", ISO2: "EG", ISO3: "EGY", Label: "Egypt"},
+	"ER": {ID: "531", ISO2: "ER", ISO3: "ERI", Label: "Eritrea"},
+	"ET": {ID: "530", ISO2: "ET", ISO3: "ETH", Label: "Ethiopia"},
+	"IL": {ID: "666", ISO2: "IL", ISO3: "ISR", Label: "Israel"},
+	"JO": {ID: "663", ISO2: "JO", ISO3: "JOR", Label: "Jordan"},
+	"LB": {ID: "660", ISO2: "LB", ISO3: "LBN", Label: "Lebanon"},
+	"ML": {ID: "432", ISO2: "ML", ISO3: "MLI", Label: "Mali"},
+	"MR": {ID: "435", ISO2: "MR", ISO3: "MRT", Label: "Mauritania"},
+	"NE": {ID: "436", ISO2: "NE", ISO3: "NER", Label: "Niger"},
+	"PS": {ISO2: "PS", ISO3: "PSE", Label: "Palestine"},
+	"RO": {ID: "360", ISO2: "RO", ISO3: "ROU", Label: "Romania"},
+	"RU": {ID: "365", ISO2: "RU", ISO3: "RUS", Label: "Russia"},
+	"RW": {ID: "517", ISO2: "RW", ISO3: "RWA", Label: "Rwanda"},
+	"SA": {ID: "670", ISO2: "SA", ISO3: "SAU", Label: "Saudi Arabia"},
+	"SD": {ID: "625", ISO2: "SD", ISO3: "SDN", Label: "Sudan"},
+	"SO": {ID: "520", ISO2: "SO", ISO3: "SOM", Label: "Somalia"},
+	"SS": {ID: "626", ISO2: "SS", ISO3: "SSD", Label: "South Sudan"},
+	"TD": {ID: "483", ISO2: "TD", ISO3: "TCD", Label: "Chad"},
+	"TR": {ID: "640", ISO2: "TR", ISO3: "TUR", Label: "Turkey"},
+	"UA": {ID: "369", ISO2: "UA", ISO3: "UKR", Label: "Ukraine"},
+	"UG": {ID: "500", ISO2: "UG", ISO3: "UGA", Label: "Uganda"},
+	"YE": {ID: "679", ISO2: "YE", ISO3: "YEM", Label: "Yemen"},
+}
+
+var ucdpCountryRefsByID = buildUCDPCountryRefsByID()
+var ucdpCountryRefsByName = buildUCDPCountryRefsByName()
 
 // ParseUCDP parses UCDP API responses with flexible envelope keys.
 // Supported envelopes: {"Result":[...]}, {"results":[...]}, {"data":[...]}.
@@ -54,7 +97,8 @@ func ParseUCDP(body []byte) ([]UCDPItem, error) {
 			dateStart = firstString(ev, "date_start_prec", "date_end")
 		}
 		country := firstString(ev, "country", "country_name")
-		countryCode := firstString(ev, "country_code", "gwno_loc")
+		countryID := normalizeUCDPCountryID(firstString(ev, "country_id", "gwno_loc", "gwno"))
+		countryCode := normalizeUCDPCountryCode(firstString(ev, "country_code"), countryID, country)
 		region := firstString(ev, "region")
 		sideA := firstString(ev, "side_a", "actor1")
 		sideB := firstString(ev, "side_b", "actor2")
@@ -116,17 +160,18 @@ func ParseUCDP(body []byte) ([]UCDPItem, error) {
 				Lat:       lat,
 				Lng:       lng,
 			},
-			ViolenceType: violenceType,
-			Fatalities:   fatalities,
+			ViolenceType:   violenceType,
+			Fatalities:     fatalities,
 			CivilianDeaths: civilianDeaths,
-			Country:      country,
-			CountryCode:  countryCode,
-			Region:       region,
-			SideA:        sideA,
-			SideB:        sideB,
-			DyadName:     dyadName,
-			Admin1:       admin1,
-			Admin2:       admin2,
+			Country:        country,
+			CountryID:      countryID,
+			CountryCode:    countryCode,
+			Region:         region,
+			SideA:          sideA,
+			SideB:          sideB,
+			DyadName:       dyadName,
+			Admin1:         admin1,
+			Admin2:         admin2,
 			WherePrecision: wherePrecision,
 			DatePrecision:  datePrecision,
 			EventClarity:   eventClarity,
@@ -182,6 +227,64 @@ func compactTags(tags []string) []string {
 		seen[tag] = struct{}{}
 		out = append(out, tag)
 	}
+	return out
+}
+
+func UCDPCountryRefByISO2(code string) (UCDPCountryRef, bool) {
+	ref, ok := ucdpCountryRefsByISO2[strings.ToUpper(strings.TrimSpace(code))]
+	return ref, ok
+}
+
+func UCDPCountryRefByID(id string) (UCDPCountryRef, bool) {
+	ref, ok := ucdpCountryRefsByID[strings.TrimSpace(id)]
+	return ref, ok
+}
+
+func normalizeUCDPCountryID(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if _, err := strconv.Atoi(raw); err == nil {
+		return raw
+	}
+	return ""
+}
+
+func normalizeUCDPCountryCode(raw string, countryID string, country string) string {
+	raw = strings.ToUpper(strings.TrimSpace(raw))
+	if len(raw) == 2 && raw[0] >= 'A' && raw[0] <= 'Z' && raw[1] >= 'A' && raw[1] <= 'Z' {
+		return raw
+	}
+	if ref, ok := UCDPCountryRefByID(countryID); ok && ref.ISO2 != "" {
+		return ref.ISO2
+	}
+	if ref, ok := ucdpCountryRefsByName[strings.ToLower(strings.TrimSpace(country))]; ok && ref.ISO2 != "" {
+		return ref.ISO2
+	}
+	return ""
+}
+
+func buildUCDPCountryRefsByID() map[string]UCDPCountryRef {
+	out := make(map[string]UCDPCountryRef, len(ucdpCountryRefsByISO2))
+	for _, ref := range ucdpCountryRefsByISO2 {
+		if strings.TrimSpace(ref.ID) == "" {
+			continue
+		}
+		out[ref.ID] = ref
+	}
+	return out
+}
+
+func buildUCDPCountryRefsByName() map[string]UCDPCountryRef {
+	out := make(map[string]UCDPCountryRef, len(ucdpCountryRefsByISO2))
+	for _, ref := range ucdpCountryRefsByISO2 {
+		if strings.TrimSpace(ref.Label) != "" {
+			out[strings.ToLower(strings.TrimSpace(ref.Label))] = ref
+		}
+	}
+	out["dem. rep. congo"] = ucdpCountryRefsByISO2["CD"]
+	out["congo, democratic republic of the"] = ucdpCountryRefsByISO2["CD"]
 	return out
 }
 

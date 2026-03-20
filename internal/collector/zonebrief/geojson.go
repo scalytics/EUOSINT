@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/euosint/internal/collector/parse"
 )
 
 type featureCollection struct {
@@ -98,13 +99,9 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 				continue
 			}
 		}
-		for _, countryCode := range sortedLensCountryCodes(lens) {
-			boundary := findBoundaryFeature(collection.Features, countryCode)
-			if boundary == nil {
-				continue
-			}
-			ref := ucdpCountryRefs[countryCode]
-			props := overlayProperties(lens, brief, countryCode, ref.Label, ref.ID)
+		overlayCodes := sortedOverlayCountryCodes(lens)
+		if len(overlayCodes) == 0 {
+			props := overlayProperties(lens, brief, "", "", "")
 			if terrorOnly {
 				props["type"] = terrorType(brief.Status)
 				props["threat"] = joinOrDefault(brief.Actors, "Structured organized-violence actors")
@@ -113,10 +110,47 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 			}
 			features = append(features, geoFeature{
 				Type:       "Feature",
+				Properties: props,
+				Geometry:   rectangleGeometry(lens.Bounds),
+			})
+			continue
+		}
+		lensFeatures := make([]geoFeature, 0, len(overlayCodes))
+		for _, countryCode := range overlayCodes {
+			boundary := findBoundaryFeature(collection.Features, countryCode)
+			if boundary == nil {
+				continue
+			}
+			ref, _ := parse.UCDPCountryRefByISO2(countryCode)
+			props := overlayProperties(lens, brief, countryCode, ref.Label, ref.ID)
+			if terrorOnly {
+				props["type"] = terrorType(brief.Status)
+				props["threat"] = joinOrDefault(brief.Actors, "Structured organized-violence actors")
+			} else {
+				props["type"] = conflictType(brief)
+			}
+			lensFeatures = append(lensFeatures, geoFeature{
+				Type:       "Feature",
 				Properties: mergeBoundaryProps(boundary.Properties, props),
 				Geometry:   boundary.Geometry,
 			})
 		}
+		if len(lensFeatures) == 0 {
+			props := overlayProperties(lens, brief, "", "", "")
+			if terrorOnly {
+				props["type"] = terrorType(brief.Status)
+				props["threat"] = joinOrDefault(brief.Actors, "Structured organized-violence actors")
+			} else {
+				props["type"] = conflictType(brief)
+			}
+			features = append(features, geoFeature{
+				Type:       "Feature",
+				Properties: props,
+				Geometry:   rectangleGeometry(lens.Bounds),
+			})
+			continue
+		}
+		features = append(features, lensFeatures...)
 	}
 	return featureCollection{Type: "FeatureCollection", Features: features}, nil
 }
@@ -210,9 +244,9 @@ func stringProp(props map[string]any, key string) string {
 	return ""
 }
 
-func sortedLensCountryCodes(lens lensDef) []string {
-	out := make([]string, 0, len(lens.CountryCodes))
-	for code := range lens.CountryCodes {
+func sortedOverlayCountryCodes(lens lensDef) []string {
+	out := make([]string, 0, len(lens.OverlayCountryCodes))
+	for code := range lens.OverlayCountryCodes {
 		out = append(out, code)
 	}
 	sortStrings(out)
