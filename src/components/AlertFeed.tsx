@@ -190,6 +190,21 @@ export function AlertFeed({
     }
     return [...deduped.values()];
   }, [alerts, historicalAlerts]);
+  const lensContextAlerts = useMemo(() => {
+    if (!activeConflictLens) return [] as Alert[];
+    return contextAlerts.filter((alert) => {
+      if (alert.lat !== 0 || alert.lng !== 0) {
+        return (
+          alert.lat >= activeConflictLens.bounds.south &&
+          alert.lat <= activeConflictLens.bounds.north &&
+          alert.lng >= activeConflictLens.bounds.west &&
+          alert.lng <= activeConflictLens.bounds.east
+        );
+      }
+      const code = (alert.event_country_code || alert.source.country_code || "").toUpperCase();
+      return activeConflictLens.primaryCountryCodes.includes(code);
+    });
+  }, [activeConflictLens, contextAlerts]);
 
   // History grouped by day.
   const historyGroups = useMemo(() => {
@@ -387,7 +402,7 @@ export function AlertFeed({
 
   const currentAlerts =
     isConflictContextMode
-      ? contextAlerts
+      ? lensContextAlerts
       : viewMode === "now"
       ? nowAlerts
       : viewMode === "history"
@@ -577,6 +592,32 @@ export function AlertFeed({
                   ))}
                 </div>
               </div>
+
+              {activeConflictBrief.recentEvents.length > 0 && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Latest 5 UCDP events</div>
+                  <div className="mt-1 space-y-1">
+                    {activeConflictBrief.recentEvents.map((event, idx) => (
+                      <div key={`${event.title}-${event.published ?? idx}`} className="rounded border border-siem-border bg-white/5 px-2 py-1.5 text-2xs">
+                        <div className="text-siem-text line-clamp-2">{event.title}</div>
+                        <div className="mt-1 text-siem-muted">
+                          {event.published ? new Date(event.published).toISOString().slice(0, 10) : "n/a"}
+                          {event.country ? ` · ${event.country}` : ""}
+                          {typeof event.fatalities === "number" ? ` · fat ${event.fatalities}` : ""}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeConflictBrief.summaryBullets && activeConflictBrief.summaryBullets.length > 0 && (
+                <div className="rounded border border-siem-border bg-white/5 px-2 py-2 text-2xs text-siem-muted">
+                  {activeConflictBrief.summaryBullets.slice(0, 3).map((item) => (
+                    <div key={item}>- {item}</div>
+                  ))}
+                </div>
+              )}
 
               {activeConflictBrief.coverageNote && (
                 <div className="rounded border border-siem-border bg-white/5 px-2 py-2 text-2xs text-siem-muted">

@@ -1,6 +1,6 @@
 import type { Alert, AlertCategory, Severity } from "@/types/alert";
 import type { ConflictLens } from "@/lib/conflict-lenses";
-import type { ZoneBriefingHotspot, ZoneBriefingRecord } from "@/types/zone-briefing";
+import type { ZoneBriefingEvent, ZoneBriefingHotspot, ZoneBriefingRecord } from "@/types/zone-briefing";
 import { alertMatchesConflictLens } from "@/lib/conflict-lenses";
 import { categoryLabels } from "@/lib/severity";
 
@@ -24,6 +24,8 @@ export interface ConflictBrief {
   sourceLabel: string;
   sourceURL?: string;
   coverageNote?: string;
+  summaryBullets?: string[];
+  watchItems?: string[];
   countryIDs: string[];
   countryLabels: string[];
   metrics: BriefMetric[];
@@ -33,6 +35,7 @@ export interface ConflictBrief {
   actors: string[];
   violenceTypes: string[];
   hotspots: ZoneBriefingHotspot[];
+  recentEvents: ZoneBriefingEvent[];
   latestAlert: Alert | null;
   recent7d: number;
   prior7d: number;
@@ -51,6 +54,13 @@ function formatAgeHours(hours: number): string {
   if (hours < 24) return `${Math.round(hours)}h`;
   const days = Math.round(hours / 24);
   return `${days}d`;
+}
+
+function formatDateTag(value: string | undefined): string {
+  if (!value) return "n/a";
+  const ts = Date.parse(value);
+  if (Number.isNaN(ts)) return "n/a";
+  return new Date(ts).toISOString().slice(0, 10);
 }
 
 function formatTrend(recent: number, prior: number): string {
@@ -94,6 +104,19 @@ function deriveHotspots(alerts: Alert[], lens: ConflictLens): ZoneBriefingHotspo
       lng: bucket.lng,
       eventCount: bucket.count,
     }));
+}
+
+function forceLensActors(lensId: string, actors: string[]): string[] {
+  if (lensId !== "red-sea") return actors;
+  const forced = "Somali pirate networks";
+  const out = [forced, ...actors];
+  const seen = new Set<string>();
+  return out.filter((actor) => {
+    const key = actor.trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 4);
 }
 
 export function buildConflictBrief(alerts: Alert[], lens: ConflictLens | null): ConflictBrief | null {
@@ -179,9 +202,10 @@ export function buildConflictBrief(alerts: Alert[], lens: ConflictLens | null): 
       label: entry.label,
       count: entry.count,
     })),
-    actors: buildRankedList(sourceCounts, 3).map((entry) => entry.label),
+    actors: forceLensActors(lens.id, buildRankedList(sourceCounts, 3).map((entry) => entry.label)),
     violenceTypes: buildRankedList(categoryCounts, 3).map((entry) => entry.label),
     hotspots: deriveHotspots(lensAlerts, lens),
+    recentEvents: [],
     latestAlert,
     recent7d,
     prior7d,
@@ -195,16 +219,35 @@ export function mergeZoneBriefing(
 ): ConflictBrief | null {
   if (!brief) return null;
   if (!override) return brief;
+  const zoneMetrics = override.metrics
+    ? [
+        { label: "Volume (30d)", value: String(override.metrics.events30d) },
+        { label: "Casualties (30d)", value: String(override.metrics.fatalitiesBest30d) },
+        { label: "Civilian (30d)", value: String(override.metrics.civilianDeaths30d) },
+        { label: "Events (7d)", value: String(override.metrics.events7d) },
+        { label: "Casualties (7d)", value: String(override.metrics.fatalitiesBest7d) },
+        { label: "Trend", value: override.metrics.trend7d || "flat" },
+        { label: "Freshest", value: formatDateTag(override.updatedAt) },
+      ]
+    : brief.metrics;
+  const mergedActors = override.actors && override.actors.length > 0 ? override.actors : brief.actors;
   return {
     ...brief,
+    metrics: zoneMetrics,
     sourceLabel: override.source || brief.sourceLabel,
     sourceURL: override.sourceUrl ?? brief.sourceURL,
     coverageNote: override.coverageNote ?? brief.coverageNote,
+    summaryBullets: override.summary?.bullets && override.summary.bullets.length > 0
+      ? override.summary.bullets
+      : brief.summaryBullets,
+    watchItems: override.summary?.watchItems && override.summary.watchItems.length > 0 ? override.summary.watchItems : brief.watchItems,
     asOf: override.updatedAt ?? brief.asOf,
     countryIDs: override.countryIds && override.countryIds.length > 0 ? override.countryIds : brief.countryIDs,
     countryLabels: override.countryLabels && override.countryLabels.length > 0 ? override.countryLabels : brief.countryLabels,
-    actors: override.actors && override.actors.length > 0 ? override.actors : brief.actors,
+    topSources: [{ id: "ucdp-ged", label: "UCDP GED", count: override.metrics?.events30d ?? brief.topSources[0]?.count ?? 0 }],
+    actors: forceLensActors(brief.lens.id, mergedActors),
     violenceTypes: override.violenceTypes && override.violenceTypes.length > 0 ? override.violenceTypes : brief.violenceTypes,
     hotspots: override.hotspots && override.hotspots.length > 0 ? override.hotspots : brief.hotspots,
+    recentEvents: override.recentEvents && override.recentEvents.length > 0 ? override.recentEvents : brief.recentEvents,
   };
 }

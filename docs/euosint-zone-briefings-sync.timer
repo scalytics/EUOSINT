@@ -1,9 +1,9 @@
 [Unit]
-Description=Run EUOSINT zone briefings cache sync hourly
+Description=Run EUOSINT zone briefings cache sync daily
 
 [Timer]
 OnBootSec=3m
-OnUnitActiveSec=1h
+OnUnitActiveSec=24h
 AccuracySec=1m
 Unit=euosint-zone-briefings-sync.service
 

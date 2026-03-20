@@ -51,6 +51,7 @@ public/cursors.json
 public/zone-briefings.json
 public/geo/conflict-zones.geojson
 public/geo/terrorism-zones.geojson
+registry/source_candidates.json
 registry/source_dead_letter.json
 internal/collector/app/public/
 

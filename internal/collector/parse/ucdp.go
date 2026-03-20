@@ -66,7 +66,7 @@ var ucdpCountryRefsByISO2 = map[string]UCDPCountryRef{
 	"TR": {ID: "640", ISO2: "TR", ISO3: "TUR", Label: "Turkey"},
 	"UA": {ID: "369", ISO2: "UA", ISO3: "UKR", Label: "Ukraine"},
 	"UG": {ID: "500", ISO2: "UG", ISO3: "UGA", Label: "Uganda"},
-	"YE": {ID: "679", ISO2: "YE", ISO3: "YEM", Label: "Yemen"},
+	"YE": {ID: "680", ISO2: "YE", ISO3: "YEM", Label: "Yemen"},
 }
 
 var ucdpCountryRefsByID = buildUCDPCountryRefsByID()
@@ -272,6 +272,11 @@ func buildUCDPCountryRefsByID() map[string]UCDPCountryRef {
 			continue
 		}
 		out[ref.ID] = ref
+	}
+	// UCDP Yemen records appear under both 679 and 680 across historical slices.
+	if ref, ok := ucdpCountryRefsByISO2["YE"]; ok {
+		out["679"] = ref
+		out["680"] = ref
 	}
 	return out
 }
