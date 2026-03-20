@@ -138,12 +138,9 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if cfg.BrowserEnabled && r.browserFactory != nil {
 		b, err := r.browserFactory(cfg)
 		if err != nil {
-			fmt.Fprintf(r.stderr, "WARN browser init failed (falling back to stealth): %v\n", err)
+			fmt.Fprintf(r.stderr, "WARN browser unavailable, deferring slow-lane sources: %v\n", err)
 		} else {
 			browser = b
-			if warning := browser.Warning(); warning != "" {
-				fmt.Fprintf(r.stderr, "WARN browser: %s\n", warning)
-			}
 			defer browser.Close()
 		}
 	}
@@ -366,8 +363,32 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 
 	// Browser pass — sequential, with cadence/rate-limit handling.
+	// When the remote browser is unavailable, defer all slow-lane sources
+	// until the next cycle. The watchdog will restart the browser container.
+	if browser == nil && len(browserSources) > 0 {
+		fmt.Fprintf(r.stderr, "SKIP %d slow-lane sources (browser unavailable, deferred to next cycle)\n", len(browserSources))
+		for _, source := range browserSources {
+			entry := model.SourceHealthEntry{
+				SourceID:      source.Source.SourceID,
+				AuthorityName: source.Source.AuthorityName,
+				Type:          source.Type,
+				FeedURL:       source.FeedURL,
+				Status:        "skipped",
+				Error:         "browser unavailable",
+				ErrorClass:    "deferred",
+				StartedAt:     now.Format(time.RFC3339),
+				FinishedAt:    now.Format(time.RFC3339),
+			}
+			sourceHealth = append(sourceHealth, entry)
+			completed++
+			recordSourceRun(ctx, runStore, source, entry, nil, 0, map[string]any{"reason": "browser_unavailable"})
+		}
+	}
 	var lastXFetch time.Time
 	for _, source := range browserSources {
+		if browser == nil {
+			break
+		}
 		if ctx.Err() != nil {
 			break
 		}

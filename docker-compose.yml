@@ -8,6 +8,12 @@ services:
       CONNECTION_TIMEOUT: "60000"
       HEALTH: "true"
       EXIT_ON_HEALTH_FAILURE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     init: true
     shm_size: 1gb
     restart: unless-stopped
@@ -80,7 +86,8 @@ services:
     volumes:
       - feed-data:/data
     depends_on:
-      - browser
+      browser:
+        condition: service_healthy
     init: true
     restart: unless-stopped
 

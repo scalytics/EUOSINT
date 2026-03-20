@@ -66,12 +66,9 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 			ConnectRetryDelayMS: cfg.BrowserConnectRetryDelayMS,
 		})
 		if err != nil {
-			fmt.Fprintf(stderr, "WARN DDG search disabled (browser init failed): %v\n", err)
+			fmt.Fprintf(stderr, "WARN DDG search disabled (browser unavailable): %v\n", err)
 		} else {
 			browser = b
-			if warning := browser.Warning(); warning != "" {
-				fmt.Fprintf(stderr, "WARN browser: %s\n", warning)
-			}
 			defer browser.Close()
 		}
 	}

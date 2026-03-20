@@ -16,10 +16,7 @@ import (
 
 const defaultBrowserWSURL = "ws://browser:3000"
 
-var (
-	initRemoteAllocatorFn = initRemoteAllocator
-	localAllocatorFn      = localAllocator
-)
+var initRemoteAllocatorFn = initRemoteAllocator
 
 type BrowserOptions struct {
 	TimeoutMS           int
@@ -37,7 +34,6 @@ type BrowserClient struct {
 	cancelCtx context.CancelFunc
 	timeoutMS int
 	sem       chan struct{}
-	warning   string
 }
 
 // NewBrowser creates a BrowserClient with a shared headless Chrome allocator.
@@ -66,10 +62,8 @@ func NewBrowser(opts BrowserOptions) (*BrowserClient, error) {
 	}
 
 	allocCtx, cancel, remoteErr := initRemoteAllocatorFn(wsURL, timeoutMS, connectRetries, retryDelay)
-	warning := ""
 	if remoteErr != nil {
-		warning = fmt.Sprintf("remote browser unreachable (%v); falling back to local chromium", remoteErr)
-		allocCtx, cancel = localAllocatorFn()
+		return nil, fmt.Errorf("remote browser unreachable: %w", remoteErr)
 	}
 
 	return &BrowserClient{
@@ -77,7 +71,6 @@ func NewBrowser(opts BrowserOptions) (*BrowserClient, error) {
 		cancelCtx: cancel,
 		timeoutMS: timeoutMS,
 		sem:       make(chan struct{}, maxConcurrency),
-		warning:   warning,
 	}, nil
 }
 
@@ -109,19 +102,6 @@ func initRemoteAllocator(wsURL string, timeoutMS int, connectRetries int, retryD
 	return nil, nil, lastErr
 }
 
-func localAllocator() (context.Context, context.CancelFunc) {
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", true),
-		chromedp.Flag("no-sandbox", true),
-		chromedp.Flag("disable-gpu", true),
-		chromedp.Flag("disable-dev-shm-usage", true),
-	)
-	return chromedp.NewExecAllocator(context.Background(), opts...)
-}
-
-func (b *BrowserClient) Warning() string {
-	return strings.TrimSpace(b.warning)
-}
 
 func (b *BrowserClient) acquire(ctx context.Context) error {
 	if b.sem == nil {

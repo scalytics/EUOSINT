@@ -24,10 +24,7 @@ RUN curl -sL https://download.geonames.org/export/dump/cities500.zip -o /tmp/cit
 
 FROM alpine:3.20 AS runtime
 
-# Chromium + deps: single layer, cached independently
-RUN apk add --no-cache ca-certificates chromium
-
-ENV CHROME_PATH=/usr/bin/chromium-browser
+RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
