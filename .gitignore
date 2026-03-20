@@ -9,7 +9,7 @@ coverage/
 /euosint-collector
 cmd/test-*/
 .claude/
-internal/collector/run/public/
+internal/collector/run
 
 # Runtime logs
 logs/
