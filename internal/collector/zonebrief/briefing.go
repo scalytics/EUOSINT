@@ -154,8 +154,12 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 		if item.Admin2 != "" {
 			admin2Counts[item.Admin2]++
 		}
-		if strings.TrimSpace(item.CountryCode) != "" {
-			countryCodeCounts[strings.TrimSpace(item.CountryCode)]++
+		if raw := strings.TrimSpace(item.CountryCode); raw != "" {
+			cc := raw
+			if iso2, ok := gwnoToISO2[cc]; ok {
+				cc = iso2
+			}
+			countryCodeCounts[cc]++
 		}
 		if item.WherePrecision > 0 {
 			wherePrecSum += float64(item.WherePrecision)
@@ -318,6 +322,19 @@ func deriveStatus(events7d, events30d int) string {
 	}
 }
 
+// gwnoToISO2 maps UCDP numeric GW country codes to ISO2 letter codes.
+var gwnoToISO2 = buildGWNOToISO2()
+
+func buildGWNOToISO2() map[string]string {
+	out := make(map[string]string, len(ucdpCountryRefs))
+	for iso2, ref := range ucdpCountryRefs {
+		if ref.ID != "" {
+			out[ref.ID] = iso2
+		}
+	}
+	return out
+}
+
 func matchesLens(lens lensDef, item parse.UCDPItem) bool {
 	if item.Lat != 0 || item.Lng != 0 {
 		if item.Lat >= lens.Bounds.south && item.Lat <= lens.Bounds.north && item.Lng >= lens.Bounds.west && item.Lng <= lens.Bounds.east {
@@ -325,6 +342,11 @@ func matchesLens(lens lensDef, item parse.UCDPItem) bool {
 		}
 	}
 	code := strings.ToUpper(strings.TrimSpace(item.CountryCode))
+	// CountryCode from the UCDP API is a numeric GW number (e.g. "666").
+	// Convert to ISO2 so it matches the lens country-code set.
+	if iso2, ok := gwnoToISO2[code]; ok {
+		code = iso2
+	}
 	if _, ok := lens.CountryCodes[code]; ok {
 		return true
 	}

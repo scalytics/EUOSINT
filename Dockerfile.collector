@@ -1,9 +1,11 @@
 # Copyright 2024 ff, Scalytics, Inc. - https://www.scalytics.io
 # SPDX-License-Identifier: Apache-2.0
 
-FROM golang:1.25-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS build
 
 WORKDIR /app
+ARG TARGETOS
+ARG TARGETARCH
 
 COPY go.mod go.sum ./
 RUN go mod download
@@ -12,7 +14,7 @@ COPY internal ./internal
 COPY registry ./registry
 COPY public ./public
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/euosint-collector ./cmd/euosint-collector
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -o /out/euosint-collector ./cmd/euosint-collector
 
 FROM alpine:3.20 AS geonames
 RUN apk add --no-cache curl unzip
