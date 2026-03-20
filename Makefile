@@ -25,7 +25,7 @@ RELEASE_LEVEL ?= patch
 	npm-install-if-needed \
 	go-fmt go-fmt-check go-test go-race go-cover go-vet go-codeql commit-check \
 	docker-build docker-up docker-down docker-logs docker-shell \
-	dev-start dev-stop dev-restart dev-logs \
+	dev-start dev-stop dev-stop-clean dev-restart dev-restart-clean dev-logs \
 	code-ql code-ql-summary \
 	release-patch release-minor release-major \
 	branch-protection
@@ -136,16 +136,26 @@ dev-start: ## Start the local HTTP dev stack on localhost
 	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 
-dev-stop: ## Stop the local dev stack, remove feed-data volume and prune images
+dev-stop: ## Stop the local dev stack and remove feed-data volume
 	$(DOCKER_COMPOSE) down --remove-orphans -v
-	@docker image prune -f --filter "label=com.docker.compose.project" >/dev/null 2>&1 || true
-	@docker builder prune -f >/dev/null 2>&1 || true
 
-dev-restart: ## Restart the local dev stack (removes volumes, rebuilds from scratch)
+dev-stop-clean: ## Stop stack, remove feed-data volume, and aggressively prune Docker cache
 	$(DOCKER_COMPOSE) down --remove-orphans -v
-	@docker image prune -f --filter "label=com.docker.compose.project" >/dev/null 2>&1 || true
-	@docker builder prune -f >/dev/null 2>&1 || true
+	@docker image prune -af >/dev/null 2>&1 || true
+	@docker builder prune -af >/dev/null 2>&1 || true
+
+dev-restart: ## Restart the local dev stack (removes volumes, uses normal build cache)
+	$(DOCKER_COMPOSE) down --remove-orphans -v
 	$(DOCKER_COMPOSE) up --build -d
+	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
+	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
+
+dev-restart-clean: ## Restart from scratch (removes volumes, prunes caches, rebuilds no-cache)
+	$(DOCKER_COMPOSE) down --remove-orphans -v
+	@docker image prune -af >/dev/null 2>&1 || true
+	@docker builder prune -af >/dev/null 2>&1 || true
+	$(DOCKER_COMPOSE) build --no-cache collector euosint
+	$(DOCKER_COMPOSE) up -d
 	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 
