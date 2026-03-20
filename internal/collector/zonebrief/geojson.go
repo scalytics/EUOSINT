@@ -1,84 +1,234 @@
 package zonebrief
 
-import "github.com/scalytics/euosint/internal/collector/model"
+import (
+	"encoding/json"
+	"os"
+	"strings"
+
+	"github.com/scalytics/euosint/internal/collector/model"
+)
 
 type featureCollection struct {
-	Type     string        `json:"type"`
-	Features []geoFeature  `json:"features"`
+	Type     string       `json:"type"`
+	Features []geoFeature `json:"features"`
 }
 
 type geoFeature struct {
 	Type       string         `json:"type"`
 	Properties map[string]any `json:"properties"`
-	Geometry   geometry       `json:"geometry"`
+	Geometry   any            `json:"geometry"`
 }
 
-type geometry struct {
-	Type        string        `json:"type"`
-	Coordinates [][][]float64 `json:"coordinates"`
+type boundaryCollection struct {
+	Type     string            `json:"type"`
+	Features []boundaryFeature `json:"features"`
+}
+
+type boundaryFeature struct {
+	Type       string         `json:"type"`
+	Properties map[string]any `json:"properties"`
+	Geometry   any            `json:"geometry"`
 }
 
 func BuildConflictZonesGeoJSON(briefings []model.ZoneBriefingRecord) any {
-	features := make([]geoFeature, 0)
-	for _, lens := range supportedLenses {
-		brief := findBrief(briefings, lens.ID)
-		if brief == nil || brief.Status == "inactive" {
-			continue
-		}
-		if lens.OverlayType != "conflict" && lens.OverlayType != "maritime" {
-			continue
-		}
-		features = append(features, geoFeature{
-			Type: "Feature",
-			Properties: map[string]any{
-				"name":    brief.Title,
-				"type":    conflictType(brief),
-				"since":   sinceYear(brief.UpdatedAt),
-				"lens_id": brief.LensID,
-				"status":  brief.Status,
-			},
-			Geometry: rectangleGeometry(lens.Bounds),
-		})
-	}
-	return featureCollection{Type: "FeatureCollection", Features: features}
+	return buildRectangleZones(briefings, false)
 }
 
 func BuildTerrorZonesGeoJSON(briefings []model.ZoneBriefingRecord) any {
+	return buildRectangleZones(briefings, true)
+}
+
+func BuildConflictZonesGeoJSONFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPath string) (any, error) {
+	return buildZonesFromBoundaries(briefings, boundariesPath, false)
+}
+
+func BuildTerrorZonesGeoJSONFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPath string) (any, error) {
+	return buildZonesFromBoundaries(briefings, boundariesPath, true)
+}
+
+func buildRectangleZones(briefings []model.ZoneBriefingRecord, terrorOnly bool) any {
 	features := make([]geoFeature, 0)
 	for _, lens := range supportedLenses {
 		brief := findBrief(briefings, lens.ID)
 		if brief == nil || brief.Status == "inactive" {
 			continue
 		}
-		if !(lens.OverlayType == "terror" || contains(brief.ViolenceTypes, "Non-state conflict") || contains(brief.ViolenceTypes, "One-sided violence")) {
-			continue
+		if terrorOnly {
+			if !(lens.OverlayType == "terror" || contains(brief.ViolenceTypes, "Non-state conflict") || contains(brief.ViolenceTypes, "One-sided violence")) {
+				continue
+			}
+		} else {
+			if lens.OverlayType != "conflict" && lens.OverlayType != "maritime" {
+				continue
+			}
+		}
+		props := overlayProperties(lens, brief, "", "", "")
+		if terrorOnly {
+			props["type"] = terrorType(brief.Status)
+			props["threat"] = joinOrDefault(brief.Actors, "Structured organized-violence actors")
+		} else {
+			props["type"] = conflictType(brief)
 		}
 		features = append(features, geoFeature{
-			Type: "Feature",
-			Properties: map[string]any{
-				"name":    brief.Title,
-				"type":    terrorType(brief.Status),
-				"threat":  joinOrDefault(brief.Actors, "Structured organized-violence actors"),
-				"since":   sinceYear(brief.UpdatedAt),
-				"lens_id": brief.LensID,
-				"status":  brief.Status,
-			},
-			Geometry: rectangleGeometry(lens.Bounds),
+			Type:       "Feature",
+			Properties: props,
+			Geometry:   rectangleGeometry(lens.Bounds),
 		})
 	}
 	return featureCollection{Type: "FeatureCollection", Features: features}
 }
 
-func rectangleGeometry(b bounds) geometry {
-	return geometry{
-		Type: "Polygon",
-		Coordinates: [][][]float64{{
+func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPath string, terrorOnly bool) (any, error) {
+	collection, err := readBoundaryCollection(boundariesPath)
+	if err != nil {
+		return nil, err
+	}
+	features := make([]geoFeature, 0)
+	for _, lens := range supportedLenses {
+		brief := findBrief(briefings, lens.ID)
+		if brief == nil || brief.Status == "inactive" {
+			continue
+		}
+		if terrorOnly {
+			if !(lens.OverlayType == "terror" || contains(brief.ViolenceTypes, "Non-state conflict") || contains(brief.ViolenceTypes, "One-sided violence")) {
+				continue
+			}
+		} else {
+			if lens.OverlayType != "conflict" && lens.OverlayType != "maritime" {
+				continue
+			}
+		}
+		for _, countryCode := range sortedLensCountryCodes(lens) {
+			boundary := findBoundaryFeature(collection.Features, countryCode)
+			if boundary == nil {
+				continue
+			}
+			ref := ucdpCountryRefs[countryCode]
+			props := overlayProperties(lens, brief, countryCode, ref.Label, ref.ID)
+			if terrorOnly {
+				props["type"] = terrorType(brief.Status)
+				props["threat"] = joinOrDefault(brief.Actors, "Structured organized-violence actors")
+			} else {
+				props["type"] = conflictType(brief)
+			}
+			features = append(features, geoFeature{
+				Type:       "Feature",
+				Properties: mergeBoundaryProps(boundary.Properties, props),
+				Geometry:   boundary.Geometry,
+			})
+		}
+	}
+	return featureCollection{Type: "FeatureCollection", Features: features}, nil
+}
+
+func overlayProperties(lens lensDef, brief *model.ZoneBriefingRecord, countryCode string, countryLabel string, countryID string) map[string]any {
+	props := map[string]any{
+		"name":           brief.Title,
+		"lens_id":        brief.LensID,
+		"status":         brief.Status,
+		"since":          sinceYear(brief.UpdatedAt),
+		"source":         brief.Source,
+		"source_url":     brief.SourceURL,
+		"coverage_note":  brief.CoverageNote,
+		"country_ids":    brief.CountryIDs,
+		"country_labels": brief.CountryLabels,
+	}
+	if countryCode != "" {
+		props["country_code"] = countryCode
+	}
+	if countryLabel != "" {
+		props["country_label"] = countryLabel
+	}
+	if countryID != "" {
+		props["ucdp_country_id"] = countryID
+		props["country_source_url"] = "https://ucdp.uu.se/country/" + countryID
+	} else if strings.TrimSpace(lens.ReferenceCountryID) != "" {
+		props["country_source_url"] = "https://ucdp.uu.se/country/" + lens.ReferenceCountryID
+	}
+	return props
+}
+
+func rectangleGeometry(b bounds) map[string]any {
+	return map[string]any{
+		"type": "Polygon",
+		"coordinates": [][][]float64{{
 			{b.west, b.south},
 			{b.west, b.north},
 			{b.east, b.north},
 			{b.east, b.south},
 			{b.west, b.south},
 		}},
+	}
+}
+
+func readBoundaryCollection(path string) (*boundaryCollection, error) {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var collection boundaryCollection
+	if err := json.Unmarshal(body, &collection); err != nil {
+		return nil, err
+	}
+	return &collection, nil
+}
+
+func findBoundaryFeature(features []boundaryFeature, countryCode string) *boundaryFeature {
+	want := strings.ToUpper(strings.TrimSpace(countryCode))
+	for i := range features {
+		props := features[i].Properties
+		for _, key := range []string{"country_code", "country_code2", "iso2", "ISO_A2", "shapeGroup"} {
+			value := strings.ToUpper(strings.TrimSpace(stringProp(props, key)))
+			if value == want {
+				return &features[i]
+			}
+		}
+	}
+	return nil
+}
+
+func mergeBoundaryProps(base map[string]any, extra map[string]any) map[string]any {
+	out := make(map[string]any, len(base)+len(extra))
+	for k, v := range base {
+		out[k] = v
+	}
+	for k, v := range extra {
+		out[k] = v
+	}
+	return out
+}
+
+func stringProp(props map[string]any, key string) string {
+	if props == nil {
+		return ""
+	}
+	if value, ok := props[key]; ok {
+		if s, ok := value.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+func sortedLensCountryCodes(lens lensDef) []string {
+	out := make([]string, 0, len(lens.CountryCodes))
+	for code := range lens.CountryCodes {
+		out = append(out, code)
+	}
+	sortStrings(out)
+	return out
+}
+
+func sortStrings(values []string) {
+	if len(values) < 2 {
+		return
+	}
+	for i := 0; i < len(values)-1; i++ {
+		for j := i + 1; j < len(values); j++ {
+			if values[j] < values[i] {
+				values[i], values[j] = values[j], values[i]
+			}
+		}
 	}
 }
 

@@ -11,24 +11,24 @@ import (
 )
 
 const (
-	defaultOutputPath       = "public/alerts.json"
-	defaultFilteredPath     = "public/alerts-filtered.json"
-	defaultStatePath        = "public/alerts-state.json"
-	defaultSourceHealthPath = "public/source-health.json"
+	defaultOutputPath        = "public/alerts.json"
+	defaultFilteredPath      = "public/alerts-filtered.json"
+	defaultStatePath         = "public/alerts-state.json"
+	defaultSourceHealthPath  = "public/source-health.json"
 	defaultZoneBriefingsPath = "public/zone-briefings.json"
-	defaultRegistryPath     = "registry/sources.db"
-	defaultTimeoutMS        = 15000
-	defaultIntervalMS       = 900000
-	defaultMaxPerSource     = 40
-	defaultMaxAgeDays       = 180
-	defaultRemovedDays      = 14
-	defaultMaxBodyBytes     = 2 * 1024 * 1024
-	defaultCooldownHours    = 24
-	defaultStaleDays        = 14
-	defaultArchiveDays      = 90
-	defaultRecentPerSource  = 20
-	defaultHTMLScrapeHours  = 24
-	defaultStopWordsPath    = "registry/stop_words.json"
+	defaultRegistryPath      = "registry/sources.db"
+	defaultTimeoutMS         = 15000
+	defaultIntervalMS        = 900000
+	defaultMaxPerSource      = 40
+	defaultMaxAgeDays        = 180
+	defaultRemovedDays       = 14
+	defaultMaxBodyBytes      = 2 * 1024 * 1024
+	defaultCooldownHours     = 24
+	defaultStaleDays         = 14
+	defaultArchiveDays       = 90
+	defaultRecentPerSource   = 20
+	defaultHTMLScrapeHours   = 24
+	defaultStopWordsPath     = "registry/stop_words.json"
 )
 
 type Config struct {
@@ -38,6 +38,7 @@ type Config struct {
 	StateOutputPath                  string
 	SourceHealthOutputPath           string
 	ZoneBriefingsOutputPath          string
+	CountryBoundariesPath            string
 	MaxPerSource                     int
 	MaxAgeDays                       int
 	RemovedRetentionDays             int
@@ -138,6 +139,7 @@ func Default() Config {
 		StateOutputPath:                  defaultStatePath,
 		SourceHealthOutputPath:           defaultSourceHealthPath,
 		ZoneBriefingsOutputPath:          defaultZoneBriefingsPath,
+		CountryBoundariesPath:            "registry/geo/countries-adm0.geojson",
 		MaxPerSource:                     defaultMaxPerSource,
 		MaxAgeDays:                       defaultMaxAgeDays,
 		RemovedRetentionDays:             defaultRemovedDays,
@@ -234,6 +236,7 @@ func FromEnv() Config {
 	cfg.StateOutputPath = envString("STATE_OUTPUT_PATH", cfg.StateOutputPath)
 	cfg.SourceHealthOutputPath = envString("SOURCE_HEALTH_OUTPUT_PATH", cfg.SourceHealthOutputPath)
 	cfg.ZoneBriefingsOutputPath = envString("ZONE_BRIEFINGS_OUTPUT_PATH", cfg.ZoneBriefingsOutputPath)
+	cfg.CountryBoundariesPath = envString("COUNTRY_BOUNDARIES_PATH", cfg.CountryBoundariesPath)
 	cfg.RegistryPath = envString("SOURCE_REGISTRY_PATH", cfg.RegistryPath)
 	cfg.MaxPerSource = envInt("MAX_PER_SOURCE", cfg.MaxPerSource)
 	cfg.MaxAgeDays = envInt("MAX_AGE_DAYS", cfg.MaxAgeDays)

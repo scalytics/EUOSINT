@@ -2,6 +2,8 @@ package zonebrief
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/scalytics/euosint/internal/collector/model"
@@ -26,5 +28,65 @@ func TestBuildConflictZonesGeoJSONSkipsInactive(t *testing.T) {
 	}
 	if len(parsed.Features) != 1 {
 		t.Fatalf("expected 1 active feature, got %d", len(parsed.Features))
+	}
+}
+
+func TestBuildConflictZonesGeoJSONFromBoundariesUsesCountryFeatures(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "countries.geojson")
+	body := `{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"ISO_A2": "UA", "name": "Ukraine"},
+      "geometry": {"type": "Polygon", "coordinates": [[[30,44],[30,45],[31,45],[31,44],[30,44]]]}
+    }
+  ]
+}`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := BuildConflictZonesGeoJSONFromBoundaries([]model.ZoneBriefingRecord{
+		{
+			LensID:        "ukraine",
+			Title:         "Ukraine South",
+			Source:        "UCDP GED",
+			SourceURL:     "https://ucdp.uu.se/country/369",
+			Status:        "active",
+			UpdatedAt:     "2026-03-20T00:00:00Z",
+			CountryIDs:    []string{"369"},
+			CountryLabels: []string{"Ukraine"},
+			Violence:      model.ZoneBriefingViolence{Primary: "State-based conflict"},
+		},
+	}, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var parsed struct {
+		Features []struct {
+			Properties map[string]any `json:"properties"`
+			Geometry   struct {
+				Type string `json:"type"`
+			} `json:"geometry"`
+		} `json:"features"`
+	}
+	if err := json.Unmarshal(encoded, &parsed); err != nil {
+		t.Fatal(err)
+	}
+	if len(parsed.Features) == 0 {
+		t.Fatal("expected at least one feature from country boundaries")
+	}
+	if parsed.Features[0].Geometry.Type != "Polygon" {
+		t.Fatalf("expected polygon geometry, got %q", parsed.Features[0].Geometry.Type)
+	}
+	if parsed.Features[0].Properties["country_source_url"] != "https://ucdp.uu.se/country/369" {
+		t.Fatalf("expected country source URL property, got %#v", parsed.Features[0].Properties["country_source_url"])
 	}
 }

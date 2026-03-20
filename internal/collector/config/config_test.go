@@ -94,6 +94,9 @@ func TestDefaultNoisePolicyPath(t *testing.T) {
 	if cfg.ZoneBriefingsOutputPath != "public/zone-briefings.json" {
 		t.Fatalf("unexpected default zone briefings path %q", cfg.ZoneBriefingsOutputPath)
 	}
+	if cfg.CountryBoundariesPath != "registry/geo/countries-adm0.geojson" {
+		t.Fatalf("unexpected default country boundaries path %q", cfg.CountryBoundariesPath)
+	}
 }
 
 func TestNoisePolicyPathFromEnv(t *testing.T) {
@@ -102,6 +105,7 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	t.Setenv("NOISE_POLICY_B_PERCENT", "25")
 	t.Setenv("NOISE_METRICS_OUTPUT_PATH", "/tmp/noise_metrics.json")
 	t.Setenv("ZONE_BRIEFINGS_OUTPUT_PATH", "/tmp/zone_briefings.json")
+	t.Setenv("COUNTRY_BOUNDARIES_PATH", "/tmp/countries-adm0.geojson")
 	cfg := FromEnv()
 	if cfg.NoisePolicyPath != "/tmp/noise_policy.json" {
 		t.Fatalf("expected NOISE_POLICY_PATH override, got %q", cfg.NoisePolicyPath)
@@ -117,5 +121,8 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	}
 	if cfg.ZoneBriefingsOutputPath != "/tmp/zone_briefings.json" {
 		t.Fatalf("expected ZONE_BRIEFINGS_OUTPUT_PATH override, got %q", cfg.ZoneBriefingsOutputPath)
+	}
+	if cfg.CountryBoundariesPath != "/tmp/countries-adm0.geojson" {
+		t.Fatalf("expected COUNTRY_BOUNDARIES_PATH override, got %q", cfg.CountryBoundariesPath)
 	}
 }

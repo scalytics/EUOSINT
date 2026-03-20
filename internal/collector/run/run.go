@@ -2088,10 +2088,19 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 		return err
 	}
 	geoDir := filepath.Join(filepath.Dir(cfg.ZoneBriefingsOutputPath), "geo")
-	if err := writeJSONArtifact(filepath.Join(geoDir, "conflict-zones.geojson"), zonebrief.BuildConflictZonesGeoJSON(briefings)); err != nil {
+	conflictZones, terrorZones := zonebrief.BuildConflictZonesGeoJSON(briefings), zonebrief.BuildTerrorZonesGeoJSON(briefings)
+	if strings.TrimSpace(cfg.CountryBoundariesPath) != "" {
+		if data, err := zonebrief.BuildConflictZonesGeoJSONFromBoundaries(briefings, cfg.CountryBoundariesPath); err == nil {
+			conflictZones = data
+		}
+		if data, err := zonebrief.BuildTerrorZonesGeoJSONFromBoundaries(briefings, cfg.CountryBoundariesPath); err == nil {
+			terrorZones = data
+		}
+	}
+	if err := writeJSONArtifact(filepath.Join(geoDir, "conflict-zones.geojson"), conflictZones); err != nil {
 		return err
 	}
-	if err := writeJSONArtifact(filepath.Join(geoDir, "terrorism-zones.geojson"), zonebrief.BuildTerrorZonesGeoJSON(briefings)); err != nil {
+	if err := writeJSONArtifact(filepath.Join(geoDir, "terrorism-zones.geojson"), terrorZones); err != nil {
 		return err
 	}
 	return nil
