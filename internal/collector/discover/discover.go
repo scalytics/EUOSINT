@@ -58,11 +58,20 @@ func Run(ctx context.Context, cfg config.Config, stdout io.Writer, stderr io.Wri
 		searchClient = vet.NewClient(cfg)
 	}
 	if cfg.DDGSearchEnabled && cfg.BrowserEnabled {
-		b, err := fetch.NewBrowser(cfg.BrowserTimeoutMS)
+		b, err := fetch.NewBrowser(fetch.BrowserOptions{
+			TimeoutMS:           cfg.BrowserTimeoutMS,
+			WSURL:               cfg.BrowserWSURL,
+			MaxConcurrency:      cfg.BrowserMaxConcurrency,
+			ConnectRetries:      cfg.BrowserConnectRetries,
+			ConnectRetryDelayMS: cfg.BrowserConnectRetryDelayMS,
+		})
 		if err != nil {
 			fmt.Fprintf(stderr, "WARN DDG search disabled (browser init failed): %v\n", err)
 		} else {
 			browser = b
+			if warning := browser.Warning(); warning != "" {
+				fmt.Fprintf(stderr, "WARN browser: %s\n", warning)
+			}
 			defer browser.Close()
 		}
 	}

@@ -59,6 +59,10 @@ type Config struct {
 	TranslateEnabled                 bool
 	BrowserEnabled                   bool
 	BrowserTimeoutMS                 int
+	BrowserWSURL                     string
+	BrowserMaxConcurrency            int
+	BrowserConnectRetries            int
+	BrowserConnectRetryDelayMS       int
 	DiscoverMode                     bool
 	DiscoverBackground               bool
 	DiscoverIntervalMS               int
@@ -154,6 +158,10 @@ func Default() Config {
 		TranslateEnabled:                 true,
 		BrowserEnabled:                   false,
 		BrowserTimeoutMS:                 30000,
+		BrowserWSURL:                     "ws://browser:3000",
+		BrowserMaxConcurrency:            4,
+		BrowserConnectRetries:            3,
+		BrowserConnectRetryDelayMS:       1000,
 		DiscoverMode:                     false,
 		DiscoverBackground:               true,
 		DiscoverIntervalMS:               defaultIntervalMS,
@@ -246,6 +254,10 @@ func FromEnv() Config {
 	cfg.TranslateEnabled = envBool("TRANSLATE_ENABLED", cfg.TranslateEnabled)
 	cfg.BrowserEnabled = envBool("BROWSER_ENABLED", cfg.BrowserEnabled)
 	cfg.BrowserTimeoutMS = envInt("BROWSER_TIMEOUT_MS", cfg.BrowserTimeoutMS)
+	cfg.BrowserWSURL = envString("BROWSER_WS_URL", cfg.BrowserWSURL)
+	cfg.BrowserMaxConcurrency = envInt("BROWSER_MAX_CONCURRENCY", cfg.BrowserMaxConcurrency)
+	cfg.BrowserConnectRetries = envInt("BROWSER_CONNECT_RETRIES", cfg.BrowserConnectRetries)
+	cfg.BrowserConnectRetryDelayMS = envInt("BROWSER_CONNECT_RETRY_DELAY_MS", cfg.BrowserConnectRetryDelayMS)
 	cfg.DiscoverMode = envBool("DISCOVER_MODE", cfg.DiscoverMode)
 	cfg.DiscoverBackground = envBool("DISCOVER_BACKGROUND", cfg.DiscoverBackground)
 	cfg.DiscoverIntervalMS = envInt("DISCOVER_INTERVAL_MS", cfg.DiscoverIntervalMS)

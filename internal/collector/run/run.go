@@ -53,7 +53,13 @@ func New(stdout io.Writer, stderr io.Writer) Runner {
 		stderr:        stderr,
 		clientFactory: fetch.New,
 		browserFactory: func(cfg config.Config) (*fetch.BrowserClient, error) {
-			return fetch.NewBrowser(cfg.BrowserTimeoutMS)
+			return fetch.NewBrowser(fetch.BrowserOptions{
+				TimeoutMS:           cfg.BrowserTimeoutMS,
+				WSURL:               cfg.BrowserWSURL,
+				MaxConcurrency:      cfg.BrowserMaxConcurrency,
+				ConnectRetries:      cfg.BrowserConnectRetries,
+				ConnectRetryDelayMS: cfg.BrowserConnectRetryDelayMS,
+			})
 		},
 	}
 }
@@ -134,6 +140,9 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 			fmt.Fprintf(r.stderr, "WARN browser init failed (falling back to stealth): %v\n", err)
 		} else {
 			browser = b
+			if warning := browser.Warning(); warning != "" {
+				fmt.Fprintf(r.stderr, "WARN browser: %s\n", warning)
+			}
 			defer browser.Close()
 		}
 	}
