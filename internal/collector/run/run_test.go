@@ -247,10 +247,10 @@ func TestUsesBrowserLaneForBrowserBoundSources(t *testing.T) {
 
 func TestLaneClassificationIsExclusive(t *testing.T) {
 	tests := []struct {
-		name          string
-		source        model.RegistrySource
-		wantFast      bool
-		wantBrowser   bool
+		name        string
+		source      model.RegistrySource
+		wantFast    bool
+		wantBrowser bool
 	}{
 		{
 			name:        "rss fast only",
@@ -974,5 +974,57 @@ func TestParseUCDPTotalPages(t *testing.T) {
 	}
 	if got := parseUCDPTotalPages([]byte(`{"Result":[]}`)); got != 0 {
 		t.Fatalf("parseUCDPTotalPages() missing field=%d, want 0", got)
+	}
+}
+
+func TestSyncZoneBriefingsUsesCacheTTL(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "sources.db")
+	store, err := sourcedb.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	cfg := config.Default()
+	cfg.RegistryPath = dbPath
+	cfg.ZoneBriefingsOutputPath = filepath.Join(dir, "zone-briefings.json")
+	cfg.CountryBoundariesPath = ""
+	cfg.ZoneBriefingsTTLHours = 24
+	cfg.UCDPAccessToken = "token"
+
+	calls := 0
+	runner := New(io.Discard, io.Discard)
+	runner.clientFactory = func(cfg config.Config) *fetch.Client {
+		return fetch.NewWithHTTPClient(cfg, &http.Client{
+			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				calls++
+				body := `{"Result":[{"id":"evt-1","date_start":"2026-03-20","country":"Ukraine","country_id":"369","country_code":"UA","region":"Europe","type_of_violence":"1","best":"5","deaths_civilians":"1","latitude":"48.5","longitude":"35.0","side_a":"Ukraine Gov","side_b":"Russia"}]}`
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+			}),
+		})
+	}
+
+	sources := []model.RegistrySource{
+		{Type: "ucdp-json", FeedURL: "https://ucdpapi.pcr.uu.se/api/gedevents/25.1"},
+	}
+
+	if err := runner.syncZoneBriefings(context.Background(), cfg, sources, store, false); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Fatalf("expected first sync to fetch once, got %d", calls)
+	}
+	if err := runner.syncZoneBriefings(context.Background(), cfg, sources, store, false); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Fatalf("expected second sync to use cache, got %d network calls", calls)
+	}
+	if err := runner.syncZoneBriefings(context.Background(), cfg, sources, store, true); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 2 {
+		t.Fatalf("expected forced sync to fetch again, got %d calls", calls)
 	}
 }

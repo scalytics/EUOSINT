@@ -38,6 +38,8 @@ type Config struct {
 	StateOutputPath                  string
 	SourceHealthOutputPath           string
 	ZoneBriefingsOutputPath          string
+	ZoneBriefingsTTLHours            int
+	ZoneBriefingsSyncOnly            bool
 	CountryBoundariesPath            string
 	MaxPerSource                     int
 	MaxAgeDays                       int
@@ -139,6 +141,8 @@ func Default() Config {
 		StateOutputPath:                  defaultStatePath,
 		SourceHealthOutputPath:           defaultSourceHealthPath,
 		ZoneBriefingsOutputPath:          defaultZoneBriefingsPath,
+		ZoneBriefingsTTLHours:            168,
+		ZoneBriefingsSyncOnly:            false,
 		CountryBoundariesPath:            "registry/geo/countries-adm0.geojson",
 		MaxPerSource:                     defaultMaxPerSource,
 		MaxAgeDays:                       defaultMaxAgeDays,
@@ -236,6 +240,7 @@ func FromEnv() Config {
 	cfg.StateOutputPath = envString("STATE_OUTPUT_PATH", cfg.StateOutputPath)
 	cfg.SourceHealthOutputPath = envString("SOURCE_HEALTH_OUTPUT_PATH", cfg.SourceHealthOutputPath)
 	cfg.ZoneBriefingsOutputPath = envString("ZONE_BRIEFINGS_OUTPUT_PATH", cfg.ZoneBriefingsOutputPath)
+	cfg.ZoneBriefingsTTLHours = envInt("ZONE_BRIEFINGS_TTL_HOURS", cfg.ZoneBriefingsTTLHours)
 	cfg.CountryBoundariesPath = envString("COUNTRY_BOUNDARIES_PATH", cfg.CountryBoundariesPath)
 	cfg.RegistryPath = envString("SOURCE_REGISTRY_PATH", cfg.RegistryPath)
 	cfg.MaxPerSource = envInt("MAX_PER_SOURCE", cfg.MaxPerSource)

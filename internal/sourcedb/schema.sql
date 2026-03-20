@@ -195,6 +195,14 @@ CREATE TABLE IF NOT EXISTS registry_sync_state (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS zone_briefings_cache (
+  lens_id TEXT PRIMARY KEY,
+  payload_json TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_sources_agency_id ON sources(agency_id);
 CREATE INDEX IF NOT EXISTS idx_sources_status ON sources(status);
 CREATE INDEX IF NOT EXISTS idx_sources_feed_url ON sources(feed_url);
@@ -210,6 +218,7 @@ CREATE INDEX IF NOT EXISTS idx_noise_feedback_alert ON noise_feedback(alert_id);
 CREATE INDEX IF NOT EXISTS idx_noise_feedback_source ON noise_feedback(source_id);
 CREATE INDEX IF NOT EXISTS idx_noise_feedback_verdict ON noise_feedback(verdict);
 CREATE INDEX IF NOT EXISTS idx_registry_sync_state_updated ON registry_sync_state(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_zone_briefings_cache_expires ON zone_briefings_cache(expires_at);
 
 CREATE TABLE IF NOT EXISTS cities (
   id INTEGER PRIMARY KEY,
