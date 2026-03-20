@@ -10,7 +10,32 @@ permissions:
   contents: write
   packages: write
 
+env:
+  BROWSER_UPSTREAM: ghcr.io/browserless/chromium
+  BROWSER_VERSION: v2.44.0
+
 jobs:
+  mirror-browser:
+    name: mirror-browser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull, tag, and push browser image
+        run: |
+          src="${BROWSER_UPSTREAM}:${BROWSER_VERSION}"
+          dst="ghcr.io/${GITHUB_REPOSITORY@L}-browser"
+          docker pull "$src"
+          docker tag "$src" "$dst:${BROWSER_VERSION}"
+          docker tag "$src" "$dst:latest"
+          docker push "$dst:${BROWSER_VERSION}"
+          docker push "$dst:latest"
+
   release:
     name: publish-${{ matrix.image.name }}
     runs-on: ubuntu-latest

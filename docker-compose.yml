@@ -1,7 +1,7 @@
 services:
   browser:
     container_name: euosint-browser
-    image: ghcr.io/browserless/chromium:latest
+    image: "${EUOSINT_BROWSER_IMAGE:-ghcr.io/scalytics/euosint-browser:v2.44.0}"
     environment:
       PREBOOT_CHROME: "true"
       MAX_CONCURRENT_SESSIONS: "${BROWSER_MAX_CONCURRENCY:-4}"
