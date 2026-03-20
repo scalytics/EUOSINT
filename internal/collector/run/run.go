@@ -1911,13 +1911,24 @@ func (r Runner) fetchUCDP(ctx context.Context, nctx normalize.Context, source mo
 	headers := map[string]string{
 		"x-ucdp-access-token": token,
 	}
-	body, err := client.TextWithHeaders(ctx, source.FeedURL, source.FollowRedirects, "application/json", headers)
+	feedURL, explicitPage := ensureUCDPQuery(source.FeedURL, 100)
+	body, err := client.TextWithHeaders(ctx, feedURL, source.FollowRedirects, "application/json", headers)
 	if err != nil {
 		return nil, err
 	}
 	items, err := parse.ParseUCDP(body)
 	if err != nil {
 		return nil, err
+	}
+	if !explicitPage {
+		if totalPages := parseUCDPTotalPages(body); totalPages > 1 {
+			lastPageURL := setUCDPPage(feedURL, totalPages-1)
+			if tailBody, tailErr := client.TextWithHeaders(ctx, lastPageURL, source.FollowRedirects, "application/json", headers); tailErr == nil {
+				if tailItems, parseErr := parse.ParseUCDP(tailBody); parseErr == nil && len(tailItems) > 0 {
+					items = tailItems
+				}
+			}
+		}
 	}
 	limit := perSourceLimit(nctx.Config, source)
 	out := make([]model.Alert, 0, limit)
@@ -1931,6 +1942,44 @@ func (r Runner) fetchUCDP(ctx context.Context, nctx normalize.Context, source mo
 		}
 	}
 	return out, nil
+}
+
+func ensureUCDPQuery(raw string, defaultPageSize int) (string, bool) {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u == nil {
+		return raw, false
+	}
+	q := u.Query()
+	if strings.TrimSpace(q.Get("pagesize")) == "" {
+		q.Set("pagesize", strconv.Itoa(defaultPageSize))
+	}
+	explicitPage := strings.TrimSpace(q.Get("page")) != ""
+	u.RawQuery = q.Encode()
+	return u.String(), explicitPage
+}
+
+func setUCDPPage(raw string, page int) string {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u == nil {
+		return raw
+	}
+	q := u.Query()
+	q.Set("page", strconv.Itoa(page))
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
+func parseUCDPTotalPages(body []byte) int {
+	var envelope struct {
+		TotalPages int `json:"TotalPages"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return 0
+	}
+	if envelope.TotalPages < 0 {
+		return 0
+	}
+	return envelope.TotalPages
 }
 
 func fetchWithFallback(ctx context.Context, fetcher fetch.Fetcher, source model.RegistrySource, accept string) ([]byte, error) {

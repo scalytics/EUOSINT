@@ -744,3 +744,46 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return fn(req)
 }
+
+func TestEnsureUCDPQueryAddsPageSize(t *testing.T) {
+	got, explicitPage := ensureUCDPQuery("https://ucdpapi.pcr.uu.se/api/gedevents/25.1", 100)
+	if explicitPage {
+		t.Fatal("expected explicitPage=false when page is absent")
+	}
+	if !strings.Contains(got, "pagesize=100") {
+		t.Fatalf("expected pagesize in URL, got %q", got)
+	}
+}
+
+func TestEnsureUCDPQueryPreservesExplicitPage(t *testing.T) {
+	got, explicitPage := ensureUCDPQuery("https://ucdpapi.pcr.uu.se/api/gedevents/25.1?page=7&pagesize=50", 100)
+	if !explicitPage {
+		t.Fatal("expected explicitPage=true when page is present")
+	}
+	if !strings.Contains(got, "page=7") {
+		t.Fatalf("expected page=7 in URL, got %q", got)
+	}
+	if !strings.Contains(got, "pagesize=50") {
+		t.Fatalf("expected pagesize=50 in URL, got %q", got)
+	}
+}
+
+func TestSetUCDPPage(t *testing.T) {
+	got := setUCDPPage("https://ucdpapi.pcr.uu.se/api/gedevents/25.1?pagesize=100", 3859)
+	if !strings.Contains(got, "page=3859") {
+		t.Fatalf("expected page=3859 in URL, got %q", got)
+	}
+	if !strings.Contains(got, "pagesize=100") {
+		t.Fatalf("expected pagesize retained in URL, got %q", got)
+	}
+}
+
+func TestParseUCDPTotalPages(t *testing.T) {
+	body := []byte(`{"TotalPages":3860,"Result":[]}`)
+	if got := parseUCDPTotalPages(body); got != 3860 {
+		t.Fatalf("parseUCDPTotalPages()=%d, want 3860", got)
+	}
+	if got := parseUCDPTotalPages([]byte(`{"Result":[]}`)); got != 0 {
+		t.Fatalf("parseUCDPTotalPages() missing field=%d, want 0", got)
+	}
+}
