@@ -7,8 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 
 ## Runtime Model
 
-The production stack has two containers:
+The production stack has three containers:
 
+- `browser`: always-on headless browser bridge (Chrome DevTools websocket)
 - `collector`: the Go collector running in watch mode and writing refreshed JSON feeds into a shared Docker volume
 - `euosint`: the React bundle served by Caddy, reading the shared JSON volume and serving the UI plus feed files
 
@@ -70,6 +71,28 @@ sudo systemctl enable --now euosint.service
 ```
 
 If the VM only has `docker-compose`, adjust the unit commands accordingly.
+
+## Browser Watchdog
+
+Run [scripts/browser_watchdog.sh](/Users/alo/Development/scalytics/EUOSINT/scripts/browser_watchdog.sh) on the host every minute. It restarts `euosint-browser` when either:
+
+- browser health is not healthy/running
+- collector logs show repeated remote websocket fallback warnings
+
+One-shot run:
+
+```bash
+./scripts/browser_watchdog.sh
+```
+
+systemd timer install:
+
+```bash
+sudo cp docs/euosint-browser-watchdog.service /etc/systemd/system/euosint-browser-watchdog.service
+sudo cp docs/euosint-browser-watchdog.timer /etc/systemd/system/euosint-browser-watchdog.timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now euosint-browser-watchdog.timer
+```
 
 ## Operational Notes
 

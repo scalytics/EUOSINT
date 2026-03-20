@@ -1,4 +1,17 @@
 services:
+  browser:
+    container_name: euosint-browser
+    image: ghcr.io/browserless/chromium:latest
+    environment:
+      PREBOOT_CHROME: "true"
+      MAX_CONCURRENT_SESSIONS: "${BROWSER_MAX_CONCURRENCY:-4}"
+      CONNECTION_TIMEOUT: "60000"
+      HEALTH: "true"
+      EXIT_ON_HEALTH_FAILURE: "true"
+    init: true
+    shm_size: 1gb
+    restart: unless-stopped
+
   collector:
     image: "${EUOSINT_COLLECTOR_IMAGE:-ghcr.io/scalytics/euosint-collector:latest}"
     build:
@@ -33,6 +46,10 @@ services:
       DDG_SEARCH_ENABLED: "1"
       DDG_SEARCH_DELAY_MS: "8000"
       BROWSER_ENABLED: "${BROWSER_ENABLED:-1}"
+      BROWSER_WS_URL: "${BROWSER_WS_URL:-ws://browser:3000}"
+      BROWSER_MAX_CONCURRENCY: "${BROWSER_MAX_CONCURRENCY:-4}"
+      BROWSER_CONNECT_RETRIES: "${BROWSER_CONNECT_RETRIES:-3}"
+      BROWSER_CONNECT_RETRY_DELAY_MS: "${BROWSER_CONNECT_RETRY_DELAY_MS:-1000}"
       FETCH_TIMEOUT_FAST_MS: "3000"
       FETCH_WORKERS: "12"
       HTTP_TIMEOUT_MS: "10000"
@@ -62,6 +79,9 @@ services:
       CRITICAL_SOURCE_PREFIXES: "interpol-red,interpol-yellow"
     volumes:
       - feed-data:/data
+    depends_on:
+      - browser
+    init: true
     restart: unless-stopped
 
   euosint:

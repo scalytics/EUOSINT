@@ -79,6 +79,10 @@ Key collector variables:
 
 - `RECENT_WINDOW_PER_SOURCE`: rolling max items per non-HTML source per run (default `20`)
 - `HTML_SCRAPE_INTERVAL_HOURS`: minimum hours between successful HTML full scrapes (default `24`)
+- `BROWSER_WS_URL`: optional remote Chrome DevTools websocket endpoint (for dedicated always-on browser containers)
+- `BROWSER_MAX_CONCURRENCY`: cap on concurrent browser tab sessions (default `4`)
+- `BROWSER_CONNECT_RETRIES`: remote websocket connect attempts before local chromium fallback (default `3`)
+- `BROWSER_CONNECT_RETRY_DELAY_MS`: delay between remote websocket connect attempts (default `1000`)
 - `ALERT_COOLDOWN_HOURS`: first lifecycle step for missing alerts before stale (default `24`)
 - `ALERT_STALE_DAYS`: days before missing alerts become stale (default `14`)
 - `ALERT_ARCHIVE_DAYS`: days before stale alerts move to archived history (default `90`)

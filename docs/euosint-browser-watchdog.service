@@ -1,0 +1,12 @@
+# Copyright 2024 ff, Scalytics, Inc. - https://www.scalytics.io
+# SPDX-License-Identifier: Apache-2.0
+
+[Unit]
+Description=EUOSINT browser watchdog
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/euosint
+ExecStart=/bin/bash /opt/euosint/scripts/browser_watchdog.sh

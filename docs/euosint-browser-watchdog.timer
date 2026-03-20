@@ -1,0 +1,13 @@
+# Copyright 2024 ff, Scalytics, Inc. - https://www.scalytics.io
+# SPDX-License-Identifier: Apache-2.0
+
+[Unit]
+Description=Run EUOSINT browser watchdog every minute
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+Unit=euosint-browser-watchdog.service
+
+[Install]
+WantedBy=timers.target
