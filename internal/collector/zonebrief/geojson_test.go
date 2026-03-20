@@ -9,7 +9,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/model"
 )
 
-func TestBuildConflictZonesGeoJSONIncludesInactive(t *testing.T) {
+func TestBuildConflictZonesGeoJSONSkipsInactive(t *testing.T) {
 	data := BuildConflictZonesGeoJSON([]model.ZoneBriefingRecord{
 		{LensID: "gaza", Title: "Gaza", Status: "active", UpdatedAt: "2026-03-20T00:00:00Z", Violence: model.ZoneBriefingViolence{Primary: "State-based conflict"}},
 		{LensID: "ukraine", Title: "Ukraine South", Status: "inactive", UpdatedAt: "2026-03-20T00:00:00Z", Violence: model.ZoneBriefingViolence{Primary: "State-based conflict"}},
@@ -26,8 +26,8 @@ func TestBuildConflictZonesGeoJSONIncludesInactive(t *testing.T) {
 	if err := json.Unmarshal(body, &parsed); err != nil {
 		t.Fatal(err)
 	}
-	if len(parsed.Features) != 2 {
-		t.Fatalf("expected 2 features (active + inactive), got %d", len(parsed.Features))
+	if len(parsed.Features) != 1 {
+		t.Fatalf("expected 1 active feature, got %d", len(parsed.Features))
 	}
 }
 

@@ -40,26 +40,6 @@
 		file_server
 	}
 
-	handle /zone-briefings.json {
-		root * /var/lib/euosint
-		file_server
-	}
-
-	handle /geo/conflict-zones.geojson {
-		root * /var/lib/euosint
-		file_server
-	}
-
-	handle /geo/terrorism-zones.geojson {
-		root * /var/lib/euosint
-		file_server
-	}
-
-	handle /geo/military-bases.geojson {
-		root * /var/lib/euosint
-		file_server
-	}
-
 	handle {
 		try_files {path} /index.html
 		file_server

@@ -36,8 +36,6 @@ services:
       - /data/alerts-state.json
       - --source-health-output
       - /data/source-health.json
-      - --zone-briefings-output
-      - /data/zone-briefings.json
       - --candidate-queue
       - /data/source_candidates.json
       - --replacement-queue
@@ -72,7 +70,6 @@ services:
       NOISE_POLICY_B_PATH: "${NOISE_POLICY_B_PATH:-/app/registry/noise_policy_b.json}"
       NOISE_POLICY_B_PERCENT: "${NOISE_POLICY_B_PERCENT:-0}"
       NOISE_METRICS_OUTPUT_PATH: "${NOISE_METRICS_OUTPUT_PATH:-/data/noise-metrics.json}"
-      ZONE_BRIEFINGS_TTL_HOURS: "${ZONE_BRIEFINGS_TTL_HOURS:-168}"
       MISSING_PERSON_RELEVANCE_THRESHOLD: "0"
       SOURCE_VETTING_REQUIRED: "${SOURCE_VETTING_REQUIRED:-1}"
       SOURCE_MIN_QUALITY: "${SOURCE_MIN_QUALITY:-0.6}"
