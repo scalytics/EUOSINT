@@ -32,12 +32,12 @@ type bounds struct {
 }
 
 var supportedLenses = []lensDef{
-	{ID: "gaza", Title: "Gaza", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "666", MatchCountryCodes: makeSet("PS", "IL", "EG", "LB", "JO"), Bounds: bounds{29.5, 32.0, 34.8, 36.5}},
+	{ID: "gaza", Title: "Gaza", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "666", MatchCountryCodes: makeSet("PS", "IL", "EG", "LB", "JO"), OverlayCountryCodes: makeSet("PS"), Bounds: bounds{29.5, 32.0, 34.8, 36.5}},
 	{ID: "sudan", Title: "Sudan", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "625", MatchCountryCodes: makeSet("SD", "SS", "TD", "CF", "ET", "ER"), OverlayCountryCodes: makeSet("SD"), Bounds: bounds{3.0, 21.5, 23.5, 39.5}},
-	{ID: "ukraine", Title: "Ukraine South", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "369", MatchCountryCodes: makeSet("UA", "RU", "RO", "BG", "TR"), Bounds: bounds{43.0, 27.0, 49.5, 39.5}},
-	{ID: "red-sea", Title: "Red Sea", OverlayType: "maritime", CoverageNote: "Structured conflict context from UCDP GED; maritime live feeds remain primary for immediate route risk.", ReferenceCountryID: "679", MatchCountryCodes: makeSet("YE", "SA", "EG", "SD", "ER", "DJ", "SO"), Bounds: bounds{10.0, 31.0, 31.8, 45.5}},
-	{ID: "sahel", Title: "Sahel", OverlayType: "terror", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "432", MatchCountryCodes: makeSet("ML", "NE", "BF", "MR", "DZ", "TD"), Bounds: bounds{10.0, -17.5, 24.5, 25.0}},
-	{ID: "drc-east", Title: "DRC East", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "490", MatchCountryCodes: makeSet("CD", "RW", "UG", "BI"), Bounds: bounds{-8.5, 27.0, 4.5, 31.8}},
+	{ID: "ukraine", Title: "Ukraine South", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "369", MatchCountryCodes: makeSet("UA", "RU", "RO", "BG", "TR"), OverlayCountryCodes: makeSet("UA"), Bounds: bounds{43.0, 27.0, 49.5, 39.5}},
+	{ID: "red-sea", Title: "Red Sea", OverlayType: "maritime", CoverageNote: "Structured conflict context from UCDP GED; maritime live feeds remain primary for immediate route risk.", ReferenceCountryID: "679", MatchCountryCodes: makeSet("YE", "SA", "EG", "SD", "ER", "DJ", "SO"), OverlayCountryCodes: makeSet("YE"), Bounds: bounds{10.0, 31.0, 31.8, 45.5}},
+	{ID: "sahel", Title: "Sahel", OverlayType: "terror", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "432", MatchCountryCodes: makeSet("ML", "NE", "BF", "MR", "DZ", "TD"), OverlayCountryCodes: makeSet("ML", "NE", "BF"), Bounds: bounds{10.0, -17.5, 24.5, 25.0}},
+	{ID: "drc-east", Title: "DRC East", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "490", MatchCountryCodes: makeSet("CD", "RW", "UG", "BI"), OverlayCountryCodes: makeSet("CD"), Bounds: bounds{-8.5, 27.0, 4.5, 31.8}},
 }
 
 func Build(items []parse.UCDPItem, now time.Time) []model.ZoneBriefingRecord {

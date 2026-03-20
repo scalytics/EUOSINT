@@ -2059,7 +2059,13 @@ func (r Runner) fetchUCDPItems(ctx context.Context, nctx normalize.Context, sour
 		// Silent drop by configuration: no token means UCDP is disabled.
 		return nil, nil
 	}
-	client := r.clientFactory(nctx.Config)
+	ucdpCfg := nctx.Config
+	// UCDP API responses are often slower than RSS/API feeds in the fast lanes.
+	// Keep UCDP out of short-timeout behavior to avoid persistent stale cache.
+	if ucdpCfg.HTTPTimeoutMS < 30000 {
+		ucdpCfg.HTTPTimeoutMS = 30000
+	}
+	client := r.clientFactory(ucdpCfg)
 	headers := map[string]string{
 		"x-ucdp-access-token": token,
 	}
@@ -2073,12 +2079,28 @@ func (r Runner) fetchUCDPItems(ctx context.Context, nctx normalize.Context, sour
 		return nil, err
 	}
 	if !explicitPage {
-		if totalPages := parseUCDPTotalPages(body); totalPages > 1 {
-			lastPageURL := setUCDPPage(feedURL, totalPages-1)
-			if tailBody, tailErr := client.TextWithHeaders(ctx, lastPageURL, source.FollowRedirects, "application/json", headers); tailErr == nil {
-				if tailItems, parseErr := parse.ParseUCDP(tailBody); parseErr == nil && len(tailItems) > 0 {
-					items = tailItems
+		totalPages := parseUCDPTotalPages(body)
+		if totalPages > 1 {
+			const recentTailPages = 8
+			start := totalPages - recentTailPages
+			if start < 0 {
+				start = 0
+			}
+			recentItems := make([]parse.UCDPItem, 0, len(items)*recentTailPages)
+			for page := start; page < totalPages; page++ {
+				pageURL := setUCDPPage(feedURL, page)
+				pageBody, pageErr := client.TextWithHeaders(ctx, pageURL, source.FollowRedirects, "application/json", headers)
+				if pageErr != nil {
+					continue
 				}
+				pageItems, parseErr := parse.ParseUCDP(pageBody)
+				if parseErr != nil {
+					continue
+				}
+				recentItems = append(recentItems, pageItems...)
+			}
+			if len(recentItems) > 0 {
+				items = recentItems
 			}
 		}
 	}
