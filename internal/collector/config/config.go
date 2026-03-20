@@ -129,6 +129,9 @@ type Config struct {
 	MilitaryBasesURL                 string
 	MilitaryBasesOutputPath          string
 	MilitaryBasesRefreshHours        int
+	UCDPAPIVersion                   string
+	ZoneBriefingRefreshHours         int
+	ZoneBriefingACLEDEnabled         bool
 }
 
 func Default() Config {
@@ -225,6 +228,9 @@ func Default() Config {
 		MilitaryBasesURL:                 "https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_Military_Bases/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=geojson",
 		MilitaryBasesOutputPath:          "public/geo/military-bases.geojson",
 		MilitaryBasesRefreshHours:        168,
+		UCDPAPIVersion:                   "26.0.1",
+		ZoneBriefingRefreshHours:         24,
+		ZoneBriefingACLEDEnabled:         true,
 		XFetchPauseMS:                    1250,
 	}
 }
@@ -331,6 +337,9 @@ func FromEnv() Config {
 	cfg.MilitaryBasesURL = envString("MILITARY_BASES_URL", cfg.MilitaryBasesURL)
 	cfg.MilitaryBasesOutputPath = envString("MILITARY_BASES_OUTPUT_PATH", cfg.MilitaryBasesOutputPath)
 	cfg.MilitaryBasesRefreshHours = envInt("MILITARY_BASES_REFRESH_HOURS", cfg.MilitaryBasesRefreshHours)
+	cfg.UCDPAPIVersion = envString("UCDP_API_VERSION", cfg.UCDPAPIVersion)
+	cfg.ZoneBriefingRefreshHours = envInt("ZONE_BRIEFING_REFRESH_HOURS", cfg.ZoneBriefingRefreshHours)
+	cfg.ZoneBriefingACLEDEnabled = envBool("ZONE_BRIEFING_ACLED_ENABLED", cfg.ZoneBriefingACLEDEnabled)
 	return cfg
 }
 

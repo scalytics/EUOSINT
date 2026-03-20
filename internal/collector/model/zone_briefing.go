@@ -4,24 +4,28 @@
 package model
 
 type ZoneBriefingRecord struct {
-	LensID       string                 `json:"lens_id"`
-	Title        string                 `json:"title"`
-	Source       string                 `json:"source"`
-	SourceURL    string                 `json:"source_url,omitempty"`
-	Status       string                 `json:"status,omitempty"`
-	UpdatedAt    string                 `json:"updated_at,omitempty"`
-	CoverageNote string                 `json:"coverage_note,omitempty"`
-	CountryIDs   []string               `json:"country_ids,omitempty"`
-	CountryLabels []string              `json:"country_labels,omitempty"`
-	Actors       []string               `json:"actors,omitempty"`
-	ViolenceTypes []string              `json:"violence_types,omitempty"`
-	Hotspots     []ZoneBriefingHotspot  `json:"hotspots,omitempty"`
-	Metrics      ZoneBriefingMetrics    `json:"metrics"`
-	Violence     ZoneBriefingViolence   `json:"violence"`
-	ActorSummary ZoneBriefingActors     `json:"actors_summary"`
-	Geography    ZoneBriefingGeography  `json:"geography"`
-	Quality      ZoneBriefingQuality    `json:"quality"`
-	Summary      ZoneBriefingSummary    `json:"summary"`
+	LensID            string                  `json:"lens_id"`
+	Title             string                  `json:"title"`
+	Source            string                  `json:"source"`
+	SourceURL         string                  `json:"source_url,omitempty"`
+	Status            string                  `json:"status,omitempty"`
+	UpdatedAt         string                  `json:"updated_at,omitempty"`
+	CoverageNote      string                  `json:"coverage_note,omitempty"`
+	CountryIDs        []string                `json:"country_ids,omitempty"`
+	CountryLabels     []string                `json:"country_labels,omitempty"`
+	Actors            []string                `json:"actors,omitempty"`
+	ViolenceTypes     []string                `json:"violence_types,omitempty"`
+	Hotspots          []ZoneBriefingHotspot   `json:"hotspots,omitempty"`
+	Metrics           ZoneBriefingMetrics     `json:"metrics"`
+	Violence          ZoneBriefingViolence    `json:"violence"`
+	ActorSummary      ZoneBriefingActors      `json:"actors_summary"`
+	Geography         ZoneBriefingGeography   `json:"geography"`
+	Quality           ZoneBriefingQuality     `json:"quality"`
+	Summary           ZoneBriefingSummary     `json:"summary"`
+	ConflictIntensity string                  `json:"conflict_intensity,omitempty"`
+	ConflictType      string                  `json:"conflict_type,omitempty"`
+	ActiveConflicts   []ZoneBriefingConflict  `json:"active_conflicts,omitempty"`
+	ACLEDRecency      *ZoneBriefingACLED      `json:"acled_recency,omitempty"`
 }
 
 type ZoneBriefingHotspot struct {
@@ -69,4 +73,18 @@ type ZoneBriefingSummary struct {
 	Headline   string   `json:"headline,omitempty"`
 	Bullets    []string `json:"bullets,omitempty"`
 	WatchItems []string `json:"watch_items,omitempty"`
+}
+
+type ZoneBriefingConflict struct {
+	ConflictID string `json:"conflict_id"`
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	Intensity  int    `json:"intensity"`
+}
+
+type ZoneBriefingACLED struct {
+	Events7D     int    `json:"events_7d"`
+	Fatalities7D int    `json:"fatalities_7d"`
+	TopEvent     string `json:"top_event,omitempty"`
+	AsOf         string `json:"as_of,omitempty"`
 }
