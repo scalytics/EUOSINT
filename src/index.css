@@ -241,6 +241,27 @@ select option {
   color: #cbd5e1 !important;
 }
 
+.siem-zone-brief-popup .leaflet-popup-content-wrapper {
+  background: rgba(5, 10, 18, 0.9) !important;
+  border: 1px solid rgba(96, 165, 250, 0.28) !important;
+  border-radius: 0.9rem !important;
+  color: var(--color-siem-text) !important;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(8px);
+}
+
+.siem-zone-brief-popup .leaflet-popup-content {
+  margin: 10px 12px !important;
+}
+
+.siem-zone-brief-popup .leaflet-popup-tip {
+  background: rgba(5, 10, 18, 0.9) !important;
+}
+
+.siem-zone-brief-popup .leaflet-popup-close-button {
+  color: #bfdbfe !important;
+}
+
 /* Hide default leaflet cluster styles that leak through */
 .marker-cluster-small,
 .marker-cluster-medium,

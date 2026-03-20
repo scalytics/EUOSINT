@@ -22,12 +22,6 @@ type SeverityFilter = "critical" | "high" | null;
 
 const SOURCE_SELECTION_COOKIE = "euosint_selected_sources";
 
-function isUCDPAlert(alert: { source_id: string; source: { authority_name: string } }): boolean {
-  const sourceID = (alert.source_id || "").trim().toLowerCase();
-  if (sourceID === "ucdp-ged") return true;
-  return (alert.source.authority_name || "").toLowerCase().includes("ucdp");
-}
-
 function readSelectedSources(): string[] {
   if (typeof document === "undefined") return [];
   const cookie = document.cookie
@@ -128,7 +122,6 @@ export default function App() {
       }
       if (activeLens) {
         filtered = filtered.filter((alert) => alertMatchesConflictLens(alert, activeLens));
-        filtered = filtered.filter((alert) => isUCDPAlert(alert));
       }
       return filtered;
     }
@@ -140,7 +133,6 @@ export default function App() {
     }
     if (activeLens) {
       filtered = filtered.filter((alert) => alertMatchesConflictLens(alert, activeLens));
-      filtered = filtered.filter((alert) => isUCDPAlert(alert));
     }
     if (query) {
       filtered = filtered.filter((alert) => {
@@ -185,7 +177,6 @@ export default function App() {
     }
     if (activeLens) {
       filtered = filtered.filter((alert) => alertMatchesConflictLens(alert, activeLens));
-      filtered = filtered.filter((alert) => isUCDPAlert(alert));
     }
     if (query) {
       filtered = filtered.filter((alert) => {

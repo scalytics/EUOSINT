@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import type { ZoneBriefingRecord } from "@/types/zone-briefing";
 
 const ZONE_BRIEFINGS_URL = `${import.meta.env.BASE_URL}zone-briefings.json`;
-const ZONE_BRIEFINGS_API_URL = "/api/zone-briefings";
 
 function normalizeZoneBriefings(data: unknown): ZoneBriefingRecord[] {
   if (!Array.isArray(data)) return [];
@@ -17,30 +16,15 @@ export function useZoneBriefings() {
 
     async function load() {
       try {
-        const response = await fetch(`${ZONE_BRIEFINGS_API_URL}?t=${Date.now()}`, {
+        const response = await fetch(`${ZONE_BRIEFINGS_URL}?t=${Date.now()}`, {
           cache: "no-store",
         });
-        if (response.ok) {
-          const data = (await response.json()) as unknown;
-          if (!cancelled) {
-            setBriefings(normalizeZoneBriefings(data));
-          }
-          return;
+        if (!response.ok) {
+          throw new Error(`zone-briefings fetch failed: ${response.status}`);
         }
-      } catch {
-        // Fall through to static artifact fallback.
-      }
-
-      try {
-        const fallbackResponse = await fetch(`${ZONE_BRIEFINGS_URL}?t=${Date.now()}`, {
-          cache: "no-store",
-        });
-        if (!fallbackResponse.ok) {
-          throw new Error(`zone-briefings fallback fetch failed: ${fallbackResponse.status}`);
-        }
-        const fallbackData = (await fallbackResponse.json()) as unknown;
+        const data = (await response.json()) as unknown;
         if (!cancelled) {
-          setBriefings(normalizeZoneBriefings(fallbackData));
+          setBriefings(normalizeZoneBriefings(data));
         }
       } catch {
         if (!cancelled) {

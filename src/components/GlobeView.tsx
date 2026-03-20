@@ -123,6 +123,8 @@ export function GlobeView({
   const overlayLayers = useRef<Map<OverlayId, L.LayerGroup>>(new Map());
   const conflictLensLayerRef = useRef<L.Rectangle | null>(null);
   const conflictHotspotLayerRef = useRef<L.LayerGroup | null>(null);
+  const conflictLensPopupRef = useRef<L.Popup | null>(null);
+  const conflictLensPinnedRef = useRef(false);
   const overlayLoadTokens = useRef<Map<OverlayId, number>>(new Map());
   const activeOverlaysRef = useRef<Set<OverlayId>>(new Set());
   const clusterListPopupRef = useRef<L.Popup | null>(null);
@@ -197,7 +199,6 @@ export function GlobeView({
     const previousLens = getConflictLensById(lastConflictLensRef.current);
     const nextLens = getConflictLensById(conflictLensId);
     lastConflictLensRef.current = conflictLensId;
-    const lensDefaults: OverlayId[] = ["bases"];
 
     setActiveOverlays((prev) => {
       const next = new Set(prev);
@@ -205,15 +206,9 @@ export function GlobeView({
         for (const overlay of previousLens.overlays) {
           next.delete(overlay);
         }
-        for (const overlay of lensDefaults) {
-          next.delete(overlay);
-        }
       }
       if (nextLens) {
         for (const overlay of nextLens.overlays) {
-          next.add(overlay);
-        }
-        for (const overlay of lensDefaults) {
           next.add(overlay);
         }
       }
@@ -787,6 +782,60 @@ export function GlobeView({
     return mergeZoneBriefing(derived, override);
   }, [activeConflictLens, alerts, historicalAlerts, zoneBriefings]);
 
+  const renderConflictLensPopup = useCallback(() => {
+    if (!activeConflictBrief) return "";
+
+    const actors = activeConflictBrief.actors
+      .slice(0, 3)
+      .map((actor) => `<span style="display:inline-flex;align-items:center;border:1px solid rgba(148,163,184,.28);border-radius:999px;padding:3px 8px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#e2e8f0;background:rgba(255,255,255,.04);">${escapeHtml(actor)}</span>`)
+      .join("");
+
+    const hotspots = activeConflictBrief.hotspots
+      .slice(0, 3)
+      .map((hotspot) => `<div style="display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(148,163,184,.16);border-radius:10px;padding:6px 8px;background:rgba(255,255,255,.03);"><span style="font-size:11px;color:#f8fafc;">${escapeHtml(hotspot.label)}</span><span style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">${hotspot.eventCount}</span></div>`)
+      .join("");
+
+    const metrics = activeConflictBrief.metrics
+      .slice(0, 6)
+      .map((metric) => `<div style="border:1px solid rgba(148,163,184,.16);border-radius:10px;padding:6px 8px;background:rgba(255,255,255,.03);"><div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">${escapeHtml(metric.label)}</div><div style="margin-top:3px;font-size:12px;color:#f8fafc;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;">${escapeHtml(metric.value)}</div></div>`)
+      .join("");
+
+    const coverage = activeConflictBrief.coverageNote
+      ? `<div style="margin-top:8px;border:1px solid rgba(148,163,184,.16);border-radius:10px;padding:8px;background:rgba(255,255,255,.03);font-size:11px;color:#94a3b8;">${escapeHtml(activeConflictBrief.coverageNote)}</div>`
+      : "";
+    const sourceLink = activeConflictBrief.sourceURL
+      ? `<a href="${escapeHtml(activeConflictBrief.sourceURL)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#60a5fa;text-decoration:none;">More about this zone ↗</a>`
+      : "";
+
+    const asOf = activeConflictBrief.asOf
+      ? new Date(activeConflictBrief.asOf).toISOString().slice(0, 10)
+      : "n/a";
+
+    return `<div style="min-width:320px;max-width:380px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;">Zone Brief</div>
+          <div style="margin-top:4px;font-size:16px;font-weight:600;color:#f8fafc;">${escapeHtml(activeConflictBrief.lens.label)}</div>
+          <div style="margin-top:4px;font-size:11px;color:#94a3b8;">${escapeHtml(activeConflictBrief.sourceLabel)}</div>
+          ${sourceLink}
+        </div>
+        <div style="border:1px solid rgba(96,165,250,.28);border-radius:999px;padding:4px 8px;background:rgba(59,130,246,.10);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#bfdbfe;">${escapeHtml(activeConflictBrief.trendLabel)}</div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:#cbd5e1;">${escapeHtml(activeConflictBrief.lens.description)}</div>
+      <div style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">${metrics}</div>
+      <div style="margin-top:10px;">
+        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;">Actors / entities</div>
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">${actors}</div>
+      </div>
+      <div style="margin-top:10px;">
+        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;">Hotspots</div>
+        <div style="margin-top:6px;display:grid;gap:6px;">${hotspots || '<div style="font-size:11px;color:#94a3b8;">No hotspot breakdown available.</div>'}</div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;">As of ${escapeHtml(asOf)}</div>
+      ${coverage}
+    </div>`;
+  }, [activeConflictBrief]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -800,6 +849,11 @@ export function GlobeView({
         map.removeLayer(conflictHotspotLayerRef.current);
         conflictHotspotLayerRef.current = null;
       }
+      if (conflictLensPopupRef.current) {
+        map.closePopup(conflictLensPopupRef.current);
+        conflictLensPopupRef.current = null;
+      }
+      conflictLensPinnedRef.current = false;
     };
 
     if (!activeConflictLens) {
@@ -842,10 +896,55 @@ export function GlobeView({
     hotspotLayer.addTo(map);
     conflictHotspotLayerRef.current = hotspotLayer;
 
+    const openPopup = (pin: boolean) => {
+      if (!activeConflictBrief) return;
+      if (conflictLensPopupRef.current) {
+        map.closePopup(conflictLensPopupRef.current);
+      }
+      conflictLensPinnedRef.current = pin;
+      const popup = L.popup({
+        autoClose: !pin,
+        closeOnClick: !pin,
+        closeButton: pin,
+        className: "siem-zone-brief-popup",
+      })
+        .setLatLng(bounds.getCenter())
+        .setContent(renderConflictLensPopup())
+        .openOn(map);
+      conflictLensPopupRef.current = popup;
+    };
+
+    rectangle.on("mouseover", () => {
+      if (!conflictLensPinnedRef.current) {
+        openPopup(false);
+      }
+    });
+    rectangle.on("mouseout", () => {
+      if (!conflictLensPinnedRef.current && conflictLensPopupRef.current) {
+        map.closePopup(conflictLensPopupRef.current);
+        conflictLensPopupRef.current = null;
+      }
+    });
+    rectangle.on("click", () => {
+      openPopup(true);
+    });
+
+    const closePinnedPopup = () => {
+      if (!conflictLensPinnedRef.current) return;
+      if (conflictLensPopupRef.current) {
+        map.closePopup(conflictLensPopupRef.current);
+        conflictLensPopupRef.current = null;
+      }
+      conflictLensPinnedRef.current = false;
+    };
+
+    map.on("click", closePinnedPopup);
+
     return () => {
+      map.off("click", closePinnedPopup);
       removeLensOverlay();
     };
-  }, [activeConflictBrief, activeConflictLens]);
+  }, [activeConflictBrief, activeConflictLens, renderConflictLensPopup]);
 
   /* ── Render ───────────────────────────────────────────────────── */
 
@@ -879,6 +978,33 @@ export function GlobeView({
         </div>
 
         <div className="flex flex-col gap-2">
+          {activeConflictLens && (
+            <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
+              <div className="text-xxs uppercase tracking-[0.18em] text-siem-muted">Lens overlays</div>
+              <div className="mt-2 flex max-w-[26rem] flex-wrap gap-1.5">
+                {activeConflictLens.overlays.map((overlayId) => {
+                  const overlay = overlayDefs.find((candidate) => candidate.id === overlayId);
+                  if (!overlay) return null;
+                  return (
+                    <button
+                      type="button"
+                      key={overlay.id}
+                      onClick={() => toggleOverlay(overlay.id)}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-2xs uppercase tracking-[0.14em] transition-colors ${
+                        activeOverlays.has(overlay.id)
+                          ? "border-siem-accent/35 bg-siem-accent/12 text-siem-text"
+                          : "border-siem-border bg-siem-panel-strong text-siem-muted hover:border-siem-accent/30 hover:bg-siem-accent/8 hover:text-siem-text"
+                      }`}
+                    >
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: overlay.color }} />
+                      <span>{overlay.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-siem-border bg-siem-panel p-2 space-y-1.5">
           <div className="grid grid-cols-2 gap-1.5 md:grid-cols-5">
             {["Europe", "Africa", "North America", "Asia", "all"].map((region) => (
