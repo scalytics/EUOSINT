@@ -2107,10 +2107,10 @@ func (r Runner) fetchUCDPItems(ctx context.Context, nctx normalize.Context, sour
 	return items, nil
 }
 
-func (r Runner) fetchUCDPCurrentConflictCountryIDs(ctx context.Context, nctx normalize.Context, source model.RegistrySource, windowDays int) ([]string, error) {
+func (r Runner) fetchUCDPCurrentConflictCountryIDs(ctx context.Context, nctx normalize.Context, source model.RegistrySource, windowDays int) ([]string, bool, error) {
 	token := strings.TrimSpace(nctx.Config.UCDPAccessToken)
 	if token == "" {
-		return nil, nil
+		return nil, true, nil
 	}
 	ucdpCfg := nctx.Config
 	if ucdpCfg.HTTPTimeoutMS < 30000 {
@@ -2129,13 +2129,14 @@ func (r Runner) fetchUCDPCurrentConflictCountryIDs(ctx context.Context, nctx nor
 	feedURL, explicitPage := ensureUCDPQuery(filteredURL, 1000)
 	body, err := client.TextWithHeaders(ctx, feedURL, source.FollowRedirects, "application/json", headers)
 	if err != nil {
-		return nil, err
+		return nil, true, err
 	}
 	items, err := parse.ParseUCDP(body)
 	if err != nil {
-		return nil, err
+		return nil, true, err
 	}
 	countryIDs := collectUCDPCountryIDs(items)
+	usedFallback := false
 	if !explicitPage {
 		totalPages := parseUCDPTotalPages(body)
 		const maxPages = 64
@@ -2144,6 +2145,41 @@ func (r Runner) fetchUCDPCurrentConflictCountryIDs(ctx context.Context, nctx nor
 				totalPages = maxPages
 			}
 			for page := 1; page < totalPages; page++ {
+				pageURL := setUCDPPage(feedURL, page)
+				pageBody, pageErr := client.TextWithHeaders(ctx, pageURL, source.FollowRedirects, "application/json", headers)
+				if pageErr != nil {
+					continue
+				}
+				pageItems, parseErr := parse.ParseUCDP(pageBody)
+				if parseErr != nil {
+					continue
+				}
+				countryIDs = append(countryIDs, collectUCDPCountryIDs(pageItems)...)
+			}
+		}
+	}
+	if len(countryIDs) == 0 {
+		usedFallback = true
+		// Fallback: if "current date" window is outside the latest UCDP slice,
+		// derive countries from the latest available pages instead of returning empty.
+		feedURL, explicitPage = ensureUCDPQuery(source.FeedURL, 1000)
+		body, err = client.TextWithHeaders(ctx, feedURL, source.FollowRedirects, "application/json", headers)
+		if err != nil {
+			return nil, false, err
+		}
+		items, err = parse.ParseUCDP(body)
+		if err != nil {
+			return nil, false, err
+		}
+		countryIDs = append(countryIDs, collectUCDPCountryIDs(items)...)
+		if !explicitPage {
+			totalPages := parseUCDPTotalPages(body)
+			const recentTailPages = 64
+			start := totalPages - recentTailPages
+			if start < 0 {
+				start = 0
+			}
+			for page := start; page < totalPages; page++ {
 				pageURL := setUCDPPage(feedURL, page)
 				pageBody, pageErr := client.TextWithHeaders(ctx, pageURL, source.FollowRedirects, "application/json", headers)
 				if pageErr != nil {
@@ -2170,10 +2206,10 @@ func (r Runner) fetchUCDPCurrentConflictCountryIDs(ctx context.Context, nctx nor
 		out = append(out, id)
 	}
 	sort.Strings(out)
-	return out, nil
+	return out, !usedFallback, nil
 }
 
-func (r Runner) fetchUCDPItemsForCountries(ctx context.Context, nctx normalize.Context, source model.RegistrySource, countryIDs []string, windowDays int) ([]parse.UCDPItem, error) {
+func (r Runner) fetchUCDPItemsForCountries(ctx context.Context, nctx normalize.Context, source model.RegistrySource, countryIDs []string, windowDays int, applyDateWindow bool) ([]parse.UCDPItem, error) {
 	token := strings.TrimSpace(nctx.Config.UCDPAccessToken)
 	if token == "" || len(countryIDs) == 0 {
 		return nil, nil
@@ -2195,11 +2231,14 @@ func (r Runner) fetchUCDPItemsForCountries(ctx context.Context, nctx normalize.C
 		if countryID == "" {
 			continue
 		}
-		filteredURL := withUCDPFilters(source.FeedURL, map[string]string{
-			"Country":   countryID,
-			"StartDate": startDate,
-			"EndDate":   endDate,
-		})
+		filters := map[string]string{
+			"Country": countryID,
+		}
+		if applyDateWindow {
+			filters["StartDate"] = startDate
+			filters["EndDate"] = endDate
+		}
+		filteredURL := withUCDPFilters(source.FeedURL, filters)
 		feedURL, explicitPage := ensureUCDPQuery(filteredURL, 1000)
 		body, err := client.TextWithHeaders(ctx, feedURL, source.FollowRedirects, "application/json", headers)
 		if err != nil {
@@ -2271,11 +2310,19 @@ func (r Runner) syncZoneBriefings(ctx context.Context, cfg config.Config, source
 		return r.renderZoneBriefingsArtifacts(cfg, []model.ZoneBriefingRecord{})
 	}
 	nctx := normalize.Context{Config: cfg, Now: now}
-	countryIDs, err := r.fetchUCDPCurrentConflictCountryIDs(ctx, nctx, *ucdpSource, 30)
+	countryIDs, applyDateWindow, err := r.fetchUCDPCurrentConflictCountryIDs(ctx, nctx, *ucdpSource, 30)
 	if err != nil {
 		return err
 	}
-	items, err := r.fetchUCDPItemsForCountries(ctx, nctx, *ucdpSource, countryIDs, 120)
+	allowedCountryIDs := zonebrief.SupportedLensCountryIDs()
+	countryIDs = filterAllowedCountryIDs(countryIDs, allowedCountryIDs)
+	if len(countryIDs) == 0 {
+		// If "current conflicts" query yields nothing in this dataset slice,
+		// still build lens briefings using latest available records for lens countries.
+		countryIDs = allowedCountryIDs
+		applyDateWindow = false
+	}
+	items, err := r.fetchUCDPItemsForCountries(ctx, nctx, *ucdpSource, countryIDs, 120, applyDateWindow)
 	if err != nil {
 		return err
 	}
@@ -2346,6 +2393,37 @@ func dedupeUCDPItems(items []parse.UCDPItem) []parse.UCDPItem {
 		seen[key] = struct{}{}
 		out = append(out, item)
 	}
+	return out
+}
+
+func filterAllowedCountryIDs(countryIDs []string, allowed []string) []string {
+	if len(countryIDs) == 0 || len(allowed) == 0 {
+		return nil
+	}
+	allowSet := make(map[string]struct{}, len(allowed))
+	for _, id := range allowed {
+		id = strings.TrimSpace(id)
+		if id != "" {
+			allowSet[id] = struct{}{}
+		}
+	}
+	out := make([]string, 0, len(countryIDs))
+	seen := map[string]struct{}{}
+	for _, id := range countryIDs {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		if _, ok := allowSet[id]; !ok {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	sort.Strings(out)
 	return out
 }
 

@@ -221,9 +221,10 @@ export function mergeZoneBriefing(
   if (!override) return brief;
   const zoneMetrics = override.metrics
     ? [
-        { label: "Volume (30d)", value: String(override.metrics.events30d) },
-        { label: "Casualties (30d)", value: String(override.metrics.fatalitiesBest30d) },
-        { label: "Civilian (30d)", value: String(override.metrics.civilianDeaths30d) },
+        { label: "Latest 5 news", value: String(Math.min(5, override.recentEvents?.length ?? 0)) },
+        { label: "Events (latest)", value: String(override.metrics.events30d) },
+        { label: "Casualties (latest)", value: String(override.metrics.fatalitiesBest30d) },
+        { label: "Civilian (latest)", value: String(override.metrics.civilianDeaths30d) },
         { label: "Events (7d)", value: String(override.metrics.events7d) },
         { label: "Casualties (7d)", value: String(override.metrics.fatalitiesBest7d) },
         { label: "Trend", value: override.metrics.trend7d || "flat" },
