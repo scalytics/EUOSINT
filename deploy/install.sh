@@ -17,6 +17,7 @@ INSTALL_DIR="${INSTALL_DIR:-$HOME/euosint}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 INSTALL_MODE="${INSTALL_MODE:-update}"
 TLS_MODE="false"
+REPO_SLUG=""
 
 info() { echo "[euosint-install] $*"; }
 warn() { echo "[euosint-install][warn] $*" >&2; }
@@ -97,10 +98,9 @@ repo_slug() {
 fetch_repo_file() {
   local path="$1"
   local out="$2"
-  local slug
   local raw_url
-  slug="$(repo_slug)"
-  raw_url="https://raw.githubusercontent.com/${slug}/${REPO_REF}/${path}"
+  REPO_SLUG="${REPO_SLUG:-$(repo_slug)}"
+  raw_url="https://raw.githubusercontent.com/${REPO_SLUG}/${REPO_REF}/${path}"
 
   if command -v curl >/dev/null 2>&1; then
     curl -fsSL "$raw_url" -o "$out"
@@ -113,22 +113,34 @@ fetch_repo_file() {
   fatal "Need curl or wget to fetch ${path} from ${raw_url}"
 }
 
+raw_repo_url() {
+  local path="$1"
+  REPO_SLUG="${REPO_SLUG:-$(repo_slug)}"
+  echo "https://raw.githubusercontent.com/${REPO_SLUG}/${REPO_REF}/${path}"
+}
+
 refresh_compose_yaml_direct() {
   local compose_file="$INSTALL_DIR/docker-compose.yml"
   local tmp_file
   local backup_file
 
-  [[ "$INSTALL_MODE" == "update" ]] || return 0
-  [[ -d "$INSTALL_DIR" ]] || fatal "Update mode requires existing install dir: $INSTALL_DIR"
-  [[ -f "$compose_file" ]] || fatal "Update mode requires existing docker-compose.yml at $compose_file"
+  [[ -d "$INSTALL_DIR" ]] || fatal "Install dir not found: $INSTALL_DIR"
 
   tmp_file="$(mktemp)"
   fetch_repo_file "docker-compose.yml" "$tmp_file"
 
-  backup_file="$compose_file.preupdate.$(date +%Y%m%d%H%M%S).bak"
-  cp "$compose_file" "$backup_file"
+  if [[ -f "$compose_file" ]]; then
+    backup_file="$compose_file.preupdate.$(date +%Y%m%d%H%M%S).bak"
+    cp "$compose_file" "$backup_file"
+  else
+    backup_file=""
+  fi
   mv "$tmp_file" "$compose_file"
-  info "Refreshed docker-compose.yml from repository ref '$REPO_REF' (backup: $backup_file)."
+  if [[ -n "$backup_file" ]]; then
+    info "Refreshed docker-compose.yml from repository ref '$REPO_REF' (backup: $backup_file)."
+  else
+    info "Fetched docker-compose.yml from repository ref '$REPO_REF'."
+  fi
 }
 
 refresh_env_example_direct() {
@@ -136,7 +148,6 @@ refresh_env_example_direct() {
   local tmp_file
   local backup_file
 
-  [[ "$INSTALL_MODE" == "update" ]] || return 0
   [[ -d "$INSTALL_DIR" ]] || fatal "Update mode requires existing install dir: $INSTALL_DIR"
 
   tmp_file="$(mktemp)"
@@ -156,8 +167,6 @@ refresh_web_runtime_files_direct() {
   local tmp_file
   local backup_file
 
-  [[ "$INSTALL_MODE" == "update" ]] || return 0
-
   tmp_file="$(mktemp)"
   fetch_repo_file "docker/Caddyfile" "$tmp_file"
 
@@ -169,6 +178,30 @@ refresh_web_runtime_files_direct() {
   mkdir -p "$(dirname "$caddyfile")"
   mv "$tmp_file" "$caddyfile"
   info "Refreshed docker/Caddyfile from repository ref '$REPO_REF'."
+}
+
+refresh_watchdog_files_direct() {
+  local watchdog_script="$INSTALL_DIR/scripts/browser_watchdog.sh"
+  local watchdog_service="$INSTALL_DIR/docs/euosint-browser-watchdog.service"
+  local watchdog_timer="$INSTALL_DIR/docs/euosint-browser-watchdog.timer"
+  local tmp_file
+
+  mkdir -p "$INSTALL_DIR/scripts" "$INSTALL_DIR/docs"
+
+  tmp_file="$(mktemp)"
+  fetch_repo_file "scripts/browser_watchdog.sh" "$tmp_file"
+  mv "$tmp_file" "$watchdog_script"
+  chmod +x "$watchdog_script"
+
+  tmp_file="$(mktemp)"
+  fetch_repo_file "docs/euosint-browser-watchdog.service" "$tmp_file"
+  mv "$tmp_file" "$watchdog_service"
+
+  tmp_file="$(mktemp)"
+  fetch_repo_file "docs/euosint-browser-watchdog.timer" "$tmp_file"
+  mv "$tmp_file" "$watchdog_timer"
+
+  info "Refreshed browser watchdog files from repository ref '$REPO_REF'."
 }
 
 upsert_env() {
@@ -241,8 +274,13 @@ configure_env() {
         ;;
     esac
 
+    local prompt_label="$key"
+    case "$key" in
+      EUOSINT_SITE_ADDRESS) prompt_label="Live URL" ;;
+    esac
+
     local new_val
-    new_val="$(read_prompt "  $key [$display_val]: ")"
+    new_val="$(read_prompt "  $prompt_label [$display_val]: ")"
     if [[ -n "$new_val" ]]; then
       upsert_env "$env_file" "$key" "$new_val"
     else
@@ -268,6 +306,41 @@ configure_env() {
 
   echo ""
   info "Configuration saved to $env_file"
+}
+
+print_runtime_summary() {
+  local env_file="$INSTALL_DIR/.env"
+  local site_addr host_name http_port https_port live_url compose_url watchdog_url
+
+  site_addr="$(grep -E '^EUOSINT_SITE_ADDRESS=' "$env_file" | head -1 | cut -d= -f2- || true)"
+  http_port="$(grep -E '^EUOSINT_HTTP_PORT=' "$env_file" | head -1 | cut -d= -f2- || echo "8080")"
+  https_port="$(grep -E '^EUOSINT_HTTPS_PORT=' "$env_file" | head -1 | cut -d= -f2- || echo "8443")"
+  host_name="$(hostname -f 2>/dev/null || hostname)"
+
+  if [[ -n "$site_addr" && "$site_addr" != ":80" && "$site_addr" != ":8080" ]]; then
+    live_url="https://${site_addr}"
+  else
+    live_url="http://${host_name}:${http_port}"
+  fi
+
+  compose_url="$(raw_repo_url "docker-compose.yml")"
+  watchdog_url="$(raw_repo_url "scripts/browser_watchdog.sh")"
+
+  echo ""
+  echo "================ EUOSINT Setup Summary ================"
+  echo "Install Mode : ${INSTALL_MODE}"
+  echo "Install Dir  : ${INSTALL_DIR}"
+  echo "Live URL     : ${live_url}"
+  if [[ "$TLS_MODE" == "true" ]]; then
+    echo "TLS Ports    : 80 / 443"
+  else
+    echo "HTTP Ports   : ${http_port} / ${https_port}"
+  fi
+  echo "Compose Cmd  : ${COMPOSE_CMD}"
+  echo "Compose YAML : ${compose_url}"
+  echo "Watchdog Src : ${watchdog_url}"
+  echo "======================================================="
+  echo ""
 }
 
 container_running_for_service() {
@@ -371,30 +444,72 @@ start_stack() {
     $COMPOSE_CMD up -d --no-build
   )
 
-  local http_port
+  local site_addr http_port host_name live_url
+  site_addr="$(grep -E '^EUOSINT_SITE_ADDRESS=' "$INSTALL_DIR/.env" | head -1 | cut -d= -f2- || true)"
   http_port="$(grep -E '^EUOSINT_HTTP_PORT=' "$INSTALL_DIR/.env" | cut -d= -f2 || echo "8080")"
-  info "EUOSINT started. HTTP endpoint: http://$(hostname -f 2>/dev/null || hostname):${http_port}"
+  host_name="$(hostname -f 2>/dev/null || hostname)"
+  if [[ -n "$site_addr" && "$site_addr" != ":80" && "$site_addr" != ":8080" ]]; then
+    live_url="https://${site_addr}"
+  else
+    live_url="http://${host_name}:${http_port}"
+  fi
+  info "EUOSINT started. Live URL: ${live_url}"
+}
+
+install_user_watchdog_timer() {
+  local choice user_unit_dir svc_file timer_file
+  choice="$(read_prompt "Install browser watchdog as user systemd timer? [yes]: ")"
+  choice="${choice:-yes}"
+  choice="$(echo "$choice" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$choice" != "yes" && "$choice" != "y" ]]; then
+    info "Skipped watchdog timer setup."
+    return 0
+  fi
+
+  command -v systemctl >/dev/null 2>&1 || {
+    warn "systemctl not found; skipping user watchdog timer setup."
+    return 0
+  }
+
+  user_unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+  mkdir -p "$user_unit_dir"
+  svc_file="$user_unit_dir/euosint-browser-watchdog.service"
+  timer_file="$user_unit_dir/euosint-browser-watchdog.timer"
+
+  cp "$INSTALL_DIR/docs/euosint-browser-watchdog.service" "$svc_file"
+  cp "$INSTALL_DIR/docs/euosint-browser-watchdog.timer" "$timer_file"
+  sed -i.bak -E "s|^WorkingDirectory=.*$|WorkingDirectory=${INSTALL_DIR}|" "$svc_file"
+  sed -i.bak -E "s|^ExecStart=.*$|ExecStart=/bin/bash ${INSTALL_DIR}/scripts/browser_watchdog.sh|" "$svc_file"
+
+  systemctl --user daemon-reload
+  systemctl --user enable --now euosint-browser-watchdog.timer
+  info "Enabled user timer: euosint-browser-watchdog.timer"
+  info "Tip: for boot-time execution without login, run once as root:"
+  info "  sudo loginctl enable-linger $USER"
 }
 
 main() {
   ensure_docker
   INSTALL_MODE="$(prompt_install_mode)"
   info "Selected install mode: ${INSTALL_MODE}"
+  REPO_SLUG="$(repo_slug)"
 
-  if [[ "$INSTALL_MODE" == "install" ]]; then
-    require_cmd git
-    clone_or_update_repo
-  else
+  if [[ "$INSTALL_MODE" == "update" ]]; then
     if [[ ! -d "$INSTALL_DIR" || ! -f "$INSTALL_DIR/docker-compose.yml" ]]; then
       fatal "Update mode requires an existing install at $INSTALL_DIR (missing docker-compose.yml). Use install mode first."
     fi
-    refresh_compose_yaml_direct
-    refresh_env_example_direct
-    refresh_web_runtime_files_direct
+  else
+    mkdir -p "$INSTALL_DIR"
   fi
+  refresh_compose_yaml_direct
+  refresh_env_example_direct
+  refresh_web_runtime_files_direct
+  refresh_watchdog_files_direct
 
   configure_env
+  print_runtime_summary
   start_stack
+  install_user_watchdog_timer
 }
 
 main "$@"
