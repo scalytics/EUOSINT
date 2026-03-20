@@ -13,40 +13,44 @@ import (
 	"github.com/scalytics/euosint/internal/collector/parse"
 )
 
-type lensDef struct {
+// LensDef describes a conflict monitoring lens.
+type LensDef struct {
 	ID                 string
 	Title              string
 	OverlayType        string
 	CoverageNote       string
 	ReferenceCountryID string
 	CountryCodes       map[string]struct{}
-	Bounds             bounds
+	Bounds             Bounds
 }
 
-type ucdpCountryRef struct {
+type UCDPCountryRef struct {
 	ID    string
 	ISO2  string
 	ISO3  string
 	Label string
 }
 
-type bounds struct {
-	south float64
-	west  float64
-	north float64
-	east  float64
+// Bounds is a geographic bounding box.
+type Bounds struct {
+	South float64
+	West  float64
+	North float64
+	East  float64
 }
 
-var supportedLenses = []lensDef{
-	{ID: "gaza", Title: "Gaza", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "666", CountryCodes: makeSet("PS", "IL", "EG", "LB", "JO"), Bounds: bounds{29.5, 32.0, 34.8, 36.5}},
-	{ID: "sudan", Title: "Sudan", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "625", CountryCodes: makeSet("SD", "SS", "TD", "CF", "ET", "ER"), Bounds: bounds{3.0, 21.5, 23.5, 39.5}},
-	{ID: "ukraine", Title: "Ukraine South", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "369", CountryCodes: makeSet("UA", "RU", "RO", "BG", "TR"), Bounds: bounds{43.0, 27.0, 49.5, 39.5}},
-	{ID: "red-sea", Title: "Red Sea", OverlayType: "maritime", CoverageNote: "Structured conflict context from UCDP GED; maritime live feeds remain primary for immediate route risk.", ReferenceCountryID: "679", CountryCodes: makeSet("YE", "SA", "EG", "SD", "ER", "DJ", "SO"), Bounds: bounds{10.0, 31.0, 31.8, 45.5}},
-	{ID: "sahel", Title: "Sahel", OverlayType: "terror", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "432", CountryCodes: makeSet("ML", "NE", "BF", "MR", "DZ", "TD"), Bounds: bounds{10.0, -17.5, 24.5, 25.0}},
-	{ID: "drc-east", Title: "DRC East", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "490", CountryCodes: makeSet("CD", "RW", "UG", "BI"), Bounds: bounds{-8.5, 27.0, 4.5, 31.8}},
+// SupportedLenses lists the conflict monitoring lenses.
+var SupportedLenses = []LensDef{
+	{ID: "gaza", Title: "Gaza", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "666", CountryCodes: makeSet("PS", "IL", "EG", "LB", "JO"), Bounds: Bounds{29.5, 32.0, 34.8, 36.5}},
+	{ID: "sudan", Title: "Sudan", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "625", CountryCodes: makeSet("SD", "SS", "TD", "CF", "ET", "ER"), Bounds: Bounds{3.0, 21.5, 23.5, 39.5}},
+	{ID: "ukraine", Title: "Ukraine South", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "369", CountryCodes: makeSet("UA", "RU", "RO", "BG", "TR"), Bounds: Bounds{43.0, 27.0, 49.5, 39.5}},
+	{ID: "red-sea", Title: "Red Sea", OverlayType: "maritime", CoverageNote: "Structured conflict context from UCDP GED; maritime live feeds remain primary for immediate route risk.", ReferenceCountryID: "679", CountryCodes: makeSet("YE", "SA", "EG", "SD", "ER", "DJ", "SO"), Bounds: Bounds{10.0, 31.0, 31.8, 45.5}},
+	{ID: "sahel", Title: "Sahel", OverlayType: "terror", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "432", CountryCodes: makeSet("ML", "NE", "BF", "MR", "DZ", "TD"), Bounds: Bounds{10.0, -17.5, 24.5, 25.0}},
+	{ID: "drc-east", Title: "DRC East", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "490", CountryCodes: makeSet("CD", "RW", "UG", "BI"), Bounds: Bounds{-8.5, 27.0, 4.5, 31.8}},
 }
 
-var ucdpCountryRefs = map[string]ucdpCountryRef{
+// UCDPCountryRefs maps ISO2 codes to UCDP country metadata.
+var UCDPCountryRefs = map[string]UCDPCountryRef{
 	"DZ": {ID: "615", ISO2: "DZ", ISO3: "DZA", Label: "Algeria"},
 	"BF": {ID: "439", ISO2: "BF", ISO3: "BFA", Label: "Burkina Faso"},
 	"BI": {ID: "516", ISO2: "BI", ISO3: "BDI", Label: "Burundi"},
@@ -78,16 +82,19 @@ var ucdpCountryRefs = map[string]ucdpCountryRef{
 	"YE": {ID: "679", ISO2: "YE", ISO3: "YEM", Label: "Yemen"},
 }
 
-func Build(items []parse.UCDPItem, now time.Time) []model.ZoneBriefingRecord {
-	out := make([]model.ZoneBriefingRecord, 0, len(supportedLenses))
-	for _, lens := range supportedLenses {
+// Build creates zone briefing records from UCDP events, conflict metadata, and ACLED items.
+func Build(items []parse.UCDPItem, conflicts []parse.UCDPConflict, acledItems []parse.ACLEDItem, now time.Time) []model.ZoneBriefingRecord {
+	out := make([]model.ZoneBriefingRecord, 0, len(SupportedLenses))
+	for _, lens := range SupportedLenses {
 		brief := buildLensBrief(lens, items, now)
+		enrichWithConflicts(&brief, lens, conflicts)
+		enrichWithACLED(&brief, lens, acledItems, now)
 		out = append(out, brief)
 	}
 	return out
 }
 
-func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.ZoneBriefingRecord {
+func buildLensBrief(lens LensDef, items []parse.UCDPItem, now time.Time) model.ZoneBriefingRecord {
 	type hotspotAgg struct {
 		label string
 		lat   float64
@@ -194,7 +201,7 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 	countryIDs := make([]string, 0, len(topCountryCodes))
 	countryLabels := make([]string, 0, len(topCountryCodes))
 	for _, code := range topCountryCodes {
-		if ref, ok := ucdpCountryRefs[code]; ok {
+		if ref, ok := UCDPCountryRefs[code]; ok {
 			if ref.ID != "" {
 				countryIDs = append(countryIDs, ref.ID)
 			}
@@ -299,9 +306,132 @@ func buildLensBrief(lens lensDef, items []parse.UCDPItem, now time.Time) model.Z
 	}
 }
 
-func lensSourceURL(lens lensDef, topCountryCodes []string) string {
+// enrichWithConflicts adds conflict-level metadata from ucdpprioconflict.
+func enrichWithConflicts(brief *model.ZoneBriefingRecord, lens LensDef, conflicts []parse.UCDPConflict) {
+	matched := matchConflictsToLens(lens, conflicts)
+	if len(matched) == 0 {
+		return
+	}
+	brief.ActiveConflicts = make([]model.ZoneBriefingConflict, 0, len(matched))
+	maxIntensity := 0
+	var primaryType string
+	for _, c := range matched {
+		brief.ActiveConflicts = append(brief.ActiveConflicts, model.ZoneBriefingConflict{
+			ConflictID: c.ConflictID,
+			Name:       c.ConflictName,
+			Type:       parse.NormalizeConflictType(c.TypeOfConflict),
+			Intensity:  c.IntensityLevel,
+		})
+		if c.IntensityLevel > maxIntensity {
+			maxIntensity = c.IntensityLevel
+			primaryType = parse.NormalizeConflictType(c.TypeOfConflict)
+		}
+	}
+	switch maxIntensity {
+	case 2:
+		brief.ConflictIntensity = "war"
+	case 1:
+		brief.ConflictIntensity = "minor"
+	}
+	brief.ConflictType = primaryType
+}
+
+// matchConflictsToLens returns conflicts whose gwno matches the lens countries.
+func matchConflictsToLens(lens LensDef, conflicts []parse.UCDPConflict) []parse.UCDPConflict {
+	lensGWNOs := make(map[string]struct{})
+	for cc := range lens.CountryCodes {
+		if ref, ok := UCDPCountryRefs[cc]; ok && ref.ID != "" {
+			lensGWNOs[ref.ID] = struct{}{}
+		}
+	}
+	var out []parse.UCDPConflict
+	for _, c := range conflicts {
+		// GWNoLoc can be comma-separated for multi-country conflicts.
+		for _, gwno := range strings.Split(c.GWNoLoc, ",") {
+			gwno = strings.TrimSpace(gwno)
+			if _, ok := lensGWNOs[gwno]; ok {
+				out = append(out, c)
+				break
+			}
+		}
+	}
+	return out
+}
+
+// enrichWithACLED adds ACLED recency data and adjusts status.
+func enrichWithACLED(brief *model.ZoneBriefingRecord, lens LensDef, acledItems []parse.ACLEDItem, now time.Time) {
+	if len(acledItems) == 0 {
+		return
+	}
+	matched := matchACLEDToLens(lens, acledItems)
+	if len(matched) == 0 {
+		return
+	}
+	var events7d, fatalities7d int
+	var topEvent string
+	var topFatalities int
+	var latest time.Time
+	cutoff := now.Add(-7 * 24 * time.Hour)
+	for _, item := range matched {
+		eventTime := parseTime(item.Published)
+		if eventTime.IsZero() || eventTime.Before(cutoff) {
+			continue
+		}
+		events7d++
+		fatalities7d += item.Fatalities
+		if eventTime.After(latest) {
+			latest = eventTime
+		}
+		if item.Fatalities > topFatalities {
+			topFatalities = item.Fatalities
+			topEvent = item.Title
+		}
+	}
+	if events7d == 0 {
+		return
+	}
+	asOf := ""
+	if !latest.IsZero() {
+		asOf = latest.UTC().Format(time.RFC3339)
+	}
+	brief.ACLEDRecency = &model.ZoneBriefingACLED{
+		Events7D:     events7d,
+		Fatalities7D: fatalities7d,
+		TopEvent:     topEvent,
+		AsOf:         asOf,
+	}
+	// If UCDP shows inactive/watch but ACLED has recent events, upgrade status.
+	if brief.Status != "active" && events7d > 0 {
+		brief.Status = "active"
+	}
+	// Add ACLED recency bullet.
+	brief.Summary.Bullets = append(brief.Summary.Bullets,
+		fmt.Sprintf("ACLED 7d: %d events, %d fatalities.", events7d, fatalities7d))
+}
+
+// matchACLEDToLens returns ACLED items matching by ISO2 or bounding box.
+func matchACLEDToLens(lens LensDef, items []parse.ACLEDItem) []parse.ACLEDItem {
+	var out []parse.ACLEDItem
+	for _, item := range items {
+		iso2 := parse.ACLEDISO2(item.ISO3)
+		if iso2 != "" {
+			if _, ok := lens.CountryCodes[strings.ToUpper(iso2)]; ok {
+				out = append(out, item)
+				continue
+			}
+		}
+		if item.Lat != 0 || item.Lng != 0 {
+			if item.Lat >= lens.Bounds.South && item.Lat <= lens.Bounds.North && item.Lng >= lens.Bounds.West && item.Lng <= lens.Bounds.East {
+				out = append(out, item)
+			}
+		}
+	}
+	return out
+}
+
+func lensSourceURL(lens LensDef, topCountryCodes []string) string {
 	for _, code := range topCountryCodes {
-		if ref, ok := ucdpCountryRefs[code]; ok && strings.TrimSpace(ref.ID) != "" {
+		if ref, ok := UCDPCountryRefs[code]; ok && strings.TrimSpace(ref.ID) != "" {
 			return "https://ucdp.uu.se/country/" + ref.ID
 		}
 	}
@@ -326,8 +456,8 @@ func deriveStatus(events7d, events30d int) string {
 var gwnoToISO2 = buildGWNOToISO2()
 
 func buildGWNOToISO2() map[string]string {
-	out := make(map[string]string, len(ucdpCountryRefs))
-	for iso2, ref := range ucdpCountryRefs {
+	out := make(map[string]string, len(UCDPCountryRefs))
+	for iso2, ref := range UCDPCountryRefs {
 		if ref.ID != "" {
 			out[ref.ID] = iso2
 		}
@@ -335,15 +465,13 @@ func buildGWNOToISO2() map[string]string {
 	return out
 }
 
-func matchesLens(lens lensDef, item parse.UCDPItem) bool {
+func matchesLens(lens LensDef, item parse.UCDPItem) bool {
 	if item.Lat != 0 || item.Lng != 0 {
-		if item.Lat >= lens.Bounds.south && item.Lat <= lens.Bounds.north && item.Lng >= lens.Bounds.west && item.Lng <= lens.Bounds.east {
+		if item.Lat >= lens.Bounds.South && item.Lat <= lens.Bounds.North && item.Lng >= lens.Bounds.West && item.Lng <= lens.Bounds.East {
 			return true
 		}
 	}
 	code := strings.ToUpper(strings.TrimSpace(item.CountryCode))
-	// CountryCode from the UCDP API is a numeric GW number (e.g. "666").
-	// Convert to ISO2 so it matches the lens country-code set.
 	if iso2, ok := gwnoToISO2[code]; ok {
 		code = iso2
 	}

@@ -48,7 +48,7 @@ func BuildTerrorZonesGeoJSONFromBoundaries(briefings []model.ZoneBriefingRecord,
 
 func buildRectangleZones(briefings []model.ZoneBriefingRecord, terrorOnly bool) any {
 	features := make([]geoFeature, 0)
-	for _, lens := range supportedLenses {
+	for _, lens := range SupportedLenses {
 		brief := findBrief(briefings, lens.ID)
 		if brief == nil || brief.Status == "inactive" {
 			continue
@@ -84,7 +84,7 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 		return nil, err
 	}
 	features := make([]geoFeature, 0)
-	for _, lens := range supportedLenses {
+	for _, lens := range SupportedLenses {
 		brief := findBrief(briefings, lens.ID)
 		if brief == nil || brief.Status == "inactive" {
 			continue
@@ -103,7 +103,7 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 			if boundary == nil {
 				continue
 			}
-			ref := ucdpCountryRefs[countryCode]
+			ref := UCDPCountryRefs[countryCode]
 			props := overlayProperties(lens, brief, countryCode, ref.Label, ref.ID)
 			if terrorOnly {
 				props["type"] = terrorType(brief.Status)
@@ -121,7 +121,7 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 	return featureCollection{Type: "FeatureCollection", Features: features}, nil
 }
 
-func overlayProperties(lens lensDef, brief *model.ZoneBriefingRecord, countryCode string, countryLabel string, countryID string) map[string]any {
+func overlayProperties(lens LensDef, brief *model.ZoneBriefingRecord, countryCode string, countryLabel string, countryID string) map[string]any {
 	props := map[string]any{
 		"name":           brief.Title,
 		"lens_id":        brief.LensID,
@@ -132,6 +132,12 @@ func overlayProperties(lens lensDef, brief *model.ZoneBriefingRecord, countryCod
 		"coverage_note":  brief.CoverageNote,
 		"country_ids":    brief.CountryIDs,
 		"country_labels": brief.CountryLabels,
+	}
+	if brief.ConflictIntensity != "" {
+		props["conflict_intensity"] = brief.ConflictIntensity
+	}
+	if brief.ConflictType != "" {
+		props["conflict_type"] = brief.ConflictType
 	}
 	if countryCode != "" {
 		props["country_code"] = countryCode
@@ -148,15 +154,15 @@ func overlayProperties(lens lensDef, brief *model.ZoneBriefingRecord, countryCod
 	return props
 }
 
-func rectangleGeometry(b bounds) map[string]any {
+func rectangleGeometry(b Bounds) map[string]any {
 	return map[string]any{
 		"type": "Polygon",
 		"coordinates": [][][]float64{{
-			{b.west, b.south},
-			{b.west, b.north},
-			{b.east, b.north},
-			{b.east, b.south},
-			{b.west, b.south},
+			{b.West, b.South},
+			{b.West, b.North},
+			{b.East, b.North},
+			{b.East, b.South},
+			{b.West, b.South},
 		}},
 	}
 }
@@ -210,7 +216,7 @@ func stringProp(props map[string]any, key string) string {
 	return ""
 }
 
-func sortedLensCountryCodes(lens lensDef) []string {
+func sortedLensCountryCodes(lens LensDef) []string {
 	out := make([]string, 0, len(lens.CountryCodes))
 	for code := range lens.CountryCodes {
 		out = append(out, code)
