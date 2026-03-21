@@ -1162,7 +1162,7 @@ func TestWriteZoneBriefingsStalenessSkip(t *testing.T) {
 	dir := t.TempDir()
 	outPath := filepath.Join(dir, "zone-briefings.json")
 	// Write a fresh file.
-	if err := os.WriteFile(outPath, []byte("[]"), 0o644); err != nil {
+	if err := os.WriteFile(outPath, []byte(`[{"lens_id":"gaza"}]`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1184,6 +1184,32 @@ func TestWriteZoneBriefingsStalenessSkip(t *testing.T) {
 	}
 	if httpCalled {
 		t.Fatal("expected staleness check to skip refresh, but HTTP client was created")
+	}
+}
+
+func TestWriteZoneBriefingsFreshEmptyFileDoesNotSkip(t *testing.T) {
+	dir := t.TempDir()
+	outPath := filepath.Join(dir, "zone-briefings.json")
+	// Fresh bootstrap artifact should not be treated as valid cache content.
+	if err := os.WriteFile(outPath, []byte("[] "), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	runner := New(io.Discard, io.Discard)
+	cfg := config.Default()
+	cfg.ZoneBriefingsOutputPath = outPath
+	cfg.ZoneBriefingRefreshHours = 24
+	cfg.UCDPAccessToken = ""
+
+	if err := runner.writeZoneBriefings(context.Background(), cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "[]\n" {
+		t.Fatalf("expected rewrite of fresh empty file, got %q", string(data))
 	}
 }
 

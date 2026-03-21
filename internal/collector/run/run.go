@@ -2201,7 +2201,7 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	// Staleness check: skip if output file is fresh enough.
 	if info, err := os.Stat(cfg.ZoneBriefingsOutputPath); err == nil {
 		age := time.Since(info.ModTime())
-		if age < time.Duration(cfg.ZoneBriefingRefreshHours)*time.Hour {
+		if age < time.Duration(cfg.ZoneBriefingRefreshHours)*time.Hour && zoneBriefingsFileHasRecords(cfg.ZoneBriefingsOutputPath) {
 			fmt.Fprintf(r.stderr, "zone briefings: skipping, file is %.1fh old (threshold %dh)\n", age.Hours(), cfg.ZoneBriefingRefreshHours)
 			return nil
 		}
@@ -2322,6 +2322,18 @@ func ensureZoneBriefingArtifacts(cfg config.Config) error {
 		}
 	}
 	return nil
+}
+
+func zoneBriefingsFileHasRecords(path string) bool {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	var rows []json.RawMessage
+	if err := json.Unmarshal(body, &rows); err != nil {
+		return false
+	}
+	return len(rows) > 0
 }
 
 // ucdpVersions holds discovered UCDP dataset versions.

@@ -200,19 +200,6 @@ export async function loadOverlay(
   if (!geojson) {
     geojson = EMPTY_FEATURE_COLLECTION;
   }
-  if (
-    (def.id === "conflicts" || def.id === "terrorism") &&
-    Array.isArray((geojson as { features?: unknown[] }).features) &&
-    (((geojson as { features?: unknown[] }).features?.length) ?? 0) === 0
-  ) {
-    const fallbackURL = OVERLAY_FALLBACK_URLS[def.id];
-    if (fallbackURL) {
-      const fallbackGeoJSON = await fetchGeoJSON(fallbackURL);
-      if (fallbackGeoJSON) {
-        geojson = fallbackGeoJSON;
-      }
-    }
-  }
   geojson = filterConflictOverlayFeatures(geojson, def.id, conflictLensId);
   const group = L.layerGroup();
 
