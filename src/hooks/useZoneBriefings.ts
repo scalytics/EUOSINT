@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { ZoneBriefingRecord, ZoneBriefingHotspot, ZoneBriefingConflict, ZoneBriefingACLED } from "@/types/zone-briefing";
 
 const ZONE_BRIEFINGS_URL = `${import.meta.env.BASE_URL}zone-briefings.json`;
+const ZONE_BRIEFINGS_REFRESH_MS = 10000;
 
 function mapHotspot(raw: Record<string, unknown>): ZoneBriefingHotspot {
   return {
@@ -71,8 +72,11 @@ export function useZoneBriefings() {
 
   useEffect(() => {
     let cancelled = false;
+    let inflight = false;
 
     async function load() {
+      if (inflight) return;
+      inflight = true;
       try {
         const response = await fetch(`${ZONE_BRIEFINGS_URL}?t=${Date.now()}`, {
           cache: "no-store",
@@ -82,18 +86,30 @@ export function useZoneBriefings() {
           if (!cancelled) {
             setBriefings(normalizeZoneBriefings(data));
           }
+          inflight = false;
           return;
         }
       } catch {
         if (!cancelled) {
           setBriefings([]);
         }
+      } finally {
+        inflight = false;
       }
     }
 
     load();
+    const interval = window.setInterval(load, ZONE_BRIEFINGS_REFRESH_MS);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        load();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
