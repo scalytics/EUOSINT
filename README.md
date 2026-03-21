@@ -45,7 +45,7 @@ The installer will:
 - prompt for install mode (`preserve` or `fresh` volume reset)
 - prompt for domain (`EUOSINT_SITE_ADDRESS`)
 - when domain mode is enabled, optionally check `ufw`/`firewalld` and validate local 80/443 availability
-- prompt for key runtime flags (browser + LLM vetting settings)
+- prompt for essential runtime keys only (URL, API credentials, optional LLM toggles)
 - optionally run `docker compose pull` and start with `--no-build`
 
 - The release pipeline builds two images: a web image and a Go collector image.
@@ -75,32 +75,8 @@ INTERVAL_MS=120000 MAX_PER_SOURCE=80 npm run collector:run
 INTERVAL_MS=120000 RECENT_WINDOW_PER_SOURCE=20 ALERT_STALE_DAYS=14 npm run collector:run
 ```
 
-Key collector variables:
-
-- `RECENT_WINDOW_PER_SOURCE`: rolling max items per non-HTML source per run (default `20`)
-- `HTML_SCRAPE_INTERVAL_HOURS`: minimum hours between successful HTML full scrapes (default `24`)
-- `BROWSER_WS_URL`: optional remote Chrome DevTools websocket endpoint (for dedicated always-on browser containers)
-- `BROWSER_MAX_CONCURRENCY`: cap on concurrent browser tab sessions (default `4`)
-- `BROWSER_CONNECT_RETRIES`: remote websocket connect attempts before local chromium fallback (default `3`)
-- `BROWSER_CONNECT_RETRY_DELAY_MS`: delay between remote websocket connect attempts (default `1000`)
-- `ALERT_COOLDOWN_HOURS`: first lifecycle step for missing alerts before stale (default `24`)
-- `ALERT_STALE_DAYS`: days before missing alerts become stale (default `14`)
-- `ALERT_ARCHIVE_DAYS`: days before stale alerts move to archived history (default `90`)
-- `NOISE_POLICY_PATH`: primary contextual noise-gate policy (default `registry/noise_policy.json`)
-- `NOISE_POLICY_B_PATH`: optional A/B policy file (default `registry/noise_policy_b.json`)
-- `NOISE_POLICY_B_PERCENT`: percentage routed to policy-B (default `0`)
-- `NOISE_METRICS_OUTPUT_PATH`: noise quality/drift output JSON (default `public/noise-metrics.json`)
-- `SOVEREIGN_SEED_PATH`: curated sovereign official-statements seed candidates (default `registry/sovereign_official_statements.seed.json`)
-- `DISCOVER_SOCIAL_ENABLED`: discover X/Telegram candidates for conflict, maritime/piracy, terror, and intelligence categories (default `true`)
-- `DISCOVER_SOCIAL_MAX_TARGETS`: max social discovery targets per run (default `24`)
-- `OFFICIAL_STATEMENTS_MIN_QUALITY`: stricter vetting minimum for legislative official-statement seeds (default `0.75`)
-- `OFFICIAL_STATEMENTS_MIN_OPERATIONAL_RELEVANCE`: stricter operational relevance minimum for legislative official-statement seeds (default `0.7`)
-- `UCDP_ACCESS_TOKEN`: optional UCDP API token (`x-ucdp-access-token`) for `ucdp-json` conflict ingestion
-- `MILITARY_BASES_ENABLED`: enable periodic static military-bases GeoJSON refresh (default `true`)
-- `MILITARY_BASES_URL`: source URL for military-bases GeoJSON refresh
-- `MILITARY_BASES_OUTPUT_PATH`: output path for static military-bases layer (default `public/geo/military-bases.geojson`)
-- `MILITARY_BASES_REFRESH_HOURS`: refresh cadence for military-bases layer (default `168`)
-- `X_FETCH_PAUSE_MS`: delay between sequential X source crawls to reduce throttling/blocks (default `1250`)
+Minimal required runtime variables are in [.env.example](/Users/alo/Development/scalytics/EUOSINT/.env.example).
+Advanced tuning variables and defaults are documented in [docs/advanced-config.md](/Users/alo/Development/scalytics/EUOSINT/docs/advanced-config.md).
 
 ## Operations
 

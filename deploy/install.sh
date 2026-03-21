@@ -229,7 +229,8 @@ configure_env() {
     info "Created .env from .env.example."
   fi
 
-  info "Review configuration — press Enter to keep current value, or type a new one."
+  info "Review essential configuration only — press Enter to keep current value, or type a new one."
+  info "Advanced tuning stays on built-in defaults. Edit .env manually only if needed."
   echo ""
 
   local last_comment=""
@@ -277,6 +278,15 @@ configure_env() {
     local prompt_label="$key"
     case "$key" in
       EUOSINT_SITE_ADDRESS) prompt_label="Live URL" ;;
+      COLLECTOR_ROLE) prompt_label="Collector Role" ;;
+      UCDP_ACCESS_TOKEN) prompt_label="UCDP API Token" ;;
+      ACLED_USERNAME) prompt_label="ACLED Username" ;;
+      ACLED_PASSWORD) prompt_label="ACLED Password" ;;
+      SOURCE_VETTING_ENABLED) prompt_label="Enable Source Vetting LLM" ;;
+      SOURCE_VETTING_API_KEY) prompt_label="Source Vetting API Key" ;;
+      SOURCE_VETTING_MODEL) prompt_label="Source Vetting Model" ;;
+      ALERT_LLM_ENABLED) prompt_label="Enable Alert LLM (higher token usage)" ;;
+      ALERT_LLM_MODEL) prompt_label="Alert LLM Model" ;;
     esac
 
     local new_val

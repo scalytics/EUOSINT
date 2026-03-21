@@ -13,6 +13,15 @@ The production stack has three containers:
 - `collector`: the Go collector running in watch mode and writing refreshed JSON feeds into a shared Docker volume
 - `euosint`: the React bundle served by Caddy, reading the shared JSON volume and serving the UI plus feed files
 
+The collector can also run in parallel worker roles using role filters:
+
+- `all`: full pipeline (default)
+- `merge`: merge staged role snapshots into canonical alert state/output
+- `fast`: RSS/Atom fast lane only
+- `browser`: browser lane only (`x`, `telegram`, `html-list`, Interpol JSON)
+- `api`: API lane only (non-fast + non-browser)
+- `api-ucdp`, `api-acled`, `api-gdelt`: one collector per API family
+
 The web service no longer uses nginx. Caddy serves the SPA, exposes `/alerts.json`, `/alerts-filtered.json`, `/alerts-state.json`, and `/source-health.json`, and can manage TLS automatically when you give it a real domain.
 
 ## Local Compose
@@ -35,6 +44,22 @@ Default local behavior:
 - HTTP on `http://localhost:8080`
 - HTTPS listener mapped to `https://localhost:8443` but not used unless `EUOSINT_SITE_ADDRESS` is changed to a hostname that enables TLS
 - The collector initializes empty JSON outputs on a fresh shared feed volume, then replaces them with live collector output on the first successful run
+- Advanced tuning variables are documented in [docs/advanced-config.md](/Users/alo/Development/scalytics/EUOSINT/docs/advanced-config.md).
+
+## Parallel Collector Roles
+
+Use role workers to isolate rate limits and failure domains. Keep one primary
+`merge`/`all` writer for canonical outputs; worker roles stage into DB only.
+
+Environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COLLECTOR_ROLE` | `all` | Role filter: `all|merge|fast|browser|api|api-ucdp|api-acled|api-gdelt` |
+
+CLI flags (equivalents):
+
+- `--collector-role` (alias: `--role`)
 
 ## Domain Setup For A VM
 
