@@ -98,7 +98,7 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 				continue
 			}
 		}
-		for _, countryCode := range sortedLensCountryCodes(lens) {
+		for _, countryCode := range sortedOverlayCountryCodes(lens) {
 			boundary := findBoundaryFeature(collection.Features, countryCode)
 			if boundary == nil {
 				continue
@@ -216,9 +216,13 @@ func stringProp(props map[string]any, key string) string {
 	return ""
 }
 
-func sortedLensCountryCodes(lens LensDef) []string {
-	out := make([]string, 0, len(lens.CountryCodes))
-	for code := range lens.CountryCodes {
+func sortedOverlayCountryCodes(lens LensDef) []string {
+	source := lens.OverlayCountryCodes
+	if len(source) == 0 {
+		source = lens.CountryCodes
+	}
+	out := make([]string, 0, len(source))
+	for code := range source {
 		out = append(out, code)
 	}
 	sortStrings(out)

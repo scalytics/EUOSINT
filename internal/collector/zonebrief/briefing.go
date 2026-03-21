@@ -15,13 +15,14 @@ import (
 
 // LensDef describes a conflict monitoring lens.
 type LensDef struct {
-	ID                 string
-	Title              string
-	OverlayType        string
-	CoverageNote       string
-	ReferenceCountryID string
-	CountryCodes       map[string]struct{}
-	Bounds             Bounds
+	ID                  string
+	Title               string
+	OverlayType         string
+	CoverageNote        string
+	ReferenceCountryID  string
+	OverlayCountryCodes map[string]struct{}
+	CountryCodes        map[string]struct{}
+	Bounds              Bounds
 }
 
 type UCDPCountryRef struct {
@@ -41,12 +42,12 @@ type Bounds struct {
 
 // SupportedLenses lists the conflict monitoring lenses.
 var SupportedLenses = []LensDef{
-	{ID: "gaza", Title: "Gaza", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "666", CountryCodes: makeSet("PS", "IL", "EG", "LB", "JO"), Bounds: Bounds{29.5, 32.0, 34.8, 36.5}},
-	{ID: "sudan", Title: "Sudan", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "625", CountryCodes: makeSet("SD", "SS", "TD", "CF", "ET", "ER"), Bounds: Bounds{3.0, 21.5, 23.5, 39.5}},
-	{ID: "ukraine", Title: "Ukraine South", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "369", CountryCodes: makeSet("UA", "RU", "RO", "BG", "TR"), Bounds: Bounds{43.0, 27.0, 49.5, 39.5}},
-	{ID: "red-sea", Title: "Red Sea", OverlayType: "maritime", CoverageNote: "Structured conflict context from UCDP GED; maritime live feeds remain primary for immediate route risk.", ReferenceCountryID: "679", CountryCodes: makeSet("YE", "SA", "EG", "SD", "ER", "DJ", "SO"), Bounds: Bounds{10.0, 31.0, 31.8, 45.5}},
-	{ID: "sahel", Title: "Sahel", OverlayType: "terror", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "432", CountryCodes: makeSet("ML", "NE", "BF", "MR", "DZ", "TD"), Bounds: Bounds{10.0, -17.5, 24.5, 25.0}},
-	{ID: "drc-east", Title: "DRC East", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "490", CountryCodes: makeSet("CD", "RW", "UG", "BI"), Bounds: Bounds{-8.5, 27.0, 4.5, 31.8}},
+	{ID: "gaza", Title: "Gaza", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "666", OverlayCountryCodes: makeSet("PS"), CountryCodes: makeSet("PS", "IL", "EG", "LB", "JO"), Bounds: Bounds{29.5, 32.0, 34.8, 36.5}},
+	{ID: "sudan", Title: "Sudan", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "625", OverlayCountryCodes: makeSet("SD"), CountryCodes: makeSet("SD", "SS", "TD", "CF", "ET", "ER"), Bounds: Bounds{3.0, 21.5, 23.5, 39.5}},
+	{ID: "ukraine", Title: "Ukraine South", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "369", OverlayCountryCodes: makeSet("UA"), CountryCodes: makeSet("UA", "RU", "RO", "BG", "TR"), Bounds: Bounds{43.0, 27.0, 49.5, 39.5}},
+	{ID: "red-sea", Title: "Red Sea", OverlayType: "maritime", CoverageNote: "Structured conflict context from UCDP GED; maritime live feeds remain primary for immediate route risk.", ReferenceCountryID: "679", OverlayCountryCodes: makeSet("YE"), CountryCodes: makeSet("YE", "SA", "EG", "SD", "ER", "DJ", "SO"), Bounds: Bounds{10.0, 31.0, 31.8, 45.5}},
+	{ID: "sahel", Title: "Sahel", OverlayType: "terror", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "432", OverlayCountryCodes: makeSet("ML", "NE", "BF"), CountryCodes: makeSet("ML", "NE", "BF", "MR", "DZ", "TD"), Bounds: Bounds{10.0, -17.5, 24.5, 25.0}},
+	{ID: "drc-east", Title: "DRC East", OverlayType: "conflict", CoverageNote: "Structured conflict context from UCDP GED; use live feeds for breaking updates.", ReferenceCountryID: "490", OverlayCountryCodes: makeSet("CD"), CountryCodes: makeSet("CD", "RW", "UG", "BI"), Bounds: Bounds{-8.5, 27.0, 4.5, 31.8}},
 }
 
 // UCDPCountryRefs maps ISO2 codes to UCDP country metadata.

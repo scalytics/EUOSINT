@@ -121,15 +121,16 @@ export function GlobeView({
   const markerLookup = useRef<Map<string, L.CircleMarker>>(new Map());
   const markerAlertLookup = useRef<Map<number, Alert>>(new Map());
   const overlayLayers = useRef<Map<OverlayId, L.LayerGroup>>(new Map());
-  const conflictLensLayerRef = useRef<L.Rectangle | null>(null);
   const conflictHotspotLayerRef = useRef<L.LayerGroup | null>(null);
   const overlayLoadTokens = useRef<Map<OverlayId, number>>(new Map());
   const activeOverlaysRef = useRef<Set<OverlayId>>(new Set());
+  const lastOverlayRegionRef = useRef<string>(regionFilter);
   const clusterListPopupRef = useRef<L.Popup | null>(null);
   const lastNonCountryRegionRef = useRef<string>("all");
   const countryTableReturnRegionRef = useRef<string>("all");
   const countryFocusFromSpikeRef = useRef<string>("");
   const lastConflictLensRef = useRef<string | null>(null);
+  const preLensOverlaysRef = useRef<Set<OverlayId> | null>(null);
   const [overlayDefs, setOverlayDefs] = useState<OverlayDef[]>([]);
   const [activeOverlays, setActiveOverlays] = useState<Set<OverlayId>>(new Set());
   const [activeAreaGroupID, setActiveAreaGroupID] = useState<string>("");
@@ -200,6 +201,15 @@ export function GlobeView({
     const lensDefaults: OverlayId[] = ["bases"];
 
     setActiveOverlays((prev) => {
+      if (!previousLens && nextLens) {
+        preLensOverlaysRef.current = new Set(prev);
+      }
+      if (previousLens && !nextLens && preLensOverlaysRef.current) {
+        const restored = new Set(preLensOverlaysRef.current);
+        preLensOverlaysRef.current = null;
+        return restored;
+      }
+
       const next = new Set(prev);
       if (previousLens) {
         for (const overlay of previousLens.overlays) {
@@ -216,6 +226,8 @@ export function GlobeView({
         for (const overlay of lensDefaults) {
           next.add(overlay);
         }
+      } else {
+        preLensOverlaysRef.current = null;
       }
       return next;
     });
@@ -231,70 +243,54 @@ export function GlobeView({
     setActiveOverlays((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
-        nextOverlayToken(id); // invalidate pending async loads for this overlay
         next.delete(id);
-        const layer = overlayLayers.current.get(id);
-        if (layer && mapRef.current) {
-          mapRef.current.removeLayer(layer);
-          overlayLayers.current.delete(id);
-        }
       } else {
         next.add(id);
-        const map = mapRef.current;
-        if (map) {
-          const def = overlayDefs.find((o) => o.id === id);
-          if (def) {
-            const token = nextOverlayToken(id);
-            const current = overlayLayers.current.get(id);
-            if (current) {
-              map.removeLayer(current);
-              overlayLayers.current.delete(id);
-            }
-            loadOverlay(map, def, regionFilter).then((layer) => {
-              const isLatest = overlayLoadTokens.current.get(id) === token;
-              const stillActive = activeOverlaysRef.current.has(id);
-              if (!isLatest || !stillActive || !mapRef.current) {
-                map.removeLayer(layer);
-                return;
-              }
-              const previous = overlayLayers.current.get(id);
-              if (previous && previous !== layer) {
-                map.removeLayer(previous);
-              }
-              overlayLayers.current.set(id, layer);
-            });
-          }
-        }
       }
       return next;
     });
-  }, [nextOverlayToken, overlayDefs, regionFilter]);
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;
-    const activeBases = activeOverlays.has("bases");
-    if (!map || !activeBases) return;
-    const def = overlayDefs.find((o) => o.id === "bases");
-    if (!def) return;
-    const token = nextOverlayToken("bases");
-    const currentLayer = overlayLayers.current.get("bases");
-    if (currentLayer) {
-      map.removeLayer(currentLayer);
-      overlayLayers.current.delete("bases");
-    }
-    loadOverlay(map, def, regionFilter).then((layer) => {
-      const isLatest = overlayLoadTokens.current.get("bases") === token;
-      const stillActive = activeOverlaysRef.current.has("bases");
-      if (!isLatest || !stillActive || !mapRef.current) {
+    if (!map) return;
+
+    if (lastOverlayRegionRef.current !== regionFilter) {
+      lastOverlayRegionRef.current = regionFilter;
+      for (const [id, layer] of overlayLayers.current.entries()) {
+        nextOverlayToken(id);
         map.removeLayer(layer);
-        return;
+        overlayLayers.current.delete(id);
       }
-      const previous = overlayLayers.current.get("bases");
-      if (previous && previous !== layer) {
-        map.removeLayer(previous);
+    }
+
+    for (const [id, layer] of overlayLayers.current.entries()) {
+      if (!activeOverlays.has(id)) {
+        nextOverlayToken(id);
+        map.removeLayer(layer);
+        overlayLayers.current.delete(id);
       }
-      overlayLayers.current.set("bases", layer);
-    });
+    }
+
+    for (const id of activeOverlays) {
+      if (overlayLayers.current.has(id)) continue;
+      const def = overlayDefs.find((o) => o.id === id);
+      if (!def) continue;
+      const token = nextOverlayToken(id);
+      loadOverlay(map, def, regionFilter).then((layer) => {
+        const isLatest = overlayLoadTokens.current.get(id) === token;
+        const stillActive = activeOverlaysRef.current.has(id);
+        if (!isLatest || !stillActive || !mapRef.current) {
+          map.removeLayer(layer);
+          return;
+        }
+        const previous = overlayLayers.current.get(id);
+        if (previous && previous !== layer) {
+          map.removeLayer(previous);
+        }
+        overlayLayers.current.set(id, layer);
+      });
+    }
   }, [activeOverlays, nextOverlayToken, overlayDefs, regionFilter]);
 
   const visibleNowIdSet = useMemo(() => new Set(visibleNowAlertIds), [visibleNowAlertIds]);
@@ -792,10 +788,6 @@ export function GlobeView({
     if (!map) return;
 
     const removeLensOverlay = () => {
-      if (conflictLensLayerRef.current) {
-        map.removeLayer(conflictLensLayerRef.current);
-        conflictLensLayerRef.current = null;
-      }
       if (conflictHotspotLayerRef.current) {
         map.removeLayer(conflictHotspotLayerRef.current);
         conflictHotspotLayerRef.current = null;
@@ -808,21 +800,6 @@ export function GlobeView({
     }
 
     removeLensOverlay();
-
-    const bounds = L.latLngBounds(
-      [activeConflictLens.bounds.south, activeConflictLens.bounds.west],
-      [activeConflictLens.bounds.north, activeConflictLens.bounds.east],
-    );
-
-    const rectangle = L.rectangle(bounds, {
-      color: "#60a5fa",
-      weight: 1.5,
-      opacity: 0.8,
-      fillColor: "#38bdf8",
-      fillOpacity: 0.06,
-      interactive: true,
-    }).addTo(map);
-    conflictLensLayerRef.current = rectangle;
 
     const hotspotLayer = L.layerGroup();
     activeConflictBrief?.hotspots.forEach((hotspot) => {

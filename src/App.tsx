@@ -67,6 +67,8 @@ export default function App() {
   const [visibleHistoryAlertIds, setVisibleHistoryAlertIds] = useState<string[]>([]);
   const [mobilePane, setMobilePane] = useState<"intel" | "map" | "alerts">("map");
   const panelRef = useRef<HTMLDivElement>(null);
+  const preLensRegionRef = useRef<string | null>(null);
+  const preLensSourcesRef = useRef<string[] | null>(null);
   const [utcTime, setUtcTime] = useState(() => new Date().toISOString().slice(0, 19).replace("T", " ") + "Z");
 
   useEffect(() => {
@@ -100,6 +102,8 @@ export default function App() {
   }, [selectedSourceIds]);
 
   const handleRegionChange = useCallback((nextRegion: string) => {
+    preLensRegionRef.current = null;
+    preLensSourcesRef.current = null;
     setRegionFilter(nextRegion);
     setConflictLensId(null);
     setSelectedSourceIds([]);
@@ -107,14 +111,28 @@ export default function App() {
   }, []);
 
   const handleConflictLensChange = useCallback((nextLensId: string | null) => {
-    setConflictLensId(nextLensId);
     const lens = getConflictLensById(nextLensId);
     if (lens) {
+      if (!conflictLensId) {
+        preLensRegionRef.current = regionFilter;
+        preLensSourcesRef.current = [...selectedSourceIds];
+      }
+      setConflictLensId(nextLensId);
       setRegionFilter(lens.regionFilter);
+      setSelectedSourceIds([]);
+    } else {
+      setConflictLensId(null);
+      if (preLensRegionRef.current) {
+        setRegionFilter(preLensRegionRef.current);
+      }
+      if (preLensSourcesRef.current) {
+        setSelectedSourceIds(preLensSourcesRef.current);
+      }
+      preLensRegionRef.current = null;
+      preLensSourcesRef.current = null;
     }
-    setSelectedSourceIds([]);
     setSelectedId(null);
-  }, []);
+  }, [conflictLensId, regionFilter, selectedSourceIds]);
 
   const regionScopedAlerts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();

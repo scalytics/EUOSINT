@@ -9,6 +9,8 @@ export interface OverlayDef {
   url: string;
 }
 
+type GeoJSONLike = Record<string, unknown>;
+
 const OVERLAY_FALLBACK_URLS: Record<string, string> = {
   conflicts: "/geo/conflict-zones.seed.geojson",
   terrorism: "/geo/terrorism-zones.seed.geojson",
@@ -33,6 +35,24 @@ export const DEFAULT_OVERLAYS: OverlayDef[] = [
   { id: "piracy", label: "Piracy Zones", color: "#38bdf8", url: "/geo/piracy-zones.geojson" },
   { id: "terrorism", label: "Terror Zones", color: "#e879f9", url: "/geo/terrorism-zones.geojson" },
 ];
+
+const EMPTY_FEATURE_COLLECTION: GeoJSONLike = { type: "FeatureCollection", features: [] };
+
+async function fetchGeoJSON(url: string): Promise<GeoJSONLike | null> {
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    return null;
+  }
+  const contentType = (resp.headers.get("content-type") || "").toLowerCase();
+  if (!contentType.includes("json")) {
+    return null;
+  }
+  try {
+    return (await resp.json()) as GeoJSONLike;
+  } catch {
+    return null;
+  }
+}
 
 export async function loadOverlayDefs(): Promise<OverlayDef[]> {
   try {
@@ -164,25 +184,31 @@ export async function loadOverlay(
   const url = def.id === "bases"
     ? (BASES_REGION_URLS[regionFilter] ?? BASES_REGION_URLS.all)
     : def.url;
-  const resp = await fetch(url);
-  let geojson = await resp.json();
+  let geojson = await fetchGeoJSON(url);
+  if (!geojson) {
+    const fallbackURL = OVERLAY_FALLBACK_URLS[def.id];
+    geojson = fallbackURL ? await fetchGeoJSON(fallbackURL) : null;
+  }
+  if (!geojson) {
+    geojson = EMPTY_FEATURE_COLLECTION;
+  }
   if (
     (def.id === "conflicts" || def.id === "terrorism") &&
-    Array.isArray((geojson as { features?: unknown[] })?.features) &&
-    ((geojson as { features?: unknown[] }).features?.length ?? 0) === 0
+    Array.isArray((geojson as { features?: unknown[] }).features) &&
+    (((geojson as { features?: unknown[] }).features?.length) ?? 0) === 0
   ) {
     const fallbackURL = OVERLAY_FALLBACK_URLS[def.id];
     if (fallbackURL) {
-      const fallbackResp = await fetch(fallbackURL);
-      if (fallbackResp.ok) {
-        geojson = await fallbackResp.json();
+      const fallbackGeoJSON = await fetchGeoJSON(fallbackURL);
+      if (fallbackGeoJSON) {
+        geojson = fallbackGeoJSON;
       }
     }
   }
   const group = L.layerGroup();
 
   if (def.id === "conflicts") {
-    L.geoJSON(geojson, {
+    L.geoJSON(geojson as any, {
       style: (feature) => {
         const type = feature?.properties?.type ?? "active_conflict";
         return {
@@ -202,7 +228,7 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "ports") {
-    L.geoJSON(geojson, {
+    L.geoJSON(geojson as any, {
       pointToLayer: (_feature, latlng) => {
         const type = _feature.properties?.type ?? "container";
         return L.circleMarker(latlng, {
@@ -253,7 +279,7 @@ export async function loadOverlay(
       marker.addTo(group);
     }
   } else if (def.id === "nuclear") {
-    L.geoJSON(geojson, {
+    L.geoJSON(geojson as any, {
       pointToLayer: (_feature, latlng) => {
         return L.circleMarker(latlng, {
           radius: 5,
@@ -274,7 +300,7 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "sanctions") {
-    L.geoJSON(geojson, {
+    L.geoJSON(geojson as any, {
       style: (feature) => {
         const type = feature?.properties?.type ?? "comprehensive";
         return {
@@ -294,7 +320,7 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "piracy") {
-    L.geoJSON(geojson, {
+    L.geoJSON(geojson as any, {
       style: (feature) => {
         const type = feature?.properties?.type ?? "elevated";
         return {
@@ -314,7 +340,7 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "terrorism") {
-    L.geoJSON(geojson, {
+    L.geoJSON(geojson as any, {
       style: (feature) => {
         const type = feature?.properties?.type ?? "active";
         return {
@@ -334,7 +360,7 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "cables") {
-    L.geoJSON(geojson, {
+    L.geoJSON(geojson as any, {
       style: (feature) => ({
         color: feature?.properties?.color ?? def.color,
         weight: 1.5,
@@ -353,7 +379,7 @@ export async function loadOverlay(
     // Shipping lanes (Major / Middle)
     const laneWeight: Record<string, number> = { Major: 2, Middle: 1.4 };
     const laneOpacity: Record<string, number> = { Major: 0.5, Middle: 0.35 };
-    L.geoJSON(geojson, {
+    L.geoJSON(geojson as any, {
       style: (feature) => {
         const type = feature?.properties?.Type ?? "Major";
         return {

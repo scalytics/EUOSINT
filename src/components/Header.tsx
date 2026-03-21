@@ -66,11 +66,13 @@ function FeedFocus({
   sourceCount,
   selectedSourceIds,
   onSelectedSourceIdsChange,
+  onClear,
 }: {
   alerts: Alert[];
   sourceCount: number;
   selectedSourceIds: string[];
   onSelectedSourceIdsChange: (sourceIds: string[]) => void;
+  onClear: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -136,9 +138,27 @@ function FeedFocus({
   return (
     <div ref={containerRef} className="relative">
       <div className="rounded-2xl border border-siem-border bg-siem-panel-strong px-3 py-2">
-        <div className="mb-1 flex items-center gap-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
-          <Radar size={11} />
-          Feed focus
+        <div className="mb-1 flex items-center justify-between gap-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
+          <span className="inline-flex items-center gap-2">
+            <Radar size={11} />
+            Feed focus
+          </span>
+          {selectedSourceIds.length > 0 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+                setOpen(false);
+                setQuery("");
+              }}
+              className="rounded-full border border-siem-border/70 p-1 text-siem-muted transition-colors hover:border-siem-accent/35 hover:text-siem-text"
+              aria-label="Clear feed focus"
+              title="Clear feed focus"
+            >
+              <X size={11} />
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -322,10 +342,12 @@ function RegionSearch({
   regionFilter,
   onRegionChange,
   alerts,
+  onClear,
 }: {
   regionFilter: string;
   onRegionChange: (region: string) => void;
   alerts: Alert[];
+  onClear: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -392,9 +414,27 @@ function RegionSearch({
   return (
     <div ref={containerRef} className="relative">
       <div className="rounded-2xl border border-siem-border bg-siem-panel-strong px-3 py-2">
-        <div className="mb-1 flex items-center gap-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
-          <Globe2 size={11} />
-          Region scope
+        <div className="mb-1 flex items-center justify-between gap-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
+          <span className="inline-flex items-center gap-2">
+            <Globe2 size={11} />
+            Region scope
+          </span>
+          {regionFilter !== "all" && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+                setOpen(false);
+                setQuery("");
+              }}
+              className="rounded-full border border-siem-border/70 p-1 text-siem-muted transition-colors hover:border-siem-accent/35 hover:text-siem-text"
+              aria-label="Clear region scope"
+              title="Clear region scope"
+            >
+              <X size={11} />
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -472,9 +512,11 @@ function RegionSearch({
 function ConflictLensSearch({
   conflictLensId,
   onConflictLensChange,
+  onClear,
 }: {
   conflictLensId: string | null;
   onConflictLensChange: (lensId: string | null) => void;
+  onClear: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -517,9 +559,27 @@ function ConflictLensSearch({
   return (
     <div ref={containerRef} className="relative">
       <div className="rounded-2xl border border-siem-border bg-siem-panel-strong px-3 py-2">
-        <div className="mb-1 flex items-center gap-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
-          <Radar size={11} />
-          Conflict lens
+        <div className="mb-1 flex items-center justify-between gap-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
+          <span className="inline-flex items-center gap-2">
+            <Radar size={11} />
+            Conflict lens
+          </span>
+          {conflictLensId && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+                setOpen(false);
+                setQuery("");
+              }}
+              className="rounded-full border border-siem-border/70 p-1 text-siem-muted transition-colors hover:border-siem-accent/35 hover:text-siem-text"
+              aria-label="Clear conflict lens"
+              title="Clear conflict lens"
+            >
+              <X size={11} />
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -651,11 +711,13 @@ export function Header({
               regionFilter={regionFilter}
               onRegionChange={onRegionChange}
               alerts={alerts}
+              onClear={() => onRegionChange("all")}
             />
 
             <ConflictLensSearch
               conflictLensId={conflictLensId}
               onConflictLensChange={onConflictLensChange}
+              onClear={() => onConflictLensChange(null)}
             />
 
             <FeedFocus
@@ -663,6 +725,7 @@ export function Header({
               sourceCount={sourceCount}
               selectedSourceIds={selectedSourceIds}
               onSelectedSourceIdsChange={onSelectedSourceIdsChange}
+              onClear={() => onSelectedSourceIdsChange([])}
             />
           </div>
         </div>
