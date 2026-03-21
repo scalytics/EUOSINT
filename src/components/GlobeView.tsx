@@ -154,6 +154,7 @@ export function GlobeView({
   const overlayLoadTokens = useRef<Map<OverlayId, number>>(new Map());
   const activeOverlaysRef = useRef<Set<OverlayId>>(new Set());
   const lastOverlayRegionRef = useRef<string>(regionFilter);
+  const lastOverlayConflictLensRef = useRef<string | null>(conflictLensId);
   const clusterListPopupRef = useRef<L.Popup | null>(null);
   const lastNonCountryRegionRef = useRef<string>("all");
   const countryTableReturnRegionRef = useRef<string>("all");
@@ -300,6 +301,17 @@ export function GlobeView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+
+    if (lastOverlayConflictLensRef.current !== conflictLensId) {
+      lastOverlayConflictLensRef.current = conflictLensId;
+      for (const id of ["conflicts", "terrorism"]) {
+        const layer = overlayLayers.current.get(id);
+        if (!layer) continue;
+        nextOverlayToken(id);
+        map.removeLayer(layer);
+        overlayLayers.current.delete(id);
+      }
+    }
 
     if (lastOverlayRegionRef.current !== regionFilter) {
       lastOverlayRegionRef.current = regionFilter;
@@ -1016,21 +1028,23 @@ export function GlobeView({
                   <div className="mt-1 text-2xs">{activeConflictBrief.lens.label}</div>
                 </div>
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {activeConflictBrief.metrics.slice(0, 6).map((metric) => (
-                  <div key={metric.label} className="rounded border border-siem-border bg-white/5 px-2 py-1.5">
-                    <div className="text-[10px] uppercase tracking-[0.12em] text-siem-muted">{metric.label}</div>
-                    <div className="mt-1 font-mono text-2xs text-siem-text">{metric.value}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {activeConflictBrief.topCountries.map((item) => (
-                  <span key={item.code} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs">
-                    <span>{item.label}</span>
-                    <span className="text-siem-muted">{item.count}</span>
-                  </span>
-                ))}
+              <div className="mt-3 space-y-1.5 text-xs text-siem-text">
+                <div>
+                  <span className="text-siem-muted">In conflict with:</span>{" "}
+                  {[activeDynamicConflict?.sideA, activeDynamicConflict?.sideB].filter((v) => (v ?? "").trim().length > 0).join(" vs ") || "n/a"}
+                </div>
+                <div>
+                  <span className="text-siem-muted">In conflict since:</span>{" "}
+                  {activeDynamicConflict?.startDate || activeConflictBrief.asOf?.slice(0, 10) || "n/a"}
+                </div>
+                <div>
+                  <span className="text-siem-muted">Actors:</span>{" "}
+                  {(
+                    activeConflictBrief.actors.filter((item) => !/^XXX\d+$/i.test(item.trim())).length > 0
+                      ? activeConflictBrief.actors.filter((item) => !/^XXX\d+$/i.test(item.trim()))
+                      : [activeDynamicConflict?.sideA, activeDynamicConflict?.sideB].filter((v) => (v ?? "").trim().length > 0)
+                  ).join(", ") || "n/a"}
+                </div>
               </div>
               {activeConflictBrief.recentEvents && activeConflictBrief.recentEvents.length > 0 && (
                 <div className="mt-3 space-y-1">

@@ -100,7 +100,26 @@ export function AlertFeed({
     const merged = mergeZoneBriefing(derived, override);
     if (!merged) return null;
 
+    const dynamicFallbackEvents: ZoneBriefingEvent[] = activeDynamicConflict
+      ? [...alerts, ...historicalAlerts]
+          .filter((alert) => {
+            const code = (alert.event_country_code || alert.source.country_code || "").toUpperCase();
+            if ((activeDynamicConflict.overlayCountryCodes ?? []).length === 0) return true;
+            return (activeDynamicConflict.overlayCountryCodes ?? []).map((item) => item.toUpperCase()).includes(code);
+          })
+          .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime())
+          .slice(0, 5)
+          .map((alert) => ({
+            date: alert.last_seen,
+            title: alert.title,
+            location: alert.event_country || alert.source.country,
+            source: alert.source.authority_name,
+            url: alert.canonical_url,
+          }))
+      : [];
+
     let dynamicStatsMetrics: Array<{ label: string; value: string }> | undefined;
+    let dynamicTopCountries = merged.topCountries;
     if (activeDynamicConflict) {
       const stats = conflictStats.find((item) => item.conflictId === activeDynamicConflict.conflictId);
       const scoped = conflictCountryFocus
@@ -120,16 +139,32 @@ export function AlertFeed({
           });
         }
       }
+      if (dynamicTopCountries.length === 0 && stats && Array.isArray(stats.countries)) {
+        dynamicTopCountries = stats.countries
+          .slice(0, 5)
+          .map((country) => ({
+            code: (country.iso2 || country.gwno || "XX").toUpperCase(),
+            label: country.label || country.iso2 || country.gwno,
+            count: Math.max(0, Math.trunc(country.fatalitiesLatest || country.fatalitiesTotal || 0)),
+          }));
+      }
     }
 
     if (activeDynamicConflict && merged.alerts.length === 0) {
       const parties = [activeDynamicConflict.sideA, activeDynamicConflict.sideB]
         .filter((value) => (value ?? "").trim().length > 0)
         .join(" vs ");
+      const actors = [activeDynamicConflict.sideA, activeDynamicConflict.sideB]
+        .filter((value): value is string => (value ?? "").trim().length > 0);
       return {
         ...merged,
         sourceLabel: "UCDP current conflict index",
         sourceURL: activeDynamicConflict.sourceUrl ?? merged.sourceURL,
+        actors: merged.actors.length > 0 ? merged.actors : actors,
+        violenceTypes: merged.violenceTypes.length > 0 ? merged.violenceTypes : [activeDynamicConflict.typeOfConflict ?? "Conflict"],
+        topCountries: dynamicTopCountries,
+        topSources: merged.topSources.length > 0 ? merged.topSources : [{ id: "ucdp", label: "UCDP", count: 1 }],
+        recentEvents: merged.recentEvents && merged.recentEvents.length > 0 ? merged.recentEvents : dynamicFallbackEvents,
         metrics: dynamicStatsMetrics ?? [
           { label: "Year", value: String(activeDynamicConflict.year) },
           { label: "Intensity", value: String(activeDynamicConflict.intensityLevel) },
@@ -143,6 +178,10 @@ export function AlertFeed({
         ...merged,
         sourceLabel: "UCDP current conflict index",
         sourceURL: activeDynamicConflict.sourceUrl ?? merged.sourceURL,
+        topCountries: dynamicTopCountries,
+        actors: merged.actors.length > 0 ? merged.actors : [activeDynamicConflict.sideA, activeDynamicConflict.sideB].filter((value): value is string => (value ?? "").trim().length > 0),
+        violenceTypes: merged.violenceTypes.length > 0 ? merged.violenceTypes : [activeDynamicConflict.typeOfConflict ?? "Conflict"],
+        recentEvents: merged.recentEvents && merged.recentEvents.length > 0 ? merged.recentEvents : dynamicFallbackEvents,
         metrics: dynamicStatsMetrics,
       };
     }
