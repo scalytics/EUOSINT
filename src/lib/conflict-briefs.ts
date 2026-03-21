@@ -65,6 +65,17 @@ function formatTrend(recent: number, prior: number): string {
   return `${delta > 0 ? "up" : "down"} ${Math.abs(Math.round(delta))}%`;
 }
 
+function upsertMetric(metrics: BriefMetric[], label: string, value: string): BriefMetric[] {
+  const next = [...metrics];
+  const index = next.findIndex((metric) => metric.label === label);
+  if (index >= 0) {
+    next[index] = { ...next[index], value };
+    return next;
+  }
+  next.push({ label, value });
+  return next;
+}
+
 function deriveHotspots(alerts: Alert[], lens: ConflictLens): ZoneBriefingHotspot[] {
   if (alerts.length === 0) return [];
   const latStep = Math.max(0.8, (lens.bounds.north - lens.bounds.south) / 4);
@@ -160,6 +171,7 @@ export function buildConflictBrief(alerts: Alert[], lens: ConflictLens | null): 
     countryLabels: [],
     metrics: [
       { label: "Volume", value: String(lensAlerts.length) },
+      { label: "Total deaths", value: "0" },
       { label: "Critical", value: String(critical) },
       { label: "High", value: String(high) },
       { label: "Freshest", value: freshness },
@@ -199,12 +211,28 @@ export function mergeZoneBriefing(
 ): ConflictBrief | null {
   if (!brief) return null;
   if (!override) return brief;
+  let mergedMetrics = brief.metrics;
+  if (override.metrics) {
+    if (typeof override.metrics.events30d === "number") {
+      mergedMetrics = upsertMetric(mergedMetrics, "Volume", String(override.metrics.events30d));
+    }
+    if (typeof override.metrics.fatalitiesTotal === "number") {
+      mergedMetrics = upsertMetric(mergedMetrics, "Total deaths", String(override.metrics.fatalitiesTotal));
+    }
+    if (typeof override.metrics.events7d === "number") {
+      mergedMetrics = upsertMetric(mergedMetrics, "7d", String(override.metrics.events7d));
+    }
+    if (typeof override.metrics.trend7d === "string" && override.metrics.trend7d.trim() !== "") {
+      mergedMetrics = upsertMetric(mergedMetrics, "Trend", override.metrics.trend7d);
+    }
+  }
   return {
     ...brief,
     sourceLabel: override.source || brief.sourceLabel,
     sourceURL: override.sourceUrl ?? brief.sourceURL,
     coverageNote: override.coverageNote ?? brief.coverageNote,
     asOf: override.updatedAt ?? brief.asOf,
+    metrics: mergedMetrics,
     countryIDs: override.countryIds && override.countryIds.length > 0 ? override.countryIds : brief.countryIDs,
     countryLabels: override.countryLabels && override.countryLabels.length > 0 ? override.countryLabels : brief.countryLabels,
     actors: override.actors && override.actors.length > 0 ? override.actors : brief.actors,

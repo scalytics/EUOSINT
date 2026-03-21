@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ZoneBriefingRecord, ZoneBriefingHotspot, ZoneBriefingConflict, ZoneBriefingACLED } from "@/types/zone-briefing";
+import type { ZoneBriefingRecord, ZoneBriefingHotspot, ZoneBriefingConflict, ZoneBriefingACLED, ZoneBriefingMetrics } from "@/types/zone-briefing";
 
 const ZONE_BRIEFINGS_URL = `${import.meta.env.BASE_URL}zone-briefings.json`;
 const ZONE_BRIEFINGS_REFRESH_MS = 10000;
@@ -31,6 +31,19 @@ function mapACLED(raw: Record<string, unknown>): ZoneBriefingACLED {
   };
 }
 
+function mapMetrics(raw: Record<string, unknown>): ZoneBriefingMetrics {
+  return {
+    events7d: (raw.events_7d as number) ?? (raw.events7d as number) ?? 0,
+    events30d: (raw.events_30d as number) ?? (raw.events30d as number) ?? 0,
+    fatalitiesBest7d: (raw.fatalities_best_7d as number) ?? (raw.fatalitiesBest7d as number) ?? 0,
+    fatalitiesBest30d: (raw.fatalities_best_30d as number) ?? (raw.fatalitiesBest30d as number) ?? 0,
+    fatalitiesTotal: (raw.fatalities_total as number) ?? (raw.fatalitiesTotal as number) ?? 0,
+    civilianDeaths30d: (raw.civilian_deaths_30d as number) ?? (raw.civilianDeaths30d as number) ?? 0,
+    trend7d: (raw.trend_7d as string) ?? (raw.trend7d as string),
+    trend30d: (raw.trend_30d as string) ?? (raw.trend30d as string),
+  };
+}
+
 function mapRecord(raw: Record<string, unknown>): ZoneBriefingRecord {
   const hotspots = Array.isArray(raw.hotspots)
     ? (raw.hotspots as Record<string, unknown>[]).map(mapHotspot)
@@ -40,13 +53,17 @@ function mapRecord(raw: Record<string, unknown>): ZoneBriefingRecord {
     : undefined;
   const acledRaw = (raw.acled_recency ?? raw.acledRecency) as Record<string, unknown> | undefined;
   const acledRecency = acledRaw && typeof acledRaw === "object" ? mapACLED(acledRaw) : undefined;
+  const metricsRaw = (raw.metrics as Record<string, unknown> | undefined);
+  const metrics = metricsRaw && typeof metricsRaw === "object" ? mapMetrics(metricsRaw) : undefined;
   return {
     lensId: (raw.lens_id as string) ?? (raw.lensId as string) ?? "",
     source: (raw.source as string) ?? "",
     sourceUrl: (raw.source_url as string) ?? (raw.sourceUrl as string),
     status: (raw.status as string),
     updatedAt: (raw.updated_at as string) ?? (raw.updatedAt as string),
+    conflictStartDate: (raw.conflict_start_date as string) ?? (raw.conflictStartDate as string),
     coverageNote: (raw.coverage_note as string) ?? (raw.coverageNote as string),
+    metrics,
     countryIds: (raw.country_ids as string[]) ?? (raw.countryIds as string[]),
     countryLabels: (raw.country_labels as string[]) ?? (raw.countryLabels as string[]),
     actors: (raw.actors as string[]),
