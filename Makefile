@@ -12,6 +12,7 @@ CODEQL_RAM_MB ?= 4096
 DOCKER_IMAGE ?= euosint
 IMAGE_TAG ?= local
 BUILDER ?= colima
+DOCKER_ARCH ?= $(shell docker info --format '{{.Architecture}}' 2>/dev/null | sed 's/aarch64/arm64/' | sed 's/x86_64/amd64/')
 DOCKER_COMPOSE ?= $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo "docker compose"; fi)
 CODEQL_DIR ?= .tmp/codeql
 CODEQL_JS_DB ?= $(CODEQL_DIR)/js-db
@@ -131,31 +132,46 @@ docker-logs: ## Tail Docker logs
 docker-shell: ## Open a shell in the running container
 	$(DOCKER_COMPOSE) exec euosint sh
 
-dev-start: ## Start the local HTTP dev stack on localhost
-	$(DOCKER_COMPOSE) up --build -d
+registry/cities500.txt: ## Download geonames data (one-time)
+	curl -sL https://download.geonames.org/export/dump/cities500.zip -o /tmp/cities500.zip
+	unzip -o /tmp/cities500.zip -d registry/
+	rm /tmp/cities500.zip
+
+dev-collector-bin: ## Compile collector binary natively for Docker target arch
+	@mkdir -p .tmp
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(DOCKER_ARCH) go build -o .tmp/euosint-collector ./cmd/euosint-collector
+
+dev-start: registry/cities500.txt dev-collector-bin ## Start the local HTTP dev stack on localhost
+	docker build -f Dockerfile.collector.dev -t euosint-collector:dev .
+	$(DOCKER_COMPOSE) build euosint
+	EUOSINT_COLLECTOR_IMAGE=euosint-collector:dev $(DOCKER_COMPOSE) up -d --no-build
 	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 
-dev-stop: ## Stop the local dev stack and remove feed-data volume
+dev-stop: ## Stop the local dev stack, remove volumes, prune dangling images
 	$(DOCKER_COMPOSE) down --remove-orphans -v
+	@docker image prune -f >/dev/null 2>&1 || true
 
 dev-stop-clean: ## Stop stack, remove feed-data volume, and aggressively prune Docker cache
 	$(DOCKER_COMPOSE) down --remove-orphans -v
 	@docker image prune -af >/dev/null 2>&1 || true
 	@docker builder prune -af >/dev/null 2>&1 || true
 
-dev-restart: ## Restart the local dev stack (removes volumes, uses normal build cache)
+dev-restart: registry/cities500.txt dev-collector-bin ## Restart the local dev stack (removes volumes, rebuilds)
 	$(DOCKER_COMPOSE) down --remove-orphans -v
-	$(DOCKER_COMPOSE) up --build -d
+	docker build -f Dockerfile.collector.dev -t euosint-collector:dev .
+	$(DOCKER_COMPOSE) build euosint
+	EUOSINT_COLLECTOR_IMAGE=euosint-collector:dev $(DOCKER_COMPOSE) up -d --no-build
 	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 
-dev-restart-clean: ## Restart from scratch (removes volumes, prunes caches, rebuilds no-cache)
+dev-restart-clean: registry/cities500.txt dev-collector-bin ## Restart from scratch (removes volumes, prunes caches)
 	$(DOCKER_COMPOSE) down --remove-orphans -v
 	@docker image prune -af >/dev/null 2>&1 || true
 	@docker builder prune -af >/dev/null 2>&1 || true
-	$(DOCKER_COMPOSE) build --no-cache collector euosint
-	$(DOCKER_COMPOSE) up -d
+	docker build --no-cache -f Dockerfile.collector.dev -t euosint-collector:dev .
+	$(DOCKER_COMPOSE) build --no-cache euosint
+	EUOSINT_COLLECTOR_IMAGE=euosint-collector:dev $(DOCKER_COMPOSE) up -d --no-build
 	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 

@@ -1,0 +1,16 @@
+# Dev-only: expects pre-built binary at .tmp/euosint-collector
+# and registry/cities500.txt (download once via make dev-geonames).
+
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /app
+
+COPY .tmp/euosint-collector /usr/local/bin/euosint-collector
+COPY registry ./registry
+COPY docker/collector-entrypoint.sh /usr/local/bin/collector-entrypoint.sh
+
+RUN chmod +x /usr/local/bin/collector-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/collector-entrypoint.sh"]

@@ -1,7 +1,7 @@
 services:
   browser:
     container_name: euosint-browser
-    image: "${EUOSINT_BROWSER_IMAGE:-ghcr.io/scalytics/euosint-browser:v2.44.0}"
+    image: "${EUOSINT_BROWSER_IMAGE:-ghcr.io/browserless/chromium:v2.44.0}"
     environment:
       PREBOOT_CHROME: "true"
       MAX_CONCURRENT_SESSIONS: "${BROWSER_MAX_CONCURRENCY:-4}"
@@ -9,7 +9,7 @@ services:
       HEALTH: "true"
       EXIT_ON_HEALTH_FAILURE: "true"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/json/version || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -42,6 +42,8 @@ services:
       - /data/alerts-state.json
       - --source-health-output
       - /data/source-health.json
+      - --zone-briefings-output
+      - /data/zone-briefings.json
       - --candidate-queue
       - /data/source_candidates.json
       - --replacement-queue
