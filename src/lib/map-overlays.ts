@@ -17,11 +17,13 @@ type GeoJSONFeatureItem = { geometry?: { type?: string; coordinates?: unknown };
 export interface OverlayLoadOptions {
   regionFilter?: string;
   conflictLensId?: string | null;
+  onConflictCountrySelect?: (countryCode: string, countryLabel: string) => void;
 }
 
 const OVERLAY_FALLBACK_URLS: Record<string, string> = {
   conflicts: "/geo/conflict-zones.seed.geojson",
   terrorism: "/geo/terrorism-zones.seed.geojson",
+  bases: "/geo/military-bases.geojson",
 };
 
 const LENS_REGION_FILTERS: Record<string, string> = {
@@ -41,8 +43,20 @@ const BASES_REGION_URLS: Record<string, string> = {
   all: "/geo/military-bases.all.geojson",
 };
 
+function normalizeOverlayRegion(regionFilter: string): string {
+  if (BASES_REGION_URLS[regionFilter]) return regionFilter;
+  const value = regionFilter.trim().toLowerCase();
+  if (value.includes("europe")) return "Europe";
+  if (value.includes("africa")) return "Africa";
+  if (value.includes("asia") || value.includes("middle east")) return "Asia";
+  if (value.includes("north america") || value.includes("caribbean")) return "North America";
+  if (value.includes("south america") || value.includes("latin america")) return "all";
+  if (value.includes("oceania")) return "all";
+  return "all";
+}
+
 export const DEFAULT_OVERLAYS: OverlayDef[] = [
-  { id: "conflicts", label: "Conflict Zones", color: "#ff5d5d", url: "/geo/conflict-footprints.geojson" },
+  { id: "conflicts", label: "Conflict Zones", color: "#ff5d5d", url: "/geo/conflict-zones.geojson" },
   { id: "cables", label: "Undersea Cables", color: "#60a5fa", url: "/geo/submarine-cables.geojson" },
   { id: "shipping", label: "Shipping Lanes", color: "#4ccb8d", url: "/geo/shipping-lanes.geojson" },
   { id: "ports", label: "Strategic Ports", color: "#f29d4b", url: "/geo/strategic-ports.geojson" },
@@ -91,7 +105,7 @@ export async function loadOverlayDefs(): Promise<OverlayDef[]> {
         id: o.id.trim(),
         label: (o.label ?? o.id).trim(),
         color: (o.color ?? "#94a3b8").trim(),
-        url: o.id.trim() === "conflicts" ? "/geo/conflict-footprints.geojson" : o.url.trim(),
+        url: o.id.trim() === "conflicts" ? "/geo/conflict-zones.geojson" : o.url.trim(),
       }))
       .filter((o) => o.id !== "" && o.url !== "");
     return normalized.length > 0 ? normalized : DEFAULT_OVERLAYS;
@@ -205,21 +219,20 @@ export async function loadOverlay(
   options: OverlayLoadOptions = {},
 ): Promise<L.LayerGroup> {
   const regionFilter = options.regionFilter ?? "all";
+  const normalizedRegion = normalizeOverlayRegion(regionFilter);
   const conflictLensId = (options.conflictLensId ?? "").trim();
+  const onConflictCountrySelect = options.onConflictCountrySelect;
   let url = def.id === "bases"
-    ? (BASES_REGION_URLS[regionFilter] ?? BASES_REGION_URLS.all)
+    ? (BASES_REGION_URLS[normalizedRegion] ?? BASES_REGION_URLS.all)
     : def.url;
   if (conflictLensId !== "") {
     if (def.id === "conflicts") {
-      url = `/geo/conflict-footprints.${conflictLensId}.geojson`;
+      url = `/geo/conflict-zones.${conflictLensId}.geojson`;
     } else if (def.id === "terrorism") {
       url = `/geo/terrorism-zones.${conflictLensId}.geojson`;
     }
   }
   let geojson = await fetchGeoJSON(url);
-  if (def.id === "conflicts" && conflictLensId !== "" && !hasGeoJSONFeatures(geojson)) {
-    geojson = (await fetchGeoJSON(`/geo/conflict-zones.${conflictLensId}.geojson`)) ?? geojson;
-  }
   if (!geojson) {
     const fallbackURL = OVERLAY_FALLBACK_URLS[def.id];
     geojson = fallbackURL ? await fetchGeoJSON(fallbackURL) : null;
@@ -248,10 +261,17 @@ export async function loadOverlay(
       onEachFeature: (feature, layer) => {
         const p = feature.properties;
         const role = p.country_role === "context" ? "involved country" : "primary conflict country";
+        const countryCode = pickString(p, "country_code", "countryCode", "ISO_A2", "iso2").toUpperCase();
+        const countryLabel = pickString(p, "country_label", "country_label", "name", "NAME", "ADMIN", "country");
         layer.bindTooltip(
           `<strong>${p.name}</strong><br/>${p.type?.replace(/_/g, " ")} since ${p.since}<br/>${role}`,
           { className: "siem-tooltip", direction: "top" },
         );
+        if (onConflictCountrySelect && countryCode) {
+          layer.on("click", () => {
+            onConflictCountrySelect(countryCode, countryLabel || countryCode);
+          });
+        }
       },
     }).addTo(group);
   } else if (def.id === "ports") {

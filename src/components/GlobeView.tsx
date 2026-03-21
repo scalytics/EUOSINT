@@ -14,9 +14,11 @@ import { alertMatchesRegionFilter } from "@/lib/regions";
 import { severityHex, textHex } from "@/lib/theme";
 import { loadOverlayDefs, loadOverlay, type OverlayDef, type OverlayId } from "@/lib/map-overlays";
 import { detectSpikes } from "@/lib/activity-spikes";
-import { getConflictLensById } from "@/lib/conflict-lenses";
+import { getConflictLensById, type ConflictLens } from "@/lib/conflict-lenses";
 import { buildConflictBrief, mergeZoneBriefing } from "@/lib/conflict-briefs";
 import { useZoneBriefings } from "@/hooks/useZoneBriefings";
+import { useCurrentConflicts } from "@/hooks/useCurrentConflicts";
+import type { ConflictCountryFocus } from "@/types/current-conflicts";
 
 /* ── Region viewports ─────────────────────────────────────────────── */
 
@@ -46,6 +48,31 @@ function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function collectGeometryLatLng(geometry: { type?: string; coordinates?: unknown } | undefined, out: L.LatLng[]): void {
+  if (!geometry || !geometry.type) return;
+  const walk = (value: unknown) => {
+    if (!Array.isArray(value)) return;
+    if (value.length >= 2 && typeof value[0] === "number" && typeof value[1] === "number") {
+      out.push(L.latLng(value[1], value[0]));
+      return;
+    }
+    value.forEach(walk);
+  };
+  walk(geometry.coordinates);
+}
+
+function boundsFromGeoJSON(geojson: unknown): L.LatLngBounds | null {
+  if (!geojson || typeof geojson !== "object") return null;
+  const features = (geojson as { features?: Array<{ geometry?: { type?: string; coordinates?: unknown } }> }).features;
+  if (!Array.isArray(features) || features.length === 0) return null;
+  const points: L.LatLng[] = [];
+  for (const feature of features) {
+    collectGeometryLatLng(feature.geometry, points);
+  }
+  if (points.length === 0) return null;
+  return L.latLngBounds(points);
 }
 
 function dominantCountryLabel(alerts: Alert[]): string {
@@ -94,6 +121,7 @@ interface Props {
   regionFilter: string;
   onRegionChange: (region: string) => void;
   conflictLensId: string | null;
+  onConflictCountryFocusChange?: (focus: ConflictCountryFocus | null) => void;
   visibleNowAlertIds: string[];
   visibleHistoryAlertIds: string[];
   onSelectSourceIdsChange?: (sourceIds: string[]) => void;
@@ -110,6 +138,7 @@ export function GlobeView({
   regionFilter,
   onRegionChange,
   conflictLensId,
+  onConflictCountryFocusChange,
   onSelectSourceIdsChange,
   selectedSourceIds = [],
   visibleNowAlertIds,
@@ -142,6 +171,7 @@ export function GlobeView({
   );
   const isLargeCountryScope = countryFilterCode !== "" && LARGE_COUNTRY_CODES.has(countryFilterCode);
   const { briefings: zoneBriefings } = useZoneBriefings();
+  const { conflicts: currentConflicts } = useCurrentConflicts();
 
   useEffect(() => {
     if (!regionFilter.startsWith("country:")) {
@@ -202,39 +232,48 @@ export function GlobeView({
   }, [activeOverlays]);
 
   useEffect(() => {
-    const previousLens = getConflictLensById(lastConflictLensRef.current);
+    const previousLensID = lastConflictLensRef.current;
+    const previousLens = getConflictLensById(previousLensID);
     const nextLens = getConflictLensById(conflictLensId);
+    const hadAnyLens = !!previousLensID;
+    const hasAnyLens = !!conflictLensId;
     lastConflictLensRef.current = conflictLensId;
-    const lensDefaults: OverlayId[] = ["bases"];
+    const lensDefaults: OverlayId[] = ["conflicts", "bases"];
 
     setActiveOverlays((prev) => {
-      if (!previousLens && nextLens) {
+      if (!hadAnyLens && hasAnyLens) {
         preLensOverlaysRef.current = new Set(prev);
       }
-      if (previousLens && !nextLens && preLensOverlaysRef.current) {
+      if (hadAnyLens && !hasAnyLens && preLensOverlaysRef.current) {
         const restored = new Set(preLensOverlaysRef.current);
         preLensOverlaysRef.current = null;
         return restored;
       }
 
       const next = new Set(prev);
+      if (hadAnyLens) {
+        for (const overlay of lensDefaults) {
+          next.delete(overlay);
+        }
+      }
       if (previousLens) {
         for (const overlay of previousLens.overlays) {
           next.delete(overlay);
         }
+      }
+      if (hasAnyLens) {
         for (const overlay of lensDefaults) {
-          next.delete(overlay);
+          next.add(overlay);
         }
       }
       if (nextLens) {
         for (const overlay of nextLens.overlays) {
           next.add(overlay);
         }
-        for (const overlay of lensDefaults) {
-          next.add(overlay);
-        }
       } else {
-        preLensOverlaysRef.current = null;
+        if (!hasAnyLens) {
+          preLensOverlaysRef.current = null;
+        }
       }
       return next;
     });
@@ -284,7 +323,13 @@ export function GlobeView({
       const def = overlayDefs.find((o) => o.id === id);
       if (!def) continue;
       const token = nextOverlayToken(id);
-      loadOverlay(map, def, { regionFilter, conflictLensId }).then((layer) => {
+      loadOverlay(map, def, {
+        regionFilter,
+        conflictLensId,
+        onConflictCountrySelect: (countryCode, countryLabel) => {
+          onConflictCountryFocusChange?.({ code: countryCode, label: countryLabel });
+        },
+      }).then((layer) => {
         const isLatest = overlayLoadTokens.current.get(id) === token;
         const stillActive = activeOverlaysRef.current.has(id);
         if (!isLatest || !stillActive || !mapRef.current) {
@@ -298,7 +343,7 @@ export function GlobeView({
         overlayLayers.current.set(id, layer);
       });
     }
-  }, [activeOverlays, conflictLensId, nextOverlayToken, overlayDefs, regionFilter]);
+  }, [activeOverlays, conflictLensId, nextOverlayToken, onConflictCountryFocusChange, overlayDefs, regionFilter]);
 
   const visibleNowIdSet = useMemo(() => new Set(visibleNowAlertIds), [visibleNowAlertIds]);
   const visibleHistoryIdSet = useMemo(() => new Set(visibleHistoryAlertIds), [visibleHistoryAlertIds]);
@@ -760,8 +805,24 @@ export function GlobeView({
   useEffect(() => {
     const lens = getConflictLensById(conflictLensId);
     const map = mapRef.current;
-    if (!lens || !map) return;
-    map.flyTo(lens.viewport.center, lens.viewport.zoom, { duration: 0.8 });
+    if (!map || !conflictLensId) return;
+    if (lens) {
+      map.flyTo(lens.viewport.center, lens.viewport.zoom, { duration: 0.8 });
+      return;
+    }
+    let cancelled = false;
+    fetch(`/geo/conflict-zones.${conflictLensId}.geojson?t=${Date.now()}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((geojson) => {
+        if (cancelled || !mapRef.current) return;
+        const bounds = boundsFromGeoJSON(geojson);
+        if (!bounds || !bounds.isValid()) return;
+        mapRef.current.flyToBounds(bounds, { duration: 0.8, maxZoom: 6, padding: [40, 40] });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
   }, [conflictLensId]);
 
   /* ── Stats for sidebar ────────────────────────────────────────── */
@@ -782,13 +843,34 @@ export function GlobeView({
 
   const activitySpikes = useMemo(() => detectSpikes([...alerts, ...historicalAlerts]), [alerts, historicalAlerts]);
   const activeConflictLens = useMemo(() => getConflictLensById(conflictLensId), [conflictLensId]);
+  const activeDynamicConflict = useMemo(
+    () => (conflictLensId ? currentConflicts.find((conflict) => conflict.lensIds.includes(conflictLensId)) ?? null : null),
+    [conflictLensId, currentConflicts],
+  );
+  const effectiveConflictLens = useMemo((): ConflictLens | null => {
+    if (activeConflictLens) return activeConflictLens;
+    if (!activeDynamicConflict || !conflictLensId) return null;
+    const countryCodes = (activeDynamicConflict.overlayCountryCodes ?? []).map((code) => code.toUpperCase());
+    const partyLine = [activeDynamicConflict.sideA, activeDynamicConflict.sideB].filter(Boolean).join(" vs ");
+    return {
+      id: conflictLensId,
+      label: activeDynamicConflict.title || "Conflict",
+      regionFilter: (activeDynamicConflict.region ?? "all").trim() || "all",
+      overlays: ["conflicts", "bases"],
+      description: partyLine || `${activeDynamicConflict.typeOfConflict ?? "Conflict"} · ${activeDynamicConflict.year}`,
+      countryCodes,
+      primaryCountryCodes: countryCodes,
+      bounds: { south: -90, west: -180, north: 90, east: 180 },
+      viewport: { center: [20, 0], zoom: 3 },
+    };
+  }, [activeConflictLens, activeDynamicConflict, conflictLensId]);
   const activeConflictBrief = useMemo(() => {
-    const derived = buildConflictBrief([...alerts, ...historicalAlerts], activeConflictLens);
+    const derived = buildConflictBrief([...alerts, ...historicalAlerts], effectiveConflictLens);
     const override = activeConflictLens
       ? zoneBriefings.find((briefing) => briefing.lensId === activeConflictLens.id)
       : null;
     return mergeZoneBriefing(derived, override);
-  }, [activeConflictLens, alerts, historicalAlerts, zoneBriefings]);
+  }, [activeConflictLens, alerts, effectiveConflictLens, historicalAlerts, zoneBriefings]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -801,7 +883,7 @@ export function GlobeView({
       }
     };
 
-    if (!activeConflictLens) {
+    if (!effectiveConflictLens) {
       removeLensOverlay();
       return;
     }
@@ -829,7 +911,7 @@ export function GlobeView({
     return () => {
       removeLensOverlay();
     };
-  }, [activeConflictBrief, activeConflictLens]);
+  }, [activeConflictBrief, effectiveConflictLens]);
 
   /* ── Render ───────────────────────────────────────────────────── */
 
@@ -839,11 +921,11 @@ export function GlobeView({
       <div className="z-10 flex items-start justify-between p-4">
         <div className="rounded-2xl border border-siem-border bg-siem-panel px-4 py-3">
           <div className="text-xxs uppercase tracking-[0.18em] text-siem-muted">
-            {activeConflictLens ? "Conflict lens" : "Theatre"}
+            {effectiveConflictLens ? "Conflict lens" : "Theatre"}
           </div>
           <div className="mt-1 text-lg font-semibold text-siem-text">
-            {activeConflictLens
-              ? `${activeConflictLens.label} lens`
+            {effectiveConflictLens
+              ? `${effectiveConflictLens.label} lens`
               : regionFilter === "all"
                 ? "Global operating picture"
                 : regionFilter.startsWith("country:")
@@ -851,11 +933,11 @@ export function GlobeView({
                   : `${regionFilter} operating picture`}
           </div>
           <div className="mt-1 text-sm text-siem-muted">
-            {activeConflictLens
-              ? activeConflictLens.description
+            {effectiveConflictLens
+              ? effectiveConflictLens.description
               : `${visibleNowAlerts.length + visibleHistoryAlertsRendered.length} visible alerts across official feeds`}
           </div>
-          {activeConflictLens && (
+          {effectiveConflictLens && (
             <div className="mt-2 text-2xs uppercase tracking-[0.14em] text-siem-muted">
               {visibleNowAlerts.length + visibleHistoryAlertsRendered.length} visible alerts in current lens
             </div>

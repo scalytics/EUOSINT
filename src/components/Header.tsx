@@ -8,8 +8,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Globe2, Radar, Search, Shield, X } from "lucide-react";
 import type { Alert } from "@/types/alert";
 import { alertMatchesRegionFilter } from "@/lib/regions";
-import { CONFLICT_LENSES } from "@/lib/conflict-lenses";
-import { useZoneBriefings } from "@/hooks/useZoneBriefings";
 import { useCurrentConflicts } from "@/hooks/useCurrentConflicts";
 
 type MenuView = "overview" | "feeds" | "sources" | "health";
@@ -523,8 +521,31 @@ function ConflictLensSearch({
   const [query, setQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { briefings } = useZoneBriefings();
   const { conflicts: currentConflicts } = useCurrentConflicts();
+
+  const clusterLabel = (conflict: {
+    title: string;
+    sideA?: string;
+    sideB?: string;
+    overlayCountryCodes?: string[];
+    region?: string;
+  }): string => {
+    const codes = new Set((conflict.overlayCountryCodes ?? []).map((code) => code.toUpperCase()));
+    const text = `${conflict.title} ${conflict.sideA ?? ""} ${conflict.sideB ?? ""}`.toLowerCase();
+    if (codes.has("IL") || codes.has("PS") || codes.has("LB") || text.includes("gaza") || text.includes("israel")) {
+      return "Israel / Gaza";
+    }
+    if (codes.has("UA") || codes.has("RU") || text.includes("ukraine") || text.includes("russia")) {
+      return "Ukraine";
+    }
+    if (codes.has("CD") || text.includes("congo")) {
+      return "DRC";
+    }
+    if (codes.has("SD") || codes.has("SS") || text.includes("sudan")) {
+      return "Sudan";
+    }
+    return (conflict.region ?? "Other").trim() || "Other";
+  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -536,56 +557,60 @@ function ConflictLensSearch({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const availableLenses = useMemo(() => {
-    const currentConflictBriefings = briefings.filter((briefing) => {
-      const status = (briefing.status ?? "").toLowerCase();
-      const hasActiveConflicts = (briefing.activeConflicts?.length ?? 0) > 0;
-      const hasRecentACLED = (briefing.acledRecency?.events7d ?? 0) > 0;
-      return hasActiveConflicts || hasRecentACLED || status === "active" || status === "watch";
-    });
-    const activeIDs = new Set(currentConflictBriefings.map((briefing) => briefing.lensId));
-    return CONFLICT_LENSES.filter((lens) => activeIDs.has(lens.id));
-  }, [briefings]);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const lensRows = availableLenses
-      .filter((lens) => {
-        if (!q) return true;
-        return `${lens.label} ${lens.description} ${lens.regionFilter}`.toLowerCase().includes(q);
-      })
-      .map((lens) => ({
-        key: `lens:${lens.id}`,
-        label: lens.label,
-        description: lens.description,
-        lensId: lens.id,
-        sourceUrl: "",
-        kind: "lens" as const,
-      }));
-
+    const titleCounts = new Map<string, number>();
+    for (const conflict of currentConflicts) {
+      const key = (conflict.title || "").trim().toLowerCase();
+      if (!key) continue;
+      titleCounts.set(key, (titleCounts.get(key) ?? 0) + 1);
+    }
     const dynamicRows = currentConflicts
-      .filter((conflict) => conflict.lensIds.length > 0)
       .filter((conflict) => {
         if (!q) return true;
         return `${conflict.title} ${conflict.sideA ?? ""} ${conflict.sideB ?? ""} ${conflict.typeOfConflict ?? ""}`.toLowerCase().includes(q);
       })
       .slice(0, q ? 50 : 20)
-      .map((conflict) => ({
-        key: `conflict:${conflict.conflictId}`,
-        label: conflict.title,
-        description: `${conflict.typeOfConflict ?? "Conflict"} · ${conflict.year}`,
-        lensId: conflict.lensIds[0],
-        sourceUrl: conflict.sourceUrl ?? "",
-        kind: "conflict" as const,
-      }));
+      .map((conflict) => {
+        const parties = [conflict.sideA, conflict.sideB].filter((value) => (value ?? "").trim().length > 0).join(" vs ");
+        const titleKey = (conflict.title || "").trim().toLowerCase();
+        const duplicateTitle = (titleCounts.get(titleKey) ?? 0) > 1;
+        return {
+          key: `conflict:${conflict.conflictId}`,
+          label: duplicateTitle && parties ? `${conflict.title} (${parties})` : conflict.title,
+          description: `${conflict.typeOfConflict ?? "Conflict"} · ${conflict.year}`,
+          parties,
+          lensId: conflict.lensIds[0] ?? "",
+          sourceUrl: conflict.sourceUrl ?? "",
+          hasMapProfile: (conflict.overlayCountryCodes ?? []).length > 0,
+          cluster: clusterLabel(conflict),
+          kind: "conflict" as const,
+        };
+      });
 
-    return [...lensRows, ...dynamicRows];
-  }, [availableLenses, currentConflicts, query]);
+    return dynamicRows;
+  }, [currentConflicts, query]);
+
+  const grouped = useMemo(() => {
+    const groups = new Map<string, typeof filtered>();
+    for (const row of filtered) {
+      const key = row.cluster || "Other";
+      const bucket = groups.get(key);
+      if (bucket) {
+        bucket.push(row);
+      } else {
+        groups.set(key, [row]);
+      }
+    }
+    return [...groups.entries()];
+  }, [filtered]);
 
   const currentLabel = useMemo(() => {
-    const current = CONFLICT_LENSES.find((lens) => lens.id === conflictLensId);
-    return current?.label ?? "None";
-  }, [conflictLensId]);
+    if (!conflictLensId) return "None";
+    const current = currentConflicts.find((conflict) => conflict.lensIds.includes(conflictLensId));
+    if (current) return current.title;
+    return "Selected conflict";
+  }, [conflictLensId, currentConflicts]);
 
   return (
     <div ref={containerRef} className="relative">
@@ -664,29 +689,45 @@ function ConflictLensSearch({
             {filtered.length === 0 && (
               <div className="px-3 py-4 text-center text-xxs text-siem-muted">No matching zones</div>
             )}
-            {filtered.map((row) => (
-              <button
-                key={row.key}
-                type="button"
-                onClick={() => {
-                  onConflictLensChange(row.lensId);
-                  setOpen(false);
-                  setQuery("");
-                }}
-                className={`w-full rounded-lg px-3 py-2 text-left text-xs transition-colors ${
-                  conflictLensId === row.lensId
-                    ? "bg-siem-accent/14 text-siem-text"
-                    : "text-siem-text hover:bg-siem-accent/8"
-                }`}
-              >
-                <div className="truncate">{row.label}</div>
-                <div className="mt-0.5 text-2xs text-siem-muted">{row.description}</div>
-                {row.kind === "conflict" && row.sourceUrl && (
-                  <div className="mt-1 text-2xs uppercase tracking-[0.12em] text-siem-accent">
-                    UCDP current conflict
-                  </div>
-                )}
-              </button>
+            {grouped.map(([group, rows]) => (
+              <div key={group} className="mb-2">
+                <div className="px-2 py-1 text-2xs uppercase tracking-[0.12em] text-siem-muted">{group}</div>
+                {rows.map((row) => (
+                  <button
+                    key={row.key}
+                    type="button"
+                    onClick={() => {
+                      if (!row.lensId) return;
+                      onConflictLensChange(row.lensId);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                    className={`w-full rounded-lg px-3 py-2 text-left text-xs transition-colors ${
+                      conflictLensId === row.lensId
+                        ? "bg-siem-accent/14 text-siem-text"
+                        : row.lensId
+                          ? "text-siem-text hover:bg-siem-accent/8"
+                          : "text-siem-muted/80"
+                    }`}
+                  >
+                    <div className="truncate">{row.label}</div>
+                    <div className="mt-0.5 text-2xs text-siem-muted">{row.description}</div>
+                    {row.parties && (
+                      <div className="mt-1 text-2xs text-siem-muted line-clamp-2">{row.parties}</div>
+                    )}
+                    {row.kind === "conflict" && row.sourceUrl && (
+                      <div className="mt-1 text-2xs uppercase tracking-[0.12em] text-siem-accent">
+                        UCDP current conflict
+                      </div>
+                    )}
+                    {row.kind === "conflict" && !row.hasMapProfile && (
+                      <div className="mt-1 text-2xs uppercase tracking-[0.12em] text-siem-muted">
+                        No map profile yet
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         </div>

@@ -19,7 +19,11 @@ import { buildConflictBrief, mergeZoneBriefing } from "@/lib/conflict-briefs";
 import { getConflictLensById } from "@/lib/conflict-lenses";
 import { alertMatchesConflictLens } from "@/lib/conflict-lenses";
 import { useZoneBriefings } from "@/hooks/useZoneBriefings";
+import { useCurrentConflicts } from "@/hooks/useCurrentConflicts";
+import { useConflictStats } from "@/hooks/useConflictStats";
 import type { ZoneBriefingEvent } from "@/types/zone-briefing";
+import type { ConflictLens } from "@/lib/conflict-lenses";
+import type { ConflictCountryFocus } from "@/types/current-conflicts";
 import { Clock, Building2, ChevronDown, Globe } from "lucide-react";
 
 const LIVE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
@@ -33,6 +37,7 @@ interface Props {
   categoryFilter: AlertCategory | "all";
   regionFilter: string;
   conflictLensId: string | null;
+  conflictCountryFocus: ConflictCountryFocus | null;
   onRegionChange: (region: string) => void;
   onVisibleAlertIdsChange: (payload: {
     nowIds: string[];
@@ -49,6 +54,7 @@ export function AlertFeed({
   categoryFilter,
   regionFilter,
   conflictLensId,
+  conflictCountryFocus,
   onRegionChange,
   onVisibleAlertIdsChange,
 }: Props) {
@@ -61,15 +67,87 @@ export function AlertFeed({
   const refreshTimeoutRef = useRef<number | null>(null);
   const glowTimeoutsRef = useRef<number[]>([]);
   const activeConflictLens = useMemo(() => getConflictLensById(conflictLensId), [conflictLensId]);
+  const { conflicts: currentConflicts } = useCurrentConflicts();
+  const { stats: conflictStats } = useConflictStats();
+  const activeDynamicConflict = useMemo(
+    () => (conflictLensId ? currentConflicts.find((conflict) => conflict.lensIds.includes(conflictLensId)) ?? null : null),
+    [conflictLensId, currentConflicts],
+  );
+  const effectiveConflictLens = useMemo((): ConflictLens | null => {
+    if (activeConflictLens) return activeConflictLens;
+    if (!activeDynamicConflict || !conflictLensId) return null;
+    const countryCodes = (activeDynamicConflict.overlayCountryCodes ?? []).map((code) => code.toUpperCase());
+    const partyLine = [activeDynamicConflict.sideA, activeDynamicConflict.sideB].filter(Boolean).join(" vs ");
+    return {
+      id: conflictLensId,
+      label: activeDynamicConflict.title || "Conflict",
+      regionFilter: (activeDynamicConflict.region ?? "all").trim() || "all",
+      overlays: ["conflicts", "bases"],
+      description: partyLine || `${activeDynamicConflict.typeOfConflict ?? "Conflict"} · ${activeDynamicConflict.year}`,
+      countryCodes,
+      primaryCountryCodes: countryCodes,
+      bounds: { south: -90, west: -180, north: 90, east: 180 },
+      viewport: { center: [20, 0], zoom: 3 },
+    };
+  }, [activeConflictLens, activeDynamicConflict, conflictLensId]);
   const { briefings: zoneBriefings } = useZoneBriefings();
   const activeConflictBrief = useMemo(() => {
-    const derived = buildConflictBrief([...alerts, ...historicalAlerts], activeConflictLens);
+    const derived = buildConflictBrief([...alerts, ...historicalAlerts], effectiveConflictLens);
     const override = activeConflictLens
       ? zoneBriefings.find((briefing) => briefing.lensId === activeConflictLens.id)
       : null;
-    return mergeZoneBriefing(derived, override);
-  }, [activeConflictLens, alerts, historicalAlerts, zoneBriefings]);
-  const isConflictContextMode = activeConflictLens !== null;
+    const merged = mergeZoneBriefing(derived, override);
+    if (!merged) return null;
+
+    let dynamicStatsMetrics: Array<{ label: string; value: string }> | undefined;
+    if (activeDynamicConflict) {
+      const stats = conflictStats.find((item) => item.conflictId === activeDynamicConflict.conflictId);
+      const scoped = conflictCountryFocus
+        ? stats?.countries.find((country) => (country.iso2 ?? "").toUpperCase() === conflictCountryFocus.code.toUpperCase())
+        : null;
+      const totalDeaths = scoped ? scoped.fatalitiesTotal : (stats?.fatalitiesTotal ?? 0);
+      const latestYearDeaths = scoped ? scoped.fatalitiesLatest : (stats?.fatalitiesLatestYear ?? 0);
+      const latestYearLabel = scoped?.latestYear ?? stats?.fatalitiesLatestYearYear ?? 0;
+      if (totalDeaths > 0 || latestYearDeaths > 0) {
+        dynamicStatsMetrics = [{ label: "Total deaths", value: String(totalDeaths) }];
+        if (latestYearDeaths > 0) {
+          dynamicStatsMetrics.push({
+            label: "Deaths (latest yr)",
+            value: latestYearLabel > 0 ? `${latestYearDeaths} (${latestYearLabel})` : String(latestYearDeaths),
+          });
+        }
+      }
+    }
+
+    if (activeDynamicConflict && merged.alerts.length === 0) {
+      const parties = [activeDynamicConflict.sideA, activeDynamicConflict.sideB]
+        .filter((value) => (value ?? "").trim().length > 0)
+        .join(" vs ");
+      return {
+        ...merged,
+        sourceLabel: "UCDP current conflict index",
+        sourceURL: activeDynamicConflict.sourceUrl ?? merged.sourceURL,
+        metrics: dynamicStatsMetrics ?? [
+          { label: "Conflict ID", value: activeDynamicConflict.conflictId },
+          { label: "Year", value: String(activeDynamicConflict.year) },
+          { label: "Intensity", value: String(activeDynamicConflict.intensityLevel) },
+          { label: "Type", value: activeDynamicConflict.typeOfConflict ?? "Conflict" },
+          { label: "Countries", value: (activeDynamicConflict.overlayCountryCodes ?? []).join(", ") || "n/a" },
+          { label: "Parties", value: parties || "n/a" },
+        ],
+      };
+    }
+    if (activeDynamicConflict && dynamicStatsMetrics) {
+      return {
+        ...merged,
+        sourceLabel: "UCDP current conflict index",
+        sourceURL: activeDynamicConflict.sourceUrl ?? merged.sourceURL,
+        metrics: dynamicStatsMetrics,
+      };
+    }
+    return merged;
+  }, [activeConflictLens, activeDynamicConflict, alerts, conflictCountryFocus, conflictStats, effectiveConflictLens, historicalAlerts, zoneBriefings]);
+  const isConflictContextMode = effectiveConflictLens !== null;
 
   const regions = useMemo(() => {
     const set = new Map<string, number>();
@@ -175,9 +253,14 @@ export function AlertFeed({
   }, [nowAlerts, historyAlerts]);
 
   const contextAlerts = useMemo(() => {
-    if (!activeConflictLens) return [];
+    if (!effectiveConflictLens) return [];
     const combined = [...alerts, ...historicalAlerts]
-      .filter((alert) => alertMatchesConflictLens(alert, activeConflictLens))
+      .filter((alert) => alertMatchesConflictLens(alert, effectiveConflictLens))
+      .filter((alert) => {
+        if (!conflictCountryFocus) return true;
+        const code = (alert.event_country_code || alert.source.country_code || "").toUpperCase();
+        return code === conflictCountryFocus.code.toUpperCase();
+      })
       .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime());
     const deduped = new Map<string, Alert>();
     for (const alert of combined) {
@@ -186,7 +269,7 @@ export function AlertFeed({
       }
     }
     return [...deduped.values()].slice(0, 5);
-  }, [activeConflictLens, alerts, historicalAlerts]);
+  }, [alerts, conflictCountryFocus, effectiveConflictLens, historicalAlerts]);
 
   // History grouped by day.
   const historyGroups = useMemo(() => {
@@ -292,11 +375,11 @@ export function AlertFeed({
   }, [viewMode, visibleNowIds, visibleHistoryIds, onVisibleAlertIdsChange]);
 
   useEffect(() => {
-    if (!activeConflictLens) return;
+    if (!effectiveConflictLens) return;
     if (viewMode !== "briefing") {
       setViewMode("briefing");
     }
-  }, [activeConflictLens, viewMode]);
+  }, [effectiveConflictLens, viewMode]);
 
   const renderAlertCard = (alert: Alert, position: number) => {
     const isSelected = selectedId === alert.alert_id;
@@ -452,9 +535,9 @@ export function AlertFeed({
         {isConflictContextMode ? (
           <div className="rounded border border-sky-500/25 bg-sky-500/10 px-2 py-2 text-2xs">
             <div className="font-mono uppercase tracking-[0.16em] text-sky-200">
-              Context for {activeConflictLens.label}
+              Context for {conflictCountryFocus?.label || effectiveConflictLens?.label || "Conflict"}
             </div>
-            <div className="mt-1 text-siem-muted">{activeConflictLens.description}</div>
+            <div className="mt-1 text-siem-muted">{effectiveConflictLens?.description ?? ""}</div>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2">
@@ -567,7 +650,7 @@ export function AlertFeed({
               <div>
                 <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Actors / entities</div>
                 <div className="mt-1 flex flex-wrap gap-1.5">
-                  {activeConflictBrief.actors.map((item) => (
+                  {activeConflictBrief.actors.filter((item) => !/^XXX\d+$/i.test(item.trim())).map((item) => (
                     <span key={item} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
                       {item}
                     </span>

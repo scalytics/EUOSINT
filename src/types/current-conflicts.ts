@@ -8,6 +8,13 @@ export interface CurrentConflictRecord {
   gwnoLoc?: string;
   sideA?: string;
   sideB?: string;
+  region?: string;
   lensIds: string[];
+  overlayCountryCodes?: string[];
   sourceUrl?: string;
+}
+
+export interface ConflictCountryFocus {
+  code: string;
+  label: string;
 }

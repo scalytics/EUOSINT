@@ -10,6 +10,11 @@ import type {
 
 const ZONE_BRIEFINGS_URL = `${import.meta.env.BASE_URL}zone-briefings.json`;
 const ZONE_BRIEFINGS_REFRESH_MS = 10000;
+const ZONE_BRIEFINGS_URL_CANDIDATES = [
+  ZONE_BRIEFINGS_URL,
+  "/zone-briefings.json",
+  "zone-briefings.json",
+];
 
 function mapHotspot(raw: Record<string, unknown>): ZoneBriefingHotspot {
   return {
@@ -119,21 +124,21 @@ export function useZoneBriefings() {
       if (inflight) return;
       inflight = true;
       try {
-        const response = await fetch(`${ZONE_BRIEFINGS_URL}?t=${Date.now()}`, {
-          cache: "no-store",
-        });
-        if (response.ok) {
+        const stamp = Date.now();
+        for (const candidate of ZONE_BRIEFINGS_URL_CANDIDATES) {
+          const url = `${candidate}${candidate.includes("?") ? "&" : "?"}t=${stamp}`;
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) {
+            continue;
+          }
           const data = (await response.json()) as unknown;
           if (!cancelled) {
             setBriefings(normalizeZoneBriefings(data));
           }
-          inflight = false;
           return;
         }
       } catch {
-        if (!cancelled) {
-          setBriefings([]);
-        }
+        // Keep last known good briefings on transient fetch failures.
       } finally {
         inflight = false;
       }

@@ -14,6 +14,8 @@ import { useAlerts } from "@/hooks/useAlerts";
 import { useAlertState } from "@/hooks/useAlertState";
 import { useSearch } from "@/hooks/useSearch";
 import { useSourceHealth } from "@/hooks/useSourceHealth";
+import { useCurrentConflicts } from "@/hooks/useCurrentConflicts";
+import type { ConflictCountryFocus } from "@/types/current-conflicts";
 import { alertMatchesRegionFilter } from "@/lib/regions";
 import { alertMatchesConflictLens, getConflictLensById } from "@/lib/conflict-lenses";
 import type { AlertCategory } from "@/types/alert";
@@ -22,10 +24,31 @@ type SeverityFilter = "critical" | "high" | null;
 
 const SOURCE_SELECTION_COOKIE = "euosint_selected_sources";
 
-function isUCDPAlert(alert: { source_id: string; source: { authority_name: string } }): boolean {
-  const sourceID = (alert.source_id || "").trim().toLowerCase();
-  if (sourceID === "ucdp-ged") return true;
-  return (alert.source.authority_name || "").toLowerCase().includes("ucdp");
+function normalizeConflictRegion(raw: string): string {
+  const value = raw.trim().toLowerCase();
+  if (!value) return "";
+  // UCDP region codes in conflict tables:
+  // 1=Europe, 2=Middle East, 3=Asia, 4=Africa, 5=Americas
+  if (value === "1") return "Europe";
+  if (value === "2") return "Asia";
+  if (value === "3") return "Asia";
+  if (value === "4") return "Africa";
+  if (value === "5") return "North America";
+  if (value.includes(",")) {
+    const first = value.split(",")[0]?.trim() ?? "";
+    if (first === "1") return "Europe";
+    if (first === "2") return "Asia";
+    if (first === "3") return "Asia";
+    if (first === "4") return "Africa";
+    if (first === "5") return "North America";
+  }
+  if (value.includes("europe")) return "Europe";
+  if (value.includes("africa")) return "Africa";
+  if (value.includes("asia") || value.includes("middle east")) return "Asia";
+  if (value.includes("north america") || value.includes("caribbean")) return "North America";
+  if (value.includes("south america") || value.includes("latin america")) return "South America";
+  if (value.includes("oceania")) return "Oceania";
+  return "";
 }
 
 function readSelectedSources(): string[] {
@@ -56,12 +79,14 @@ export default function App() {
   const { alerts, isLoading, sourceCount } = useAlerts();
   const { alerts: stateAlerts } = useAlertState();
   const { sourceHealth, isLoading: isSourceHealthLoading } = useSourceHealth();
+  const { conflicts: currentConflicts } = useCurrentConflicts();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<AlertCategory | "all">("all");
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>(null);
   const [regionFilter, setRegionFilter] = useState<string>("Europe");
   const [conflictLensId, setConflictLensId] = useState<string | null>(null);
+  const [conflictCountryFocus, setConflictCountryFocus] = useState<ConflictCountryFocus | null>(null);
   const { query: searchQuery, setQuery: setSearchQuery, results: searchResults, isApiAvailable } = useSearch();
   const [visibleNowAlertIds, setVisibleNowAlertIds] = useState<string[]>([]);
   const [visibleHistoryAlertIds, setVisibleHistoryAlertIds] = useState<string[]>([]);
@@ -70,6 +95,10 @@ export default function App() {
   const preLensRegionRef = useRef<string | null>(null);
   const preLensSourcesRef = useRef<string[] | null>(null);
   const [utcTime, setUtcTime] = useState(() => new Date().toISOString().slice(0, 19).replace("T", " ") + "Z");
+  const activeDynamicConflict = useMemo(
+    () => (conflictLensId ? currentConflicts.find((conflict) => conflict.lensIds.includes(conflictLensId)) ?? null : null),
+    [conflictLensId, currentConflicts],
+  );
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -106,6 +135,7 @@ export default function App() {
     preLensSourcesRef.current = null;
     setRegionFilter(nextRegion);
     setConflictLensId(null);
+    setConflictCountryFocus(null);
     setSelectedSourceIds([]);
     setSelectedId(null);
   }, []);
@@ -118,10 +148,25 @@ export default function App() {
         preLensSourcesRef.current = [...selectedSourceIds];
       }
       setConflictLensId(nextLensId);
+      setConflictCountryFocus(null);
       setRegionFilter(lens.regionFilter);
+      setSelectedSourceIds([]);
+    } else if (nextLensId) {
+      if (!conflictLensId) {
+        preLensRegionRef.current = regionFilter;
+        preLensSourcesRef.current = [...selectedSourceIds];
+      }
+      setConflictLensId(nextLensId);
+      setConflictCountryFocus(null);
+      const selectedConflict = currentConflicts.find((conflict) => conflict.lensIds.includes(nextLensId));
+      const region = normalizeConflictRegion(selectedConflict?.region ?? "");
+      if (region) {
+        setRegionFilter(region);
+      }
       setSelectedSourceIds([]);
     } else {
       setConflictLensId(null);
+      setConflictCountryFocus(null);
       if (preLensRegionRef.current) {
         setRegionFilter(preLensRegionRef.current);
       }
@@ -132,11 +177,12 @@ export default function App() {
       preLensSourcesRef.current = null;
     }
     setSelectedId(null);
-  }, [conflictLensId, regionFilter, selectedSourceIds]);
+  }, [conflictLensId, currentConflicts, regionFilter, selectedSourceIds]);
 
   const regionScopedAlerts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     const activeLens = getConflictLensById(conflictLensId);
+    const dynamicCountryCodes = new Set((activeDynamicConflict?.overlayCountryCodes ?? []).map((code) => code.toUpperCase()));
 
     // When API search returned results, use those (already ranked by BM25).
     if (query && isApiAvailable && searchResults.length > 0) {
@@ -146,7 +192,11 @@ export default function App() {
       }
       if (activeLens) {
         filtered = filtered.filter((alert) => alertMatchesConflictLens(alert, activeLens));
-        filtered = filtered.filter((alert) => isUCDPAlert(alert));
+      } else if (conflictLensId && dynamicCountryCodes.size > 0) {
+        filtered = filtered.filter((alert) => {
+          const code = (alert.event_country_code || alert.source.country_code || "").toUpperCase();
+          return dynamicCountryCodes.has(code);
+        });
       }
       return filtered;
     }
@@ -158,7 +208,11 @@ export default function App() {
     }
     if (activeLens) {
       filtered = filtered.filter((alert) => alertMatchesConflictLens(alert, activeLens));
-      filtered = filtered.filter((alert) => isUCDPAlert(alert));
+    } else if (conflictLensId && dynamicCountryCodes.size > 0) {
+      filtered = filtered.filter((alert) => {
+        const code = (alert.event_country_code || alert.source.country_code || "").toUpperCase();
+        return dynamicCountryCodes.has(code);
+      });
     }
     if (query) {
       filtered = filtered.filter((alert) => {
@@ -177,7 +231,7 @@ export default function App() {
       });
     }
     return filtered;
-  }, [alerts, conflictLensId, regionFilter, searchQuery, searchResults, isApiAvailable]);
+  }, [activeDynamicConflict?.overlayCountryCodes, alerts, conflictLensId, regionFilter, searchQuery, searchResults, isApiAvailable]);
 
   const scopedAlerts = useMemo(() => {
     let filtered = regionScopedAlerts;
@@ -197,13 +251,18 @@ export default function App() {
   const stateRegionScopedAlerts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     const activeLens = getConflictLensById(conflictLensId);
+    const dynamicCountryCodes = new Set((activeDynamicConflict?.overlayCountryCodes ?? []).map((code) => code.toUpperCase()));
     let filtered = stateAlerts;
     if (regionFilter !== "all") {
       filtered = filtered.filter((alert) => alertMatchesRegionFilter(alert, regionFilter));
     }
     if (activeLens) {
       filtered = filtered.filter((alert) => alertMatchesConflictLens(alert, activeLens));
-      filtered = filtered.filter((alert) => isUCDPAlert(alert));
+    } else if (conflictLensId && dynamicCountryCodes.size > 0) {
+      filtered = filtered.filter((alert) => {
+        const code = (alert.event_country_code || alert.source.country_code || "").toUpperCase();
+        return dynamicCountryCodes.has(code);
+      });
     }
     if (query) {
       filtered = filtered.filter((alert) => {
@@ -222,7 +281,7 @@ export default function App() {
       });
     }
     return filtered;
-  }, [conflictLensId, regionFilter, searchQuery, stateAlerts]);
+  }, [activeDynamicConflict?.overlayCountryCodes, conflictLensId, regionFilter, searchQuery, stateAlerts]);
 
   const scopedStateAlerts = useMemo(() => {
     let filtered = stateRegionScopedAlerts;
@@ -332,6 +391,7 @@ export default function App() {
             regionFilter={regionFilter}
             onRegionChange={handleRegionChange}
             conflictLensId={conflictLensId}
+            onConflictCountryFocusChange={setConflictCountryFocus}
             visibleNowAlertIds={visibleNowAlertIds}
             visibleHistoryAlertIds={visibleHistoryAlertIds}
             onSelectSourceIdsChange={handleSourceSelectionChange}
@@ -355,6 +415,7 @@ export default function App() {
             categoryFilter={categoryFilter}
             regionFilter={regionFilter}
             conflictLensId={conflictLensId}
+            conflictCountryFocus={conflictCountryFocus}
             onRegionChange={handleRegionChange}
                 onVisibleAlertIdsChange={({ nowIds, historyIds }) => {
                   setVisibleNowAlertIds(nowIds);
