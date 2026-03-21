@@ -132,6 +132,7 @@ type Config struct {
 	UCDPAPIVersion                   string
 	ZoneBriefingRefreshHours         int
 	ZoneBriefingACLEDEnabled         bool
+	CollectorRole                    string
 }
 
 func Default() Config {
@@ -231,6 +232,7 @@ func Default() Config {
 		UCDPAPIVersion:                   "26.0.1",
 		ZoneBriefingRefreshHours:         24,
 		ZoneBriefingACLEDEnabled:         true,
+		CollectorRole:                    "all",
 		XFetchPauseMS:                    1250,
 	}
 }
@@ -340,6 +342,7 @@ func FromEnv() Config {
 	cfg.UCDPAPIVersion = envString("UCDP_API_VERSION", cfg.UCDPAPIVersion)
 	cfg.ZoneBriefingRefreshHours = envInt("ZONE_BRIEFING_REFRESH_HOURS", cfg.ZoneBriefingRefreshHours)
 	cfg.ZoneBriefingACLEDEnabled = envBool("ZONE_BRIEFING_ACLED_ENABLED", cfg.ZoneBriefingACLEDEnabled)
+	cfg.CollectorRole = strings.ToLower(strings.TrimSpace(envString("COLLECTOR_ROLE", cfg.CollectorRole)))
 	return cfg
 }
 

@@ -177,6 +177,40 @@ CREATE TABLE IF NOT EXISTS alerts (
   triage_json TEXT NOT NULL DEFAULT 'null'
 );
 
+CREATE TABLE IF NOT EXISTS staged_alert_roles (
+  role TEXT PRIMARY KEY,
+  alert_count INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS staged_alerts (
+  role TEXT NOT NULL,
+  alert_id TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  first_seen TEXT NOT NULL,
+  last_seen TEXT NOT NULL,
+  title TEXT NOT NULL,
+  canonical_url TEXT NOT NULL,
+  category TEXT NOT NULL,
+  subcategory TEXT NOT NULL DEFAULT '',
+  severity TEXT NOT NULL,
+  signal_lane TEXT NOT NULL DEFAULT 'intel',
+  region_tag TEXT NOT NULL,
+  lat REAL NOT NULL DEFAULT 0,
+  lng REAL NOT NULL DEFAULT 0,
+  event_country TEXT NOT NULL DEFAULT '',
+  event_country_code TEXT NOT NULL DEFAULT '',
+  event_geo_source TEXT NOT NULL DEFAULT '',
+  event_geo_confidence REAL NOT NULL DEFAULT 0,
+  freshness_hours INTEGER NOT NULL DEFAULT 0,
+  source_json TEXT NOT NULL,
+  reporting_json TEXT NOT NULL DEFAULT '{}',
+  triage_json TEXT NOT NULL DEFAULT 'null',
+  PRIMARY KEY (role, alert_id),
+  FOREIGN KEY (role) REFERENCES staged_alert_roles(role) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS noise_feedback (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   alert_id TEXT NOT NULL,
@@ -206,6 +240,7 @@ CREATE INDEX IF NOT EXISTS idx_source_term_overrides_source_id ON source_term_ov
 CREATE INDEX IF NOT EXISTS idx_agency_category_coverage_category ON agency_category_coverage(category);
 CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status);
 CREATE INDEX IF NOT EXISTS idx_alerts_source_id ON alerts(source_id);
+CREATE INDEX IF NOT EXISTS idx_staged_alerts_role_last_seen ON staged_alerts(role, last_seen DESC);
 CREATE INDEX IF NOT EXISTS idx_noise_feedback_alert ON noise_feedback(alert_id);
 CREATE INDEX IF NOT EXISTS idx_noise_feedback_source ON noise_feedback(source_id);
 CREATE INDEX IF NOT EXISTS idx_noise_feedback_verdict ON noise_feedback(verdict);

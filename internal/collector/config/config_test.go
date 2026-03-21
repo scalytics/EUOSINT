@@ -97,6 +97,9 @@ func TestDefaultNoisePolicyPath(t *testing.T) {
 	if cfg.CountryBoundariesPath != "registry/geo/countries-adm0.geojson" {
 		t.Fatalf("unexpected default country boundaries path %q", cfg.CountryBoundariesPath)
 	}
+	if cfg.CollectorRole != "all" {
+		t.Fatalf("unexpected collector role default %q", cfg.CollectorRole)
+	}
 }
 
 func TestNoisePolicyPathFromEnv(t *testing.T) {
@@ -106,6 +109,7 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	t.Setenv("NOISE_METRICS_OUTPUT_PATH", "/tmp/noise_metrics.json")
 	t.Setenv("ZONE_BRIEFINGS_OUTPUT_PATH", "/tmp/zone_briefings.json")
 	t.Setenv("COUNTRY_BOUNDARIES_PATH", "/tmp/countries-adm0.geojson")
+	t.Setenv("COLLECTOR_ROLE", "api-ucdp")
 	cfg := FromEnv()
 	if cfg.NoisePolicyPath != "/tmp/noise_policy.json" {
 		t.Fatalf("expected NOISE_POLICY_PATH override, got %q", cfg.NoisePolicyPath)
@@ -124,5 +128,8 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	}
 	if cfg.CountryBoundariesPath != "/tmp/countries-adm0.geojson" {
 		t.Fatalf("expected COUNTRY_BOUNDARIES_PATH override, got %q", cfg.CountryBoundariesPath)
+	}
+	if cfg.CollectorRole != "api-ucdp" {
+		t.Fatalf("expected COLLECTOR_ROLE override, got %q", cfg.CollectorRole)
 	}
 }

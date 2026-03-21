@@ -118,7 +118,15 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
+	originalCount := len(sources)
+	sources = filterSourcesForRole(cfg, sources)
 	sources = prioritizeSources(sources)
+	if strings.ToLower(strings.TrimSpace(cfg.CollectorRole)) != "" && strings.ToLower(strings.TrimSpace(cfg.CollectorRole)) != "all" {
+		fmt.Fprintf(r.stderr, "collector role=%s selected %d/%d sources\n", cfg.CollectorRole, len(sources), originalCount)
+	}
+	if collectorRole(cfg) == "merge" {
+		return r.runMergeOnly(ctx, cfg, sources)
+	}
 	client := r.clientFactory(cfg)
 	if err := r.refreshMilitaryBasesLayer(ctx, cfg, client); err != nil {
 		fmt.Fprintf(r.stderr, "WARN military bases layer refresh failed: %v\n", err)
@@ -157,6 +165,21 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	dlq := state.ReadDLQ(cfg.ReplacementQueuePath)
 	if dlq.Len() > 0 {
 		fmt.Fprintf(r.stderr, "DLQ loaded: %d dead sources will be skipped\n", dlq.Len())
+	}
+
+	if collectorRole(cfg) == "all" {
+		if err := ensureZoneBriefingArtifacts(cfg); err != nil {
+			fmt.Fprintf(r.stderr, "WARN zone briefings bootstrap artifacts: %v\n", err)
+		}
+
+		// Prime zone briefing artifacts early in the cycle so the UI can load
+		// zone briefs and conflict overlays without waiting for the full source
+		// sweep to complete.
+		zoneCtx, cancelZone := context.WithTimeout(ctx, 20*time.Second)
+		if err := r.writeZoneBriefings(zoneCtx, cfg, sources); err != nil {
+			fmt.Fprintf(r.stderr, "WARN zone briefings (bootstrap): %v\n", err)
+		}
+		cancelZone()
 	}
 
 	// Load previous alerts early so progress snapshots include them.
@@ -505,6 +528,23 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	replacementQueue := dlq.Entries()
 	// Keep sources active even when queued for replacement. This avoids
 	// collapsing active feed coverage due to transient source failures.
+	if role := collectorRole(cfg); role != "all" && role != "merge" {
+		if !isSQLiteRegistryPath(cfg.RegistryPath) {
+			return fmt.Errorf("collector role %s requires sqlite registry path for staging", role)
+		}
+		stageDB, err := sourcedb.Open(cfg.RegistryPath)
+		if err != nil {
+			return fmt.Errorf("open source DB for role staging: %w", err)
+		}
+		if err := stageDB.SaveStagedAlerts(ctx, role, currentActive); err != nil {
+			stageDB.Close()
+			return fmt.Errorf("save staged alerts for role %s: %w", role, err)
+		}
+		stageDB.Close()
+		fmt.Fprintf(r.stderr, "collector role=%s staged %d active alerts\n", role, len(currentActive))
+		return nil
+	}
+
 	if err := saveAlertState(ctx, cfg, fullState); err != nil {
 		return err
 	}
@@ -533,8 +573,10 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if err := output.Write(cfg, currentActive, currentFiltered, fullState, sourceHealth, duplicateAudit, replacementQueue); err != nil {
 		return err
 	}
-	if err := r.writeZoneBriefings(ctx, cfg, sources); err != nil {
-		fmt.Fprintf(r.stderr, "WARN zone briefings: %v\n", err)
+	if collectorRole(cfg) == "all" {
+		if err := r.writeZoneBriefings(ctx, cfg, sources); err != nil {
+			fmt.Fprintf(r.stderr, "WARN zone briefings: %v\n", err)
+		}
 	}
 	if err := r.writeNoiseMetrics(ctx, cfg, currentActive, runStore); err != nil {
 		fmt.Fprintf(r.stderr, "WARN noise metrics: %v\n", err)
@@ -772,6 +814,53 @@ func usesBrowserLane(s model.RegistrySource) bool {
 		return true
 	}
 	return strings.EqualFold(strings.TrimSpace(s.FetchMode), "browser")
+}
+
+func collectorRole(cfg config.Config) string {
+	role := strings.ToLower(strings.TrimSpace(cfg.CollectorRole))
+	if role == "" {
+		return "all"
+	}
+	return role
+}
+
+func filterSourcesForRole(cfg config.Config, sources []model.RegistrySource) []model.RegistrySource {
+	role := strings.ToLower(strings.TrimSpace(cfg.CollectorRole))
+	if role == "" || role == "all" {
+		return sources
+	}
+	out := make([]model.RegistrySource, 0, len(sources))
+	for _, s := range sources {
+		switch role {
+		case "fast":
+			if usesFastLane(s) {
+				out = append(out, s)
+			}
+		case "browser":
+			if usesBrowserLane(s) {
+				out = append(out, s)
+			}
+		case "api":
+			if !usesFastLane(s) && !usesBrowserLane(s) {
+				out = append(out, s)
+			}
+		case "api-ucdp":
+			if strings.EqualFold(strings.TrimSpace(s.Type), "ucdp") {
+				out = append(out, s)
+			}
+		case "api-acled":
+			if strings.EqualFold(strings.TrimSpace(s.Type), "acled") {
+				out = append(out, s)
+			}
+		case "api-gdelt":
+			if strings.EqualFold(strings.TrimSpace(s.Type), "gdelt") {
+				out = append(out, s)
+			}
+		default:
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // fetcherForSource selects the transport that best matches the source shape.
@@ -2202,6 +2291,39 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	return nil
 }
 
+func ensureZoneBriefingArtifacts(cfg config.Config) error {
+	outPath := strings.TrimSpace(cfg.ZoneBriefingsOutputPath)
+	if outPath == "" {
+		return nil
+	}
+	if _, err := os.Stat(outPath); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+		if err := output.WriteZoneBriefings(outPath, []model.ZoneBriefingRecord{}); err != nil {
+			return err
+		}
+	}
+
+	geoDir := filepath.Join(filepath.Dir(outPath), "geo")
+	empty := map[string]any{
+		"type":     "FeatureCollection",
+		"features": []any{},
+	}
+	for _, name := range []string{"conflict-zones.geojson", "terrorism-zones.geojson"} {
+		path := filepath.Join(geoDir, name)
+		if _, err := os.Stat(path); err == nil {
+			continue
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+		if err := writeJSONArtifact(path, empty); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ucdpVersions holds discovered UCDP dataset versions.
 type ucdpVersions struct {
 	candidate string // monthly candidate for GED (e.g. "26.0.1")
@@ -3483,6 +3605,68 @@ func saveAlertState(ctx context.Context, cfg config.Config, alerts []model.Alert
 		return fmt.Errorf("save alert state to source DB: %w", err)
 	}
 	return nil
+}
+
+func (r Runner) runMergeOnly(ctx context.Context, cfg config.Config, sources []model.RegistrySource) error {
+	if !isSQLiteRegistryPath(cfg.RegistryPath) {
+		return fmt.Errorf("collector role merge requires sqlite registry path")
+	}
+	db, err := sourcedb.Open(cfg.RegistryPath)
+	if err != nil {
+		return fmt.Errorf("open source DB for merge role: %w", err)
+	}
+	defer db.Close()
+
+	staged, roles, err := db.LoadStagedAlerts(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("load staged alerts: %w", err)
+	}
+	if len(staged) == 0 {
+		fmt.Fprintf(r.stderr, "collector role=merge found no staged alerts\n")
+		return nil
+	}
+	fmt.Fprintf(r.stderr, "collector role=merge composing %d staged alerts from roles=%s\n", len(staged), strings.Join(roles, ","))
+
+	deduped, duplicateAudit := normalize.Deduplicate(staged)
+	deduped = normalize.ApplySignalLanes(cfg, deduped)
+	active, filtered := normalize.FilterActive(cfg, deduped)
+
+	now := time.Now().UTC()
+	previousAlerts, err := loadPreviousAlerts(ctx, cfg)
+	if err != nil {
+		fmt.Fprintf(r.stderr, "WARN previous alerts load failed: %v\n", err)
+	}
+	accumulateSources := map[string]bool{}
+	for _, s := range sources {
+		if s.Accumulate {
+			accumulateSources[s.Source.SourceID] = true
+		}
+	}
+	currentActive, currentFiltered, fullState := state.Reconcile(cfg, active, filtered, previousAlerts, now, accumulateSources)
+
+	if err := saveAlertState(ctx, cfg, fullState); err != nil {
+		return err
+	}
+	if boosted, err := r.applyCorpusScores(ctx, cfg, currentActive); err != nil {
+		fmt.Fprintf(r.stderr, "WARN corpus scoring: %v\n", err)
+	} else {
+		currentActive = boosted
+	}
+	if spikes, err := r.recordTrendsAndDetectSpikes(ctx, cfg, currentActive, now); err != nil {
+		fmt.Fprintf(r.stderr, "WARN trend detection: %v\n", err)
+	} else if len(spikes) > 0 {
+		fmt.Fprintf(r.stderr, "Trend spikes detected: %d terms trending\n", len(spikes))
+	}
+	previousSourceHealth := loadPreviousSourceHealth(cfg)
+	replacementQueue := state.ReadDLQ(cfg.ReplacementQueuePath).Entries()
+	if err := output.Write(cfg, currentActive, currentFiltered, fullState, previousSourceHealth, duplicateAudit, replacementQueue); err != nil {
+		return err
+	}
+	if err := r.writeNoiseMetrics(ctx, cfg, currentActive, db); err != nil {
+		fmt.Fprintf(r.stderr, "WARN noise metrics: %v\n", err)
+	}
+	_, err = fmt.Fprintf(r.stdout, "Merged %d staged alerts from %d roles -> %s\n", len(staged), len(roles), cfg.OutputPath)
+	return err
 }
 
 // applyCorpusScores uses BM25 to compute how distinctive each alert's title

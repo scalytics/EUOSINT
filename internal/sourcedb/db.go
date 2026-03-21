@@ -580,6 +580,228 @@ ORDER BY last_seen DESC`)
 	return out, nil
 }
 
+func (db *DB) SaveStagedAlerts(ctx context.Context, role string, alerts []model.Alert) error {
+	if err := db.Init(ctx); err != nil {
+		return err
+	}
+	role = strings.ToLower(strings.TrimSpace(role))
+	if role == "" {
+		return fmt.Errorf("staging role is required")
+	}
+
+	tx, err := db.sql.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin staged alert save tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO staged_alert_roles (role, alert_count, updated_at)
+VALUES (?, 0, CURRENT_TIMESTAMP)
+ON CONFLICT(role) DO UPDATE SET
+  updated_at = CURRENT_TIMESTAMP
+`, role); err != nil {
+		return fmt.Errorf("upsert staged role %s: %w", role, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM staged_alerts WHERE role = ?`, role); err != nil {
+		return fmt.Errorf("clear staged alerts for role %s: %w", role, err)
+	}
+
+	for _, alert := range alerts {
+		sourceJSON, _ := json.Marshal(alert.Source)
+		reportingJSON, _ := json.Marshal(alert.Reporting)
+		triageJSON, _ := json.Marshal(alert.Triage)
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO staged_alerts (
+  role, alert_id, source_id, status, first_seen, last_seen, title, canonical_url,
+  category, subcategory, severity, signal_lane, region_tag, lat, lng, event_country,
+  event_country_code, event_geo_source, event_geo_confidence, freshness_hours, source_json,
+  reporting_json, triage_json
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(role, alert_id) DO UPDATE SET
+  source_id = excluded.source_id,
+  status = excluded.status,
+  first_seen = excluded.first_seen,
+  last_seen = excluded.last_seen,
+  title = excluded.title,
+  canonical_url = excluded.canonical_url,
+  category = excluded.category,
+  subcategory = excluded.subcategory,
+  severity = excluded.severity,
+  signal_lane = excluded.signal_lane,
+  region_tag = excluded.region_tag,
+  lat = excluded.lat,
+  lng = excluded.lng,
+  event_country = excluded.event_country,
+  event_country_code = excluded.event_country_code,
+  event_geo_source = excluded.event_geo_source,
+  event_geo_confidence = excluded.event_geo_confidence,
+  freshness_hours = excluded.freshness_hours,
+  source_json = excluded.source_json,
+  reporting_json = excluded.reporting_json,
+  triage_json = excluded.triage_json
+`, role, alert.AlertID, alert.SourceID, alert.Status, alert.FirstSeen, alert.LastSeen, alert.Title, alert.CanonicalURL, alert.Category, alert.Subcategory, alert.Severity, alert.SignalLane, alert.RegionTag, alert.Lat, alert.Lng, alert.EventCountry, alert.EventCountryCode, alert.EventGeoSource, alert.EventGeoConfidence, alert.FreshnessHours, string(sourceJSON), string(reportingJSON), string(triageJSON)); err != nil {
+			return fmt.Errorf("upsert staged alert %s/%s: %w", role, alert.AlertID, err)
+		}
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+UPDATE staged_alert_roles
+SET alert_count = ?, updated_at = CURRENT_TIMESTAMP
+WHERE role = ?
+`, len(alerts), role); err != nil {
+		return fmt.Errorf("update staged role count %s: %w", role, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit staged alert save tx: %w", err)
+	}
+	return nil
+}
+
+func (db *DB) LoadStagedAlerts(ctx context.Context, roles []string) ([]model.Alert, []string, error) {
+	if err := db.Init(ctx); err != nil {
+		return nil, nil, err
+	}
+	roleSet := map[string]struct{}{}
+	if len(roles) > 0 {
+		for _, role := range roles {
+			role = strings.ToLower(strings.TrimSpace(role))
+			if role != "" {
+				roleSet[role] = struct{}{}
+			}
+		}
+	}
+
+	roleRows, err := db.sql.QueryContext(ctx, `
+SELECT role
+FROM staged_alert_roles
+WHERE alert_count > 0
+ORDER BY updated_at DESC`)
+	if err != nil {
+		return nil, nil, fmt.Errorf("query staged roles: %w", err)
+	}
+	defer roleRows.Close()
+
+	activeRoles := make([]string, 0)
+	for roleRows.Next() {
+		var role string
+		if err := roleRows.Scan(&role); err != nil {
+			return nil, nil, fmt.Errorf("scan staged role: %w", err)
+		}
+		role = strings.ToLower(strings.TrimSpace(role))
+		if role == "" {
+			continue
+		}
+		if len(roleSet) > 0 {
+			if _, ok := roleSet[role]; !ok {
+				continue
+			}
+		}
+		activeRoles = append(activeRoles, role)
+	}
+	if err := roleRows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("iterate staged roles: %w", err)
+	}
+	if len(activeRoles) == 0 {
+		return []model.Alert{}, []string{}, nil
+	}
+
+	placeholders := strings.TrimRight(strings.Repeat("?,", len(activeRoles)), ",")
+	args := make([]any, 0, len(activeRoles))
+	for _, role := range activeRoles {
+		args = append(args, role)
+	}
+
+	rows, err := db.sql.QueryContext(ctx, fmt.Sprintf(`
+SELECT
+  alert_id,
+  source_id,
+  status,
+  first_seen,
+  last_seen,
+  title,
+  canonical_url,
+  category,
+  subcategory,
+  severity,
+  signal_lane,
+  region_tag,
+  lat,
+  lng,
+  event_country,
+  event_country_code,
+  event_geo_source,
+  event_geo_confidence,
+  freshness_hours,
+  source_json,
+  reporting_json,
+  triage_json
+FROM staged_alerts
+WHERE role IN (%s)
+ORDER BY last_seen DESC`, placeholders), args...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("query staged alerts: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]model.Alert, 0)
+	for rows.Next() {
+		var (
+			alert                                 model.Alert
+			sourceJSON, reportingJSON, triageJSON string
+		)
+		if err := rows.Scan(
+			&alert.AlertID,
+			&alert.SourceID,
+			&alert.Status,
+			&alert.FirstSeen,
+			&alert.LastSeen,
+			&alert.Title,
+			&alert.CanonicalURL,
+			&alert.Category,
+			&alert.Subcategory,
+			&alert.Severity,
+			&alert.SignalLane,
+			&alert.RegionTag,
+			&alert.Lat,
+			&alert.Lng,
+			&alert.EventCountry,
+			&alert.EventCountryCode,
+			&alert.EventGeoSource,
+			&alert.EventGeoConfidence,
+			&alert.FreshnessHours,
+			&sourceJSON,
+			&reportingJSON,
+			&triageJSON,
+		); err != nil {
+			return nil, nil, fmt.Errorf("scan staged alert: %w", err)
+		}
+		if err := json.Unmarshal([]byte(sourceJSON), &alert.Source); err != nil {
+			return nil, nil, fmt.Errorf("decode staged alert source %s: %w", alert.AlertID, err)
+		}
+		if strings.TrimSpace(reportingJSON) != "" && reportingJSON != "{}" {
+			if err := json.Unmarshal([]byte(reportingJSON), &alert.Reporting); err != nil {
+				return nil, nil, fmt.Errorf("decode staged alert reporting %s: %w", alert.AlertID, err)
+			}
+		}
+		if strings.TrimSpace(triageJSON) != "" && triageJSON != "null" {
+			var triage model.Triage
+			if err := json.Unmarshal([]byte(triageJSON), &triage); err != nil {
+				return nil, nil, fmt.Errorf("decode staged alert triage %s: %w", alert.AlertID, err)
+			}
+			alert.Triage = &triage
+		}
+		alert = hydrateDerivedFields(alert)
+		out = append(out, alert)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("iterate staged alerts: %w", err)
+	}
+	return out, activeRoles, nil
+}
+
 func (db *DB) UpsertSourceCandidates(ctx context.Context, candidates []CandidateInput) error {
 	if err := db.Init(ctx); err != nil {
 		return err

@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/scalytics/euosint/internal/collector/api"
 	"github.com/scalytics/euosint/internal/collector/config"
@@ -100,9 +101,17 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	fs.StringVar(&cfg.MilitaryBasesURL, "military-bases-url", cfg.MilitaryBasesURL, "Source URL for military-bases GeoJSON")
 	fs.StringVar(&cfg.MilitaryBasesOutputPath, "military-bases-output", cfg.MilitaryBasesOutputPath, "Output path for military-bases GeoJSON")
 	fs.IntVar(&cfg.MilitaryBasesRefreshHours, "military-bases-refresh-hours", cfg.MilitaryBasesRefreshHours, "Refresh cadence in hours for military-bases GeoJSON")
+	fs.StringVar(&cfg.CollectorRole, "collector-role", cfg.CollectorRole, "Collector role: all|merge|fast|browser|api|api-ucdp|api-acled|api-gdelt")
+	fs.StringVar(&cfg.CollectorRole, "role", cfg.CollectorRole, "Alias for --collector-role")
 
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+
+	cfg.CollectorRole = normalizeRole(cfg.CollectorRole)
+	if cfg.CollectorRole != "all" && cfg.CollectorRole != "merge" {
+		// Worker roles should not run discovery loops.
+		cfg.DiscoverBackground = false
 	}
 
 	select {
@@ -164,4 +173,17 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	}
 
 	return run.New(stdout, stderr).Run(ctx, cfg)
+}
+
+func normalizeRole(raw string) string {
+	role := strings.ToLower(strings.TrimSpace(raw))
+	if role == "" {
+		return "all"
+	}
+	switch role {
+	case "all", "merge", "fast", "browser", "api", "api-ucdp", "api-acled", "api-gdelt":
+		return role
+	default:
+		return "all"
+	}
 }
