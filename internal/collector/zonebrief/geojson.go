@@ -2,6 +2,7 @@ package zonebrief
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"strings"
 
@@ -46,6 +47,60 @@ func BuildTerrorZonesGeoJSONFromBoundaries(briefings []model.ZoneBriefingRecord,
 	return buildZonesFromBoundaries(briefings, boundariesPath, true)
 }
 
+// BuildConflictFootprintsGeoJSON builds hotspot-derived conflict footprints.
+// This avoids painting entire countries as active conflict extent.
+func BuildConflictFootprintsGeoJSON(briefings []model.ZoneBriefingRecord) any {
+	features := make([]geoFeature, 0)
+	for _, lens := range SupportedLenses {
+		brief := findBrief(briefings, lens.ID)
+		if brief == nil {
+			continue
+		}
+		if lens.OverlayType != "conflict" && lens.OverlayType != "maritime" {
+			continue
+		}
+		baseProps := overlayProperties(lens, brief, "", "", "", "")
+		baseProps["type"] = conflictType(brief)
+		baseProps["geometry_role"] = "footprint"
+
+		geom, ok := lensFootprintGeometry(brief.Hotspots)
+		if !ok {
+			continue
+		}
+		features = append(features, geoFeature{
+			Type:       "Feature",
+			Properties: baseProps,
+			Geometry:   geom,
+		})
+	}
+	return featureCollection{Type: "FeatureCollection", Features: features}
+}
+
+// FilterZonesGeoJSONByLens keeps only features for a single lens ID.
+// On parse failure it returns an empty FeatureCollection.
+func FilterZonesGeoJSONByLens(data any, lensID string) any {
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		return featureCollection{Type: "FeatureCollection", Features: []geoFeature{}}
+	}
+	var parsed featureCollection
+	if err := json.Unmarshal(encoded, &parsed); err != nil {
+		return featureCollection{Type: "FeatureCollection", Features: []geoFeature{}}
+	}
+	want := strings.TrimSpace(lensID)
+	if want == "" {
+		return parsed
+	}
+	filtered := make([]geoFeature, 0, len(parsed.Features))
+	for _, feature := range parsed.Features {
+		if featureLensID(feature.Properties) != want {
+			continue
+		}
+		filtered = append(filtered, feature)
+	}
+	return featureCollection{Type: "FeatureCollection", Features: filtered}
+}
+
 func buildRectangleZones(briefings []model.ZoneBriefingRecord, terrorOnly bool) any {
 	features := make([]geoFeature, 0)
 	for _, lens := range SupportedLenses {
@@ -54,7 +109,9 @@ func buildRectangleZones(briefings []model.ZoneBriefingRecord, terrorOnly bool) 
 			continue
 		}
 		if terrorOnly {
-			if !(lens.OverlayType == "terror" || contains(brief.ViolenceTypes, "Non-state conflict") || contains(brief.ViolenceTypes, "One-sided violence")) {
+			// Terror overlay should be lens-explicit, not a broad proxy for all
+			// non-state conflict lenses; otherwise it mirrors conflict coverage.
+			if lens.OverlayType != "terror" {
 				continue
 			}
 		} else {
@@ -62,7 +119,7 @@ func buildRectangleZones(briefings []model.ZoneBriefingRecord, terrorOnly bool) 
 				continue
 			}
 		}
-		props := overlayProperties(lens, brief, "", "", "")
+		props := overlayProperties(lens, brief, "", "", "", "")
 		if terrorOnly {
 			props["type"] = terrorType(brief.Status)
 			props["threat"] = joinOrDefault(brief.Actors, "Structured organized-violence actors")
@@ -90,7 +147,7 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 			continue
 		}
 		if terrorOnly {
-			if !(lens.OverlayType == "terror" || contains(brief.ViolenceTypes, "Non-state conflict") || contains(brief.ViolenceTypes, "One-sided violence")) {
+			if lens.OverlayType != "terror" {
 				continue
 			}
 		} else {
@@ -98,13 +155,14 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 				continue
 			}
 		}
-		for _, countryCode := range sortedOverlayCountryCodes(lens) {
+		for _, country := range sortedBoundaryCountries(lens) {
+			countryCode := country.code
 			boundary := findBoundaryFeature(collection.Features, countryCode)
 			if boundary == nil {
 				continue
 			}
 			ref := UCDPCountryRefs[countryCode]
-			props := overlayProperties(lens, brief, countryCode, ref.Label, ref.ID)
+			props := overlayProperties(lens, brief, countryCode, ref.Label, ref.ID, country.role)
 			if terrorOnly {
 				props["type"] = terrorType(brief.Status)
 				props["threat"] = joinOrDefault(brief.Actors, "Structured organized-violence actors")
@@ -121,7 +179,7 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 	return featureCollection{Type: "FeatureCollection", Features: features}, nil
 }
 
-func overlayProperties(lens LensDef, brief *model.ZoneBriefingRecord, countryCode string, countryLabel string, countryID string) map[string]any {
+func overlayProperties(lens LensDef, brief *model.ZoneBriefingRecord, countryCode string, countryLabel string, countryID string, countryRole string) map[string]any {
 	props := map[string]any{
 		"name":           brief.Title,
 		"lens_id":        brief.LensID,
@@ -141,6 +199,9 @@ func overlayProperties(lens LensDef, brief *model.ZoneBriefingRecord, countryCod
 	}
 	if countryCode != "" {
 		props["country_code"] = countryCode
+	}
+	if strings.TrimSpace(countryRole) != "" {
+		props["country_role"] = countryRole
 	}
 	if countryLabel != "" {
 		props["country_label"] = countryLabel
@@ -229,6 +290,34 @@ func sortedOverlayCountryCodes(lens LensDef) []string {
 	return out
 }
 
+type boundaryCountry struct {
+	code string
+	role string
+}
+
+func sortedBoundaryCountries(lens LensDef) []boundaryCountry {
+	primaryCodes := sortedOverlayCountryCodes(lens)
+	primarySet := make(map[string]struct{}, len(primaryCodes))
+	out := make([]boundaryCountry, 0, len(primaryCodes)+len(lens.CountryCodes))
+	for _, code := range primaryCodes {
+		primarySet[code] = struct{}{}
+		out = append(out, boundaryCountry{code: code, role: "primary"})
+	}
+
+	allCodes := make([]string, 0, len(lens.CountryCodes))
+	for code := range lens.CountryCodes {
+		allCodes = append(allCodes, code)
+	}
+	sortStrings(allCodes)
+	for _, code := range allCodes {
+		if _, ok := primarySet[code]; ok {
+			continue
+		}
+		out = append(out, boundaryCountry{code: code, role: "context"})
+	}
+	return out
+}
+
 func sortStrings(values []string) {
 	if len(values) < 2 {
 		return
@@ -249,6 +338,162 @@ func findBrief(briefings []model.ZoneBriefingRecord, lensID string) *model.ZoneB
 		}
 	}
 	return nil
+}
+
+func featureLensID(props map[string]any) string {
+	if props == nil {
+		return ""
+	}
+	if value, ok := props["lens_id"]; ok {
+		if s, ok := value.(string); ok {
+			return strings.TrimSpace(s)
+		}
+	}
+	if value, ok := props["lensId"]; ok {
+		if s, ok := value.(string); ok {
+			return strings.TrimSpace(s)
+		}
+	}
+	return ""
+}
+
+type geoPoint struct {
+	x float64 // lng
+	y float64 // lat
+}
+
+func lensFootprintGeometry(hotspots []model.ZoneBriefingHotspot) (map[string]any, bool) {
+	points := make([]geoPoint, 0, len(hotspots))
+	totalEvents := 0
+	for _, hotspot := range hotspots {
+		if hotspot.Lat == 0 && hotspot.Lng == 0 {
+			continue
+		}
+		points = append(points, geoPoint{x: hotspot.Lng, y: hotspot.Lat})
+		totalEvents += hotspot.EventCount
+	}
+	if len(points) == 0 {
+		return nil, false
+	}
+	padding := 0.12 + float64(totalEvents)*0.005
+	if padding > 0.4 {
+		padding = 0.4
+	}
+	if len(points) == 1 {
+		return circlePolygon(points[0], padding), true
+	}
+	if len(points) == 2 {
+		return segmentBoxPolygon(points[0], points[1], padding), true
+	}
+	hull := convexHull(points)
+	if len(hull) < 3 {
+		return segmentBoxPolygon(points[0], points[1], padding), true
+	}
+	return expandedHullPolygon(hull, padding*0.45), true
+}
+
+func circlePolygon(center geoPoint, radius float64) map[string]any {
+	const steps = 24
+	coords := make([][]float64, 0, steps+1)
+	for i := 0; i < steps; i++ {
+		theta := (2 * math.Pi * float64(i)) / float64(steps)
+		coords = append(coords, []float64{
+			center.x + radius*math.Cos(theta),
+			center.y + radius*math.Sin(theta),
+		})
+	}
+	coords = append(coords, coords[0])
+	return map[string]any{
+		"type":        "Polygon",
+		"coordinates": [][][]float64{coords},
+	}
+}
+
+func segmentBoxPolygon(a geoPoint, b geoPoint, pad float64) map[string]any {
+	minX, maxX := a.x, b.x
+	if minX > maxX {
+		minX, maxX = maxX, minX
+	}
+	minY, maxY := a.y, b.y
+	if minY > maxY {
+		minY, maxY = maxY, minY
+	}
+	return map[string]any{
+		"type": "Polygon",
+		"coordinates": [][][]float64{{
+			{minX - pad, minY - pad},
+			{minX - pad, maxY + pad},
+			{maxX + pad, maxY + pad},
+			{maxX + pad, minY - pad},
+			{minX - pad, minY - pad},
+		}},
+	}
+}
+
+func expandedHullPolygon(hull []geoPoint, pad float64) map[string]any {
+	cx, cy := 0.0, 0.0
+	for _, p := range hull {
+		cx += p.x
+		cy += p.y
+	}
+	cx /= float64(len(hull))
+	cy /= float64(len(hull))
+
+	coords := make([][]float64, 0, len(hull)+1)
+	for _, p := range hull {
+		dx := p.x - cx
+		dy := p.y - cy
+		d := math.Hypot(dx, dy)
+		if d < 1e-6 {
+			coords = append(coords, []float64{p.x, p.y})
+			continue
+		}
+		scale := (d + pad) / d
+		coords = append(coords, []float64{cx + dx*scale, cy + dy*scale})
+	}
+	coords = append(coords, coords[0])
+	return map[string]any{
+		"type":        "Polygon",
+		"coordinates": [][][]float64{coords},
+	}
+}
+
+func convexHull(points []geoPoint) []geoPoint {
+	if len(points) <= 1 {
+		return points
+	}
+	pts := append([]geoPoint(nil), points...)
+	for i := 0; i < len(pts)-1; i++ {
+		for j := i + 1; j < len(pts); j++ {
+			if pts[j].x < pts[i].x || (pts[j].x == pts[i].x && pts[j].y < pts[i].y) {
+				pts[i], pts[j] = pts[j], pts[i]
+			}
+		}
+	}
+
+	lower := make([]geoPoint, 0, len(pts))
+	for _, p := range pts {
+		for len(lower) >= 2 && cross(lower[len(lower)-2], lower[len(lower)-1], p) <= 0 {
+			lower = lower[:len(lower)-1]
+		}
+		lower = append(lower, p)
+	}
+
+	upper := make([]geoPoint, 0, len(pts))
+	for i := len(pts) - 1; i >= 0; i-- {
+		p := pts[i]
+		for len(upper) >= 2 && cross(upper[len(upper)-2], upper[len(upper)-1], p) <= 0 {
+			upper = upper[:len(upper)-1]
+		}
+		upper = append(upper, p)
+	}
+
+	hull := append(lower[:len(lower)-1], upper[:len(upper)-1]...)
+	return hull
+}
+
+func cross(a, b, c geoPoint) float64 {
+	return (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x)
 }
 
 func conflictType(brief *model.ZoneBriefingRecord) string {

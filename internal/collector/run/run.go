@@ -2274,6 +2274,7 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	}
 	geoDir := filepath.Join(filepath.Dir(cfg.ZoneBriefingsOutputPath), "geo")
 	conflictZones, terrorZones := zonebrief.BuildConflictZonesGeoJSON(briefings), zonebrief.BuildTerrorZonesGeoJSON(briefings)
+	conflictFootprints := zonebrief.BuildConflictFootprintsGeoJSON(briefings)
 	if strings.TrimSpace(cfg.CountryBoundariesPath) != "" {
 		if data, err := zonebrief.BuildConflictZonesGeoJSONFromBoundaries(briefings, cfg.CountryBoundariesPath); err == nil {
 			conflictZones = data
@@ -2285,8 +2286,31 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	if err := writeJSONArtifact(filepath.Join(geoDir, "conflict-zones.geojson"), conflictZones); err != nil {
 		return err
 	}
+	if err := writeJSONArtifact(filepath.Join(geoDir, "conflict-footprints.geojson"), conflictFootprints); err != nil {
+		return err
+	}
 	if err := writeJSONArtifact(filepath.Join(geoDir, "terrorism-zones.geojson"), terrorZones); err != nil {
 		return err
+	}
+	for _, lens := range zonebrief.SupportedLenses {
+		if err := writeJSONArtifact(
+			filepath.Join(geoDir, "conflict-zones."+lens.ID+".geojson"),
+			zonebrief.FilterZonesGeoJSONByLens(conflictZones, lens.ID),
+		); err != nil {
+			return err
+		}
+		if err := writeJSONArtifact(
+			filepath.Join(geoDir, "terrorism-zones."+lens.ID+".geojson"),
+			zonebrief.FilterZonesGeoJSONByLens(terrorZones, lens.ID),
+		); err != nil {
+			return err
+		}
+		if err := writeJSONArtifact(
+			filepath.Join(geoDir, "conflict-footprints."+lens.ID+".geojson"),
+			zonebrief.FilterZonesGeoJSONByLens(conflictFootprints, lens.ID),
+		); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -2310,7 +2334,7 @@ func ensureZoneBriefingArtifacts(cfg config.Config) error {
 		"type":     "FeatureCollection",
 		"features": []any{},
 	}
-	for _, name := range []string{"conflict-zones.geojson", "terrorism-zones.geojson"} {
+	for _, name := range []string{"conflict-zones.geojson", "terrorism-zones.geojson", "conflict-footprints.geojson"} {
 		path := filepath.Join(geoDir, name)
 		if _, err := os.Stat(path); err == nil {
 			continue

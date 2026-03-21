@@ -45,17 +45,8 @@
 		file_server
 	}
 
-	handle /geo/conflict-zones.geojson {
-		root * /var/lib/euosint
-		file_server
-	}
-
-	handle /geo/terrorism-zones.geojson {
-		root * /var/lib/euosint
-		file_server
-	}
-
-	handle /geo/military-bases.geojson {
+	@runtime_geo path /geo/conflict-zones*.geojson /geo/conflict-footprints*.geojson /geo/terrorism-zones*.geojson
+	handle @runtime_geo {
 		root * /var/lib/euosint
 		file_server
 	}
