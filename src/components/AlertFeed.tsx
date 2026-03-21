@@ -83,7 +83,7 @@ export function AlertFeed({
       id: conflictLensId,
       label: activeDynamicConflict.title || "Conflict",
       regionFilter: (activeDynamicConflict.region ?? "all").trim() || "all",
-      overlays: ["conflicts", "bases"],
+      overlays: ["conflicts"],
       description: partyLine || `${activeDynamicConflict.typeOfConflict ?? "Conflict"} · ${activeDynamicConflict.year}`,
       countryCodes,
       primaryCountryCodes: countryCodes,
@@ -554,6 +554,25 @@ export function AlertFeed({
           ? nowAndHistoryAlerts
           : briefingAlerts;
 
+  const supplementalBriefingEvents = useMemo(() => {
+    if (!isConflictContextMode) return [] as ZoneBriefingEvent[];
+    const briefEvents = activeConflictBrief?.recentEvents ?? [];
+    if (briefEvents.length === 0) return [] as ZoneBriefingEvent[];
+
+    const seen = new Set(
+      contextAlerts.map((alert) => {
+        const day = alert.last_seen ? new Date(alert.last_seen).toISOString().slice(0, 10) : "";
+        return `${day}|${alert.title.trim().toLowerCase()}`;
+      }),
+    );
+
+    return briefEvents.filter((event) => {
+      const day = event.date ? new Date(event.date).toISOString().slice(0, 10) : "";
+      const title = (event.title ?? "").trim().toLowerCase();
+      return !seen.has(`${day}|${title}`);
+    });
+  }, [activeConflictBrief, contextAlerts, isConflictContextMode]);
+
   const recentWindowStart = now - 24 * 60 * 60 * 1000;
   const baselineWindowStart = now - 7 * 24 * 60 * 60 * 1000;
   const recentCount = useMemo(
@@ -868,7 +887,15 @@ export function AlertFeed({
       >
         {isConflictContextMode ? (
           currentAlerts.length > 0 ? (
-            currentAlerts.map((alert, idx) => renderAlertCard(alert, idx))
+            <>
+              {currentAlerts.map((alert, idx) => renderAlertCard(alert, idx))}
+              {supplementalBriefingEvents.length > 0 && (
+                <>
+                  <div className="mt-2 text-2xs uppercase tracking-[0.12em] text-siem-muted">UCDP events</div>
+                  {supplementalBriefingEvents.map((event, idx) => renderBriefingEventCard(event, idx))}
+                </>
+              )}
+            </>
           ) : activeConflictBrief?.recentEvents && activeConflictBrief.recentEvents.length > 0 ? (
             activeConflictBrief.recentEvents.map((event, idx) => renderBriefingEventCard(event, idx))
           ) : (

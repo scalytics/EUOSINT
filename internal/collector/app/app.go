@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 
 	"github.com/scalytics/euosint/internal/collector/api"
@@ -165,6 +166,15 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		defer apiDB.Close()
 
 		srv := api.New(apiDB, cfg.APIAddr, stderr)
+		srv.ConfigureZoneBriefLLM(api.ZoneBriefLLMConfig{
+			RuntimeDir:         filepath.Dir(cfg.RegistryPath),
+			VettingTimeoutMS:   cfg.VettingTimeoutMS,
+			VettingBaseURL:     cfg.VettingBaseURL,
+			VettingAPIKey:      cfg.VettingAPIKey,
+			VettingProvider:    cfg.VettingProvider,
+			VettingModel:       cfg.VettingModel,
+			VettingTemperature: 0,
+		})
 		if err := srv.Start(); err != nil {
 			return err
 		}

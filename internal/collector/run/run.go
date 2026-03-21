@@ -2423,12 +2423,7 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 func aggregateDynamicConflictOverlays(conflictOverlays map[string]map[string]any) map[string]any {
 	features := make([]any, 0)
 	for _, collection := range conflictOverlays {
-		raw := collection["features"]
-		typed, ok := raw.([]any)
-		if !ok {
-			continue
-		}
-		features = append(features, typed...)
+		features = append(features, featureSliceAny(collection["features"])...)
 	}
 	return map[string]any{
 		"type":     "FeatureCollection",
@@ -2437,12 +2432,22 @@ func aggregateDynamicConflictOverlays(conflictOverlays map[string]map[string]any
 }
 
 func dynamicOverlayFeatureCount(collection map[string]any) int {
-	raw := collection["features"]
-	typed, ok := raw.([]any)
-	if !ok {
-		return 0
+	return len(featureSliceAny(collection["features"]))
+}
+
+func featureSliceAny(raw any) []any {
+	switch typed := raw.(type) {
+	case []any:
+		return typed
+	case []map[string]any:
+		out := make([]any, 0, len(typed))
+		for _, item := range typed {
+			out = append(out, item)
+		}
+		return out
+	default:
+		return nil
 	}
-	return len(typed)
 }
 
 func ensureZoneBriefingArtifacts(cfg config.Config) error {
@@ -3706,21 +3711,25 @@ func (r Runner) ensureZoneBriefLLMSummary(
 		"Zone: %s\nCountry ID: %s\nSides: %s | %s\nConflict start: %s\nConflict type: %s\nTotal deaths (all years): %d\nDeaths latest year (%d): %d",
 		title, countryID, sideA, sideB, startDate, conflictType, totalDeaths, latestYear, latestDeaths,
 	)
+	zoneLabel := strings.TrimSpace(title)
+	if strings.TrimSpace(sideA) != "" && strings.TrimSpace(sideB) != "" {
+		zoneLabel = strings.TrimSpace(sideA) + " vs " + strings.TrimSpace(sideB)
+	}
 	if needsHistorical {
 		msgs := []vet.Message{
 			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
-			{Role: "user", Content: "Write a concise historic summary for this conflict zone.\nConstraints: max 90 words, factual only, no bullets, no disclaimers, no filler.\n" + baseContext},
+			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the historic summary block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\n" + baseContext},
 		}
 		resp, err := llm.Complete(ctx, msgs)
 		if err == nil && strings.TrimSpace(resp) != "" {
-			existing.HistoricalSummary = limitWords(strings.TrimSpace(resp), 90)
+			existing.HistoricalSummary = limitWords(strings.TrimSpace(resp), 80)
 			existing.HistoricalUpdatedAt = time.Now().UTC().Format(time.RFC3339)
 		}
 	}
 	if needsAnalysis {
 		msgs := []vet.Message{
 			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
-			{Role: "user", Content: "Write a concise current analysis for this conflict zone.\nConstraints: max 60 words, factual only, no bullets, no disclaimers, no filler.\nAs-of date: " + time.Now().UTC().Format("2006-01-02") + "\n" + baseContext},
+			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the current analysis block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\nFocus only on current dynamics (roughly last 6-12 months): momentum, intensity direction, territorial/control shifts, and near-term operational outlook.\nDo NOT repeat conflict start date or cumulative death totals from historical summary.\nIf recent evidence is weak, give a cautious best-available assessment from the provided context.\nAs-of date: " + time.Now().UTC().Format("2006-01-02") + "\n" + baseContext},
 		}
 		resp, err := llm.Complete(ctx, msgs)
 		if err == nil && strings.TrimSpace(resp) != "" {

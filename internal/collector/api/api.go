@@ -10,13 +10,17 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/model"
 	"github.com/scalytics/euosint/internal/collector/trends"
+	"github.com/scalytics/euosint/internal/collector/vet"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
@@ -26,6 +30,17 @@ type Server struct {
 	addr   string
 	srv    *http.Server
 	stderr io.Writer
+	llmCfg ZoneBriefLLMConfig
+}
+
+type ZoneBriefLLMConfig struct {
+	RuntimeDir         string
+	VettingTimeoutMS   int
+	VettingBaseURL     string
+	VettingAPIKey      string
+	VettingProvider    string
+	VettingModel       string
+	VettingTemperature float64
 }
 
 func New(db *sourcedb.DB, addr string, stderr io.Writer) *Server {
@@ -35,15 +50,20 @@ func New(db *sourcedb.DB, addr string, stderr io.Writer) *Server {
 	mux.HandleFunc("GET /api/digest", s.handleDigest)
 	mux.HandleFunc("GET /api/noise-feedback/stats", s.handleNoiseFeedbackStats)
 	mux.HandleFunc("POST /api/noise-feedback", s.handleNoiseFeedbackCreate)
+	mux.HandleFunc("POST /api/zone-brief-llm", s.handleZoneBriefLLM)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	rl := newRateLimiter(30, 5, 10*time.Minute) // 30 requests burst, 5/sec refill
 	s.srv = &http.Server{
 		Addr:         addr,
 		Handler:      cors(rateLimit(rl, mux)),
 		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 120 * time.Second,
 	}
 	return s
+}
+
+func (s *Server) ConfigureZoneBriefLLM(cfg ZoneBriefLLMConfig) {
+	s.llmCfg = cfg
 }
 
 // Start begins listening in a goroutine. Returns once the listener is bound.
@@ -318,7 +338,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 func cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -326,6 +346,263 @@ func cors(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) handleZoneBriefLLM(w http.ResponseWriter, r *http.Request) {
+	if strings.TrimSpace(s.llmCfg.VettingAPIKey) == "" {
+		writeJSON(w, http.StatusPreconditionFailed, map[string]string{"error": "source vetting API key missing"})
+		return
+	}
+
+	var payload struct {
+		ConflictID string `json:"conflict_id"`
+		CountryID  string `json:"country_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON payload"})
+		return
+	}
+	payload.ConflictID = strings.TrimSpace(payload.ConflictID)
+	payload.CountryID = strings.TrimSpace(payload.CountryID)
+	if payload.ConflictID == "" && payload.CountryID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "conflict_id or country_id is required"})
+		return
+	}
+
+	statsPath := filepath.Join(strings.TrimSpace(s.llmCfg.RuntimeDir), "ucdp-conflict-stats.json")
+	stats, err := readConflictStatsArtifact(statsPath)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	row, idx := findConflictStat(stats, payload.ConflictID, payload.CountryID)
+	if idx < 0 {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "conflict not found in runtime stats"})
+		return
+	}
+
+	narrative, refreshedHistorical, refreshedAnalysis, err := s.ensureZoneBriefLLM(r.Context(), row)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	stats[idx].HistoricalSummary = strings.TrimSpace(narrative.HistoricalSummary)
+	stats[idx].CurrentAnalysis = strings.TrimSpace(narrative.CurrentAnalysis)
+	stats[idx].AnalysisUpdatedAt = strings.TrimSpace(narrative.AnalysisUpdatedAt)
+	if err := writeConflictStatsArtifact(statsPath, stats); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"country_id":           narrative.CountryID,
+		"title":                narrative.Title,
+		"historical_summary":   narrative.HistoricalSummary,
+		"current_analysis":     narrative.CurrentAnalysis,
+		"analysis_updated_at":  narrative.AnalysisUpdatedAt,
+		"refreshed_historical": refreshedHistorical,
+		"refreshed_analysis":   refreshedAnalysis,
+	})
+}
+
+type conflictStatRow struct {
+	ConflictID        string                `json:"conflict_id"`
+	CountryID         string                `json:"country_id"`
+	Title             string                `json:"title"`
+	Year              int                   `json:"year"`
+	StartDate         string                `json:"start_date"`
+	TypeOfConflict    string                `json:"type_of_conflict"`
+	SideA             string                `json:"side_a"`
+	SideB             string                `json:"side_b"`
+	FatalitiesTotal   int                   `json:"fatalities_total"`
+	FatalitiesLatest  int                   `json:"fatalities_latest_year"`
+	FatalitiesYear    int                   `json:"fatalities_latest_year_year"`
+	RecentEvents      []conflictRecentEvent `json:"recent_events"`
+	HistoricalSummary string                `json:"historical_summary"`
+	CurrentAnalysis   string                `json:"current_analysis"`
+	AnalysisUpdatedAt string                `json:"analysis_updated_at"`
+}
+
+type conflictRecentEvent struct {
+	Date       string `json:"date"`
+	Title      string `json:"title"`
+	Location   string `json:"location"`
+	Fatalities int    `json:"fatalities"`
+}
+
+func readConflictStatsArtifact(path string) ([]conflictStatRow, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return nil, fmt.Errorf("runtime stats path missing")
+	}
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read conflict stats artifact: %w", err)
+	}
+	var out []conflictStatRow
+	if err := json.Unmarshal(body, &out); err != nil {
+		return nil, fmt.Errorf("decode conflict stats artifact: %w", err)
+	}
+	return out, nil
+}
+
+func writeConflictStatsArtifact(path string, rows []conflictStatRow) error {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return fmt.Errorf("runtime stats path missing")
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("mkdir runtime stats dir: %w", err)
+	}
+	payload, err := json.MarshalIndent(rows, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal conflict stats artifact: %w", err)
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, append(payload, '\n'), 0o644); err != nil {
+		return fmt.Errorf("write conflict stats temp artifact: %w", err)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		return fmt.Errorf("replace conflict stats artifact: %w", err)
+	}
+	return nil
+}
+
+func findConflictStat(rows []conflictStatRow, conflictID, countryID string) (conflictStatRow, int) {
+	conflictID = strings.TrimSpace(conflictID)
+	countryID = strings.TrimSpace(countryID)
+	if conflictID != "" {
+		for i, row := range rows {
+			if strings.TrimSpace(row.ConflictID) == conflictID {
+				return row, i
+			}
+		}
+	}
+	if countryID != "" {
+		for i, row := range rows {
+			if strings.TrimSpace(row.CountryID) == countryID {
+				return row, i
+			}
+		}
+	}
+	return conflictStatRow{}, -1
+}
+
+func (s *Server) ensureZoneBriefLLM(ctx context.Context, row conflictStatRow) (sourcedb.ZoneBriefLLM, bool, bool, error) {
+	countryID := strings.TrimSpace(row.CountryID)
+	if countryID == "" {
+		return sourcedb.ZoneBriefLLM{}, false, false, fmt.Errorf("country_id missing for selected conflict")
+	}
+	existing, ok, err := s.db.GetZoneBriefLLM(ctx, countryID)
+	if err != nil {
+		return sourcedb.ZoneBriefLLM{}, false, false, err
+	}
+	if !ok {
+		existing = sourcedb.ZoneBriefLLM{CountryID: countryID, Title: strings.TrimSpace(row.Title)}
+	}
+	needsHistorical := strings.TrimSpace(existing.HistoricalSummary) == ""
+	needsAnalysis := strings.TrimSpace(existing.CurrentAnalysis) == ""
+	if !needsAnalysis {
+		ts, err := time.Parse(time.RFC3339, strings.TrimSpace(existing.AnalysisUpdatedAt))
+		if err != nil || time.Since(ts) >= 7*24*time.Hour {
+			needsAnalysis = true
+		}
+	}
+	if !needsHistorical && !needsAnalysis {
+		return existing, false, false, nil
+	}
+
+	llm := vet.NewClient(config.Config{
+		VettingTimeoutMS:   s.llmCfg.VettingTimeoutMS,
+		VettingBaseURL:     s.llmCfg.VettingBaseURL,
+		VettingAPIKey:      s.llmCfg.VettingAPIKey,
+		VettingProvider:    s.llmCfg.VettingProvider,
+		VettingModel:       s.llmCfg.VettingModel,
+		VettingTemperature: s.llmCfg.VettingTemperature,
+	})
+	baseContext := fmt.Sprintf(
+		"Zone: %s\nCountry ID: %s\nSides: %s | %s\nConflict start: %s\nConflict type: %s\nTotal deaths (all years): %d\nDeaths latest year (%d): %d",
+		strings.TrimSpace(row.Title),
+		countryID,
+		strings.TrimSpace(row.SideA),
+		strings.TrimSpace(row.SideB),
+		strings.TrimSpace(row.StartDate),
+		strings.TrimSpace(row.TypeOfConflict),
+		row.FatalitiesTotal,
+		row.FatalitiesYear,
+		row.FatalitiesLatest,
+	)
+	zoneLabel := strings.TrimSpace(row.Title)
+	if strings.TrimSpace(row.SideA) != "" && strings.TrimSpace(row.SideB) != "" {
+		zoneLabel = strings.TrimSpace(row.SideA) + " vs " + strings.TrimSpace(row.SideB)
+	}
+	if len(row.RecentEvents) > 0 {
+		eventLines := make([]string, 0, 3)
+		for i, event := range row.RecentEvents {
+			if i >= 3 {
+				break
+			}
+			line := strings.TrimSpace(event.Date) + " | " + strings.TrimSpace(event.Location) + " | " + strings.TrimSpace(event.Title)
+			if event.Fatalities > 0 {
+				line += fmt.Sprintf(" | fatalities=%d", event.Fatalities)
+			}
+			eventLines = append(eventLines, line)
+		}
+		if len(eventLines) > 0 {
+			baseContext += "\nRecent events:\n- " + strings.Join(eventLines, "\n- ")
+		}
+	}
+
+	refreshedHistorical := false
+	refreshedAnalysis := false
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	if needsHistorical {
+		resp, err := llm.Complete(ctx, []vet.Message{
+			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
+			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the historic summary block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\n" + baseContext},
+		})
+		if err != nil {
+			return existing, false, false, fmt.Errorf("generate historic summary: %w", err)
+		}
+		text := strings.TrimSpace(resp)
+		if text != "" {
+			existing.HistoricalSummary = limitWords(text, 80)
+			existing.HistoricalUpdatedAt = now
+			refreshedHistorical = true
+		}
+	}
+	if needsAnalysis {
+		resp, err := llm.Complete(ctx, []vet.Message{
+			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
+			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the current analysis block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\nFocus only on current dynamics (roughly last 6-12 months): momentum, intensity direction, territorial/control shifts, and near-term operational outlook.\nDo NOT repeat conflict start date or cumulative death totals from historical summary.\nIf recent evidence is weak, give a cautious best-available assessment from the provided context.\nAs-of date: " + time.Now().UTC().Format("2006-01-02") + "\n" + baseContext},
+		})
+		if err != nil {
+			return existing, refreshedHistorical, false, fmt.Errorf("generate current analysis: %w", err)
+		}
+		text := strings.TrimSpace(resp)
+		if text != "" {
+			existing.CurrentAnalysis = limitWords(text, 60)
+			existing.AnalysisUpdatedAt = now
+			refreshedAnalysis = true
+		}
+	}
+	if err := s.db.UpsertZoneBriefLLM(ctx, existing); err != nil {
+		return existing, refreshedHistorical, refreshedAnalysis, err
+	}
+	return existing, refreshedHistorical, refreshedAnalysis, nil
+}
+
+func limitWords(text string, maxWords int) string {
+	if maxWords <= 0 {
+		return ""
+	}
+	words := strings.Fields(text)
+	if len(words) <= maxWords {
+		return strings.TrimSpace(text)
+	}
+	return strings.Join(words[:maxWords], " ")
 }
 
 // ---------- per-IP token bucket rate limiter ----------

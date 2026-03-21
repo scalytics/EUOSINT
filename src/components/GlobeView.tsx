@@ -241,7 +241,7 @@ export function GlobeView({
     const hadAnyLens = !!previousLensID;
     const hasAnyLens = !!conflictLensId;
     lastConflictLensRef.current = conflictLensId;
-    const lensDefaults: OverlayId[] = ["conflicts", "bases"];
+    const lensDefaults: OverlayId[] = ["conflicts"];
 
     setActiveOverlays((prev) => {
       if (!hadAnyLens && hasAnyLens) {
@@ -870,7 +870,7 @@ export function GlobeView({
       id: conflictLensId,
       label: activeDynamicConflict.title || "Conflict",
       regionFilter: (activeDynamicConflict.region ?? "all").trim() || "all",
-      overlays: ["conflicts", "bases"],
+      overlays: ["conflicts"],
       description: partyLine || `${activeDynamicConflict.typeOfConflict ?? "Conflict"} · ${activeDynamicConflict.year}`,
       countryCodes,
       primaryCountryCodes: countryCodes,
@@ -889,6 +889,88 @@ export function GlobeView({
     () => (activeDynamicConflict ? conflictStats.find((item) => item.conflictId === activeDynamicConflict.conflictId) ?? null : null),
     [activeDynamicConflict, conflictStats],
   );
+  const [zoneBriefNarrative, setZoneBriefNarrative] = useState<{
+    conflictId: string;
+    historicalSummary: string;
+    currentAnalysis: string;
+  } | null>(null);
+  const [isZoneBriefNarrativeLoading, setIsZoneBriefNarrativeLoading] = useState(false);
+  const [zoneBriefNarrativeError, setZoneBriefNarrativeError] = useState<string | null>(null);
+  const lensFeedEventCount = visibleNowAlerts.length + visibleHistoryAlertsRendered.length;
+  const lensBriefEventCount = activeConflictBrief?.recentEvents?.length ?? 0;
+  const lensEventCount = effectiveConflictLens ? Math.max(lensFeedEventCount, lensBriefEventCount) : lensFeedEventCount;
+  const displayedHistoricalSummary = (
+    zoneBriefNarrative && activeDynamicConflict && zoneBriefNarrative.conflictId === activeDynamicConflict.conflictId
+      ? zoneBriefNarrative.historicalSummary
+      : activeConflictStat?.historicalSummary
+  ) ?? "";
+  const displayedCurrentAnalysis = (
+    zoneBriefNarrative && activeDynamicConflict && zoneBriefNarrative.conflictId === activeDynamicConflict.conflictId
+      ? zoneBriefNarrative.currentAnalysis
+      : activeConflictStat?.currentAnalysis
+  ) ?? "";
+  const hasBothNarratives = displayedHistoricalSummary.trim().length > 0 && displayedCurrentAnalysis.trim().length > 0;
+  const analysisUpdatedAtRaw = activeConflictStat?.analysisUpdatedAt ?? "";
+  const analysisUpdatedDate = analysisUpdatedAtRaw ? new Date(analysisUpdatedAtRaw) : null;
+  const analysisUpdatedLabel = analysisUpdatedDate && !Number.isNaN(analysisUpdatedDate.getTime())
+    ? analysisUpdatedDate.toISOString().slice(0, 10)
+    : "";
+  const analysisRefreshDue = (() => {
+    if (!analysisUpdatedDate || Number.isNaN(analysisUpdatedDate.getTime())) return true;
+    return Date.now() - analysisUpdatedDate.getTime() >= 14 * 24 * 60 * 60 * 1000;
+  })();
+
+  useEffect(() => {
+    setZoneBriefNarrative(null);
+    setZoneBriefNarrativeError(null);
+  }, [activeDynamicConflict?.conflictId]);
+
+  const requestZoneBriefNarrative = useCallback(async () => {
+    if (!activeDynamicConflict) return;
+    setIsZoneBriefNarrativeLoading(true);
+    setZoneBriefNarrativeError(null);
+    try {
+      const response = await fetch("/api/zone-brief-llm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conflict_id: activeDynamicConflict.conflictId,
+          country_id: activeDynamicConflict.countryId,
+        }),
+      });
+      if (!response.ok) {
+        let message = `request failed (${response.status})`;
+        try {
+          const errPayload = (await response.json()) as { error?: string };
+          if (errPayload?.error) message = errPayload.error;
+        } catch {
+          try {
+            const raw = await response.text();
+            const firstLine = raw.split("\n").find((line) => line.trim().length > 0)?.trim();
+            if (firstLine) {
+              message = `${message}: ${firstLine.slice(0, 140)}`;
+            }
+          } catch {
+            // Keep status-based fallback message.
+          }
+        }
+        throw new Error(message);
+      }
+      const payload = (await response.json()) as {
+        historical_summary?: string;
+        current_analysis?: string;
+      };
+      setZoneBriefNarrative({
+        conflictId: activeDynamicConflict.conflictId,
+        historicalSummary: (payload.historical_summary ?? "").trim(),
+        currentAnalysis: (payload.current_analysis ?? "").trim(),
+      });
+    } catch (err) {
+      setZoneBriefNarrativeError(err instanceof Error ? err.message : "failed to generate history/analysis");
+    } finally {
+      setIsZoneBriefNarrativeLoading(false);
+    }
+  }, [activeDynamicConflict]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -953,11 +1035,11 @@ export function GlobeView({
           <div className="mt-1 text-sm text-siem-muted">
             {effectiveConflictLens
               ? effectiveConflictLens.description
-              : `${visibleNowAlerts.length + visibleHistoryAlertsRendered.length} visible alerts across official feeds`}
+              : `${lensFeedEventCount} visible alerts across official feeds`}
           </div>
           {effectiveConflictLens && (
             <div className="mt-2 text-2xs uppercase tracking-[0.14em] text-siem-muted">
-              {visibleNowAlerts.length + visibleHistoryAlertsRendered.length} event records in current lens
+              {lensEventCount} event records in current lens
             </div>
           )}
         </div>
@@ -1034,7 +1116,7 @@ export function GlobeView({
                   <div className="mt-1 text-2xs">{activeConflictBrief.lens.label}</div>
                 </div>
               </div>
-              <div className="mt-3 space-y-1.5 text-xs text-siem-text">
+              <div className="mt-3 space-y-1.5 text-sm leading-relaxed text-siem-text">
                 <div>
                   <span className="text-siem-muted">In conflict with:</span>{" "}
                   {[activeDynamicConflict?.sideA, activeDynamicConflict?.sideB].filter((v) => (v ?? "").trim().length > 0).join(" vs ") || "n/a"}
@@ -1052,14 +1134,50 @@ export function GlobeView({
                   ).join(", ") || "n/a"}
                 </div>
               </div>
-              {activeConflictStat?.historicalSummary && (
-                <div className="mt-3 text-xs text-siem-text">
-                  <span className="text-siem-muted">Historic summary:</span> {activeConflictStat.historicalSummary}
+              <div className="mt-3">
+                {!hasBothNarratives ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void requestZoneBriefNarrative();
+                    }}
+                    disabled={isZoneBriefNarrativeLoading || !activeDynamicConflict}
+                    className="rounded border border-siem-border bg-white/5 px-2 py-1 text-2xs uppercase tracking-[0.12em] text-siem-text hover:bg-siem-accent/12 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isZoneBriefNarrativeLoading ? "Generating..." : "History / Analysis"}
+                  </button>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="text-2xs text-siem-muted">
+                      History ready
+                      {analysisUpdatedLabel ? ` · Analysis updated ${analysisUpdatedLabel}` : ""}
+                    </div>
+                    {analysisRefreshDue && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void requestZoneBriefNarrative();
+                        }}
+                        disabled={isZoneBriefNarrativeLoading || !activeDynamicConflict}
+                        className="rounded border border-siem-border bg-white/5 px-2 py-1 text-2xs uppercase tracking-[0.12em] text-siem-text hover:bg-siem-accent/12 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isZoneBriefNarrativeLoading ? "Refreshing..." : "Refresh Analysis"}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {zoneBriefNarrativeError && (
+                  <div className="mt-1 text-2xs text-siem-high">{zoneBriefNarrativeError}</div>
+                )}
+              </div>
+              {displayedHistoricalSummary && (
+                <div className="mt-3 text-sm leading-relaxed text-siem-text">
+                  <span className="text-siem-muted">Historic summary:</span> {displayedHistoricalSummary}
                 </div>
               )}
-              {activeConflictStat?.currentAnalysis && (
-                <div className="mt-2 text-xs text-siem-text">
-                  <span className="text-siem-muted">Current analysis:</span> {activeConflictStat.currentAnalysis}
+              {displayedCurrentAnalysis && (
+                <div className="mt-2 text-sm leading-relaxed text-siem-text">
+                  <span className="text-siem-muted">Current analysis:</span> {displayedCurrentAnalysis}
                 </div>
               )}
               {activeConflictBrief.recentEvents && activeConflictBrief.recentEvents.length > 0 && (
