@@ -1,0 +1,55 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Pakistan (northwest borderlands and Balochistan)" },
+      "geometry": { "type": "Point", "coordinates": [70.0, 33.0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Burkina Faso (Central Sahel tri-border area)" },
+      "geometry": { "type": "Point", "coordinates": [0.0, 12.0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Niger (Sahel region, including Liptako-Gourma)" },
+      "geometry": { "type": "Point", "coordinates": [8.0, 15.0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Nigeria (northeast Lake Chad Basin and northwest)" },
+      "geometry": { "type": "Point", "coordinates": [8.0, 10.0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Mali (central and northern Sahel)" },
+      "geometry": { "type": "Point", "coordinates": [0.0, 17.0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Democratic Republic of the Congo (eastern provinces)" },
+      "geometry": { "type": "Point", "coordinates": [28.0, -2.0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Somalia (southern and central areas)" },
+      "geometry": { "type": "Point", "coordinates": [45.0, 2.0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Syria (various regions, post-conflict instability)" },
+      "geometry": { "type": "Point", "coordinates": [38.0, 35.0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Afghanistan-Pakistan borderlands (Khorasan region)" },
+      "geometry": { "type": "Point", "coordinates": [70.0, 34.0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Colombia-Venezuela frontier (border zones)" },
+      "geometry": { "type": "Point", "coordinates": [-70.0, 7.0] }
+    }
+  ]
+}

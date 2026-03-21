@@ -2416,7 +2416,11 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 				}
 			}
 		}
-		terrorZonesDynamic, terrorOverlays, err := buildDynamicTerrorZonesFromAlerts(cfg.CountryBoundariesPath, cfg.StateOutputPath, currentConflicts, now)
+		terrorLLMRegions, err := refreshWeeklyTerrorRegionsFromLLM(ctx, cfg, filepath.Join(geoDir, "terror-activity-llm.json"), now)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN terror regions llm sync: %v\n", err)
+		}
+		terrorZonesDynamic, terrorOverlays, err := buildDynamicTerrorZonesFromAlerts(cfg.CountryBoundariesPath, cfg.StateOutputPath, currentConflicts, now, terrorLLMRegions)
 		if err == nil {
 			if dynamicOverlayFeatureCount(terrorZonesDynamic) > 0 {
 				if err := writeJSONArtifact(filepath.Join(geoDir, "terrorism-zones.geojson"), terrorZonesDynamic); err != nil {
@@ -2466,7 +2470,249 @@ func featureSliceAny(raw any) []any {
 	}
 }
 
-func buildDynamicTerrorZonesFromAlerts(boundariesPath string, statePath string, currentConflicts []map[string]any, now time.Time) (map[string]any, map[string]map[string]any, error) {
+type terrorRegion struct {
+	Name string  `json:"name"`
+	Lat  float64 `json:"lat"`
+	Lng  float64 `json:"lng"`
+}
+
+type terrorRegionCache struct {
+	UpdatedAt string         `json:"updated_at"`
+	Regions   []terrorRegion `json:"regions"`
+}
+
+func refreshWeeklyTerrorRegionsFromLLM(ctx context.Context, cfg config.Config, cachePath string, now time.Time) ([]terrorRegion, error) {
+	seedRegions := loadSeedTerrorRegions()
+	cached, cachedAt := readTerrorRegionCache(cachePath)
+	mergedSeedAndCached := mergeTerrorRegions(seedRegions, cached)
+
+	if strings.TrimSpace(cfg.VettingAPIKey) == "" {
+		return mergedSeedAndCached, nil
+	}
+	if !cachedAt.IsZero() && now.Sub(cachedAt) < 7*24*time.Hour && len(cached) > 0 {
+		return mergeTerrorRegions(seedRegions, cached), nil
+	}
+
+	client := vet.NewClient(config.Config{
+		VettingTimeoutMS:   cfg.VettingTimeoutMS,
+		VettingBaseURL:     cfg.VettingBaseURL,
+		VettingAPIKey:      cfg.VettingAPIKey,
+		VettingProvider:    cfg.VettingProvider,
+		VettingModel:       cfg.VettingModel,
+		VettingTemperature: 0,
+	})
+	resp, err := client.Complete(ctx, []vet.Message{
+		{Role: "system", Content: "Return plain text only. Facts only. No markdown. No commentary."},
+		{Role: "user", Content: "Give me current regions with terror activity in geo coordinates only.\nOutput one line per region using this exact format:\n<Region name>: <lat>°N/S, <lng>°E/W"},
+	})
+	if err != nil {
+		return mergedSeedAndCached, err
+	}
+	llmRegions := parseTerrorRegionsFromText(resp)
+	if len(llmRegions) == 0 {
+		return mergedSeedAndCached, fmt.Errorf("llm returned no parseable terror regions")
+	}
+	if err := writeTerrorRegionCache(cachePath, terrorRegionCache{
+		UpdatedAt: now.UTC().Format(time.RFC3339),
+		Regions:   llmRegions,
+	}); err != nil {
+		return mergeTerrorRegions(seedRegions, llmRegions), err
+	}
+	return mergeTerrorRegions(seedRegions, llmRegions), nil
+}
+
+func loadSeedTerrorRegions() []terrorRegion {
+	paths := []string{
+		"registry/geo/terror-activity-seed.geojson",
+		"/app/registry/geo/terror-activity-seed.geojson",
+	}
+	for _, path := range paths {
+		body, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		var doc struct {
+			Type     string `json:"type"`
+			Features []struct {
+				Properties map[string]any `json:"properties"`
+				Geometry   struct {
+					Type        string    `json:"type"`
+					Coordinates []float64 `json:"coordinates"`
+				} `json:"geometry"`
+			} `json:"features"`
+		}
+		if err := json.Unmarshal(body, &doc); err != nil {
+			continue
+		}
+		out := make([]terrorRegion, 0, len(doc.Features))
+		for _, feature := range doc.Features {
+			if strings.ToLower(strings.TrimSpace(feature.Geometry.Type)) != "point" || len(feature.Geometry.Coordinates) < 2 {
+				continue
+			}
+			name := strings.TrimSpace(stringValue(feature.Properties["name"]))
+			if name == "" {
+				name = "Terror activity region"
+			}
+			lng := feature.Geometry.Coordinates[0]
+			lat := feature.Geometry.Coordinates[1]
+			out = append(out, terrorRegion{Name: name, Lat: lat, Lng: lng})
+		}
+		if len(out) > 0 {
+			return out
+		}
+	}
+	return nil
+}
+
+func parseTerrorRegionsFromText(raw string) []terrorRegion {
+	lines := strings.Split(raw, "\n")
+	re := regexp.MustCompile(`(?i)^\s*(?:[-*]\s*)?([^:]+):\s*([+-]?\d+(?:\.\d+)?)\s*°?\s*([NS])?\s*,\s*([+-]?\d+(?:\.\d+)?)\s*°?\s*([EW])?\s*$`)
+	out := make([]terrorRegion, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		m := re.FindStringSubmatch(line)
+		if len(m) != 6 {
+			continue
+		}
+		lat, errLat := strconv.ParseFloat(strings.TrimSpace(m[2]), 64)
+		lng, errLng := strconv.ParseFloat(strings.TrimSpace(m[4]), 64)
+		if errLat != nil || errLng != nil {
+			continue
+		}
+		ns := strings.ToUpper(strings.TrimSpace(m[3]))
+		ew := strings.ToUpper(strings.TrimSpace(m[5]))
+		if ns == "S" && lat > 0 {
+			lat = -lat
+		}
+		if ns == "N" && lat < 0 {
+			lat = -lat
+		}
+		if ew == "W" && lng > 0 {
+			lng = -lng
+		}
+		if ew == "E" && lng < 0 {
+			lng = -lng
+		}
+		if math.Abs(lat) > 90 || math.Abs(lng) > 180 {
+			continue
+		}
+		out = append(out, terrorRegion{
+			Name: strings.TrimSpace(m[1]),
+			Lat:  lat,
+			Lng:  lng,
+		})
+	}
+	return dedupTerrorRegions(out)
+}
+
+func dedupTerrorRegions(regions []terrorRegion) []terrorRegion {
+	seen := map[string]struct{}{}
+	out := make([]terrorRegion, 0, len(regions))
+	for _, region := range regions {
+		key := strings.ToLower(strings.TrimSpace(region.Name))
+		if key == "" {
+			key = fmt.Sprintf("%0.3f,%0.3f", region.Lat, region.Lng)
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, region)
+	}
+	return out
+}
+
+func mergeTerrorRegions(a []terrorRegion, b []terrorRegion) []terrorRegion {
+	return dedupTerrorRegions(append(append([]terrorRegion{}, a...), b...))
+}
+
+func readTerrorRegionCache(path string) ([]terrorRegion, time.Time) {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return nil, time.Time{}
+	}
+	var cache terrorRegionCache
+	if err := json.Unmarshal(body, &cache); err != nil {
+		return nil, time.Time{}
+	}
+	ts, err := time.Parse(time.RFC3339, strings.TrimSpace(cache.UpdatedAt))
+	if err != nil {
+		ts = time.Time{}
+	}
+	return cache.Regions, ts
+}
+
+func writeTerrorRegionCache(path string, cache terrorRegionCache) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	payload, err := json.MarshalIndent(cache, "", "  ")
+	if err != nil {
+		return err
+	}
+	payload = append(payload, '\n')
+	return os.WriteFile(path, payload, 0o644)
+}
+
+func terrorRegionFeatures(regions []terrorRegion) []any {
+	out := make([]any, 0, len(regions))
+	for _, region := range regions {
+		name := strings.TrimSpace(region.Name)
+		if name == "" {
+			name = "Terror activity region"
+		}
+		out = append(out, map[string]any{
+			"type": "Feature",
+			"properties": map[string]any{
+				"name":             name,
+				"lens_id":          "terror-seed-" + slugify(name),
+				"status":           "active",
+				"type":             "elevated",
+				"threat":           "Weekly LLM terrorism region sync",
+				"source":           "EUOSINT weekly LLM sync",
+				"source_timeframe": "weekly",
+			},
+			"geometry": terrorRegionPolygon(region.Lat, region.Lng, 2.4),
+		})
+	}
+	return out
+}
+
+func terrorRegionPolygon(lat float64, lng float64, radiusDeg float64) map[string]any {
+	if radiusDeg <= 0 {
+		radiusDeg = 2.4
+	}
+	points := make([][]float64, 0, 25)
+	for i := 0; i <= 24; i++ {
+		angle := (2 * math.Pi * float64(i)) / 24
+		dLat := radiusDeg * math.Sin(angle)
+		dLng := radiusDeg * math.Cos(angle) / math.Max(0.2, math.Cos((lat*math.Pi)/180))
+		points = append(points, []float64{lng + dLng, lat + dLat})
+	}
+	return map[string]any{
+		"type":        "Polygon",
+		"coordinates": []any{points},
+	}
+}
+
+func slugify(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return "region"
+	}
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+	value = re.ReplaceAllString(value, "-")
+	value = strings.Trim(value, "-")
+	if value == "" {
+		return "region"
+	}
+	return value
+}
+
+func buildDynamicTerrorZonesFromAlerts(boundariesPath string, statePath string, currentConflicts []map[string]any, now time.Time, llmRegions []terrorRegion) (map[string]any, map[string]map[string]any, error) {
 	collection, err := readBoundaryCollection(boundariesPath)
 	if err != nil {
 		return nil, nil, err
@@ -2554,6 +2800,7 @@ func buildDynamicTerrorZonesFromAlerts(boundariesPath string, statePath string, 
 			"geometry": boundary.Geometry,
 		})
 	}
+	baseFeatures = append(baseFeatures, terrorRegionFeatures(llmRegions)...)
 	baseCollection := map[string]any{
 		"type":     "FeatureCollection",
 		"features": baseFeatures,

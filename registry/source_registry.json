@@ -119,7 +119,7 @@
     }
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "followRedirects": true,
     "source": {
       "source_id": "fbi-national-press",
@@ -3870,14 +3870,14 @@
       "authority_type": "police",
       "base_url": "https://www.europol.europa.eu"
     },
-    "feed_url": "https://www.europol.europa.eu/taxonomy/term/69/feed",
+    "feed_url": "https://www.europol.europa.eu/media-press/newsroom",
     "category": "terrorism_tip",
     "region_tag": "EU",
     "lat": 52.09,
     "lng": 4.27
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "source": {
       "source_id": "us-dhs-ntas",
       "authority_name": "US DHS NTAS (National Terrorism Advisory System)",
@@ -3940,14 +3940,14 @@
       "authority_type": "intelligence",
       "base_url": "https://www.mi5.gov.uk"
     },
-    "feed_url": "https://www.mi5.gov.uk/threat-levels.xml",
+    "feed_url": "https://www.mi5.gov.uk/threat-levels",
     "category": "terrorism_tip",
     "region_tag": "GB",
     "lat": 51.5,
     "lng": -0.13
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "source": {
       "source_id": "cert-ua",
       "authority_name": "CERT-UA",
@@ -7024,7 +7024,7 @@
       "authority_type": "national_security",
       "base_url": "https://www.state.gov"
     },
-    "feed_url": "https://www.state.gov/rss/channels/bureau-of-counterterrorism.xml",
+    "feed_url": "https://www.state.gov/foreign-terrorist-organizations/",
     "category": "terrorism_tip",
     "region_tag": "INT",
     "lat": 38.89,
@@ -7032,7 +7032,7 @@
     "include_keywords": ["terrorist", "designation", "sanction", "FTO", "counter-terrorism", "threat", "attack", "extremist", "listing"]
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "source": {
       "source_id": "us-state-dipsec",
       "authority_name": "US State Dept — Diplomatic Security",
@@ -7077,7 +7077,7 @@
       "authority_type": "regulatory",
       "base_url": "https://www.consilium.europa.eu"
     },
-    "feed_url": "https://www.consilium.europa.eu/en/policies/sanctions/rss.xml",
+    "feed_url": "https://www.consilium.europa.eu/en/policies/sanctions/",
     "category": "terrorism_tip",
     "region_tag": "EU",
     "lat": 50.84,
@@ -7095,7 +7095,7 @@
       "authority_type": "national_security",
       "base_url": "https://www.gov.uk"
     },
-    "feed_url": "https://www.gov.uk/government/publications/proscribed-terror-groups-or-organisations--2.atom",
+    "feed_url": "https://www.gov.uk/government/publications/proscribed-terror-groups-or-organisations--2",
     "category": "terrorism_tip",
     "region_tag": "GB",
     "lat": 51.5,
@@ -7103,7 +7103,7 @@
     "include_keywords": ["proscribed", "terrorist", "organisation", "designation", "ban", "extremist"]
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "source": {
       "source_id": "un-sc-sanctions",
       "authority_name": "UN Security Council — Sanctions Committees",
@@ -7113,7 +7113,7 @@
       "authority_type": "regulatory",
       "base_url": "https://www.un.org"
     },
-    "feed_url": "https://www.un.org/securitycouncil/content/news/rss.xml",
+    "feed_url": "https://www.un.org/securitycouncil/sanctions/information",
     "category": "terrorism_tip",
     "region_tag": "INT",
     "lat": 40.75,
@@ -7121,7 +7121,7 @@
     "include_keywords": ["sanctions", "terrorist", "ISIL", "Al-Qaida", "listing", "designation", "Taliban", "arms embargo", "travel ban", "asset freeze"]
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "source": {
       "source_id": "fatf-statements",
       "authority_name": "FATF — Financial Action Task Force",
@@ -7131,7 +7131,7 @@
       "authority_type": "regulatory",
       "base_url": "https://www.fatf-gafi.org"
     },
-    "feed_url": "https://www.fatf-gafi.org/rss/fatf-news.xml",
+    "feed_url": "https://www.fatf-gafi.org/en/publications.html",
     "category": "terrorism_tip",
     "region_tag": "INT",
     "lat": 48.86,
@@ -7139,7 +7139,7 @@
     "include_keywords": ["terrorist", "financing", "money laundering", "high-risk", "jurisdiction", "grey list", "black list", "sanctions", "proliferation"]
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "source": {
       "source_id": "au-asio-threats",
       "authority_name": "ASIO — Australian Security Intelligence",
@@ -7149,7 +7149,7 @@
       "authority_type": "intelligence",
       "base_url": "https://www.asio.gov.au"
     },
-    "feed_url": "https://www.asio.gov.au/rss.xml",
+    "feed_url": "https://www.asio.gov.au/newsroom",
     "category": "terrorism_tip",
     "region_tag": "AU",
     "lat": -35.28,
@@ -7157,7 +7157,7 @@
     "include_keywords": ["terrorist", "threat", "extremist", "espionage", "security", "assessment", "attack"]
   },
   {
-    "type": "rss",
+    "type": "html-list",
     "source": {
       "source_id": "fr-dgsi-news",
       "authority_name": "DGSI — French Internal Security",
@@ -7167,7 +7167,7 @@
       "authority_type": "intelligence",
       "base_url": "https://www.dgsi.interieur.gouv.fr"
     },
-    "feed_url": "https://www.dgsi.interieur.gouv.fr/rss",
+    "feed_url": "https://www.dgsi.interieur.gouv.fr/actualites",
     "category": "terrorism_tip",
     "region_tag": "FR",
     "lat": 48.86,
