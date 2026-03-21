@@ -2229,6 +2229,16 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	headers := map[string]string{"x-ucdp-access-token": token}
 	now := time.Now().UTC()
 	previousCurrentConflicts := readCurrentConflictsArtifact(filepath.Join(outDir, "ucdp-current-conflicts.json"))
+	var zoneDB *sourcedb.DB
+	if isSQLiteRegistryPath(cfg.RegistryPath) {
+		db, err := sourcedb.Open(cfg.RegistryPath)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN UCDP cache DB open failed: %v\n", err)
+		} else {
+			zoneDB = db
+			defer zoneDB.Close()
+		}
+	}
 
 	// Discover latest UCDP dataset versions from the docs page.
 	gedVersion := cfg.UCDPAPIVersion
@@ -2245,8 +2255,8 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 		fmt.Fprintf(r.stderr, "UCDP versions: GED candidate=%s, yearly=%s\n", gedVersion, conflictVersion)
 	}
 
-	// Fetch conflict metadata (global, paginated).
-	conflicts, err := r.fetchUCDPConflicts(ctx, cfg, headers, conflictVersion)
+	// Fetch conflict metadata (global, paginated) with DB-first reconcile behavior.
+	conflicts, err := r.fetchUCDPConflictsCached(ctx, cfg, headers, conflictVersion, zoneDB)
 	if err != nil {
 		fmt.Fprintf(r.stderr, "WARN ucdpprioconflict fetch: %v\n", err)
 	}
@@ -2260,7 +2270,7 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 		currentConflicts = previousCurrentConflicts
 	}
 	conflictOverlayCountries = overlayCountriesByLensFromCurrentConflicts(currentConflicts)
-	latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, err := r.fetchUCDPBattleDeathsTotalsByCountry(ctx, cfg, headers, conflictVersion)
+	latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, err := r.fetchUCDPBattleDeathsTotalsByCountryCached(ctx, cfg, headers, conflictVersion, zoneDB)
 	if err != nil {
 		fmt.Fprintf(r.stderr, "WARN UCDP battledeaths fetch: %v\n", err)
 		latestYear = 0
@@ -2271,17 +2281,6 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	// Fetch UCDP events per lens.
 	var allItems []parse.UCDPItem
 	seen := map[string]struct{}{}
-	var zoneDB *sourcedb.DB
-	if isSQLiteRegistryPath(cfg.RegistryPath) {
-		db, err := sourcedb.Open(cfg.RegistryPath)
-		if err != nil {
-			fmt.Fprintf(r.stderr, "WARN UCDP lens cache DB open failed: %v\n", err)
-		} else {
-			zoneDB = db
-			defer zoneDB.Close()
-		}
-	}
-
 	for _, lens := range zonebrief.SupportedLenses {
 		lensItems, err := r.fetchUCDPItemsForLensCached(ctx, cfg, lens, headers, gedVersion, zoneDB)
 		if err != nil {
@@ -2728,31 +2727,31 @@ func buildCurrentConflictStats(
 				label = iso2
 			}
 			countries = append(countries, map[string]any{
-				"gwno":               gwno,
-				"iso2":               iso2,
-				"label":              label,
-				"fatalities_total":   cum,
-				"fatalities_latest":  latest,
-				"latest_year":        latestYear,
+				"gwno":              gwno,
+				"iso2":              iso2,
+				"label":             label,
+				"fatalities_total":  cum,
+				"fatalities_latest": latest,
+				"latest_year":       latestYear,
 			})
 		}
 		out = append(out, map[string]any{
-			"conflict_id":             conflictID,
-			"title":                   stringValue(row["title"]),
-			"year":                    intValue(row["year"]),
-			"start_date":              stringValue(row["start_date"]),
-			"intensity_level":         intValue(row["intensity_level"]),
-			"type_of_conflict":        stringValue(row["type_of_conflict"]),
-			"region":                  stringValue(row["region"]),
-			"side_a":                  stringValue(row["side_a"]),
-			"side_b":                  stringValue(row["side_b"]),
-			"lens_ids":                row["lens_ids"],
-			"overlay_country_codes":   row["overlay_country_codes"],
-			"source_url":              row["source_url"],
-			"fatalities_total":        totalCum,
-			"fatalities_latest_year":  totalLatest,
+			"conflict_id":                 conflictID,
+			"title":                       stringValue(row["title"]),
+			"year":                        intValue(row["year"]),
+			"start_date":                  stringValue(row["start_date"]),
+			"intensity_level":             intValue(row["intensity_level"]),
+			"type_of_conflict":            stringValue(row["type_of_conflict"]),
+			"region":                      stringValue(row["region"]),
+			"side_a":                      stringValue(row["side_a"]),
+			"side_b":                      stringValue(row["side_b"]),
+			"lens_ids":                    row["lens_ids"],
+			"overlay_country_codes":       row["overlay_country_codes"],
+			"source_url":                  row["source_url"],
+			"fatalities_total":            totalCum,
+			"fatalities_latest_year":      totalLatest,
 			"fatalities_latest_year_year": latestYear,
-			"countries":               countries,
+			"countries":                   countries,
 		})
 	}
 	return out
@@ -3227,6 +3226,148 @@ func (r Runner) fetchUCDPConflicts(ctx context.Context, cfg config.Config, heade
 	// ParseUCDPConflicts already deduplicates by conflict_id (keeps highest year),
 	// but since we call it per-page we need a final dedup pass.
 	return deduplicateConflicts(conflicts), nil
+}
+
+type ucdpBattleDeathsCachePayload struct {
+	LatestYear int            `json:"latest_year"`
+	Cumulative map[string]int `json:"cumulative"`
+	Latest     map[string]int `json:"latest"`
+}
+
+func (r Runner) fetchUCDPConflictsCached(ctx context.Context, cfg config.Config, headers map[string]string, version string, cacheDB *sourcedb.DB) ([]parse.UCDPConflict, error) {
+	baseURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/ucdpprioconflict/%s?pagesize=500",
+		url.QueryEscape(version))
+	client := r.clientFactory(withMinUCDPTimeout(cfg))
+	body, err := client.TextWithHeaders(ctx, baseURL+"&page=0", false, "application/json", headers)
+	if err != nil {
+		if cacheDB != nil {
+			if _, payload, ok, cacheErr := cacheDB.GetUCDPDatasetCache(ctx, "ucdpprioconflict", version); cacheErr == nil && ok {
+				var cached []parse.UCDPConflict
+				if json.Unmarshal(payload, &cached) == nil && len(cached) > 0 {
+					fmt.Fprintf(r.stderr, "UCDP conflicts: using DB cache due to fetch error: %v\n", err)
+					return cached, nil
+				}
+			}
+		}
+		return nil, err
+	}
+	page0Conflicts, err := parse.ParseUCDPConflicts(body)
+	if err != nil {
+		return nil, err
+	}
+	headHash := ucdpConflictHeadHash(page0Conflicts)
+	if cacheDB != nil {
+		if cachedHash, payload, ok, cacheErr := cacheDB.GetUCDPDatasetCache(ctx, "ucdpprioconflict", version); cacheErr == nil && ok && cachedHash == headHash {
+			var cached []parse.UCDPConflict
+			if json.Unmarshal(payload, &cached) == nil && len(cached) > 0 {
+				fmt.Fprintf(r.stderr, "UCDP conflicts: unchanged head page, reusing %d cached rows\n", len(cached))
+				return cached, nil
+			}
+		}
+	}
+	conflicts, err := r.fetchUCDPConflicts(ctx, cfg, headers, version)
+	if err != nil {
+		return nil, err
+	}
+	if cacheDB != nil && len(conflicts) > 0 {
+		if payload, marshalErr := json.Marshal(conflicts); marshalErr == nil {
+			if err := cacheDB.UpsertUCDPDatasetCache(ctx, "ucdpprioconflict", version, headHash, payload); err != nil {
+				fmt.Fprintf(r.stderr, "WARN UCDP conflicts cache write failed: %v\n", err)
+			}
+		}
+	}
+	return conflicts, nil
+}
+
+func (r Runner) fetchUCDPBattleDeathsTotalsByCountryCached(ctx context.Context, cfg config.Config, headers map[string]string, version string, cacheDB *sourcedb.DB) (int, map[string]int, map[string]int, error) {
+	baseURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/battledeaths/%s?pagesize=500",
+		url.QueryEscape(version))
+	client := r.clientFactory(withMinUCDPTimeout(cfg))
+	body, err := client.TextWithHeaders(ctx, baseURL+"&page=0", false, "application/json", headers)
+	if err != nil {
+		if cacheDB != nil {
+			if _, payload, ok, cacheErr := cacheDB.GetUCDPDatasetCache(ctx, "battledeaths", version); cacheErr == nil && ok {
+				var cached ucdpBattleDeathsCachePayload
+				if json.Unmarshal(payload, &cached) == nil {
+					fmt.Fprintf(r.stderr, "UCDP battledeaths: using DB cache due to fetch error: %v\n", err)
+					return cached.LatestYear, cached.Cumulative, cached.Latest, nil
+				}
+			}
+		}
+		return 0, nil, nil, err
+	}
+	page0Rows, err := parseUCDPRows(body)
+	if err != nil {
+		return 0, nil, nil, err
+	}
+	headHash := ucdpRowsHeadHash(page0Rows)
+	if cacheDB != nil {
+		if cachedHash, payload, ok, cacheErr := cacheDB.GetUCDPDatasetCache(ctx, "battledeaths", version); cacheErr == nil && ok && cachedHash == headHash {
+			var cached ucdpBattleDeathsCachePayload
+			if json.Unmarshal(payload, &cached) == nil {
+				fmt.Fprintf(r.stderr, "UCDP battledeaths: unchanged head page, reusing DB cache\n")
+				return cached.LatestYear, cached.Cumulative, cached.Latest, nil
+			}
+		}
+	}
+	latestYear, cumulative, latest, err := r.fetchUCDPBattleDeathsTotalsByCountry(ctx, cfg, headers, version)
+	if err != nil {
+		return 0, nil, nil, err
+	}
+	if cacheDB != nil {
+		payload, marshalErr := json.Marshal(ucdpBattleDeathsCachePayload{
+			LatestYear: latestYear,
+			Cumulative: cumulative,
+			Latest:     latest,
+		})
+		if marshalErr == nil {
+			if err := cacheDB.UpsertUCDPDatasetCache(ctx, "battledeaths", version, headHash, payload); err != nil {
+				fmt.Fprintf(r.stderr, "WARN UCDP battledeaths cache write failed: %v\n", err)
+			}
+		}
+	}
+	return latestYear, cumulative, latest, nil
+}
+
+func ucdpConflictHeadHash(conflicts []parse.UCDPConflict) string {
+	if len(conflicts) == 0 {
+		return ""
+	}
+	limit := len(conflicts)
+	if limit > 100 {
+		limit = 100
+	}
+	h := sha1.New()
+	for i := 0; i < limit; i++ {
+		_, _ = io.WriteString(h, conflicts[i].ConflictID)
+		_, _ = io.WriteString(h, "|")
+		_, _ = io.WriteString(h, strconv.Itoa(conflicts[i].Year))
+		_, _ = io.WriteString(h, "|")
+		_, _ = io.WriteString(h, conflicts[i].GWNoLoc)
+		_, _ = io.WriteString(h, "\n")
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func ucdpRowsHeadHash(rows []map[string]any) string {
+	if len(rows) == 0 {
+		return ""
+	}
+	limit := len(rows)
+	if limit > 100 {
+		limit = 100
+	}
+	h := sha1.New()
+	for i := 0; i < limit; i++ {
+		row := rows[i]
+		_, _ = io.WriteString(h, firstStringFromAny(row["year"]))
+		_, _ = io.WriteString(h, "|")
+		_, _ = io.WriteString(h, firstStringFromAny(row["gwno_battle"], row["gwno_loc"]))
+		_, _ = io.WriteString(h, "|")
+		_, _ = io.WriteString(h, firstStringFromAny(row["bd_best"], row["best"]))
+		_, _ = io.WriteString(h, "\n")
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func withMinUCDPTimeout(cfg config.Config) config.Config {

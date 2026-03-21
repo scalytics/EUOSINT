@@ -269,6 +269,16 @@ CREATE TABLE IF NOT EXISTS ucdp_lens_state (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS ucdp_dataset_cache (
+  dataset_key TEXT NOT NULL,
+  version TEXT NOT NULL,
+  head_hash TEXT NOT NULL DEFAULT '',
+  payload_json TEXT NOT NULL DEFAULT '[]',
+  refreshed_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (dataset_key, version)
+);
+
 CREATE INDEX IF NOT EXISTS idx_sources_agency_id ON sources(agency_id);
 CREATE INDEX IF NOT EXISTS idx_sources_status ON sources(status);
 CREATE INDEX IF NOT EXISTS idx_sources_feed_url ON sources(feed_url);
@@ -288,6 +298,7 @@ CREATE INDEX IF NOT EXISTS idx_registry_sync_state_updated ON registry_sync_stat
 CREATE INDEX IF NOT EXISTS idx_ucdp_lens_events_lens ON ucdp_lens_events(lens_id);
 CREATE INDEX IF NOT EXISTS idx_ucdp_lens_events_published ON ucdp_lens_events(published DESC);
 CREATE INDEX IF NOT EXISTS idx_ucdp_lens_state_updated ON ucdp_lens_state(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ucdp_dataset_cache_updated ON ucdp_dataset_cache(updated_at DESC);
 
 CREATE TABLE IF NOT EXISTS cities (
   id INTEGER PRIMARY KEY,
