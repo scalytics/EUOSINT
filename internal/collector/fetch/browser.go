@@ -102,7 +102,6 @@ func initRemoteAllocator(wsURL string, timeoutMS int, connectRetries int, retryD
 	return nil, nil, lastErr
 }
 
-
 func (b *BrowserClient) acquire(ctx context.Context) error {
 	if b.sem == nil {
 		return nil

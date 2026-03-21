@@ -4,12 +4,8 @@
  * See NOTICE for provenance and LICENSE for repository-local terms.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/Header";
-import { GlobeView } from "@/components/GlobeView";
-import { AlertFeed } from "@/components/AlertFeed";
-import { AlertDetail } from "@/components/AlertDetail";
-import { FeedDirectory } from "@/components/FeedDirectory";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useAlertState } from "@/hooks/useAlertState";
 import { useSearch } from "@/hooks/useSearch";
@@ -23,6 +19,10 @@ import type { AlertCategory } from "@/types/alert";
 type SeverityFilter = "critical" | "high" | null;
 
 const SOURCE_SELECTION_COOKIE = "euosint_selected_sources";
+const GlobeView = lazy(() => import("@/components/GlobeView").then((mod) => ({ default: mod.GlobeView })));
+const AlertFeed = lazy(() => import("@/components/AlertFeed").then((mod) => ({ default: mod.AlertFeed })));
+const AlertDetail = lazy(() => import("@/components/AlertDetail").then((mod) => ({ default: mod.AlertDetail })));
+const FeedDirectory = lazy(() => import("@/components/FeedDirectory").then((mod) => ({ default: mod.FeedDirectory })));
 
 function normalizeConflictRegion(raw: string): string {
   const value = raw.trim().toLowerCase();
@@ -377,39 +377,43 @@ export default function App() {
       <div className="relative flex min-h-0 flex-1 gap-3 px-3 pb-3 pt-3 md:px-4">
         {/* Left panel — intel overview */}
         <div className={`${mobilePane === "intel" ? "block" : "hidden"} md:block w-full md:w-[20rem] md:shrink-0 min-h-0`}>
-          <FeedDirectory
-            view="overview"
-            alerts={regionScopedAlerts}
-            sourceHealth={sourceHealth}
-            isLoading={isSourceHealthLoading}
-            selectedSourceIds={selectedSourceIds}
-            onSelectSourceIdsChange={handleSourceSelectionChange}
-            categoryFilter={categoryFilter}
-            onSelectCategory={setCategoryFilter}
-            regionFilter={regionFilter}
-            onSelectCountry={handleCountrySelect}
-            severityFilter={severityFilter}
-            onSeverityFilterChange={setSeverityFilter}
-            onSearchTerm={setSearchQuery}
-          />
+          <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-siem-muted">Loading intel panel...</div>}>
+            <FeedDirectory
+              view="overview"
+              alerts={regionScopedAlerts}
+              sourceHealth={sourceHealth}
+              isLoading={isSourceHealthLoading}
+              selectedSourceIds={selectedSourceIds}
+              onSelectSourceIdsChange={handleSourceSelectionChange}
+              categoryFilter={categoryFilter}
+              onSelectCategory={setCategoryFilter}
+              regionFilter={regionFilter}
+              onSelectCountry={handleCountrySelect}
+              severityFilter={severityFilter}
+              onSeverityFilterChange={setSeverityFilter}
+              onSearchTerm={setSearchQuery}
+            />
+          </Suspense>
         </div>
 
         {/* Center — map */}
         <div className={`${mobilePane === "map" ? "block" : "hidden"} md:block min-h-0 flex-1 min-w-0`}>
-          <GlobeView
-            alerts={scopedAlerts}
-            historicalAlerts={scopedStateAlerts}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            regionFilter={regionFilter}
-            onRegionChange={handleRegionChange}
-            conflictLensId={conflictLensId}
-            onConflictCountryFocusChange={handleConflictCountryFocusChange}
-            visibleNowAlertIds={visibleNowAlertIds}
-            visibleHistoryAlertIds={visibleHistoryAlertIds}
-            onSelectSourceIdsChange={handleSourceSelectionChange}
-            selectedSourceIds={selectedSourceIds}
-          />
+          <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-siem-muted">Loading map...</div>}>
+            <GlobeView
+              alerts={scopedAlerts}
+              historicalAlerts={scopedStateAlerts}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              regionFilter={regionFilter}
+              onRegionChange={handleRegionChange}
+              conflictLensId={conflictLensId}
+              onConflictCountryFocusChange={handleConflictCountryFocusChange}
+              visibleNowAlertIds={visibleNowAlertIds}
+              visibleHistoryAlertIds={visibleHistoryAlertIds}
+              onSelectSourceIdsChange={handleSourceSelectionChange}
+              selectedSourceIds={selectedSourceIds}
+            />
+          </Suspense>
         </div>
 
         {/* Right panel — alert queue (contained, scrollable) */}
@@ -420,21 +424,23 @@ export default function App() {
                 Loading live alert queue...
               </div>
             ) : (
-              <AlertFeed
-                alerts={scopedAlerts}
-                historicalAlerts={scopedStateAlerts}
-                selectedId={selectedId}
-            onSelect={setSelectedId}
-            categoryFilter={categoryFilter}
-            regionFilter={regionFilter}
-            conflictLensId={conflictLensId}
-            conflictCountryFocus={conflictCountryFocus}
-            onRegionChange={handleRegionChange}
-                onVisibleAlertIdsChange={({ nowIds, historyIds }) => {
-                  setVisibleNowAlertIds(nowIds);
-                  setVisibleHistoryAlertIds(historyIds);
-                }}
-              />
+              <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm text-siem-muted">Loading alert queue...</div>}>
+                <AlertFeed
+                  alerts={scopedAlerts}
+                  historicalAlerts={scopedStateAlerts}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                  categoryFilter={categoryFilter}
+                  regionFilter={regionFilter}
+                  conflictLensId={conflictLensId}
+                  conflictCountryFocus={conflictCountryFocus}
+                  onRegionChange={handleRegionChange}
+                  onVisibleAlertIdsChange={({ nowIds, historyIds }) => {
+                    setVisibleNowAlertIds(nowIds);
+                    setVisibleHistoryAlertIds(historyIds);
+                  }}
+                />
+              </Suspense>
             )}
           </div>
         </div>
@@ -472,7 +478,9 @@ export default function App() {
               onClick={handleClose}
             />
             <div className="w-full overflow-hidden rounded-[1.6rem] border border-siem-border bg-siem-panel-strong shadow-[0_28px_100px_rgba(0,0,0,0.45)]">
-              <AlertDetail alert={selectedAlert} onClose={handleClose} />
+              <Suspense fallback={<div className="flex h-full w-full items-center justify-center text-sm text-siem-muted">Loading alert details...</div>}>
+                <AlertDetail alert={selectedAlert} onClose={handleClose} />
+              </Suspense>
             </div>
           </div>
         )}

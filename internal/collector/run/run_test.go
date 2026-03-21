@@ -250,10 +250,10 @@ func TestUsesBrowserLaneForBrowserBoundSources(t *testing.T) {
 
 func TestLaneClassificationIsExclusive(t *testing.T) {
 	tests := []struct {
-		name          string
-		source        model.RegistrySource
-		wantFast      bool
-		wantBrowser   bool
+		name        string
+		source      model.RegistrySource
+		wantFast    bool
+		wantBrowser bool
 	}{
 		{
 			name:        "rss fast only",

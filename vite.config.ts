@@ -27,6 +27,19 @@ const appVersion =
 export default defineConfig({
   base: process.env.BASE_PATH ?? "/",
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("leaflet") || id.includes("three")) return "vendor-map";
+          if (id.includes("react") || id.includes("scheduler")) return "vendor-react";
+          if (id.includes("lucide-react")) return "vendor-icons";
+          return "vendor";
+        },
+      },
+    },
+  },
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
   },

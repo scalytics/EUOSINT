@@ -1,4 +1,5 @@
 import L from "leaflet";
+import type { GeoJsonObject } from "geojson";
 import { latLngToRegion } from "@/lib/regions";
 
 export type OverlayId = string;
@@ -69,10 +70,8 @@ export const DEFAULT_OVERLAYS: OverlayDef[] = [
 
 const EMPTY_FEATURE_COLLECTION: GeoJSONLike = { type: "FeatureCollection", features: [] };
 
-function hasGeoJSONFeatures(value: GeoJSONLike | null): value is GeoJSONLike {
-  if (!value) return false;
-  const features = (value as { features?: unknown[] }).features;
-  return Array.isArray(features) && features.length > 0;
+function toGeoJsonObject(value: GeoJSONLike): GeoJsonObject {
+  return value as unknown as GeoJsonObject;
 }
 
 async function fetchGeoJSON(url: string): Promise<GeoJSONLike | null> {
@@ -242,10 +241,11 @@ export async function loadOverlay(
   }
   geojson = filterConflictOverlayFeatures(geojson, def.id, conflictLensId);
   geojson = filterGeoJSONByRegion(geojson, def.id, regionFilter, conflictLensId);
+  const leafletGeoJSON = toGeoJsonObject(geojson);
   const group = L.layerGroup();
 
   if (def.id === "conflicts") {
-    L.geoJSON(geojson as any, {
+    L.geoJSON(leafletGeoJSON, {
       style: (feature) => {
         const type = feature?.properties?.type ?? "active_conflict";
         const countryRole = feature?.properties?.country_role ?? "primary";
@@ -276,7 +276,7 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "ports") {
-    L.geoJSON(geojson as any, {
+    L.geoJSON(leafletGeoJSON, {
       pointToLayer: (_feature, latlng) => {
         const type = _feature.properties?.type ?? "container";
         return L.circleMarker(latlng, {
@@ -327,7 +327,7 @@ export async function loadOverlay(
       marker.addTo(group);
     }
   } else if (def.id === "nuclear") {
-    L.geoJSON(geojson as any, {
+    L.geoJSON(leafletGeoJSON, {
       pointToLayer: (_feature, latlng) => {
         return L.circleMarker(latlng, {
           radius: 5,
@@ -348,7 +348,7 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "sanctions") {
-    L.geoJSON(geojson as any, {
+    L.geoJSON(leafletGeoJSON, {
       style: (feature) => {
         const type = feature?.properties?.type ?? "comprehensive";
         return {
@@ -368,7 +368,7 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "piracy") {
-    L.geoJSON(geojson as any, {
+    L.geoJSON(leafletGeoJSON, {
       style: (feature) => {
         const type = feature?.properties?.type ?? "elevated";
         return {
@@ -388,7 +388,7 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "terrorism") {
-    L.geoJSON(geojson as any, {
+    L.geoJSON(leafletGeoJSON, {
       style: (feature) => {
         const type = feature?.properties?.type ?? "active";
         return {
@@ -408,7 +408,7 @@ export async function loadOverlay(
       },
     }).addTo(group);
   } else if (def.id === "cables") {
-    L.geoJSON(geojson as any, {
+    L.geoJSON(leafletGeoJSON, {
       style: (feature) => ({
         color: feature?.properties?.color ?? def.color,
         weight: 1.5,
@@ -427,7 +427,7 @@ export async function loadOverlay(
     // Shipping lanes (Major / Middle)
     const laneWeight: Record<string, number> = { Major: 2, Middle: 1.4 };
     const laneOpacity: Record<string, number> = { Major: 0.5, Middle: 0.35 };
-    L.geoJSON(geojson as any, {
+    L.geoJSON(leafletGeoJSON, {
       style: (feature) => {
         const type = feature?.properties?.Type ?? "Major";
         return {
