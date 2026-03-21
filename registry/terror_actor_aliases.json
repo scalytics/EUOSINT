@@ -1,0 +1,30 @@
+[
+  {
+    "canonical": "Islamic State",
+    "aliases": ["islamic state", "isis", "isil", "daesh", "is"]
+  },
+  {
+    "canonical": "ISWAP",
+    "aliases": ["iswap", "is west africa province", "islamic state west africa province"]
+  },
+  {
+    "canonical": "Al-Qaeda",
+    "aliases": ["al-qaeda", "al qaeda", "aq"]
+  },
+  {
+    "canonical": "AQIM",
+    "aliases": ["aqim", "al-qaeda in the islamic maghreb", "al qaeda in the islamic maghreb"]
+  },
+  {
+    "canonical": "JNIM",
+    "aliases": ["jnim", "jamaat nusrat al-islam wal-muslimin", "jama'at nusrat al-islam wal-muslimin"]
+  },
+  {
+    "canonical": "Al-Shabaab",
+    "aliases": ["al-shabaab", "al shabaab", "harakat al-shabaab"]
+  },
+  {
+    "canonical": "Boko Haram",
+    "aliases": ["boko haram", "jama'at ahl as-sunnah lid-da'wah wa'l-jihad"]
+  }
+]

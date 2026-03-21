@@ -2416,6 +2416,22 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 				}
 			}
 		}
+		terrorZonesDynamic, terrorOverlays, err := buildDynamicTerrorZonesFromAlerts(cfg.CountryBoundariesPath, cfg.StateOutputPath, currentConflicts, now)
+		if err == nil {
+			if dynamicOverlayFeatureCount(terrorZonesDynamic) > 0 {
+				if err := writeJSONArtifact(filepath.Join(geoDir, "terrorism-zones.geojson"), terrorZonesDynamic); err != nil {
+					return err
+				}
+			}
+			for lensID, geojson := range terrorOverlays {
+				if dynamicOverlayFeatureCount(geojson) == 0 {
+					continue
+				}
+				if err := writeJSONArtifact(filepath.Join(geoDir, "terrorism-zones."+lensID+".geojson"), geojson); err != nil {
+					return err
+				}
+			}
+		}
 	}
 	return nil
 }
@@ -2448,6 +2464,325 @@ func featureSliceAny(raw any) []any {
 	default:
 		return nil
 	}
+}
+
+func buildDynamicTerrorZonesFromAlerts(boundariesPath string, statePath string, currentConflicts []map[string]any, now time.Time) (map[string]any, map[string]map[string]any, error) {
+	collection, err := readBoundaryCollection(boundariesPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	byISO2 := make(map[string]boundaryFeature, len(collection.Features))
+	for _, feature := range collection.Features {
+		code := strings.ToUpper(strings.TrimSpace(firstBoundaryString(feature.Properties, "ISO_A2", "iso2", "country_code", "country_code2", "shapeGroup")))
+		if len(code) == 2 {
+			byISO2[code] = feature
+		}
+	}
+	actorAliases := loadTerrorActorAliases()
+	allAlerts := state.Read(statePath)
+	countByCode365d := map[string]int{}
+	countByCode90d := map[string]int{}
+	actorByCode := map[string]map[string]int{}
+	eventTypeByCode := map[string]map[string]int{}
+	for _, alert := range allAlerts {
+		ok, eventType, actor := terrorSignalEvidence(alert, actorAliases)
+		if !ok {
+			continue
+		}
+		ts, err := time.Parse(time.RFC3339, strings.TrimSpace(alert.LastSeen))
+		if err != nil {
+			continue
+		}
+		age := now.Sub(ts.UTC())
+		if age < 0 || age > 365*24*time.Hour {
+			continue
+		}
+		code := strings.ToUpper(strings.TrimSpace(firstNonEmpty(alert.EventCountryCode, alert.Source.CountryCode)))
+		if len(code) != 2 || code == "INT" {
+			continue
+		}
+		countByCode365d[code]++
+		if strings.TrimSpace(actor) != "" {
+			if _, ok := actorByCode[code]; !ok {
+				actorByCode[code] = map[string]int{}
+			}
+			actorByCode[code][actor]++
+		}
+		if strings.TrimSpace(eventType) != "" {
+			if _, ok := eventTypeByCode[code]; !ok {
+				eventTypeByCode[code] = map[string]int{}
+			}
+			eventTypeByCode[code][eventType]++
+		}
+		if age <= 90*24*time.Hour {
+			countByCode90d[code]++
+		}
+	}
+	baseFeatures := make([]any, 0, len(countByCode365d))
+	for code, count365 := range countByCode365d {
+		boundary, ok := byISO2[code]
+		if !ok {
+			continue
+		}
+		status := "degraded"
+		zoneType := "degraded"
+		if countByCode90d[code] > 0 {
+			status = "active"
+			zoneType = "active"
+		}
+		countryLabel := strings.TrimSpace(firstBoundaryString(boundary.Properties, "NAME", "ADMIN", "NAME_LONG", "country_name"))
+		if countryLabel == "" {
+			countryLabel = code
+		}
+		baseFeatures = append(baseFeatures, map[string]any{
+			"type": "Feature",
+			"properties": mergeMaps(boundary.Properties, map[string]any{
+				"name":             countryLabel + " terror activity",
+				"lens_id":          "terror-" + strings.ToLower(code),
+				"status":           status,
+				"type":             zoneType,
+				"threat":           "EUOSINT terror signal aggregation",
+				"country_code":     code,
+				"country_role":     "primary",
+				"source":           "EUOSINT live terror aggregation",
+				"events_365d":      count365,
+				"events_90d":       countByCode90d[code],
+				"source_timeframe": "365d",
+				"dominant_actor":   dominantLabel(actorByCode[code]),
+				"dominant_event":   dominantLabel(eventTypeByCode[code]),
+			}),
+			"geometry": boundary.Geometry,
+		})
+	}
+	baseCollection := map[string]any{
+		"type":     "FeatureCollection",
+		"features": baseFeatures,
+	}
+	overlays := map[string]map[string]any{}
+	for _, row := range currentConflicts {
+		codes := anyStringSlice(row["overlay_country_codes"])
+		if len(codes) == 0 {
+			continue
+		}
+		lensID := strings.TrimSpace(firstNonEmpty(anyStringSlice(row["lens_ids"])...))
+		if lensID == "" {
+			continue
+		}
+		lensFeatures := make([]any, 0, len(codes))
+		for _, code := range codes {
+			code = strings.ToUpper(strings.TrimSpace(code))
+			if countByCode365d[code] == 0 {
+				continue
+			}
+			boundary, ok := byISO2[code]
+			if !ok {
+				continue
+			}
+			status := "degraded"
+			zoneType := "degraded"
+			if countByCode90d[code] > 0 {
+				status = "active"
+				zoneType = "active"
+			}
+			countryLabel := strings.TrimSpace(firstBoundaryString(boundary.Properties, "NAME", "ADMIN", "NAME_LONG", "country_name"))
+			if countryLabel == "" {
+				countryLabel = code
+			}
+			lensFeatures = append(lensFeatures, map[string]any{
+				"type": "Feature",
+				"properties": mergeMaps(boundary.Properties, map[string]any{
+					"name":             countryLabel + " terror activity",
+					"lens_id":          lensID,
+					"status":           status,
+					"type":             zoneType,
+					"threat":           "EUOSINT terror signal aggregation",
+					"country_code":     code,
+					"country_role":     "primary",
+					"source":           "EUOSINT live terror aggregation",
+					"events_365d":      countByCode365d[code],
+					"events_90d":       countByCode90d[code],
+					"source_timeframe": "365d",
+					"dominant_actor":   dominantLabel(actorByCode[code]),
+					"dominant_event":   dominantLabel(eventTypeByCode[code]),
+				}),
+				"geometry": boundary.Geometry,
+			})
+		}
+		overlays[lensID] = map[string]any{
+			"type":     "FeatureCollection",
+			"features": lensFeatures,
+		}
+	}
+	return baseCollection, overlays, nil
+}
+
+func terrorSignalEvidence(alert model.Alert, actorAliases map[string]string) (bool, string, string) {
+	category := strings.ToLower(strings.TrimSpace(alert.Category))
+	title := strings.TrimSpace(alert.Title)
+	subcategory := strings.ToLower(strings.TrimSpace(alert.Subcategory))
+	text := strings.ToLower(strings.TrimSpace(title + " " + subcategory))
+	eventType := normalizeTerrorEventType(text)
+	if eventType == "" {
+		return false, "", ""
+	}
+	actor, actorHit := matchTerrorActor(text, actorAliases)
+	terrorKeyword := containsAny(text,
+		" terror ", " terrorist", " jihad", " isis", " isil", " daesh", " al-qaeda", " boko haram", " iswap", " jnim", " al-shabaab",
+	)
+	score := 0
+	if category == "terrorism_tip" {
+		score += 2
+	}
+	if actorHit {
+		score += 2
+	}
+	if terrorKeyword {
+		score++
+	}
+	if isHighTrustTerrorAuthority(alert.Source.AuthorityType) {
+		score++
+	}
+	if actorHit && (category == "conflict_monitoring" || category == "public_safety" || category == "terrorism_tip") {
+		score++
+	}
+	if score < 3 {
+		return false, "", ""
+	}
+	return true, eventType, actor
+}
+
+func normalizeTerrorEventType(text string) string {
+	switch {
+	case containsAny(text, "suicide attack", "bomb blast", "ied", "car bomb", "roadside bomb", "explosion", "detonated"):
+		return "bombing"
+	case containsAny(text, "kidnap", "abduct", "hostage", "taken hostage"):
+		return "kidnapping_hostage"
+	case containsAny(text, "assassinat", "executed", "behead"):
+		return "assassination_execution"
+	case containsAny(text, "shooting", "massacre", "armed attack", "raided", "raid", "ambush", "assault", "attacked", "attack"):
+		return "armed_attack"
+	default:
+		return ""
+	}
+}
+
+func isHighTrustTerrorAuthority(authorityType string) bool {
+	at := strings.ToLower(strings.TrimSpace(authorityType))
+	return strings.Contains(at, "police") ||
+		strings.Contains(at, "intelligence") ||
+		strings.Contains(at, "national_security") ||
+		strings.Contains(at, "counter_terrorism") ||
+		strings.Contains(at, "military") ||
+		strings.Contains(at, "government")
+}
+
+func matchTerrorActor(text string, actorAliases map[string]string) (string, bool) {
+	if len(actorAliases) == 0 {
+		return "", false
+	}
+	for alias, canonical := range actorAliases {
+		if containsTokenPhrase(text, alias) {
+			return canonical, true
+		}
+	}
+	return "", false
+}
+
+func containsAny(text string, needles ...string) bool {
+	padded := " " + strings.ToLower(strings.TrimSpace(text)) + " "
+	for _, needle := range needles {
+		if strings.Contains(padded, strings.ToLower(strings.TrimSpace(needle))) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsTokenPhrase(text string, phrase string) bool {
+	text = strings.ToLower(text)
+	phrase = strings.ToLower(strings.TrimSpace(phrase))
+	if phrase == "" {
+		return false
+	}
+	start := 0
+	for {
+		idx := strings.Index(text[start:], phrase)
+		if idx < 0 {
+			return false
+		}
+		idx += start
+		end := idx + len(phrase)
+		leftOK := idx == 0 || !isAlphaNum(text[idx-1])
+		rightOK := end >= len(text) || !isAlphaNum(text[end])
+		if leftOK && rightOK {
+			return true
+		}
+		start = idx + 1
+	}
+}
+
+func isAlphaNum(ch byte) bool {
+	return (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')
+}
+
+func dominantLabel(counts map[string]int) string {
+	best := ""
+	bestN := 0
+	for key, n := range counts {
+		if n > bestN {
+			best = key
+			bestN = n
+		}
+	}
+	return best
+}
+
+func loadTerrorActorAliases() map[string]string {
+	aliases := map[string]string{}
+	add := func(canonical string, values ...string) {
+		canonical = strings.TrimSpace(canonical)
+		if canonical == "" {
+			return
+		}
+		for _, value := range values {
+			value = strings.ToLower(strings.TrimSpace(value))
+			if value == "" {
+				continue
+			}
+			aliases[value] = canonical
+		}
+	}
+	add("Islamic State", "islamic state", "isis", "isil", "daesh", "is")
+	add("ISWAP", "iswap", "is west africa province", "islamic state west africa province")
+	add("Al-Qaeda", "al-qaeda", "al qaeda", "aq")
+	add("AQIM", "aqim", "al-qaeda in the islamic maghreb", "al qaeda in the islamic maghreb")
+	add("JNIM", "jnim", "jamaat nusrat al-islam wal-muslimin", "jama'at nusrat al-islam wal-muslimin")
+	add("Al-Shabaab", "al-shabaab", "al shabaab", "harakat al-shabaab")
+	add("Boko Haram", "boko haram", "jamā'at ahl as-sunnah lid-da'wah wa'l-jihād")
+
+	type aliasGroup struct {
+		Canonical string   `json:"canonical"`
+		Aliases   []string `json:"aliases"`
+	}
+	paths := []string{
+		"registry/terror_actor_aliases.json",
+		"/app/registry/terror_actor_aliases.json",
+	}
+	for _, path := range paths {
+		body, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		var groups []aliasGroup
+		if err := json.Unmarshal(body, &groups); err != nil {
+			continue
+		}
+		for _, group := range groups {
+			add(group.Canonical, append(group.Aliases, group.Canonical)...)
+		}
+		break
+	}
+	return aliases
 }
 
 func ensureZoneBriefingArtifacts(cfg config.Config) error {
