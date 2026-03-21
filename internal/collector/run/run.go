@@ -2404,9 +2404,41 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 					return err
 				}
 			}
+			// Drive the base conflict-zones overview from live dynamic conflicts (DB-backed),
+			// so regional conflict layer reflects current dataset rather than legacy static lenses.
+			if aggregated := aggregateDynamicConflictOverlays(conflictOverlays); dynamicOverlayFeatureCount(aggregated) > 0 {
+				if err := writeJSONArtifact(filepath.Join(geoDir, "conflict-zones.geojson"), aggregated); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
+}
+
+func aggregateDynamicConflictOverlays(conflictOverlays map[string]map[string]any) map[string]any {
+	features := make([]any, 0)
+	for _, collection := range conflictOverlays {
+		raw := collection["features"]
+		typed, ok := raw.([]any)
+		if !ok {
+			continue
+		}
+		features = append(features, typed...)
+	}
+	return map[string]any{
+		"type":     "FeatureCollection",
+		"features": features,
+	}
+}
+
+func dynamicOverlayFeatureCount(collection map[string]any) int {
+	raw := collection["features"]
+	typed, ok := raw.([]any)
+	if !ok {
+		return 0
+	}
+	return len(typed)
 }
 
 func ensureZoneBriefingArtifacts(cfg config.Config) error {
