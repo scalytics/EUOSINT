@@ -1046,9 +1046,9 @@ export function GlobeView({
                 <div>
                   <span className="text-siem-muted">Actors:</span>{" "}
                   {(
-                    activeConflictBrief.actors.filter((item) => !/^XXX\d+$/i.test(item.trim())).length > 0
-                      ? activeConflictBrief.actors.filter((item) => !/^XXX\d+$/i.test(item.trim()))
-                      : [activeDynamicConflict?.sideA, activeDynamicConflict?.sideB].filter((v) => (v ?? "").trim().length > 0)
+                    [activeDynamicConflict?.sideA, activeDynamicConflict?.sideB].filter((v) => (v ?? "").trim().length > 0).length > 0
+                      ? [activeDynamicConflict?.sideA, activeDynamicConflict?.sideB].filter((v): v is string => (v ?? "").trim().length > 0)
+                      : activeConflictBrief.actors.filter((item) => !/^XXX\d+$/i.test(item.trim()))
                   ).join(", ") || "n/a"}
                 </div>
               </div>

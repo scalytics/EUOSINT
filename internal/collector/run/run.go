@@ -2220,7 +2220,10 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	// Staleness check: skip if output file is fresh enough.
 	if info, err := os.Stat(cfg.ZoneBriefingsOutputPath); err == nil {
 		age := time.Since(info.ModTime())
-		if age < time.Duration(cfg.ZoneBriefingRefreshHours)*time.Hour && zoneBriefingsFileHasRecords(cfg.ZoneBriefingsOutputPath) {
+		conflictStatsPath := filepath.Join(outDir, "ucdp-conflict-stats.json")
+		if age < time.Duration(cfg.ZoneBriefingRefreshHours)*time.Hour &&
+			zoneBriefingsFileHasRecords(cfg.ZoneBriefingsOutputPath) &&
+			!conflictStatsNeedsLLMRefresh(conflictStatsPath) {
 			fmt.Fprintf(r.stderr, "zone briefings: skipping, file is %.1fh old (threshold %dh)\n", age.Hours(), cfg.ZoneBriefingRefreshHours)
 			return nil
 		}
@@ -3098,6 +3101,37 @@ func zoneBriefingsFileHasRecords(path string) bool {
 		return false
 	}
 	return len(rows) > 0
+}
+
+func conflictStatsNeedsLLMRefresh(path string) bool {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(body, &rows); err != nil {
+		return false
+	}
+	if len(rows) == 0 {
+		return true
+	}
+	now := time.Now().UTC()
+	for _, row := range rows {
+		history := strings.TrimSpace(stringValue(row["historical_summary"]))
+		analysis := strings.TrimSpace(stringValue(row["current_analysis"]))
+		analysisUpdatedAt := strings.TrimSpace(stringValue(row["analysis_updated_at"]))
+		if history == "" || analysis == "" || analysisUpdatedAt == "" {
+			return true
+		}
+		ts, err := time.Parse(time.RFC3339, analysisUpdatedAt)
+		if err != nil {
+			return true
+		}
+		if now.Sub(ts) >= 7*24*time.Hour {
+			return true
+		}
+	}
+	return false
 }
 
 // ucdpVersions holds discovered UCDP dataset versions.
