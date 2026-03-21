@@ -38,6 +38,7 @@ jobs:
 
   release:
     name: publish-${{ matrix.image.name }}
+    needs: mirror-browser
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
