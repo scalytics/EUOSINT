@@ -2421,11 +2421,16 @@ func ensureZoneBriefingArtifacts(cfg config.Config) error {
 	}
 
 	geoDir := filepath.Join(filepath.Dir(outPath), "geo")
-	if err := writeJSONArtifact(filepath.Join(filepath.Dir(outPath), "ucdp-current-conflicts.json"), []map[string]any{}); err != nil {
-		return err
-	}
-	if err := writeJSONArtifact(filepath.Join(filepath.Dir(outPath), "ucdp-conflict-stats.json"), []map[string]any{}); err != nil {
-		return err
+	for _, name := range []string{"ucdp-current-conflicts.json", "ucdp-conflict-stats.json"} {
+		path := filepath.Join(filepath.Dir(outPath), name)
+		if _, err := os.Stat(path); err == nil {
+			continue
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+		if err := writeJSONArtifact(path, []map[string]any{}); err != nil {
+			return err
+		}
 	}
 	empty := map[string]any{
 		"type":     "FeatureCollection",
