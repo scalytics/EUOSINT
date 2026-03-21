@@ -48,6 +48,17 @@ type Runner struct {
 	noiseGate      *noisegate.Engine
 }
 
+type boundaryCollection struct {
+	Type     string            `json:"type"`
+	Features []boundaryFeature `json:"features"`
+}
+
+type boundaryFeature struct {
+	Type       string         `json:"type"`
+	Properties map[string]any `json:"properties"`
+	Geometry   any            `json:"geometry"`
+}
+
 func New(stdout io.Writer, stderr io.Writer) Runner {
 	return Runner{
 		stdout:        stdout,
@@ -2238,7 +2249,10 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	if err != nil {
 		fmt.Fprintf(r.stderr, "WARN ucdpprioconflict fetch: %v\n", err)
 	}
-	currentConflicts := buildCurrentConflictIndex(conflicts)
+	gwnoToISO2Map := buildStaticGWNOISO2Map()
+	nameToISO2 := loadCountryNameToISO2(cfg.CountryBoundariesPath)
+	enrichGWNOISO2MapFromConflicts(ctx, r.clientFactory(withMinUCDPTimeout(cfg)), headers, gedVersion, conflicts, nameToISO2, gwnoToISO2Map)
+	currentConflicts, conflictOverlayCountries := buildCurrentConflictIndex(conflicts, gwnoToISO2Map)
 	latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, err := r.fetchUCDPBattleDeathsTotalsByCountry(ctx, cfg, headers, conflictVersion)
 	if err != nil {
 		fmt.Fprintf(r.stderr, "WARN UCDP battledeaths fetch: %v\n", err)
@@ -2299,6 +2313,11 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	if err := writeJSONArtifact(filepath.Join(outDir, "ucdp-current-conflicts.json"), currentConflicts); err != nil {
 		return err
 	}
+	iso2ToLabel := loadISO2ToCountryName(cfg.CountryBoundariesPath)
+	conflictStats := buildCurrentConflictStats(currentConflicts, latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, gwnoToISO2Map, iso2ToLabel)
+	if err := writeJSONArtifact(filepath.Join(outDir, "ucdp-conflict-stats.json"), conflictStats); err != nil {
+		return err
+	}
 	geoDir := filepath.Join(outDir, "geo")
 	conflictZones, terrorZones := zonebrief.BuildConflictZonesGeoJSON(briefings), zonebrief.BuildTerrorZonesGeoJSON(briefings)
 	conflictFootprints := zonebrief.BuildConflictFootprintsGeoJSON(briefings, allItems)
@@ -2339,6 +2358,16 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 			return err
 		}
 	}
+	if strings.TrimSpace(cfg.CountryBoundariesPath) != "" {
+		conflictOverlays, err := buildDynamicConflictOverlays(cfg.CountryBoundariesPath, currentConflicts, conflictOverlayCountries)
+		if err == nil {
+			for lensID, geojson := range conflictOverlays {
+				if err := writeJSONArtifact(filepath.Join(geoDir, "conflict-zones."+lensID+".geojson"), geojson); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -2360,6 +2389,9 @@ func ensureZoneBriefingArtifacts(cfg config.Config) error {
 	if err := writeJSONArtifact(filepath.Join(filepath.Dir(outPath), "ucdp-current-conflicts.json"), []map[string]any{}); err != nil {
 		return err
 	}
+	if err := writeJSONArtifact(filepath.Join(filepath.Dir(outPath), "ucdp-conflict-stats.json"), []map[string]any{}); err != nil {
+		return err
+	}
 	empty := map[string]any{
 		"type":     "FeatureCollection",
 		"features": []any{},
@@ -2378,9 +2410,9 @@ func ensureZoneBriefingArtifacts(cfg config.Config) error {
 	return nil
 }
 
-func buildCurrentConflictIndex(conflicts []parse.UCDPConflict) []map[string]any {
+func buildCurrentConflictIndex(conflicts []parse.UCDPConflict, gwnoToISO2Map map[string]string) ([]map[string]any, map[string][]string) {
 	if len(conflicts) == 0 {
-		return []map[string]any{}
+		return []map[string]any{}, map[string][]string{}
 	}
 	latestYear := 0
 	for _, conflict := range conflicts {
@@ -2389,14 +2421,20 @@ func buildCurrentConflictIndex(conflicts []parse.UCDPConflict) []map[string]any 
 		}
 	}
 	if latestYear <= 0 {
-		return []map[string]any{}
+		return []map[string]any{}, map[string][]string{}
 	}
 	entries := make([]map[string]any, 0)
+	overlayCountriesByLensID := make(map[string][]string)
 	for _, conflict := range conflicts {
 		if conflict.Year != latestYear || conflict.EPEnd != 0 {
 			continue
 		}
-		lensIDs := mapConflictToLensIDs(conflict)
+		overlayCountryCodes := resolveConflictCountryCodes(conflict, gwnoToISO2Map)
+		lensID := "conflict-" + strings.TrimSpace(conflict.ConflictID)
+		lensIDs := []string{lensID}
+		if len(overlayCountryCodes) > 0 {
+			overlayCountriesByLensID[lensID] = overlayCountryCodes
+		}
 		title := strings.TrimSpace(conflict.ConflictName)
 		if title == "" {
 			title = strings.TrimSpace(conflict.SideA)
@@ -2408,17 +2446,19 @@ func buildCurrentConflictIndex(conflicts []parse.UCDPConflict) []map[string]any 
 			title = "Conflict " + conflict.ConflictID
 		}
 		entries = append(entries, map[string]any{
-			"conflict_id":      conflict.ConflictID,
-			"title":            title,
-			"year":             conflict.Year,
-			"start_date":       conflict.StartDate,
-			"intensity_level":  conflict.IntensityLevel,
-			"type_of_conflict": parse.NormalizeConflictType(conflict.TypeOfConflict),
-			"gwno_loc":         conflict.GWNoLoc,
-			"side_a":           conflict.SideA,
-			"side_b":           conflict.SideB,
-			"lens_ids":         lensIDs,
-			"source_url":       currentConflictSourceURL(conflict),
+			"conflict_id":           conflict.ConflictID,
+			"title":                 title,
+			"year":                  conflict.Year,
+			"start_date":            conflict.StartDate,
+			"intensity_level":       conflict.IntensityLevel,
+			"type_of_conflict":      parse.NormalizeConflictType(conflict.TypeOfConflict),
+			"gwno_loc":              conflict.GWNoLoc,
+			"side_a":                conflict.SideA,
+			"side_b":                conflict.SideB,
+			"region":                conflict.Region,
+			"lens_ids":              lensIDs,
+			"overlay_country_codes": overlayCountryCodes,
+			"source_url":            currentConflictSourceURL(conflict),
 		})
 	}
 	sort.Slice(entries, func(i, j int) bool {
@@ -2434,7 +2474,348 @@ func buildCurrentConflictIndex(conflicts []parse.UCDPConflict) []map[string]any 
 		}
 		return stringValue(entries[i]["conflict_id"]) < stringValue(entries[j]["conflict_id"])
 	})
-	return entries
+	return entries, overlayCountriesByLensID
+}
+
+func buildDynamicConflictOverlays(boundariesPath string, conflicts []map[string]any, overlayCountriesByLensID map[string][]string) (map[string]map[string]any, error) {
+	collection, err := readBoundaryCollection(boundariesPath)
+	if err != nil {
+		return nil, err
+	}
+	byISO2 := make(map[string]boundaryFeature, len(collection.Features))
+	for _, feature := range collection.Features {
+		code := strings.ToUpper(strings.TrimSpace(firstBoundaryString(feature.Properties, "ISO_A2", "iso2", "country_code", "country_code2", "shapeGroup")))
+		if len(code) == 2 {
+			byISO2[code] = feature
+		}
+	}
+	out := make(map[string]map[string]any, len(overlayCountriesByLensID))
+	conflictMeta := make(map[string]map[string]any, len(conflicts))
+	for _, row := range conflicts {
+		for _, lensID := range anyStringSlice(row["lens_ids"]) {
+			if lensID == "" {
+				continue
+			}
+			conflictMeta[lensID] = row
+		}
+	}
+	for lensID, codes := range overlayCountriesByLensID {
+		row := conflictMeta[lensID]
+		title := stringValue(row["title"])
+		status := "active"
+		kind := "active_conflict"
+		if intValue(row["intensity_level"]) >= 2 {
+			kind = "active_war"
+		}
+		since := conflictSinceYear(row)
+		sourceURL := stringValue(row["source_url"])
+		features := make([]map[string]any, 0, len(codes))
+		for _, code := range codes {
+			feature, ok := byISO2[strings.ToUpper(strings.TrimSpace(code))]
+			if !ok {
+				continue
+			}
+			features = append(features, map[string]any{
+				"type": "Feature",
+				"properties": mergeMaps(feature.Properties, map[string]any{
+					"lens_id":      lensID,
+					"name":         title,
+					"status":       status,
+					"type":         kind,
+					"since":        since,
+					"country_code": strings.ToUpper(strings.TrimSpace(code)),
+					"country_role": "primary",
+					"source":       "UCDP current conflicts",
+					"source_url":   sourceURL,
+				}),
+				"geometry": feature.Geometry,
+			})
+		}
+		out[lensID] = map[string]any{
+			"type":     "FeatureCollection",
+			"features": features,
+		}
+	}
+	return out, nil
+}
+
+func conflictSinceYear(row map[string]any) string {
+	start := strings.TrimSpace(stringValue(row["start_date"]))
+	if len(start) >= 4 {
+		return start[:4]
+	}
+	year := intValue(row["year"])
+	if year > 0 {
+		return strconv.Itoa(year)
+	}
+	return ""
+}
+
+func resolveConflictCountryCodes(conflict parse.UCDPConflict, gwnoToISO2Map map[string]string) []string {
+	seen := map[string]struct{}{}
+	out := make([]string, 0, 2)
+	for _, raw := range strings.Split(conflict.GWNoLoc, ",") {
+		gwno := strings.TrimSpace(raw)
+		if gwno == "" {
+			continue
+		}
+		if iso, ok := gwnoToISO2Map[gwno]; ok && len(strings.TrimSpace(iso)) == 2 {
+			iso = strings.ToUpper(strings.TrimSpace(iso))
+			if _, exists := seen[iso]; !exists {
+				seen[iso] = struct{}{}
+				out = append(out, iso)
+			}
+		}
+	}
+	return out
+}
+
+func loadCountryNameToISO2(boundariesPath string) map[string]string {
+	out := map[string]string{}
+	if strings.TrimSpace(boundariesPath) == "" {
+		return out
+	}
+	collection, err := readBoundaryCollection(boundariesPath)
+	if err != nil {
+		return out
+	}
+	for _, feature := range collection.Features {
+		iso2 := strings.ToUpper(strings.TrimSpace(firstBoundaryString(feature.Properties, "ISO_A2", "iso2")))
+		if len(iso2) != 2 {
+			continue
+		}
+		for _, key := range []string{"NAME", "NAME_LONG", "ADMIN", "FORMAL_EN", "SOVEREIGNT"} {
+			value := normalizeCountryName(firstBoundaryString(feature.Properties, key))
+			if value != "" {
+				out[value] = iso2
+			}
+		}
+	}
+	out["democratic republic of the congo"] = "CD"
+	out["dr congo"] = "CD"
+	out["congo drc"] = "CD"
+	out["ivory coast"] = "CI"
+	out["cote d ivoire"] = "CI"
+	out["palestine"] = "PS"
+	return out
+}
+
+func loadISO2ToCountryName(boundariesPath string) map[string]string {
+	out := map[string]string{}
+	if strings.TrimSpace(boundariesPath) == "" {
+		return out
+	}
+	collection, err := readBoundaryCollection(boundariesPath)
+	if err != nil {
+		return out
+	}
+	for _, feature := range collection.Features {
+		iso2 := strings.ToUpper(strings.TrimSpace(firstBoundaryString(feature.Properties, "ISO_A2", "iso2")))
+		if len(iso2) != 2 {
+			continue
+		}
+		label := firstBoundaryString(feature.Properties, "NAME", "NAME_LONG", "ADMIN", "FORMAL_EN", "SOVEREIGNT")
+		if strings.TrimSpace(label) == "" {
+			continue
+		}
+		out[iso2] = strings.TrimSpace(label)
+	}
+	return out
+}
+
+func buildStaticGWNOISO2Map() map[string]string {
+	out := make(map[string]string, len(zonebrief.UCDPCountryRefs))
+	for iso2, ref := range zonebrief.UCDPCountryRefs {
+		id := strings.TrimSpace(ref.ID)
+		if id == "" || len(strings.TrimSpace(iso2)) != 2 {
+			continue
+		}
+		out[id] = strings.ToUpper(strings.TrimSpace(iso2))
+	}
+	return out
+}
+
+func enrichGWNOISO2MapFromConflicts(
+	ctx context.Context,
+	client *fetch.Client,
+	headers map[string]string,
+	gedVersion string,
+	conflicts []parse.UCDPConflict,
+	nameToISO2 map[string]string,
+	gwnoToISO2Map map[string]string,
+) {
+	if client == nil || strings.TrimSpace(gedVersion) == "" || len(nameToISO2) == 0 {
+		return
+	}
+	needed := map[string]struct{}{}
+	for _, conflict := range conflicts {
+		for _, gwno := range splitUCDPCodes(conflict.GWNoLoc) {
+			if gwno == "" {
+				continue
+			}
+			if _, ok := gwnoToISO2Map[gwno]; ok {
+				continue
+			}
+			needed[gwno] = struct{}{}
+		}
+	}
+	for gwno := range needed {
+		iso2 := fetchISO2ForGWNOFromGED(ctx, client, headers, gedVersion, gwno, nameToISO2)
+		if iso2 == "" {
+			continue
+		}
+		gwnoToISO2Map[gwno] = iso2
+	}
+}
+
+func fetchISO2ForGWNOFromGED(ctx context.Context, client *fetch.Client, headers map[string]string, gedVersion string, gwno string, nameToISO2 map[string]string) string {
+	urlStr := fmt.Sprintf(
+		"https://ucdpapi.pcr.uu.se/api/gedevents/%s?Country=%s&pagesize=1&page=0",
+		url.QueryEscape(gedVersion),
+		url.QueryEscape(strings.TrimSpace(gwno)),
+	)
+	body, err := client.TextWithHeaders(ctx, urlStr, false, "application/json", headers)
+	if err != nil {
+		return ""
+	}
+	items, err := parse.ParseUCDP(body)
+	if err != nil || len(items) == 0 {
+		return ""
+	}
+	country := normalizeCountryName(items[0].Country)
+	if country == "" {
+		return ""
+	}
+	if iso2, ok := nameToISO2[country]; ok && len(strings.TrimSpace(iso2)) == 2 {
+		return strings.ToUpper(strings.TrimSpace(iso2))
+	}
+	return ""
+}
+
+func buildCurrentConflictStats(
+	currentConflicts []map[string]any,
+	latestYear int,
+	cumulativeByCountry map[string]int,
+	latestYearByCountry map[string]int,
+	gwnoToISO2Map map[string]string,
+	iso2ToLabel map[string]string,
+) []map[string]any {
+	out := make([]map[string]any, 0, len(currentConflicts))
+	for _, row := range currentConflicts {
+		conflictID := stringValue(row["conflict_id"])
+		if conflictID == "" {
+			continue
+		}
+		gwnos := splitUCDPCodes(stringValue(row["gwno_loc"]))
+		countries := make([]map[string]any, 0, len(gwnos))
+		totalCum := 0
+		totalLatest := 0
+		for _, gwno := range gwnos {
+			cum := cumulativeByCountry[gwno]
+			latest := latestYearByCountry[gwno]
+			totalCum += cum
+			totalLatest += latest
+			iso2 := strings.ToUpper(strings.TrimSpace(gwnoToISO2Map[gwno]))
+			label := iso2ToLabel[iso2]
+			if label == "" {
+				label = iso2
+			}
+			countries = append(countries, map[string]any{
+				"gwno":               gwno,
+				"iso2":               iso2,
+				"label":              label,
+				"fatalities_total":   cum,
+				"fatalities_latest":  latest,
+				"latest_year":        latestYear,
+			})
+		}
+		out = append(out, map[string]any{
+			"conflict_id":             conflictID,
+			"title":                   stringValue(row["title"]),
+			"year":                    intValue(row["year"]),
+			"start_date":              stringValue(row["start_date"]),
+			"intensity_level":         intValue(row["intensity_level"]),
+			"type_of_conflict":        stringValue(row["type_of_conflict"]),
+			"region":                  stringValue(row["region"]),
+			"side_a":                  stringValue(row["side_a"]),
+			"side_b":                  stringValue(row["side_b"]),
+			"lens_ids":                row["lens_ids"],
+			"overlay_country_codes":   row["overlay_country_codes"],
+			"source_url":              row["source_url"],
+			"fatalities_total":        totalCum,
+			"fatalities_latest_year":  totalLatest,
+			"fatalities_latest_year_year": latestYear,
+			"countries":               countries,
+		})
+	}
+	return out
+}
+
+func normalizeCountryName(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return ""
+	}
+	value = regexp.MustCompile(`\([^)]*\)`).ReplaceAllString(value, " ")
+	replacer := strings.NewReplacer("-", " ", ",", " ", ".", " ", "'", " ", "’", " ", ":", " ")
+	value = replacer.Replace(value)
+	value = strings.Join(strings.Fields(value), " ")
+	return value
+}
+
+func readBoundaryCollection(path string) (*boundaryCollection, error) {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var collection boundaryCollection
+	if err := json.Unmarshal(body, &collection); err != nil {
+		return nil, err
+	}
+	return &collection, nil
+}
+
+func firstBoundaryString(props map[string]any, keys ...string) string {
+	for _, key := range keys {
+		raw, ok := props[key]
+		if !ok {
+			continue
+		}
+		if s, ok := raw.(string); ok {
+			if strings.TrimSpace(s) != "" {
+				return strings.TrimSpace(s)
+			}
+		}
+	}
+	return ""
+}
+
+func mergeMaps(a map[string]any, b map[string]any) map[string]any {
+	out := make(map[string]any, len(a)+len(b))
+	for k, v := range a {
+		out[k] = v
+	}
+	for k, v := range b {
+		out[k] = v
+	}
+	return out
+}
+
+func anyStringSlice(raw any) []string {
+	switch typed := raw.(type) {
+	case []string:
+		return typed
+	case []any:
+		out := make([]string, 0, len(typed))
+		for _, item := range typed {
+			if s, ok := item.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
 }
 
 func mapConflictToLensIDs(conflict parse.UCDPConflict) []string {
@@ -2452,7 +2833,7 @@ func mapConflictToLensIDs(conflict parse.UCDPConflict) []string {
 	lensIDs := make([]string, 0)
 	for _, lens := range zonebrief.SupportedLenses {
 		matched := false
-		for code := range lens.CountryCodes {
+		for code := range lens.OverlayCountryCodes {
 			ref, ok := zonebrief.UCDPCountryRefs[code]
 			if !ok || strings.TrimSpace(ref.ID) == "" {
 				continue
@@ -2880,6 +3261,10 @@ func applyAuthoritativeDeathTotals(
 }
 
 func parseUCDPRows(body []byte) ([]map[string]any, error) {
+	var rows []map[string]any
+	if err := json.Unmarshal(body, &rows); err == nil {
+		return rows, nil
+	}
 	var envelope map[string]json.RawMessage
 	if err := json.Unmarshal(body, &envelope); err != nil {
 		return nil, err
@@ -2888,7 +3273,6 @@ func parseUCDPRows(body []byte) ([]map[string]any, error) {
 	if len(raw) == 0 {
 		return nil, fmt.Errorf("ucdp response missing result rows")
 	}
-	var rows []map[string]any
 	if err := json.Unmarshal(raw, &rows); err != nil {
 		return nil, err
 	}
@@ -3037,6 +3421,13 @@ func setUCDPPage(raw string, page int) string {
 }
 
 func parseUCDPTotalPages(body []byte) int {
+	var rows []map[string]any
+	if err := json.Unmarshal(body, &rows); err == nil {
+		if len(rows) > 0 {
+			return 1
+		}
+		return 0
+	}
 	var envelope struct {
 		TotalPages int `json:"TotalPages"`
 	}

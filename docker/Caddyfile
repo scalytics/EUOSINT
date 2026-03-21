@@ -50,6 +50,11 @@
 		file_server
 	}
 
+	handle /ucdp-conflict-stats.json {
+		root * /var/lib/euosint
+		file_server
+	}
+
 	@runtime_geo path /geo/conflict-zones*.geojson /geo/conflict-footprints*.geojson /geo/terrorism-zones*.geojson
 	handle @runtime_geo {
 		root * /var/lib/euosint
