@@ -42,7 +42,7 @@ const BASES_REGION_URLS: Record<string, string> = {
 };
 
 export const DEFAULT_OVERLAYS: OverlayDef[] = [
-  { id: "conflicts", label: "Conflict Zones", color: "#ff5d5d", url: "/geo/conflict-zones.geojson" },
+  { id: "conflicts", label: "Conflict Zones", color: "#ff5d5d", url: "/geo/conflict-footprints.geojson" },
   { id: "cables", label: "Undersea Cables", color: "#60a5fa", url: "/geo/submarine-cables.geojson" },
   { id: "shipping", label: "Shipping Lanes", color: "#4ccb8d", url: "/geo/shipping-lanes.geojson" },
   { id: "ports", label: "Strategic Ports", color: "#f29d4b", url: "/geo/strategic-ports.geojson" },
@@ -85,7 +85,7 @@ export async function loadOverlayDefs(): Promise<OverlayDef[]> {
         id: o.id.trim(),
         label: (o.label ?? o.id).trim(),
         color: (o.color ?? "#94a3b8").trim(),
-        url: o.url.trim(),
+        url: o.id.trim() === "conflicts" ? "/geo/conflict-footprints.geojson" : o.url.trim(),
       }))
       .filter((o) => o.id !== "" && o.url !== "");
     return normalized.length > 0 ? normalized : DEFAULT_OVERLAYS;
