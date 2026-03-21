@@ -53,6 +53,7 @@ public/geo/terrorism-zones.geojson
 registry/source_dead_letter.json
 internal/collector/app/public/
 internal/collector/run/public/
+/internal/collector/run/registry/
 
 # Tool caches
 .eslintcache
