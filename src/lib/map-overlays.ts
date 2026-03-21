@@ -1,4 +1,5 @@
 import L from "leaflet";
+import { latLngToRegion } from "@/lib/regions";
 
 export type OverlayId = string;
 
@@ -11,6 +12,7 @@ export interface OverlayDef {
 
 type GeoJSONLike = Record<string, unknown>;
 type GeoJSONFeature = { properties?: Record<string, unknown> };
+type GeoJSONFeatureItem = { geometry?: { type?: string; coordinates?: unknown }; properties?: Record<string, unknown> };
 
 export interface OverlayLoadOptions {
   regionFilter?: string;
@@ -22,12 +24,21 @@ const OVERLAY_FALLBACK_URLS: Record<string, string> = {
   terrorism: "/geo/terrorism-zones.seed.geojson",
 };
 
+const LENS_REGION_FILTERS: Record<string, string> = {
+  gaza: "Asia",
+  sudan: "Africa",
+  ukraine: "Europe",
+  "red-sea": "Africa",
+  sahel: "Africa",
+  "drc-east": "Africa",
+};
+
 const BASES_REGION_URLS: Record<string, string> = {
   Europe: "/geo/military-bases.europe.geojson",
   Africa: "/geo/military-bases.africa.geojson",
   "North America": "/geo/military-bases.north-america.geojson",
   Asia: "/geo/military-bases.asia.geojson",
-  all: "/geo/military-bases.geojson",
+  all: "/geo/military-bases.all.geojson",
 };
 
 export const DEFAULT_OVERLAYS: OverlayDef[] = [
@@ -189,9 +200,16 @@ export async function loadOverlay(
 ): Promise<L.LayerGroup> {
   const regionFilter = options.regionFilter ?? "all";
   const conflictLensId = (options.conflictLensId ?? "").trim();
-  const url = def.id === "bases"
+  let url = def.id === "bases"
     ? (BASES_REGION_URLS[regionFilter] ?? BASES_REGION_URLS.all)
     : def.url;
+  if (conflictLensId !== "") {
+    if (def.id === "conflicts") {
+      url = `/geo/conflict-footprints.${conflictLensId}.geojson`;
+    } else if (def.id === "terrorism") {
+      url = `/geo/terrorism-zones.${conflictLensId}.geojson`;
+    }
+  }
   let geojson = await fetchGeoJSON(url);
   if (!geojson) {
     const fallbackURL = OVERLAY_FALLBACK_URLS[def.id];
@@ -201,24 +219,28 @@ export async function loadOverlay(
     geojson = EMPTY_FEATURE_COLLECTION;
   }
   geojson = filterConflictOverlayFeatures(geojson, def.id, conflictLensId);
+  geojson = filterGeoJSONByRegion(geojson, def.id, regionFilter, conflictLensId);
   const group = L.layerGroup();
 
   if (def.id === "conflicts") {
     L.geoJSON(geojson as any, {
       style: (feature) => {
         const type = feature?.properties?.type ?? "active_conflict";
+        const countryRole = feature?.properties?.country_role ?? "primary";
+        const isContext = countryRole === "context";
         return {
           color: conflictTypeColors[type] ?? "#ff5d5d",
           fillColor: conflictTypeColors[type] ?? "#ff5d5d",
-          fillOpacity: 0.12,
-          weight: 1.5,
-          dashArray: type === "frozen_conflict" || type === "high_tension" ? "6,4" : undefined,
+          fillOpacity: isContext ? 0.04 : 0.12,
+          weight: isContext ? 1 : 1.5,
+          dashArray: isContext ? "4,3" : (type === "frozen_conflict" || type === "high_tension" ? "6,4" : undefined),
         };
       },
       onEachFeature: (feature, layer) => {
         const p = feature.properties;
+        const role = p.country_role === "context" ? "involved country" : "primary conflict country";
         layer.bindTooltip(
-          `<strong>${p.name}</strong><br/>${p.type?.replace(/_/g, " ")} since ${p.since}`,
+          `<strong>${p.name}</strong><br/>${p.type?.replace(/_/g, " ")} since ${p.since}<br/>${role}`,
           { className: "siem-tooltip", direction: "top" },
         );
       },
@@ -423,6 +445,57 @@ function filterConflictOverlayFeatures(geojson: GeoJSONLike, overlayID: string, 
       return featureLensID === wantedLensID;
     }
     return status !== "inactive";
+  });
+  return { ...geojson, features: filtered };
+}
+
+function isRegionScopedOverlay(id: string): boolean {
+  return id === "conflicts" || id === "terrorism" || id === "sanctions" || id === "piracy" || id === "nuclear" || id === "bases";
+}
+
+function normalizeCountryCode(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim().toUpperCase();
+}
+
+function featureCountryCode(feature: GeoJSONFeatureItem): string {
+  const p = feature.properties ?? {};
+  return (
+    normalizeCountryCode(p.country_code) ||
+    normalizeCountryCode(p.countryCode) ||
+    normalizeCountryCode(p.ISO_A2) ||
+    normalizeCountryCode(p.iso2)
+  );
+}
+
+function featureRegion(feature: GeoJSONFeatureItem, overlayID: string): string | null {
+  const p = feature.properties ?? {};
+  if (overlayID === "conflicts" || overlayID === "terrorism") {
+    const lensID = normalizedLensID(p.lens_id ?? p.lensId);
+    if (lensID !== "" && LENS_REGION_FILTERS[lensID]) {
+      return LENS_REGION_FILTERS[lensID];
+    }
+  }
+  const center = geometryCenterLatLng(feature.geometry);
+  if (!center) return null;
+  return latLngToRegion(center.lat, center.lng);
+}
+
+function filterGeoJSONByRegion(geojson: GeoJSONLike, overlayID: string, regionFilter: string, conflictLensId: string): GeoJSONLike {
+  if (!isRegionScopedOverlay(overlayID)) return geojson;
+  if (conflictLensId !== "") return geojson;
+  if (regionFilter === "all") return geojson;
+  const features = (geojson as { features?: unknown[] }).features;
+  if (!Array.isArray(features)) return geojson;
+
+  const filtered = features.filter((raw) => {
+    const feature = raw as GeoJSONFeatureItem;
+    if (regionFilter.startsWith("country:")) {
+      const selectedCode = regionFilter.slice(8).toUpperCase();
+      return featureCountryCode(feature) === selectedCode;
+    }
+    const region = featureRegion(feature, overlayID);
+    return region === regionFilter;
   });
   return { ...geojson, features: filtered };
 }

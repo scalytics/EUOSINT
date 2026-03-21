@@ -535,11 +535,13 @@ function ConflictLensSearch({
   }, []);
 
   const availableLenses = useMemo(() => {
-    const activeBriefings = briefings.filter((briefing) => (briefing.status ?? "active") !== "inactive");
-    if (activeBriefings.length === 0) {
-      return CONFLICT_LENSES;
-    }
-    const activeIDs = new Set(activeBriefings.map((briefing) => briefing.lensId));
+    const currentConflictBriefings = briefings.filter((briefing) => {
+      const status = (briefing.status ?? "").toLowerCase();
+      const hasActiveConflicts = (briefing.activeConflicts?.length ?? 0) > 0;
+      const hasRecentACLED = (briefing.acledRecency?.events7d ?? 0) > 0;
+      return hasActiveConflicts || hasRecentACLED || status === "active" || status === "watch";
+    });
+    const activeIDs = new Set(currentConflictBriefings.map((briefing) => briefing.lensId));
     return CONFLICT_LENSES.filter((lens) => activeIDs.has(lens.id));
   }, [briefings]);
 

@@ -170,6 +170,13 @@ export function GlobeView({
     };
   }, []);
 
+  const sortedOverlayDefs = useMemo(() => {
+    const isZones = (label: string) => label.trim().toLowerCase().endsWith("zones");
+    const nonZones = overlayDefs.filter((overlay) => !isZones(overlay.label));
+    const zones = overlayDefs.filter((overlay) => isZones(overlay.label));
+    return [...nonZones, ...zones];
+  }, [overlayDefs]);
+
   useEffect(() => {
     // Drop no-longer-registered active overlays when manifest changes.
     setActiveOverlays((prev) => {
@@ -874,7 +881,7 @@ export function GlobeView({
             ))}
           </div>
           <div className="grid grid-cols-5 gap-1 md:grid-cols-9">
-            {overlayDefs.map((overlay) => (
+            {sortedOverlayDefs.map((overlay) => (
               <button
                 key={overlay.id}
                 type="button"
