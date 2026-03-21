@@ -3598,23 +3598,23 @@ func (r Runner) ensureZoneBriefLLMSummary(
 	)
 	if needsHistorical {
 		msgs := []vet.Message{
-			{Role: "system", Content: "You are an OSINT analyst. Return plain text only."},
-			{Role: "user", Content: "Short historic summary about this conflict zone in max 3 sentences.\n" + baseContext},
+			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
+			{Role: "user", Content: "Write a concise historic summary for this conflict zone.\nConstraints: max 90 words, factual only, no bullets, no disclaimers, no filler.\n" + baseContext},
 		}
 		resp, err := llm.Complete(ctx, msgs)
 		if err == nil && strings.TrimSpace(resp) != "" {
-			existing.HistoricalSummary = strings.TrimSpace(resp)
+			existing.HistoricalSummary = limitWords(strings.TrimSpace(resp), 90)
 			existing.HistoricalUpdatedAt = time.Now().UTC().Format(time.RFC3339)
 		}
 	}
 	if needsAnalysis {
 		msgs := []vet.Message{
-			{Role: "system", Content: "You are an OSINT analyst. Return plain text only."},
-			{Role: "user", Content: "Current analysis about this conflict zone in max 2 sentences.\nAs-of date: " + time.Now().UTC().Format("2006-01-02") + "\n" + baseContext},
+			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
+			{Role: "user", Content: "Write a concise current analysis for this conflict zone.\nConstraints: max 60 words, factual only, no bullets, no disclaimers, no filler.\nAs-of date: " + time.Now().UTC().Format("2006-01-02") + "\n" + baseContext},
 		}
 		resp, err := llm.Complete(ctx, msgs)
 		if err == nil && strings.TrimSpace(resp) != "" {
-			existing.CurrentAnalysis = strings.TrimSpace(resp)
+			existing.CurrentAnalysis = limitWords(strings.TrimSpace(resp), 60)
 			existing.AnalysisUpdatedAt = time.Now().UTC().Format(time.RFC3339)
 		}
 	}
@@ -3642,6 +3642,17 @@ func ucdpConflictHeadHash(conflicts []parse.UCDPConflict) string {
 		_, _ = io.WriteString(h, "\n")
 	}
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func limitWords(text string, maxWords int) string {
+	if maxWords <= 0 {
+		return ""
+	}
+	words := strings.Fields(text)
+	if len(words) <= maxWords {
+		return strings.TrimSpace(text)
+	}
+	return strings.Join(words[:maxWords], " ")
 }
 
 func ucdpRowsHeadHash(rows []map[string]any) string {
