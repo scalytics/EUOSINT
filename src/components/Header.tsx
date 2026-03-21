@@ -530,6 +530,29 @@ function ConflictLensSearch({
     overlayCountryCodes?: string[];
     region?: string;
   }): string => {
+    const normalizeRegion = (raw?: string): string => {
+      const value = (raw ?? "").trim().toLowerCase();
+      if (!value) return "Other";
+      if (value === "1") return "Europe";
+      if (value === "2" || value === "3") return "Asia";
+      if (value === "4") return "Africa";
+      if (value === "5") return "North America";
+      if (value.includes(",")) {
+        const first = value.split(",")[0]?.trim() ?? "";
+        if (first === "1") return "Europe";
+        if (first === "2" || first === "3") return "Asia";
+        if (first === "4") return "Africa";
+        if (first === "5") return "North America";
+      }
+      if (value.includes("europe")) return "Europe";
+      if (value.includes("africa")) return "Africa";
+      if (value.includes("asia") || value.includes("middle east")) return "Asia";
+      if (value.includes("north america") || value.includes("caribbean")) return "North America";
+      if (value.includes("south america") || value.includes("latin america")) return "South America";
+      if (value.includes("oceania")) return "Oceania";
+      return "Other";
+    };
+
     const codes = new Set((conflict.overlayCountryCodes ?? []).map((code) => code.toUpperCase()));
     const text = `${conflict.title} ${conflict.sideA ?? ""} ${conflict.sideB ?? ""}`.toLowerCase();
     if (codes.has("IL") || codes.has("PS") || codes.has("LB") || text.includes("gaza") || text.includes("israel")) {
@@ -544,7 +567,7 @@ function ConflictLensSearch({
     if (codes.has("SD") || codes.has("SS") || text.includes("sudan")) {
       return "Sudan";
     }
-    return (conflict.region ?? "Other").trim() || "Other";
+    return normalizeRegion(conflict.region);
   };
 
   useEffect(() => {
