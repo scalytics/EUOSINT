@@ -340,8 +340,8 @@ export function GlobeView({
       loadOverlay(map, def, {
         regionFilter,
         conflictLensId,
-        onConflictCountrySelect: (countryCode, countryLabel) => {
-          onConflictCountryFocusChange?.({ code: countryCode, label: countryLabel });
+        onConflictCountrySelect: (countryCode, countryLabel, lensId) => {
+          onConflictCountryFocusChange?.({ code: countryCode, label: countryLabel, lensId });
         },
       }).then((layer) => {
         const isLatest = overlayLoadTokens.current.get(id) === token;

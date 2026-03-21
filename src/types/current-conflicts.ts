@@ -18,4 +18,5 @@ export interface CurrentConflictRecord {
 export interface ConflictCountryFocus {
   code: string;
   label: string;
+  lensId?: string;
 }

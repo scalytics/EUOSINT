@@ -17,7 +17,7 @@ type GeoJSONFeatureItem = { geometry?: { type?: string; coordinates?: unknown };
 export interface OverlayLoadOptions {
   regionFilter?: string;
   conflictLensId?: string | null;
-  onConflictCountrySelect?: (countryCode: string, countryLabel: string) => void;
+  onConflictCountrySelect?: (countryCode: string, countryLabel: string, lensId?: string) => void;
 }
 
 const OVERLAY_FALLBACK_URLS: Record<string, string> = {
@@ -269,7 +269,8 @@ export async function loadOverlay(
         );
         if (onConflictCountrySelect && countryCode) {
           layer.on("click", () => {
-            onConflictCountrySelect(countryCode, countryLabel || countryCode);
+            const lensId = pickString(p, "lens_id", "lensId").toLowerCase() || undefined;
+            onConflictCountrySelect(countryCode, countryLabel || countryCode, lensId);
           });
         }
       },

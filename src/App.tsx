@@ -306,6 +306,19 @@ export default function App() {
     setSelectedId(null);
   }, []);
 
+  const handleConflictCountryFocusChange = useCallback((focus: ConflictCountryFocus | null) => {
+    if (!focus) {
+      setConflictCountryFocus(null);
+      return;
+    }
+    if (focus.lensId) {
+      handleConflictLensChange(focus.lensId);
+    } else {
+      handleCountrySelect(focus.code);
+    }
+    setConflictCountryFocus(focus);
+  }, [handleConflictLensChange, handleCountrySelect]);
+
   const handleSourceSelectionChange = useCallback((sourceIds: string[]) => {
     setSelectedSourceIds(sourceIds);
     setSelectedId(null);
@@ -391,7 +404,7 @@ export default function App() {
             regionFilter={regionFilter}
             onRegionChange={handleRegionChange}
             conflictLensId={conflictLensId}
-            onConflictCountryFocusChange={setConflictCountryFocus}
+            onConflictCountryFocusChange={handleConflictCountryFocusChange}
             visibleNowAlertIds={visibleNowAlertIds}
             visibleHistoryAlertIds={visibleHistoryAlertIds}
             onSelectSourceIdsChange={handleSourceSelectionChange}
