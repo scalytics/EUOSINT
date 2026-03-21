@@ -35,4 +35,7 @@ export interface ConflictStatRecord {
   fatalitiesLatestYearYear: number;
   countries: ConflictCountryStat[];
   recentEvents?: ConflictRecentEvent[];
+  historicalSummary?: string;
+  currentAnalysis?: string;
+  analysisUpdatedAt?: string;
 }

@@ -2327,7 +2327,8 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 		return err
 	}
 	recentEventsByCountryID := make(map[string][]map[string]any)
-	for _, countryID := range collectCurrentConflictCountryIDs(currentConflicts) {
+	currentConflictCountryIDs := collectCurrentConflictCountryIDs(currentConflicts)
+	for _, countryID := range currentConflictCountryIDs {
 		items, err := r.fetchUCDPRecentEventsForCountryCached(ctx, cfg, headers, gedVersion, countryID, zoneDB)
 		if err != nil {
 			fmt.Fprintf(r.stderr, "WARN UCDP recent events %s: %v\n", countryID, err)
@@ -2335,8 +2336,20 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 		}
 		recentEventsByCountryID[countryID] = toConflictRecentEvents(items, 5)
 	}
+	llmNarrativesByCountryID := map[string]sourcedb.ZoneBriefLLM{}
+	if zoneDB != nil && strings.TrimSpace(cfg.VettingAPIKey) != "" {
+		for _, row := range currentConflicts {
+			narrative, err := r.ensureZoneBriefLLMSummary(ctx, cfg, zoneDB, row, latestYear, cumulativeBattleDeaths, latestYearBattleDeaths)
+			if err != nil {
+				continue
+			}
+			if narrative.CountryID != "" {
+				llmNarrativesByCountryID[narrative.CountryID] = narrative
+			}
+		}
+	}
 	iso2ToLabel := loadISO2ToCountryName(cfg.CountryBoundariesPath)
-	conflictStats := buildCurrentConflictStats(currentConflicts, latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, gwnoToISO2Map, iso2ToLabel, recentEventsByCountryID)
+	conflictStats := buildCurrentConflictStats(currentConflicts, latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, gwnoToISO2Map, iso2ToLabel, recentEventsByCountryID, llmNarrativesByCountryID)
 	if err := writeJSONArtifact(filepath.Join(outDir, "ucdp-conflict-stats.json"), conflictStats); err != nil {
 		return err
 	}
@@ -2768,6 +2781,7 @@ func buildCurrentConflictStats(
 	gwnoToISO2Map map[string]string,
 	iso2ToLabel map[string]string,
 	recentEventsByCountryID map[string][]map[string]any,
+	llmNarrativesByCountryID map[string]sourcedb.ZoneBriefLLM,
 ) []map[string]any {
 	out := make([]map[string]any, 0, len(currentConflicts))
 	for _, row := range currentConflicts {
@@ -2799,6 +2813,7 @@ func buildCurrentConflictStats(
 			})
 		}
 		primaryCountryID := conflictPrimaryCountryID(row)
+		llmNarrative := llmNarrativesByCountryID[primaryCountryID]
 		out = append(out, map[string]any{
 			"conflict_id":                 conflictID,
 			"country_id":                  primaryCountryID,
@@ -2818,6 +2833,9 @@ func buildCurrentConflictStats(
 			"fatalities_latest_year_year": latestYear,
 			"countries":                   countries,
 			"recent_events":               recentEventsByCountryID[primaryCountryID],
+			"historical_summary":          llmNarrative.HistoricalSummary,
+			"current_analysis":            llmNarrative.CurrentAnalysis,
+			"analysis_updated_at":         llmNarrative.AnalysisUpdatedAt,
 		})
 	}
 	return out
@@ -3518,6 +3536,92 @@ func (r Runner) fetchUCDPRecentEventsForCountryCached(
 		}
 	}
 	return items, nil
+}
+
+func (r Runner) ensureZoneBriefLLMSummary(
+	ctx context.Context,
+	cfg config.Config,
+	cacheDB *sourcedb.DB,
+	row map[string]any,
+	latestYear int,
+	cumulativeByCountry map[string]int,
+	latestYearByCountry map[string]int,
+) (sourcedb.ZoneBriefLLM, error) {
+	if cacheDB == nil || strings.TrimSpace(cfg.VettingAPIKey) == "" {
+		return sourcedb.ZoneBriefLLM{}, nil
+	}
+	countryID := conflictPrimaryCountryID(row)
+	if countryID == "" {
+		return sourcedb.ZoneBriefLLM{}, nil
+	}
+	existing, ok, err := cacheDB.GetZoneBriefLLM(ctx, countryID)
+	if err != nil {
+		return sourcedb.ZoneBriefLLM{}, err
+	}
+	if !ok {
+		existing = sourcedb.ZoneBriefLLM{CountryID: countryID, Title: stringValue(row["title"])}
+	}
+	needsHistorical := strings.TrimSpace(existing.HistoricalSummary) == ""
+	needsAnalysis := strings.TrimSpace(existing.CurrentAnalysis) == ""
+	if !needsAnalysis {
+		if ts, err := time.Parse(time.RFC3339, strings.TrimSpace(existing.AnalysisUpdatedAt)); err != nil {
+			needsAnalysis = true
+		} else if time.Since(ts) >= 7*24*time.Hour {
+			needsAnalysis = true
+		}
+	}
+	if !needsHistorical && !needsAnalysis {
+		return existing, nil
+	}
+	llm := vet.NewClient(config.Config{
+		VettingTimeoutMS:   cfg.VettingTimeoutMS,
+		VettingBaseURL:     cfg.VettingBaseURL,
+		VettingAPIKey:      cfg.VettingAPIKey,
+		VettingProvider:    cfg.VettingProvider,
+		VettingModel:       cfg.VettingModel,
+		VettingTemperature: 0,
+	})
+	title := stringValue(row["title"])
+	sideA := stringValue(row["side_a"])
+	sideB := stringValue(row["side_b"])
+	startDate := stringValue(row["start_date"])
+	conflictType := stringValue(row["type_of_conflict"])
+	totalDeaths := 0
+	latestDeaths := 0
+	for _, gwno := range splitUCDPCodes(stringValue(row["gwno_loc"])) {
+		totalDeaths += cumulativeByCountry[gwno]
+		latestDeaths += latestYearByCountry[gwno]
+	}
+	baseContext := fmt.Sprintf(
+		"Zone: %s\nCountry ID: %s\nSides: %s | %s\nConflict start: %s\nConflict type: %s\nTotal deaths (all years): %d\nDeaths latest year (%d): %d",
+		title, countryID, sideA, sideB, startDate, conflictType, totalDeaths, latestYear, latestDeaths,
+	)
+	if needsHistorical {
+		msgs := []vet.Message{
+			{Role: "system", Content: "You are an OSINT analyst. Return plain text only."},
+			{Role: "user", Content: "Short historic summary about this conflict zone in max 3 sentences.\n" + baseContext},
+		}
+		resp, err := llm.Complete(ctx, msgs)
+		if err == nil && strings.TrimSpace(resp) != "" {
+			existing.HistoricalSummary = strings.TrimSpace(resp)
+			existing.HistoricalUpdatedAt = time.Now().UTC().Format(time.RFC3339)
+		}
+	}
+	if needsAnalysis {
+		msgs := []vet.Message{
+			{Role: "system", Content: "You are an OSINT analyst. Return plain text only."},
+			{Role: "user", Content: "Current analysis about this conflict zone in max 2 sentences.\nAs-of date: " + time.Now().UTC().Format("2006-01-02") + "\n" + baseContext},
+		}
+		resp, err := llm.Complete(ctx, msgs)
+		if err == nil && strings.TrimSpace(resp) != "" {
+			existing.CurrentAnalysis = strings.TrimSpace(resp)
+			existing.AnalysisUpdatedAt = time.Now().UTC().Format(time.RFC3339)
+		}
+	}
+	if err := cacheDB.UpsertZoneBriefLLM(ctx, existing); err != nil {
+		return existing, err
+	}
+	return existing, nil
 }
 
 func ucdpConflictHeadHash(conflicts []parse.UCDPConflict) string {

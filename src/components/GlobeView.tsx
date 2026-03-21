@@ -18,6 +18,7 @@ import { getConflictLensById, type ConflictLens } from "@/lib/conflict-lenses";
 import { buildConflictBrief, mergeZoneBriefing } from "@/lib/conflict-briefs";
 import { useZoneBriefings } from "@/hooks/useZoneBriefings";
 import { useCurrentConflicts } from "@/hooks/useCurrentConflicts";
+import { useConflictStats } from "@/hooks/useConflictStats";
 import type { ConflictCountryFocus } from "@/types/current-conflicts";
 
 /* ── Region viewports ─────────────────────────────────────────────── */
@@ -173,6 +174,7 @@ export function GlobeView({
   const isLargeCountryScope = countryFilterCode !== "" && LARGE_COUNTRY_CODES.has(countryFilterCode);
   const { briefings: zoneBriefings } = useZoneBriefings();
   const { conflicts: currentConflicts } = useCurrentConflicts();
+  const { stats: conflictStats } = useConflictStats();
 
   useEffect(() => {
     if (!regionFilter.startsWith("country:")) {
@@ -883,6 +885,10 @@ export function GlobeView({
       : null;
     return mergeZoneBriefing(derived, override);
   }, [activeConflictLens, alerts, effectiveConflictLens, historicalAlerts, zoneBriefings]);
+  const activeConflictStat = useMemo(
+    () => (activeDynamicConflict ? conflictStats.find((item) => item.conflictId === activeDynamicConflict.conflictId) ?? null : null),
+    [activeDynamicConflict, conflictStats],
+  );
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1046,6 +1052,16 @@ export function GlobeView({
                   ).join(", ") || "n/a"}
                 </div>
               </div>
+              {activeConflictStat?.historicalSummary && (
+                <div className="mt-3 text-xs text-siem-text">
+                  <span className="text-siem-muted">Historic summary:</span> {activeConflictStat.historicalSummary}
+                </div>
+              )}
+              {activeConflictStat?.currentAnalysis && (
+                <div className="mt-2 text-xs text-siem-text">
+                  <span className="text-siem-muted">Current analysis:</span> {activeConflictStat.currentAnalysis}
+                </div>
+              )}
               {activeConflictBrief.recentEvents && activeConflictBrief.recentEvents.length > 0 && (
                 <div className="mt-3 space-y-1">
                   <div className="text-[10px] uppercase tracking-[0.12em] text-siem-muted">Latest events</div>

@@ -55,6 +55,9 @@ function mapConflict(raw: Record<string, unknown>): ConflictStatRecord {
     recentEvents: Array.isArray(raw.recent_events ?? raw.recentEvents)
       ? ((raw.recent_events ?? raw.recentEvents) as Record<string, unknown>[]).map(mapRecentEvent).filter((item) => item.title.trim().length > 0)
       : [],
+    historicalSummary: (raw.historical_summary as string) ?? (raw.historicalSummary as string) ?? "",
+    currentAnalysis: (raw.current_analysis as string) ?? (raw.currentAnalysis as string) ?? "",
+    analysisUpdatedAt: (raw.analysis_updated_at as string) ?? (raw.analysisUpdatedAt as string) ?? "",
   };
 }
 

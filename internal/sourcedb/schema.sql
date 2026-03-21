@@ -279,6 +279,16 @@ CREATE TABLE IF NOT EXISTS ucdp_dataset_cache (
   PRIMARY KEY (dataset_key, version)
 );
 
+CREATE TABLE IF NOT EXISTS zone_brief_llm (
+  country_id TEXT PRIMARY KEY,
+  title TEXT NOT NULL DEFAULT '',
+  historical_summary TEXT NOT NULL DEFAULT '',
+  current_analysis TEXT NOT NULL DEFAULT '',
+  historical_updated_at TEXT NOT NULL DEFAULT '',
+  analysis_updated_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_sources_agency_id ON sources(agency_id);
 CREATE INDEX IF NOT EXISTS idx_sources_status ON sources(status);
 CREATE INDEX IF NOT EXISTS idx_sources_feed_url ON sources(feed_url);
@@ -299,6 +309,7 @@ CREATE INDEX IF NOT EXISTS idx_ucdp_lens_events_lens ON ucdp_lens_events(lens_id
 CREATE INDEX IF NOT EXISTS idx_ucdp_lens_events_published ON ucdp_lens_events(published DESC);
 CREATE INDEX IF NOT EXISTS idx_ucdp_lens_state_updated ON ucdp_lens_state(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ucdp_dataset_cache_updated ON ucdp_dataset_cache(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_zone_brief_llm_updated ON zone_brief_llm(updated_at DESC);
 
 CREATE TABLE IF NOT EXISTS cities (
   id INTEGER PRIMARY KEY,
