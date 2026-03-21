@@ -10,6 +10,12 @@ export interface OverlayDef {
 }
 
 type GeoJSONLike = Record<string, unknown>;
+type GeoJSONFeature = { properties?: Record<string, unknown> };
+
+export interface OverlayLoadOptions {
+  regionFilter?: string;
+  conflictLensId?: string | null;
+}
 
 const OVERLAY_FALLBACK_URLS: Record<string, string> = {
   conflicts: "/geo/conflict-zones.seed.geojson",
@@ -179,8 +185,10 @@ const terrorismTypeColors: Record<string, string> = {
 export async function loadOverlay(
   map: L.Map,
   def: OverlayDef,
-  regionFilter = "all",
+  options: OverlayLoadOptions = {},
 ): Promise<L.LayerGroup> {
+  const regionFilter = options.regionFilter ?? "all";
+  const conflictLensId = (options.conflictLensId ?? "").trim();
   const url = def.id === "bases"
     ? (BASES_REGION_URLS[regionFilter] ?? BASES_REGION_URLS.all)
     : def.url;
@@ -205,6 +213,7 @@ export async function loadOverlay(
       }
     }
   }
+  geojson = filterConflictOverlayFeatures(geojson, def.id, conflictLensId);
   const group = L.layerGroup();
 
   if (def.id === "conflicts") {
@@ -401,4 +410,32 @@ export async function loadOverlay(
 
   group.addTo(map);
   return group;
+}
+
+function normalizedStatus(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim().toLowerCase();
+}
+
+function normalizedLensID(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim().toLowerCase();
+}
+
+function filterConflictOverlayFeatures(geojson: GeoJSONLike, overlayID: string, conflictLensId: string): GeoJSONLike {
+  if (overlayID !== "conflicts" && overlayID !== "terrorism") return geojson;
+  const features = (geojson as { features?: unknown[] }).features;
+  if (!Array.isArray(features)) return geojson;
+
+  const wantedLensID = conflictLensId.toLowerCase();
+  const filtered = features.filter((feature) => {
+    const props = (feature as GeoJSONFeature)?.properties ?? {};
+    const featureLensID = normalizedLensID(props.lens_id ?? props.lensId);
+    const status = normalizedStatus(props.status);
+    if (wantedLensID !== "") {
+      return featureLensID === wantedLensID;
+    }
+    return status !== "inactive";
+  });
+  return { ...geojson, features: filtered };
 }

@@ -277,7 +277,7 @@ export function GlobeView({
       const def = overlayDefs.find((o) => o.id === id);
       if (!def) continue;
       const token = nextOverlayToken(id);
-      loadOverlay(map, def, regionFilter).then((layer) => {
+      loadOverlay(map, def, { regionFilter, conflictLensId }).then((layer) => {
         const isLatest = overlayLoadTokens.current.get(id) === token;
         const stillActive = activeOverlaysRef.current.has(id);
         if (!isLatest || !stillActive || !mapRef.current) {
@@ -291,7 +291,7 @@ export function GlobeView({
         overlayLayers.current.set(id, layer);
       });
     }
-  }, [activeOverlays, nextOverlayToken, overlayDefs, regionFilter]);
+  }, [activeOverlays, conflictLensId, nextOverlayToken, overlayDefs, regionFilter]);
 
   const visibleNowIdSet = useMemo(() => new Set(visibleNowAlertIds), [visibleNowAlertIds]);
   const visibleHistoryIdSet = useMemo(() => new Set(visibleHistoryAlertIds), [visibleHistoryAlertIds]);

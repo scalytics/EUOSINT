@@ -50,7 +50,7 @@ func buildRectangleZones(briefings []model.ZoneBriefingRecord, terrorOnly bool) 
 	features := make([]geoFeature, 0)
 	for _, lens := range SupportedLenses {
 		brief := findBrief(briefings, lens.ID)
-		if brief == nil || brief.Status == "inactive" {
+		if brief == nil {
 			continue
 		}
 		if terrorOnly {
@@ -86,7 +86,7 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 	features := make([]geoFeature, 0)
 	for _, lens := range SupportedLenses {
 		brief := findBrief(briefings, lens.ID)
-		if brief == nil || brief.Status == "inactive" {
+		if brief == nil {
 			continue
 		}
 		if terrorOnly {

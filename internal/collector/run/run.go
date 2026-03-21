@@ -2384,7 +2384,7 @@ func (r Runner) fetchUCDPItemsForLens(ctx context.Context, cfg config.Config, le
 		url.QueryEscape(startDate),
 		url.QueryEscape(endDate))
 
-	client := r.clientFactory(cfg)
+	client := r.clientFactory(withMinUCDPTimeout(cfg))
 
 	// Page 1.
 	body, err := client.TextWithHeaders(ctx, baseURL+"&page=0", false, "application/json", headers)
@@ -2427,7 +2427,7 @@ func (r Runner) fetchUCDPItemsForLens(ctx context.Context, cfg config.Config, le
 func (r Runner) fetchUCDPConflicts(ctx context.Context, cfg config.Config, headers map[string]string, version string) ([]parse.UCDPConflict, error) {
 	baseURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/ucdpprioconflict/%s?pagesize=500",
 		url.QueryEscape(version))
-	client := r.clientFactory(cfg)
+	client := r.clientFactory(withMinUCDPTimeout(cfg))
 
 	// Page 0.
 	body, err := client.TextWithHeaders(ctx, baseURL+"&page=0", false, "application/json", headers)
@@ -2465,6 +2465,15 @@ func (r Runner) fetchUCDPConflicts(ctx context.Context, cfg config.Config, heade
 	// ParseUCDPConflicts already deduplicates by conflict_id (keeps highest year),
 	// but since we call it per-page we need a final dedup pass.
 	return deduplicateConflicts(conflicts), nil
+}
+
+func withMinUCDPTimeout(cfg config.Config) config.Config {
+	const minUCDPTimeoutMS = 30000
+	if cfg.HTTPTimeoutMS >= minUCDPTimeoutMS {
+		return cfg
+	}
+	cfg.HTTPTimeoutMS = minUCDPTimeoutMS
+	return cfg
 }
 
 func deduplicateConflicts(conflicts []parse.UCDPConflict) []parse.UCDPConflict {

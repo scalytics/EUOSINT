@@ -9,7 +9,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/model"
 )
 
-func TestBuildConflictZonesGeoJSONSkipsInactive(t *testing.T) {
+func TestBuildConflictZonesGeoJSONIncludesInactive(t *testing.T) {
 	data := BuildConflictZonesGeoJSON([]model.ZoneBriefingRecord{
 		{LensID: "gaza", Title: "Gaza", Status: "active", UpdatedAt: "2026-03-20T00:00:00Z", Violence: model.ZoneBriefingViolence{Primary: "State-based conflict"}},
 		{LensID: "ukraine", Title: "Ukraine South", Status: "inactive", UpdatedAt: "2026-03-20T00:00:00Z", Violence: model.ZoneBriefingViolence{Primary: "State-based conflict"}},
@@ -26,8 +26,8 @@ func TestBuildConflictZonesGeoJSONSkipsInactive(t *testing.T) {
 	if err := json.Unmarshal(body, &parsed); err != nil {
 		t.Fatal(err)
 	}
-	if len(parsed.Features) != 1 {
-		t.Fatalf("expected 1 active feature, got %d", len(parsed.Features))
+	if len(parsed.Features) != 2 {
+		t.Fatalf("expected 2 features (active + inactive), got %d", len(parsed.Features))
 	}
 }
 
@@ -88,5 +88,64 @@ func TestBuildConflictZonesGeoJSONFromBoundariesUsesCountryFeatures(t *testing.T
 	}
 	if parsed.Features[0].Properties["country_source_url"] != "https://ucdp.uu.se/country/369" {
 		t.Fatalf("expected country source URL property, got %#v", parsed.Features[0].Properties["country_source_url"])
+	}
+}
+
+func TestBuildConflictZonesGeoJSONFromBoundariesUsesPrimaryOverlayCountries(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "countries.geojson")
+	body := `{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"ISO_A2": "PS", "name": "Palestine"},
+      "geometry": {"type": "Polygon", "coordinates": [[[34.2,31.2],[34.2,31.6],[34.7,31.6],[34.7,31.2],[34.2,31.2]]]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"ISO_A2": "IL", "name": "Israel"},
+      "geometry": {"type": "Polygon", "coordinates": [[[34.7,31.2],[34.7,31.8],[35.2,31.8],[35.2,31.2],[34.7,31.2]]]}
+    }
+  ]
+}`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := BuildConflictZonesGeoJSONFromBoundaries([]model.ZoneBriefingRecord{
+		{
+			LensID:        "gaza",
+			Title:         "Gaza",
+			Source:        "UCDP GED",
+			SourceURL:     "https://ucdp.uu.se/country/666",
+			Status:        "active",
+			UpdatedAt:     "2026-03-20T00:00:00Z",
+			CountryIDs:    []string{"666"},
+			CountryLabels: []string{"Palestine"},
+			Violence:      model.ZoneBriefingViolence{Primary: "State-based conflict"},
+		},
+	}, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var parsed struct {
+		Features []struct {
+			Properties map[string]any `json:"properties"`
+		} `json:"features"`
+	}
+	if err := json.Unmarshal(encoded, &parsed); err != nil {
+		t.Fatal(err)
+	}
+	if len(parsed.Features) != 1 {
+		t.Fatalf("expected only primary overlay country feature, got %d", len(parsed.Features))
+	}
+	if parsed.Features[0].Properties["country_code"] != "PS" {
+		t.Fatalf("expected Gaza overlay country PS, got %#v", parsed.Features[0].Properties["country_code"])
 	}
 }
