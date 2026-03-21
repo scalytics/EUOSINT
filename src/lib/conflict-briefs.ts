@@ -66,15 +66,19 @@ function formatTrend(recent: number, prior: number): string {
   return `${delta > 0 ? "up" : "down"} ${Math.abs(Math.round(delta))}%`;
 }
 
+function formatMetricNumber(value: number): string {
+  return new Intl.NumberFormat("en-US").format(Math.max(0, Math.trunc(value)));
+}
+
 function buildMetricsFromOverride(override: ZoneBriefingRecord): BriefMetric[] | null {
   const metrics = override.metrics;
   if (!metrics) return null;
   const out: BriefMetric[] = [];
-  if (typeof metrics.fatalitiesTotal === "number") out.push({ label: "Total deaths", value: String(metrics.fatalitiesTotal) });
+  if (typeof metrics.fatalitiesTotal === "number") out.push({ label: "Total deaths", value: formatMetricNumber(metrics.fatalitiesTotal) });
   if (typeof metrics.fatalitiesLatestYear === "number" && metrics.fatalitiesLatestYear > 0) {
     const value = typeof metrics.fatalitiesLatestYearYear === "number" && metrics.fatalitiesLatestYearYear > 0
-      ? `${metrics.fatalitiesLatestYear} (${metrics.fatalitiesLatestYearYear})`
-      : String(metrics.fatalitiesLatestYear);
+      ? `${formatMetricNumber(metrics.fatalitiesLatestYear)} (${metrics.fatalitiesLatestYearYear})`
+      : formatMetricNumber(metrics.fatalitiesLatestYear);
     out.push({ label: "Deaths (latest yr)", value });
   }
   return out.length > 0 ? out : null;

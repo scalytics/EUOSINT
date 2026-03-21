@@ -2228,6 +2228,7 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	}
 	headers := map[string]string{"x-ucdp-access-token": token}
 	now := time.Now().UTC()
+	previousCurrentConflicts := readCurrentConflictsArtifact(filepath.Join(outDir, "ucdp-current-conflicts.json"))
 
 	// Discover latest UCDP dataset versions from the docs page.
 	gedVersion := cfg.UCDPAPIVersion
@@ -2253,6 +2254,12 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	nameToISO2 := loadCountryNameToISO2(cfg.CountryBoundariesPath)
 	enrichGWNOISO2MapFromConflicts(ctx, r.clientFactory(withMinUCDPTimeout(cfg)), headers, gedVersion, conflicts, nameToISO2, gwnoToISO2Map)
 	currentConflicts, conflictOverlayCountries := buildCurrentConflictIndex(conflicts, gwnoToISO2Map)
+	currentConflicts = mergeCurrentConflictsWithPrevious(currentConflicts, previousCurrentConflicts)
+	if err != nil && len(currentConflicts) == 0 && len(previousCurrentConflicts) > 0 {
+		// Preserve last-known-good overlays/index instead of wiping runtime files on transient UCDP failures.
+		currentConflicts = previousCurrentConflicts
+	}
+	conflictOverlayCountries = overlayCountriesByLensFromCurrentConflicts(currentConflicts)
 	latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, err := r.fetchUCDPBattleDeathsTotalsByCountry(ctx, cfg, headers, conflictVersion)
 	if err != nil {
 		fmt.Fprintf(r.stderr, "WARN UCDP battledeaths fetch: %v\n", err)
@@ -2747,6 +2754,69 @@ func buildCurrentConflictStats(
 			"fatalities_latest_year_year": latestYear,
 			"countries":               countries,
 		})
+	}
+	return out
+}
+
+func readCurrentConflictsArtifact(path string) []map[string]any {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(body, &rows); err != nil {
+		return nil
+	}
+	return rows
+}
+
+func mergeCurrentConflictsWithPrevious(current []map[string]any, previous []map[string]any) []map[string]any {
+	if len(current) == 0 || len(previous) == 0 {
+		return current
+	}
+	previousByID := make(map[string]map[string]any, len(previous))
+	for _, row := range previous {
+		id := strings.TrimSpace(stringValue(row["conflict_id"]))
+		if id == "" {
+			continue
+		}
+		previousByID[id] = row
+	}
+	out := make([]map[string]any, 0, len(current))
+	for _, row := range current {
+		id := strings.TrimSpace(stringValue(row["conflict_id"]))
+		prev, ok := previousByID[id]
+		if ok {
+			if len(anyStringSlice(row["overlay_country_codes"])) == 0 {
+				if prevCodes := anyStringSlice(prev["overlay_country_codes"]); len(prevCodes) > 0 {
+					row["overlay_country_codes"] = prevCodes
+				}
+			}
+			if len(anyStringSlice(row["lens_ids"])) == 0 {
+				if prevLensIDs := anyStringSlice(prev["lens_ids"]); len(prevLensIDs) > 0 {
+					row["lens_ids"] = prevLensIDs
+				}
+			}
+		}
+		out = append(out, row)
+	}
+	return out
+}
+
+func overlayCountriesByLensFromCurrentConflicts(rows []map[string]any) map[string][]string {
+	out := map[string][]string{}
+	for _, row := range rows {
+		codes := anyStringSlice(row["overlay_country_codes"])
+		if len(codes) == 0 {
+			continue
+		}
+		for _, lensID := range anyStringSlice(row["lens_ids"]) {
+			lensID = strings.TrimSpace(lensID)
+			if lensID == "" {
+				continue
+			}
+			out[lensID] = codes
+		}
 	}
 	return out
 }

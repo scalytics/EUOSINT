@@ -28,6 +28,7 @@ import { Clock, Building2, ChevronDown, Globe } from "lucide-react";
 
 const LIVE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
 const PREFERRED_REGION_ORDER = ["Europe", "Africa", "North America", "Asia"] as const;
+const INT_FORMAT = new Intl.NumberFormat("en-US");
 
 interface Props {
   alerts: Alert[];
@@ -109,11 +110,13 @@ export function AlertFeed({
       const latestYearDeaths = scoped ? scoped.fatalitiesLatest : (stats?.fatalitiesLatestYear ?? 0);
       const latestYearLabel = scoped?.latestYear ?? stats?.fatalitiesLatestYearYear ?? 0;
       if (totalDeaths > 0 || latestYearDeaths > 0) {
-        dynamicStatsMetrics = [{ label: "Total deaths", value: String(totalDeaths) }];
+        dynamicStatsMetrics = [{ label: "Total deaths", value: INT_FORMAT.format(Math.trunc(totalDeaths)) }];
         if (latestYearDeaths > 0) {
           dynamicStatsMetrics.push({
             label: "Deaths (latest yr)",
-            value: latestYearLabel > 0 ? `${latestYearDeaths} (${latestYearLabel})` : String(latestYearDeaths),
+            value: latestYearLabel > 0
+              ? `${INT_FORMAT.format(Math.trunc(latestYearDeaths))} (${latestYearLabel})`
+              : INT_FORMAT.format(Math.trunc(latestYearDeaths)),
           });
         }
       }
@@ -128,11 +131,9 @@ export function AlertFeed({
         sourceLabel: "UCDP current conflict index",
         sourceURL: activeDynamicConflict.sourceUrl ?? merged.sourceURL,
         metrics: dynamicStatsMetrics ?? [
-          { label: "Conflict ID", value: activeDynamicConflict.conflictId },
           { label: "Year", value: String(activeDynamicConflict.year) },
           { label: "Intensity", value: String(activeDynamicConflict.intensityLevel) },
           { label: "Type", value: activeDynamicConflict.typeOfConflict ?? "Conflict" },
-          { label: "Countries", value: (activeDynamicConflict.overlayCountryCodes ?? []).join(", ") || "n/a" },
           { label: "Parties", value: parties || "n/a" },
         ],
       };
