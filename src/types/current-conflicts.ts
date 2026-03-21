@@ -1,5 +1,6 @@
 export interface CurrentConflictRecord {
   conflictId: string;
+  countryId?: string;
   title: string;
   year: number;
   startDate?: string;

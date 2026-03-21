@@ -12,6 +12,7 @@ const CURRENT_CONFLICTS_URL_CANDIDATES = [
 function mapConflict(raw: Record<string, unknown>): CurrentConflictRecord {
   return {
     conflictId: (raw.conflict_id as string) ?? (raw.conflictId as string) ?? "",
+    countryId: (raw.country_id as string) ?? (raw.countryId as string),
     title: (raw.title as string) ?? "",
     year: (raw.year as number) ?? 0,
     startDate: (raw.start_date as string) ?? (raw.startDate as string),
@@ -27,12 +28,39 @@ function mapConflict(raw: Record<string, unknown>): CurrentConflictRecord {
   };
 }
 
+function primaryCountryID(record: CurrentConflictRecord): string {
+  const explicit = (record.countryId ?? "").trim();
+  if (explicit) return explicit;
+  const firstGWNO = (record.gwnoLoc ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .find((value) => value.length > 0);
+  return firstGWNO ?? "";
+}
+
 function normalize(data: unknown): CurrentConflictRecord[] {
   if (!Array.isArray(data)) return [];
-  return data
+  const rows = data
     .filter((item) => item && typeof item === "object")
     .map((item) => mapConflict(item as Record<string, unknown>))
     .filter((item) => item.conflictId !== "");
+  const deduped = new Map<string, CurrentConflictRecord>();
+  for (const row of rows) {
+    const key = primaryCountryID(row) || `conflict:${row.conflictId}`;
+    const existing = deduped.get(key);
+    if (!existing) {
+      deduped.set(key, row);
+      continue;
+    }
+    if (row.intensityLevel > existing.intensityLevel) {
+      deduped.set(key, row);
+      continue;
+    }
+    if (row.intensityLevel === existing.intensityLevel && row.year > existing.year) {
+      deduped.set(key, row);
+    }
+  }
+  return [...deduped.values()];
 }
 
 export function useCurrentConflicts() {

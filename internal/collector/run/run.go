@@ -2429,14 +2429,18 @@ func buildCurrentConflictIndex(conflicts []parse.UCDPConflict, gwnoToISO2Map map
 	if latestYear <= 0 {
 		return []map[string]any{}, map[string][]string{}
 	}
-	entries := make([]map[string]any, 0)
+	entriesByCountry := make(map[string]map[string]any)
 	overlayCountriesByLensID := make(map[string][]string)
 	for _, conflict := range conflicts {
 		if conflict.Year != latestYear || conflict.EPEnd != 0 {
 			continue
 		}
+		primaryCountryID := firstUCDPCode(conflict.GWNoLoc)
 		overlayCountryCodes := resolveConflictCountryCodes(conflict, gwnoToISO2Map)
 		lensID := "conflict-" + strings.TrimSpace(conflict.ConflictID)
+		if primaryCountryID != "" {
+			lensID = "country-" + primaryCountryID
+		}
 		lensIDs := []string{lensID}
 		if len(overlayCountryCodes) > 0 {
 			overlayCountriesByLensID[lensID] = overlayCountryCodes
@@ -2451,8 +2455,9 @@ func buildCurrentConflictIndex(conflicts []parse.UCDPConflict, gwnoToISO2Map map
 		if strings.TrimSpace(title) == "" {
 			title = "Conflict " + conflict.ConflictID
 		}
-		entries = append(entries, map[string]any{
+		candidate := map[string]any{
 			"conflict_id":           conflict.ConflictID,
+			"country_id":            primaryCountryID,
 			"title":                 title,
 			"year":                  conflict.Year,
 			"start_date":            conflict.StartDate,
@@ -2465,7 +2470,22 @@ func buildCurrentConflictIndex(conflicts []parse.UCDPConflict, gwnoToISO2Map map
 			"lens_ids":              lensIDs,
 			"overlay_country_codes": overlayCountryCodes,
 			"source_url":            currentConflictSourceURL(conflict),
-		})
+		}
+		key := primaryCountryID
+		if key == "" {
+			key = "conflict-" + strings.TrimSpace(conflict.ConflictID)
+		}
+		if existing, ok := entriesByCountry[key]; ok {
+			if shouldReplaceCountryConflictEntry(existing, candidate) {
+				entriesByCountry[key] = candidate
+			}
+		} else {
+			entriesByCountry[key] = candidate
+		}
+	}
+	entries := make([]map[string]any, 0, len(entriesByCountry))
+	for _, entry := range entriesByCountry {
+		entries = append(entries, entry)
 	}
 	sort.Slice(entries, func(i, j int) bool {
 		leftIntensity := intValue(entries[i]["intensity_level"])
@@ -2481,6 +2501,32 @@ func buildCurrentConflictIndex(conflicts []parse.UCDPConflict, gwnoToISO2Map map
 		return stringValue(entries[i]["conflict_id"]) < stringValue(entries[j]["conflict_id"])
 	})
 	return entries, overlayCountriesByLensID
+}
+
+func firstUCDPCode(raw string) string {
+	for _, part := range strings.Split(raw, ",") {
+		code := strings.TrimSpace(part)
+		if code != "" {
+			return code
+		}
+	}
+	return ""
+}
+
+func shouldReplaceCountryConflictEntry(existing, candidate map[string]any) bool {
+	existingIntensity := intValue(existing["intensity_level"])
+	candidateIntensity := intValue(candidate["intensity_level"])
+	if candidateIntensity != existingIntensity {
+		return candidateIntensity > existingIntensity
+	}
+	existingYear := intValue(existing["year"])
+	candidateYear := intValue(candidate["year"])
+	if candidateYear != existingYear {
+		return candidateYear > existingYear
+	}
+	existingID := stringValue(existing["conflict_id"])
+	candidateID := stringValue(candidate["conflict_id"])
+	return candidateID > existingID
 }
 
 func buildDynamicConflictOverlays(boundariesPath string, conflicts []map[string]any, overlayCountriesByLensID map[string][]string) (map[string]map[string]any, error) {
