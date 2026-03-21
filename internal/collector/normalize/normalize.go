@@ -640,17 +640,24 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	}
 	skipLLMGeo := isPersonCategory(meta.Category)
 	if allowDynamicGeocode && isCrossCountry {
+		textCountryCode := ""
+		if _, _, code, ok := geocodeText(geoText); ok {
+			textCountryCode = code
+		}
 		if ctx.Geocoder != nil {
 			// Enhanced geocoding: city DB → Nominatim → country text.
 			// Skip LLM fallback for person-centric categories (Interpol, FBI)
 			// where text describes people, not places.
 			var result GeoResult
 			if skipLLMGeo {
-				result = ctx.Geocoder.ResolveWithoutLLM(context.Background(), geoText, "")
+				result = ctx.Geocoder.ResolveWithoutLLM(context.Background(), geoText, textCountryCode)
 			} else {
-				result = ctx.Geocoder.Resolve(context.Background(), geoText, "")
+				result = ctx.Geocoder.Resolve(context.Background(), geoText, textCountryCode)
 			}
-			if result.CountryCode != "" {
+			if result.CountryCode != "" &&
+				!(textCountryCode != "" &&
+					result.CountryCode != textCountryCode &&
+					(result.Source == "city-db" || result.Source == "nominatim" || result.Source == "llm")) {
 				baseLat, baseLng = result.Lat, result.Lng
 				geoSource = result.Source
 				geocoded = true
@@ -661,16 +668,16 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 			}
 		}
 		if !geocoded {
-			if _, _, code, ok := geocodeText(geoText); ok {
+			if textCountryCode != "" {
 				// Use capital coords instead of centroid to avoid water/desert.
-				if capital, cok := capitalCoords[code]; cok {
+				if capital, cok := capitalCoords[textCountryCode]; cok {
 					baseLat, baseLng = capital[0], capital[1]
 				}
 				geoSource = "capital"
 				geocoded = true
-				if name := countryNameFromCode(code); name != "" {
+				if name := countryNameFromCode(textCountryCode); name != "" {
 					source.Country = name
-					source.CountryCode = code
+					source.CountryCode = textCountryCode
 				}
 			}
 		}

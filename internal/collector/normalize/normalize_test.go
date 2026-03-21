@@ -220,6 +220,47 @@ func TestRSSItemSkipsDynamicGeocodingForCyberAdvisory(t *testing.T) {
 	}
 }
 
+func TestRSSItemNewsAggregatorPrefersExplicitCountryOverCityFalsePositive(t *testing.T) {
+	cfg := config.Default()
+	ctx := Context{
+		Config: cfg,
+		Now:    time.Date(2026, 3, 21, 0, 0, 0, 0, time.UTC),
+		Geocoder: NewGeocoder(&mockCityLookup{cities: map[string]CityLookupResult{
+			"York": {Name: "York", CountryCode: "GB", Lat: 53.96, Lng: -1.08, Population: 210000},
+		}}, nil),
+	}
+	meta := model.RegistrySource{
+		Type:      "rss",
+		Category:  "conflict_monitoring",
+		RegionTag: "EU",
+		Source: model.SourceMetadata{
+			SourceID:      "gnews-conflict-global",
+			AuthorityName: "Google News — Armed Conflict",
+			Country:       "International",
+			CountryCode:   "INT",
+			Region:        "International",
+			AuthorityType: "news_aggregator",
+			BaseURL:       "https://news.google.com",
+		},
+	}
+	item := parse.FeedItem{
+		Title:     "Activists attacked in Germany while posting hostage signs - New York Times",
+		Summary:   "Incident reported in Germany with no UK location context.",
+		Link:      "https://example.test/gnews-item",
+		Published: "2026-03-20T10:00:00Z",
+	}
+	alert := RSSItem(ctx, meta, item)
+	if alert == nil {
+		t.Fatal("expected alert")
+	}
+	if alert.EventCountryCode != "DE" {
+		t.Fatalf("expected DE from explicit country text, got %q (%s)", alert.EventCountryCode, alert.EventCountry)
+	}
+	if alert.EventGeoSource != "capital" && alert.EventGeoSource != "country-text" {
+		t.Fatalf("expected country-level geocode source, got %q", alert.EventGeoSource)
+	}
+}
+
 func TestInformationalTitleClassification(t *testing.T) {
 	tests := []struct {
 		title string

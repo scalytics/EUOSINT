@@ -21,6 +21,7 @@ func TestGeocodeText(t *testing.T) {
 		{"Sahel Region Security Briefing", "ML", true},
 		{"During last nights reported airstrike in Syria Russian experts were present and injured", "SY", true},
 		{"Justice for Palestinian Women Demands End to Occupation, Reparations, Accountability, Experts Tell Rights Committee", "PS", true},
+		{"Syrian arrested in Dutch port city over alleged attack plot", "NL", true},
 		{"Weekly Global Summary Report", "", false},
 		{"New Policy Framework Released", "", false},
 	}
