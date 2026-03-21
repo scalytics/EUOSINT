@@ -2197,6 +2197,7 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	if strings.TrimSpace(cfg.ZoneBriefingsOutputPath) == "" {
 		return nil
 	}
+	outDir := filepath.Dir(cfg.ZoneBriefingsOutputPath)
 
 	// Staleness check: skip if output file is fresh enough.
 	if info, err := os.Stat(cfg.ZoneBriefingsOutputPath); err == nil {
@@ -2209,7 +2210,10 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 
 	token := strings.TrimSpace(cfg.UCDPAccessToken)
 	if token == "" {
-		return output.WriteZoneBriefings(cfg.ZoneBriefingsOutputPath, []model.ZoneBriefingRecord{})
+		if err := output.WriteZoneBriefings(cfg.ZoneBriefingsOutputPath, []model.ZoneBriefingRecord{}); err != nil {
+			return err
+		}
+		return writeJSONArtifact(filepath.Join(outDir, "ucdp-current-conflicts.json"), []map[string]any{})
 	}
 	headers := map[string]string{"x-ucdp-access-token": token}
 	now := time.Now().UTC()
@@ -2233,6 +2237,14 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	conflicts, err := r.fetchUCDPConflicts(ctx, cfg, headers, conflictVersion)
 	if err != nil {
 		fmt.Fprintf(r.stderr, "WARN ucdpprioconflict fetch: %v\n", err)
+	}
+	currentConflicts := buildCurrentConflictIndex(conflicts)
+	latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, err := r.fetchUCDPBattleDeathsTotalsByCountry(ctx, cfg, headers, conflictVersion)
+	if err != nil {
+		fmt.Fprintf(r.stderr, "WARN UCDP battledeaths fetch: %v\n", err)
+		latestYear = 0
+		cumulativeBattleDeaths = map[string]int{}
+		latestYearBattleDeaths = map[string]int{}
 	}
 
 	// Fetch UCDP events per lens.
@@ -2280,10 +2292,14 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	}
 
 	briefings := zonebrief.Build(allItems, conflicts, acledItems, now)
+	applyAuthoritativeDeathTotals(briefings, cumulativeBattleDeaths, latestYear, latestYearBattleDeaths)
 	if err := output.WriteZoneBriefings(cfg.ZoneBriefingsOutputPath, briefings); err != nil {
 		return err
 	}
-	geoDir := filepath.Join(filepath.Dir(cfg.ZoneBriefingsOutputPath), "geo")
+	if err := writeJSONArtifact(filepath.Join(outDir, "ucdp-current-conflicts.json"), currentConflicts); err != nil {
+		return err
+	}
+	geoDir := filepath.Join(outDir, "geo")
 	conflictZones, terrorZones := zonebrief.BuildConflictZonesGeoJSON(briefings), zonebrief.BuildTerrorZonesGeoJSON(briefings)
 	conflictFootprints := zonebrief.BuildConflictFootprintsGeoJSON(briefings, allItems)
 	if strings.TrimSpace(cfg.CountryBoundariesPath) != "" {
@@ -2341,6 +2357,9 @@ func ensureZoneBriefingArtifacts(cfg config.Config) error {
 	}
 
 	geoDir := filepath.Join(filepath.Dir(outPath), "geo")
+	if err := writeJSONArtifact(filepath.Join(filepath.Dir(outPath), "ucdp-current-conflicts.json"), []map[string]any{}); err != nil {
+		return err
+	}
 	empty := map[string]any{
 		"type":     "FeatureCollection",
 		"features": []any{},
@@ -2357,6 +2376,126 @@ func ensureZoneBriefingArtifacts(cfg config.Config) error {
 		}
 	}
 	return nil
+}
+
+func buildCurrentConflictIndex(conflicts []parse.UCDPConflict) []map[string]any {
+	if len(conflicts) == 0 {
+		return []map[string]any{}
+	}
+	latestYear := 0
+	for _, conflict := range conflicts {
+		if conflict.Year > latestYear {
+			latestYear = conflict.Year
+		}
+	}
+	if latestYear <= 0 {
+		return []map[string]any{}
+	}
+	entries := make([]map[string]any, 0)
+	for _, conflict := range conflicts {
+		if conflict.Year != latestYear || conflict.EPEnd != 0 {
+			continue
+		}
+		lensIDs := mapConflictToLensIDs(conflict)
+		title := strings.TrimSpace(conflict.ConflictName)
+		if title == "" {
+			title = strings.TrimSpace(conflict.SideA)
+			if strings.TrimSpace(conflict.SideB) != "" {
+				title += " vs " + strings.TrimSpace(conflict.SideB)
+			}
+		}
+		if strings.TrimSpace(title) == "" {
+			title = "Conflict " + conflict.ConflictID
+		}
+		entries = append(entries, map[string]any{
+			"conflict_id":      conflict.ConflictID,
+			"title":            title,
+			"year":             conflict.Year,
+			"start_date":       conflict.StartDate,
+			"intensity_level":  conflict.IntensityLevel,
+			"type_of_conflict": parse.NormalizeConflictType(conflict.TypeOfConflict),
+			"gwno_loc":         conflict.GWNoLoc,
+			"side_a":           conflict.SideA,
+			"side_b":           conflict.SideB,
+			"lens_ids":         lensIDs,
+			"source_url":       currentConflictSourceURL(conflict),
+		})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		leftIntensity := intValue(entries[i]["intensity_level"])
+		rightIntensity := intValue(entries[j]["intensity_level"])
+		if leftIntensity != rightIntensity {
+			return leftIntensity > rightIntensity
+		}
+		left := stringValue(entries[i]["title"])
+		right := stringValue(entries[j]["title"])
+		if left != right {
+			return left < right
+		}
+		return stringValue(entries[i]["conflict_id"]) < stringValue(entries[j]["conflict_id"])
+	})
+	return entries
+}
+
+func mapConflictToLensIDs(conflict parse.UCDPConflict) []string {
+	conflictGWNO := make(map[string]struct{})
+	for _, raw := range strings.Split(conflict.GWNoLoc, ",") {
+		gwno := strings.TrimSpace(raw)
+		if gwno == "" {
+			continue
+		}
+		conflictGWNO[gwno] = struct{}{}
+	}
+	if len(conflictGWNO) == 0 {
+		return []string{}
+	}
+	lensIDs := make([]string, 0)
+	for _, lens := range zonebrief.SupportedLenses {
+		matched := false
+		for code := range lens.CountryCodes {
+			ref, ok := zonebrief.UCDPCountryRefs[code]
+			if !ok || strings.TrimSpace(ref.ID) == "" {
+				continue
+			}
+			if _, exists := conflictGWNO[ref.ID]; exists {
+				matched = true
+				break
+			}
+		}
+		if matched {
+			lensIDs = append(lensIDs, lens.ID)
+		}
+	}
+	return lensIDs
+}
+
+func currentConflictSourceURL(conflict parse.UCDPConflict) string {
+	for _, raw := range strings.Split(conflict.GWNoLoc, ",") {
+		gwno := strings.TrimSpace(raw)
+		if gwno == "" {
+			continue
+		}
+		return "https://ucdp.uu.se/country/" + gwno
+	}
+	return "https://ucdp.uu.se/"
+}
+
+func intValue(raw any) int {
+	switch typed := raw.(type) {
+	case int:
+		return typed
+	case float64:
+		return int(typed)
+	default:
+		return 0
+	}
+}
+
+func stringValue(raw any) string {
+	if typed, ok := raw.(string); ok {
+		return typed
+	}
+	return ""
 }
 
 func zoneBriefingsFileHasRecords(path string) bool {
@@ -2660,6 +2799,157 @@ func deduplicateConflicts(conflicts []parse.UCDPConflict) []parse.UCDPConflict {
 		out = append(out, c)
 	}
 	return out
+}
+
+// fetchUCDPBattleDeathsTotalsByCountry fetches battledeaths and aggregates bd_best
+// by battle location country id for both cumulative(all years) and latest year totals.
+func (r Runner) fetchUCDPBattleDeathsTotalsByCountry(ctx context.Context, cfg config.Config, headers map[string]string, version string) (int, map[string]int, map[string]int, error) {
+	baseURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/battledeaths/%s?pagesize=500",
+		url.QueryEscape(version))
+	client := r.clientFactory(withMinUCDPTimeout(cfg))
+	body, err := client.TextWithHeaders(ctx, baseURL+"&page=0", false, "application/json", headers)
+	if err != nil {
+		return 0, nil, nil, err
+	}
+	rows, err := parseUCDPRows(body)
+	if err != nil {
+		return 0, nil, nil, err
+	}
+	totalPages := parseUCDPTotalPages(body)
+	for page := 1; page < totalPages; page++ {
+		select {
+		case <-ctx.Done():
+			page = totalPages
+		case <-time.After(200 * time.Millisecond):
+		}
+		pageBody, err := client.TextWithHeaders(ctx, fmt.Sprintf("%s&page=%d", baseURL, page), false, "application/json", headers)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN battledeaths page %d: %v\n", page, err)
+			break
+		}
+		pageRows, err := parseUCDPRows(pageBody)
+		if err != nil {
+			break
+		}
+		rows = append(rows, pageRows...)
+	}
+	latestYear := 0
+	for _, row := range rows {
+		year := parseAnyInt(row["year"])
+		if year > latestYear {
+			latestYear = year
+		}
+	}
+	cumulative := make(map[string]int)
+	latest := make(map[string]int)
+	for _, row := range rows {
+		value := parseAnyInt(row["bd_best"])
+		for _, code := range splitUCDPCodes(firstStringFromAny(row["gwno_battle"], row["gwno_loc"])) {
+			cumulative[code] += value
+			if parseAnyInt(row["year"]) == latestYear {
+				latest[code] += value
+			}
+		}
+	}
+	return latestYear, cumulative, latest, nil
+}
+
+func applyAuthoritativeDeathTotals(
+	briefings []model.ZoneBriefingRecord,
+	cumulativeByCountry map[string]int,
+	latestYear int,
+	latestYearByCountry map[string]int,
+) {
+	lensRef := map[string]string{}
+	for _, lens := range zonebrief.SupportedLenses {
+		lensRef[lens.ID] = strings.TrimSpace(lens.ReferenceCountryID)
+	}
+	for i := range briefings {
+		refID := lensRef[briefings[i].LensID]
+		if refID == "" {
+			continue
+		}
+		if total, ok := cumulativeByCountry[refID]; ok && total > 0 {
+			briefings[i].Metrics.FatalitiesTotal = total
+		}
+		if latest, ok := latestYearByCountry[refID]; ok && latest > 0 {
+			briefings[i].Metrics.FatalitiesLatestYear = latest
+			briefings[i].Metrics.FatalitiesLatestYearYear = latestYear
+		}
+	}
+}
+
+func parseUCDPRows(body []byte) ([]map[string]any, error) {
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return nil, err
+	}
+	raw := firstEnvelopeRaw(envelope, "Result", "result", "results", "Data", "data")
+	if len(raw) == 0 {
+		return nil, fmt.Errorf("ucdp response missing result rows")
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(raw, &rows); err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func firstEnvelopeRaw(values map[string]json.RawMessage, keys ...string) json.RawMessage {
+	for _, key := range keys {
+		if v, ok := values[key]; ok && len(v) > 0 && string(v) != "null" {
+			return v
+		}
+	}
+	return nil
+}
+
+func parseAnyInt(v any) int {
+	switch typed := v.(type) {
+	case float64:
+		return int(typed)
+	case int:
+		return typed
+	case json.Number:
+		n, _ := typed.Int64()
+		return int(n)
+	case string:
+		n, _ := strconv.Atoi(strings.TrimSpace(typed))
+		return n
+	default:
+		return 0
+	}
+}
+
+func splitUCDPCodes(raw string) []string {
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		out = append(out, part)
+	}
+	return out
+}
+
+func firstStringFromAny(values ...any) string {
+	for _, v := range values {
+		switch typed := v.(type) {
+		case string:
+			if strings.TrimSpace(typed) != "" {
+				return strings.TrimSpace(typed)
+			}
+		case float64:
+			return strconv.Itoa(int(typed))
+		case int:
+			return strconv.Itoa(typed)
+		case json.Number:
+			return typed.String()
+		}
+	}
+	return ""
 }
 
 // fetchACLEDItemsForBriefings fetches raw ACLED items for briefing enrichment (7-day window).

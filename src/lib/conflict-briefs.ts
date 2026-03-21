@@ -1,6 +1,6 @@
 import type { Alert, AlertCategory, Severity } from "@/types/alert";
 import type { ConflictLens } from "@/lib/conflict-lenses";
-import type { ZoneBriefingHotspot, ZoneBriefingRecord, ZoneBriefingConflict, ZoneBriefingACLED } from "@/types/zone-briefing";
+import type { ZoneBriefingHotspot, ZoneBriefingRecord, ZoneBriefingConflict, ZoneBriefingACLED, ZoneBriefingEvent } from "@/types/zone-briefing";
 import { alertMatchesConflictLens } from "@/lib/conflict-lenses";
 import { categoryLabels } from "@/lib/severity";
 
@@ -33,6 +33,7 @@ export interface ConflictBrief {
   actors: string[];
   violenceTypes: string[];
   hotspots: ZoneBriefingHotspot[];
+  recentEvents?: ZoneBriefingEvent[];
   latestAlert: Alert | null;
   recent7d: number;
   prior7d: number;
@@ -65,15 +66,18 @@ function formatTrend(recent: number, prior: number): string {
   return `${delta > 0 ? "up" : "down"} ${Math.abs(Math.round(delta))}%`;
 }
 
-function upsertMetric(metrics: BriefMetric[], label: string, value: string): BriefMetric[] {
-  const next = [...metrics];
-  const index = next.findIndex((metric) => metric.label === label);
-  if (index >= 0) {
-    next[index] = { ...next[index], value };
-    return next;
+function buildMetricsFromOverride(override: ZoneBriefingRecord): BriefMetric[] | null {
+  const metrics = override.metrics;
+  if (!metrics) return null;
+  const out: BriefMetric[] = [];
+  if (typeof metrics.fatalitiesTotal === "number") out.push({ label: "Total deaths", value: String(metrics.fatalitiesTotal) });
+  if (typeof metrics.fatalitiesLatestYear === "number" && metrics.fatalitiesLatestYear > 0) {
+    const value = typeof metrics.fatalitiesLatestYearYear === "number" && metrics.fatalitiesLatestYearYear > 0
+      ? `${metrics.fatalitiesLatestYear} (${metrics.fatalitiesLatestYearYear})`
+      : String(metrics.fatalitiesLatestYear);
+    out.push({ label: "Deaths (latest yr)", value });
   }
-  next.push({ label, value });
-  return next;
+  return out.length > 0 ? out : null;
 }
 
 function deriveHotspots(alerts: Alert[], lens: ConflictLens): ZoneBriefingHotspot[] {
@@ -211,21 +215,7 @@ export function mergeZoneBriefing(
 ): ConflictBrief | null {
   if (!brief) return null;
   if (!override) return brief;
-  let mergedMetrics = brief.metrics;
-  if (override.metrics) {
-    if (typeof override.metrics.events30d === "number") {
-      mergedMetrics = upsertMetric(mergedMetrics, "Volume", String(override.metrics.events30d));
-    }
-    if (typeof override.metrics.fatalitiesTotal === "number") {
-      mergedMetrics = upsertMetric(mergedMetrics, "Total deaths", String(override.metrics.fatalitiesTotal));
-    }
-    if (typeof override.metrics.events7d === "number") {
-      mergedMetrics = upsertMetric(mergedMetrics, "7d", String(override.metrics.events7d));
-    }
-    if (typeof override.metrics.trend7d === "string" && override.metrics.trend7d.trim() !== "") {
-      mergedMetrics = upsertMetric(mergedMetrics, "Trend", override.metrics.trend7d);
-    }
-  }
+  const mergedMetrics = buildMetricsFromOverride(override) ?? brief.metrics;
   return {
     ...brief,
     sourceLabel: override.source || brief.sourceLabel,
@@ -238,6 +228,7 @@ export function mergeZoneBriefing(
     actors: override.actors && override.actors.length > 0 ? override.actors : brief.actors,
     violenceTypes: override.violenceTypes && override.violenceTypes.length > 0 ? override.violenceTypes : brief.violenceTypes,
     hotspots: override.hotspots && override.hotspots.length > 0 ? override.hotspots : brief.hotspots,
+    recentEvents: override.recentEvents && override.recentEvents.length > 0 ? override.recentEvents : brief.recentEvents,
     conflictIntensity: override.conflictIntensity,
     conflictType: override.conflictType,
     activeConflicts: override.activeConflicts,

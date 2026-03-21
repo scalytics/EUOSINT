@@ -5,6 +5,15 @@ export interface ZoneBriefingHotspot {
   eventCount: number;
 }
 
+export interface ZoneBriefingEvent {
+  date: string;
+  title: string;
+  location?: string;
+  fatalities?: number;
+  source?: string;
+  url?: string;
+}
+
 export interface ZoneBriefingConflict {
   conflictId: string;
   name: string;
@@ -25,6 +34,8 @@ export interface ZoneBriefingMetrics {
   fatalitiesBest7d?: number;
   fatalitiesBest30d?: number;
   fatalitiesTotal?: number;
+  fatalitiesLatestYear?: number;
+  fatalitiesLatestYearYear?: number;
   civilianDeaths30d?: number;
   trend7d?: string;
   trend30d?: string;
@@ -44,6 +55,7 @@ export interface ZoneBriefingRecord {
   actors?: string[];
   violenceTypes?: string[];
   hotspots?: ZoneBriefingHotspot[];
+  recentEvents?: ZoneBriefingEvent[];
   conflictIntensity?: string;
   conflictType?: string;
   activeConflicts?: ZoneBriefingConflict[];

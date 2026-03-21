@@ -112,6 +112,35 @@ func TestBuildWithNumericCountryCodes(t *testing.T) {
 	}
 }
 
+func TestBuildFiltersPlaceholderActors(t *testing.T) {
+	now := time.Date(2026, 3, 20, 12, 0, 0, 0, time.UTC)
+	items := []parse.UCDPItem{
+		{
+			FeedItem:     parse.FeedItem{Published: "2026-03-18"},
+			ViolenceType: "State-based conflict",
+			Fatalities:   7,
+			Country:      "Ukraine",
+			CountryCode:  "369",
+			SideA:        "Government of Ukraine",
+			SideB:        "XXX369",
+		},
+	}
+
+	briefs := Build(items, nil, nil, now)
+	for _, brief := range briefs {
+		if brief.LensID != "ukraine" {
+			continue
+		}
+		for _, actor := range brief.Actors {
+			if actor == "XXX369" || actor == "XXX666" {
+				t.Fatalf("placeholder actor leaked into briefing actors: %q", actor)
+			}
+		}
+		return
+	}
+	t.Fatal("expected ukraine briefing in output")
+}
+
 func TestMatchConflictsToLens(t *testing.T) {
 	conflicts := []parse.UCDPConflict{
 		{ConflictID: "1", ConflictName: "Sudan internal", GWNoLoc: "625", IntensityLevel: 2, TypeOfConflict: "3"},

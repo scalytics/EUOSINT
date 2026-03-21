@@ -55,6 +55,12 @@ export const DEFAULT_OVERLAYS: OverlayDef[] = [
 
 const EMPTY_FEATURE_COLLECTION: GeoJSONLike = { type: "FeatureCollection", features: [] };
 
+function hasGeoJSONFeatures(value: GeoJSONLike | null): value is GeoJSONLike {
+  if (!value) return false;
+  const features = (value as { features?: unknown[] }).features;
+  return Array.isArray(features) && features.length > 0;
+}
+
 async function fetchGeoJSON(url: string): Promise<GeoJSONLike | null> {
   const resp = await fetch(url);
   if (!resp.ok) {
@@ -211,6 +217,9 @@ export async function loadOverlay(
     }
   }
   let geojson = await fetchGeoJSON(url);
+  if (def.id === "conflicts" && conflictLensId !== "" && !hasGeoJSONFeatures(geojson)) {
+    geojson = (await fetchGeoJSON(`/geo/conflict-zones.${conflictLensId}.geojson`)) ?? geojson;
+  }
   if (!geojson) {
     const fallbackURL = OVERLAY_FALLBACK_URLS[def.id];
     geojson = fallbackURL ? await fetchGeoJSON(fallbackURL) : null;

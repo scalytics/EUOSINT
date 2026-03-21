@@ -16,6 +16,7 @@ type ZoneBriefingRecord struct {
 	Actors            []string               `json:"actors,omitempty"`
 	ViolenceTypes     []string               `json:"violence_types,omitempty"`
 	Hotspots          []ZoneBriefingHotspot  `json:"hotspots,omitempty"`
+	RecentEvents      []ZoneBriefingEvent    `json:"recent_events,omitempty"`
 	Metrics           ZoneBriefingMetrics    `json:"metrics"`
 	Violence          ZoneBriefingViolence   `json:"violence"`
 	ActorSummary      ZoneBriefingActors     `json:"actors_summary"`
@@ -36,15 +37,26 @@ type ZoneBriefingHotspot struct {
 	EventCount int     `json:"event_count"`
 }
 
+type ZoneBriefingEvent struct {
+	Date       string `json:"date"`
+	Title      string `json:"title"`
+	Location   string `json:"location,omitempty"`
+	Fatalities int    `json:"fatalities,omitempty"`
+	Source     string `json:"source,omitempty"`
+	URL        string `json:"url,omitempty"`
+}
+
 type ZoneBriefingMetrics struct {
-	Events7D          int    `json:"events_7d"`
-	Events30D         int    `json:"events_30d"`
-	FatalitiesBest7D  int    `json:"fatalities_best_7d"`
-	FatalitiesBest30D int    `json:"fatalities_best_30d"`
-	FatalitiesTotal   int    `json:"fatalities_total"`
-	CivilianDeaths30D int    `json:"civilian_deaths_30d"`
-	Trend7D           string `json:"trend_7d"`
-	Trend30D          string `json:"trend_30d"`
+	Events7D                 int    `json:"events_7d"`
+	Events30D                int    `json:"events_30d"`
+	FatalitiesBest7D         int    `json:"fatalities_best_7d"`
+	FatalitiesBest30D        int    `json:"fatalities_best_30d"`
+	FatalitiesTotal          int    `json:"fatalities_total"`
+	FatalitiesLatestYear     int    `json:"fatalities_latest_year,omitempty"`
+	FatalitiesLatestYearYear int    `json:"fatalities_latest_year_year,omitempty"`
+	CivilianDeaths30D        int    `json:"civilian_deaths_30d"`
+	Trend7D                  string `json:"trend_7d"`
+	Trend30D                 string `json:"trend_30d"`
 }
 
 type ZoneBriefingViolence struct {

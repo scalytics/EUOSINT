@@ -17,6 +17,7 @@ type UCDPConflict struct {
 	IntensityLevel int    // 1 = minor, 2 = war
 	GWNoLoc        string // country gwno
 	Year           int
+	EPEnd          int
 	StartDate      string
 	Region         string
 	SideA          string
@@ -50,6 +51,7 @@ func ParseUCDPConflicts(body []byte) ([]UCDPConflict, error) {
 			year, _ = strconv.Atoi(v)
 		}
 		intensity := firstInt(row, "intensity_level")
+		epEnd := firstInt(row, "ep_end")
 		out = append(out, UCDPConflict{
 			ConflictID:     conflictID,
 			ConflictName:   firstString(row, "conflict_name", "side_a", "incompatibility"),
@@ -57,6 +59,7 @@ func ParseUCDPConflicts(body []byte) ([]UCDPConflict, error) {
 			IntensityLevel: intensity,
 			GWNoLoc:        firstString(row, "gwno_loc", "gwno_a"),
 			Year:           year,
+			EPEnd:          epEnd,
 			StartDate:      firstString(row, "start_date", "start_date2"),
 			Region:         firstString(row, "region"),
 			SideA:          firstString(row, "side_a"),

@@ -13,20 +13,24 @@ import (
 // UCDPItem extends FeedItem with UCDP conflict metadata.
 type UCDPItem struct {
 	FeedItem
-	ViolenceType string
-	Fatalities   int
-	CivilianDeaths int
-	Country      string
-	CountryCode  string
-	Region       string
-	SideA        string
-	SideB        string
-	DyadName     string
-	Admin1       string
-	Admin2       string
-	WherePrecision int
-	DatePrecision  int
-	EventClarity   int
+	ViolenceType     string
+	Fatalities       int
+	CivilianDeaths   int
+	Country          string
+	CountryCode      string
+	Region           string
+	SideA            string
+	SideB            string
+	DyadName         string
+	Admin1           string
+	Admin2           string
+	WhereDescription string
+	SourceHeadline   string
+	SourceArticle    string
+	SourceOriginal   string
+	WherePrecision   int
+	DatePrecision    int
+	EventClarity     int
 }
 
 // ParseUCDP parses UCDP API responses with flexible envelope keys.
@@ -66,6 +70,10 @@ func ParseUCDP(body []byte) ([]UCDPItem, error) {
 		lng := firstFloat(ev, "longitude", "lon", "lng")
 		admin1 := firstString(ev, "adm_1", "admin1")
 		admin2 := firstString(ev, "adm_2", "admin2")
+		whereDescription := firstString(ev, "where_description")
+		sourceHeadline := firstString(ev, "source_headline")
+		sourceArticle := firstString(ev, "source_article")
+		sourceOriginal := firstString(ev, "source_original")
 		wherePrecision := firstInt(ev, "where_prec", "where_precision")
 		datePrecision := firstInt(ev, "date_prec", "date_precision")
 		eventClarity := firstInt(ev, "event_clarity")
@@ -74,7 +82,10 @@ func ParseUCDP(body []byte) ([]UCDPItem, error) {
 			id = firstString(ev, "source_article")
 		}
 
-		title := buildUCDPTitle(violenceType, country, sideA, sideB)
+		title := strings.TrimSpace(sourceHeadline)
+		if title == "" {
+			title = buildUCDPTitle(violenceType, country, sideA, sideB)
+		}
 		if strings.TrimSpace(title) == "" {
 			continue
 		}
@@ -116,20 +127,24 @@ func ParseUCDP(body []byte) ([]UCDPItem, error) {
 				Lat:       lat,
 				Lng:       lng,
 			},
-			ViolenceType: violenceType,
-			Fatalities:   fatalities,
-			CivilianDeaths: civilianDeaths,
-			Country:      country,
-			CountryCode:  countryCode,
-			Region:       region,
-			SideA:        sideA,
-			SideB:        sideB,
-			DyadName:     dyadName,
-			Admin1:       admin1,
-			Admin2:       admin2,
-			WherePrecision: wherePrecision,
-			DatePrecision:  datePrecision,
-			EventClarity:   eventClarity,
+			ViolenceType:     violenceType,
+			Fatalities:       fatalities,
+			CivilianDeaths:   civilianDeaths,
+			Country:          country,
+			CountryCode:      countryCode,
+			Region:           region,
+			SideA:            sideA,
+			SideB:            sideB,
+			DyadName:         dyadName,
+			Admin1:           admin1,
+			Admin2:           admin2,
+			WhereDescription: whereDescription,
+			SourceHeadline:   sourceHeadline,
+			SourceArticle:    sourceArticle,
+			SourceOriginal:   sourceOriginal,
+			WherePrecision:   wherePrecision,
+			DatePrecision:    datePrecision,
+			EventClarity:     eventClarity,
 		})
 	}
 	return out, nil

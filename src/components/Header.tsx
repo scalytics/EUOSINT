@@ -10,6 +10,7 @@ import type { Alert } from "@/types/alert";
 import { alertMatchesRegionFilter } from "@/lib/regions";
 import { CONFLICT_LENSES } from "@/lib/conflict-lenses";
 import { useZoneBriefings } from "@/hooks/useZoneBriefings";
+import { useCurrentConflicts } from "@/hooks/useCurrentConflicts";
 
 type MenuView = "overview" | "feeds" | "sources" | "health";
 
@@ -523,6 +524,7 @@ function ConflictLensSearch({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { briefings } = useZoneBriefings();
+  const { conflicts: currentConflicts } = useCurrentConflicts();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -547,11 +549,38 @@ function ConflictLensSearch({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return availableLenses;
-    return availableLenses.filter((lens) =>
-      `${lens.label} ${lens.description} ${lens.regionFilter}`.toLowerCase().includes(q),
-    );
-  }, [availableLenses, query]);
+    const lensRows = availableLenses
+      .filter((lens) => {
+        if (!q) return true;
+        return `${lens.label} ${lens.description} ${lens.regionFilter}`.toLowerCase().includes(q);
+      })
+      .map((lens) => ({
+        key: `lens:${lens.id}`,
+        label: lens.label,
+        description: lens.description,
+        lensId: lens.id,
+        sourceUrl: "",
+        kind: "lens" as const,
+      }));
+
+    const dynamicRows = currentConflicts
+      .filter((conflict) => conflict.lensIds.length > 0)
+      .filter((conflict) => {
+        if (!q) return true;
+        return `${conflict.title} ${conflict.sideA ?? ""} ${conflict.sideB ?? ""} ${conflict.typeOfConflict ?? ""}`.toLowerCase().includes(q);
+      })
+      .slice(0, q ? 50 : 20)
+      .map((conflict) => ({
+        key: `conflict:${conflict.conflictId}`,
+        label: conflict.title,
+        description: `${conflict.typeOfConflict ?? "Conflict"} · ${conflict.year}`,
+        lensId: conflict.lensIds[0],
+        sourceUrl: conflict.sourceUrl ?? "",
+        kind: "conflict" as const,
+      }));
+
+    return [...lensRows, ...dynamicRows];
+  }, [availableLenses, currentConflicts, query]);
 
   const currentLabel = useMemo(() => {
     const current = CONFLICT_LENSES.find((lens) => lens.id === conflictLensId);
@@ -635,23 +664,28 @@ function ConflictLensSearch({
             {filtered.length === 0 && (
               <div className="px-3 py-4 text-center text-xxs text-siem-muted">No matching zones</div>
             )}
-            {filtered.map((lens) => (
+            {filtered.map((row) => (
               <button
-                key={lens.id}
+                key={row.key}
                 type="button"
                 onClick={() => {
-                  onConflictLensChange(lens.id);
+                  onConflictLensChange(row.lensId);
                   setOpen(false);
                   setQuery("");
                 }}
                 className={`w-full rounded-lg px-3 py-2 text-left text-xs transition-colors ${
-                  conflictLensId === lens.id
+                  conflictLensId === row.lensId
                     ? "bg-siem-accent/14 text-siem-text"
                     : "text-siem-text hover:bg-siem-accent/8"
                 }`}
               >
-                <div className="truncate">{lens.label}</div>
-                <div className="mt-0.5 text-2xs text-siem-muted">{lens.description}</div>
+                <div className="truncate">{row.label}</div>
+                <div className="mt-0.5 text-2xs text-siem-muted">{row.description}</div>
+                {row.kind === "conflict" && row.sourceUrl && (
+                  <div className="mt-1 text-2xs uppercase tracking-[0.12em] text-siem-accent">
+                    UCDP current conflict
+                  </div>
+                )}
               </button>
             ))}
           </div>

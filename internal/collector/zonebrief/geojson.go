@@ -59,7 +59,7 @@ func BuildConflictFootprintsGeoJSON(briefings []model.ZoneBriefingRecord, items 
 		if brief == nil {
 			continue
 		}
-		if lens.OverlayType != "conflict" && lens.OverlayType != "maritime" {
+		if lens.OverlayType != "conflict" && lens.OverlayType != "maritime" && lens.OverlayType != "terror" {
 			continue
 		}
 		baseProps := overlayProperties(lens, brief, "", "", "", "")
@@ -407,12 +407,14 @@ func lensClusterDistance(bounds Bounds) float64 {
 	if lngSpan > span {
 		span = lngSpan
 	}
-	eps := span * 0.12
-	if eps < 0.3 {
-		return 0.3
+	// Keep clusters tight so disconnected hotspots do not merge into a
+	// continent-scale polygon.
+	eps := span * 0.05
+	if eps < 0.2 {
+		return 0.2
 	}
-	if eps > 1.8 {
-		return 1.8
+	if eps > 0.8 {
+		return 0.8
 	}
 	return eps
 }

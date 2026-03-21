@@ -17,17 +17,13 @@ import {
 import { alertMatchesRegionFilter } from "@/lib/regions";
 import { buildConflictBrief, mergeZoneBriefing } from "@/lib/conflict-briefs";
 import { getConflictLensById } from "@/lib/conflict-lenses";
+import { alertMatchesConflictLens } from "@/lib/conflict-lenses";
 import { useZoneBriefings } from "@/hooks/useZoneBriefings";
+import type { ZoneBriefingEvent } from "@/types/zone-briefing";
 import { Clock, Building2, ChevronDown, Globe } from "lucide-react";
 
 const LIVE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
 const PREFERRED_REGION_ORDER = ["Europe", "Africa", "North America", "Asia"] as const;
-
-function isUCDPAlert(alert: Alert): boolean {
-  const sourceID = (alert.source_id || "").trim().toLowerCase();
-  if (sourceID === "ucdp-ged") return true;
-  return (alert.source.authority_name || "").toLowerCase().includes("ucdp");
-}
 
 interface Props {
   alerts: Alert[];
@@ -179,8 +175,9 @@ export function AlertFeed({
   }, [nowAlerts, historyAlerts]);
 
   const contextAlerts = useMemo(() => {
+    if (!activeConflictLens) return [];
     const combined = [...alerts, ...historicalAlerts]
-      .filter((alert) => isUCDPAlert(alert))
+      .filter((alert) => alertMatchesConflictLens(alert, activeConflictLens))
       .sort((a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime());
     const deduped = new Map<string, Alert>();
     for (const alert of combined) {
@@ -188,8 +185,8 @@ export function AlertFeed({
         deduped.set(alert.alert_id, alert);
       }
     }
-    return [...deduped.values()];
-  }, [alerts, historicalAlerts]);
+    return [...deduped.values()].slice(0, 5);
+  }, [activeConflictLens, alerts, historicalAlerts]);
 
   // History grouped by day.
   const historyGroups = useMemo(() => {
@@ -385,6 +382,29 @@ export function AlertFeed({
     );
   };
 
+  const renderBriefingEventCard = (event: ZoneBriefingEvent, index: number) => {
+    const dateLabel = event.date ? new Date(event.date).toISOString().slice(0, 10) : "n/a";
+    return (
+      <a
+        key={`${event.title}-${event.date}-${index}`}
+        href={event.url || "#"}
+        target={event.url ? "_blank" : undefined}
+        rel={event.url ? "noreferrer" : undefined}
+        className="block rounded-lg border border-siem-border bg-siem-bg/45 px-3 py-2.5 transition-colors hover:bg-siem-accent/8"
+      >
+        <div className="flex items-center justify-between gap-2 text-2xs font-mono uppercase tracking-wide text-siem-muted">
+          <span>{dateLabel}</span>
+          <span>{event.fatalities && event.fatalities > 0 ? `${event.fatalities} fat.` : "fatalities n/a"}</span>
+        </div>
+        <p className="mt-1 text-2xs text-siem-text leading-snug line-clamp-2">{event.title}</p>
+        <div className="mt-1 text-2xs text-siem-muted">
+          {event.location ? `${event.location}` : "Location n/a"}
+          {event.source ? ` · ${event.source}` : ""}
+        </div>
+      </a>
+    );
+  };
+
   const currentAlerts =
     isConflictContextMode
       ? contextAlerts
@@ -490,7 +510,7 @@ export function AlertFeed({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-2xs uppercase tracking-[0.16em] text-siem-muted">Zone brief</div>
-                <div className="mt-1 text-sm text-siem-text">{activeConflictBrief.lens.label}</div>
+                <div className="mt-1 text-2xs text-siem-text">{activeConflictBrief.lens.label}</div>
                 <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-siem-muted">
                   {activeConflictBrief.sourceLabel}
                 </div>
@@ -514,7 +534,7 @@ export function AlertFeed({
               {activeConflictBrief.metrics.map((metric) => (
                 <div key={metric.label} className="rounded border border-siem-border bg-white/5 px-2 py-1.5">
                   <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">{metric.label}</div>
-                  <div className="mt-1 text-xs font-mono text-siem-text">{metric.value}</div>
+                  <div className="mt-1 text-2xs font-mono text-siem-text">{metric.value}</div>
                 </div>
               ))}
             </div>
@@ -591,7 +611,7 @@ export function AlertFeed({
                   className="w-full rounded-lg border border-siem-accent/35 bg-siem-accent/10 px-3 py-2 text-left transition-colors hover:bg-siem-accent/14"
                 >
                   <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Latest alert in lens</div>
-                  <div className="mt-1 text-xs text-siem-text line-clamp-2">{activeConflictBrief.latestAlert.title}</div>
+                  <div className="mt-1 text-2xs text-siem-text line-clamp-2">{activeConflictBrief.latestAlert.title}</div>
                   <div className="mt-1 text-2xs text-siem-muted">
                     {activeConflictBrief.latestAlert.source.authority_name} · {freshnessLabel(activeConflictBrief.latestAlert.freshness_hours)}
                   </div>
@@ -619,54 +639,45 @@ export function AlertFeed({
         )}
 
         {/* Compact stat strip */}
-        <div className="grid grid-cols-3 gap-2 text-2xs font-mono uppercase tracking-wide">
-          <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-            <span className="text-siem-muted">Total</span>{" "}
-            <span className="text-siem-text">{currentAlerts.length}</span>
+        {!isConflictContextMode && (
+          <div className="grid grid-cols-3 gap-2 text-2xs font-mono uppercase tracking-wide">
+            <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+              <span className="text-siem-muted">Total</span>{" "}
+              <span className="text-siem-text">{currentAlerts.length}</span>
+            </div>
+            {viewMode === "briefing" ? (
+              <>
+                <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+                  <span className="text-siem-muted">Sources</span>{" "}
+                  <span className="text-sky-300">
+                    {new Set(currentAlerts.map((a) => a.source_id)).size}
+                  </span>
+                </div>
+                <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+                  <span className="text-siem-muted">Mapped</span>{" "}
+                  <span className="text-sky-300">
+                    {currentAlerts.filter((a) => a.lat !== 0 || a.lng !== 0).length}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+                  <span className="text-siem-muted">Crit</span>{" "}
+                  <span className="text-rose-300">
+                    {currentAlerts.filter((a) => a.severity === "critical").length}
+                  </span>
+                </div>
+                <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
+                  <span className="text-siem-muted">High</span>{" "}
+                  <span className="text-amber-300">
+                    {currentAlerts.filter((a) => a.severity === "high").length}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
-          {isConflictContextMode ? (
-            <>
-              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-                <span className="text-siem-muted">7d</span>{" "}
-                <span className="text-sky-300">{activeConflictBrief?.recent7d ?? 0}</span>
-              </div>
-              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-                <span className="text-siem-muted">Trend</span>{" "}
-                <span className="text-sky-300">{activeConflictBrief?.trendLabel ?? "flat"}</span>
-              </div>
-            </>
-          ) : viewMode === "briefing" ? (
-            <>
-              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-                <span className="text-siem-muted">Sources</span>{" "}
-                <span className="text-sky-300">
-                  {new Set(currentAlerts.map((a) => a.source_id)).size}
-                </span>
-              </div>
-              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-                <span className="text-siem-muted">Mapped</span>{" "}
-                <span className="text-sky-300">
-                  {currentAlerts.filter((a) => a.lat !== 0 || a.lng !== 0).length}
-                </span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-                <span className="text-siem-muted">Crit</span>{" "}
-                <span className="text-rose-300">
-                  {currentAlerts.filter((a) => a.severity === "critical").length}
-                </span>
-              </div>
-              <div className="rounded border border-siem-border bg-white/5 px-2 py-1">
-                <span className="text-siem-muted">High</span>{" "}
-                <span className="text-amber-300">
-                  {currentAlerts.filter((a) => a.severity === "high").length}
-                </span>
-              </div>
-            </>
-          )}
-        </div>
+        )}
 
         {/* Filters */}
         <div className="grid grid-cols-2 gap-2">
@@ -720,6 +731,8 @@ export function AlertFeed({
         {isConflictContextMode ? (
           currentAlerts.length > 0 ? (
             currentAlerts.map((alert, idx) => renderAlertCard(alert, idx))
+          ) : activeConflictBrief?.recentEvents && activeConflictBrief.recentEvents.length > 0 ? (
+            activeConflictBrief.recentEvents.map((event, idx) => renderBriefingEventCard(event, idx))
           ) : (
             <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
               <p className="text-xs text-siem-muted uppercase tracking-wider">

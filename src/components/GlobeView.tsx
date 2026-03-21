@@ -927,21 +927,18 @@ export function GlobeView({
           </div>
 
           {activeConflictBrief && (
-            <div className="absolute bottom-3 left-3 z-[1000] w-[23rem] max-w-[calc(100%-1.5rem)] rounded-xl border border-siem-border/80 bg-siem-panel/95 p-3 text-xs text-siem-text shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+            <div className="absolute bottom-3 left-3 z-[1000] w-[23rem] max-w-[calc(100%-1.5rem)] rounded-xl border border-siem-border/80 bg-siem-panel/95 p-3 text-2xs text-siem-text shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-2xs uppercase tracking-[0.14em] text-siem-muted">Zone brief</div>
-                  <div className="mt-1 text-sm">{activeConflictBrief.lens.label}</div>
-                </div>
-                <div className="rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs uppercase tracking-[0.12em] text-siem-muted">
-                  {activeConflictBrief.trendLabel}
+                  <div className="mt-1 text-2xs">{activeConflictBrief.lens.label}</div>
                 </div>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2">
                 {activeConflictBrief.metrics.slice(0, 6).map((metric) => (
                   <div key={metric.label} className="rounded border border-siem-border bg-white/5 px-2 py-1.5">
                     <div className="text-[10px] uppercase tracking-[0.12em] text-siem-muted">{metric.label}</div>
-                    <div className="mt-1 font-mono text-xs text-siem-text">{metric.value}</div>
+                    <div className="mt-1 font-mono text-2xs text-siem-text">{metric.value}</div>
                   </div>
                 ))}
               </div>
@@ -953,6 +950,26 @@ export function GlobeView({
                   </span>
                 ))}
               </div>
+              {activeConflictBrief.recentEvents && activeConflictBrief.recentEvents.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-siem-muted">Latest events</div>
+                  {activeConflictBrief.recentEvents.slice(0, 3).map((event, idx) => (
+                    <a
+                      key={`${event.title}-${event.date}-${idx}`}
+                      href={event.url || "#"}
+                      target={event.url ? "_blank" : undefined}
+                      rel={event.url ? "noreferrer" : undefined}
+                      className="block rounded border border-siem-border bg-white/5 px-2 py-1.5 hover:bg-siem-accent/8"
+                    >
+                      <div className="text-2xs text-siem-text line-clamp-2">{event.title}</div>
+                      <div className="mt-0.5 text-2xs text-siem-muted">
+                        {event.date ? new Date(event.date).toISOString().slice(0, 10) : "n/a"}
+                        {event.location ? ` · ${event.location}` : ""}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

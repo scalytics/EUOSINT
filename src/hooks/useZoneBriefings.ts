@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import type { ZoneBriefingRecord, ZoneBriefingHotspot, ZoneBriefingConflict, ZoneBriefingACLED, ZoneBriefingMetrics } from "@/types/zone-briefing";
+import type {
+  ZoneBriefingRecord,
+  ZoneBriefingHotspot,
+  ZoneBriefingConflict,
+  ZoneBriefingACLED,
+  ZoneBriefingMetrics,
+  ZoneBriefingEvent,
+} from "@/types/zone-briefing";
 
 const ZONE_BRIEFINGS_URL = `${import.meta.env.BASE_URL}zone-briefings.json`;
 const ZONE_BRIEFINGS_REFRESH_MS = 10000;
@@ -10,6 +17,17 @@ function mapHotspot(raw: Record<string, unknown>): ZoneBriefingHotspot {
     lat: (raw.lat as number) ?? 0,
     lng: (raw.lng as number) ?? 0,
     eventCount: (raw.event_count as number) ?? (raw.eventCount as number) ?? 0,
+  };
+}
+
+function mapRecentEvent(raw: Record<string, unknown>): ZoneBriefingEvent {
+  return {
+    date: (raw.date as string) ?? "",
+    title: (raw.title as string) ?? "",
+    location: (raw.location as string) ?? undefined,
+    fatalities: (raw.fatalities as number) ?? undefined,
+    source: (raw.source as string) ?? undefined,
+    url: (raw.url as string) ?? undefined,
   };
 }
 
@@ -38,6 +56,8 @@ function mapMetrics(raw: Record<string, unknown>): ZoneBriefingMetrics {
     fatalitiesBest7d: (raw.fatalities_best_7d as number) ?? (raw.fatalitiesBest7d as number) ?? 0,
     fatalitiesBest30d: (raw.fatalities_best_30d as number) ?? (raw.fatalitiesBest30d as number) ?? 0,
     fatalitiesTotal: (raw.fatalities_total as number) ?? (raw.fatalitiesTotal as number) ?? 0,
+    fatalitiesLatestYear: (raw.fatalities_latest_year as number) ?? (raw.fatalitiesLatestYear as number) ?? 0,
+    fatalitiesLatestYearYear: (raw.fatalities_latest_year_year as number) ?? (raw.fatalitiesLatestYearYear as number) ?? 0,
     civilianDeaths30d: (raw.civilian_deaths_30d as number) ?? (raw.civilianDeaths30d as number) ?? 0,
     trend7d: (raw.trend_7d as string) ?? (raw.trend7d as string),
     trend30d: (raw.trend_30d as string) ?? (raw.trend30d as string),
@@ -47,6 +67,9 @@ function mapMetrics(raw: Record<string, unknown>): ZoneBriefingMetrics {
 function mapRecord(raw: Record<string, unknown>): ZoneBriefingRecord {
   const hotspots = Array.isArray(raw.hotspots)
     ? (raw.hotspots as Record<string, unknown>[]).map(mapHotspot)
+    : undefined;
+  const recentEvents = Array.isArray(raw.recent_events ?? raw.recentEvents)
+    ? ((raw.recent_events ?? raw.recentEvents) as Record<string, unknown>[]).map(mapRecentEvent)
     : undefined;
   const activeConflicts = Array.isArray(raw.active_conflicts ?? raw.activeConflicts)
     ? ((raw.active_conflicts ?? raw.activeConflicts) as Record<string, unknown>[]).map(mapConflict)
@@ -69,6 +92,7 @@ function mapRecord(raw: Record<string, unknown>): ZoneBriefingRecord {
     actors: (raw.actors as string[]),
     violenceTypes: (raw.violence_types as string[]) ?? (raw.violenceTypes as string[]),
     hotspots,
+    recentEvents,
     conflictIntensity: (raw.conflict_intensity as string) ?? (raw.conflictIntensity as string),
     conflictType: (raw.conflict_type as string) ?? (raw.conflictType as string),
     activeConflicts,

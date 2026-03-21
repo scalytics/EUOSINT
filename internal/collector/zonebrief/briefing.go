@@ -146,11 +146,11 @@ func buildLensBrief(lens LensDef, items []parse.UCDPItem, now time.Time) model.Z
 		if item.ViolenceType != "" {
 			catCounts[item.ViolenceType]++
 		}
-		if item.SideA != "" {
-			actorCounts[item.SideA]++
+		if actor := normalizeActorLabel(item.SideA); actor != "" {
+			actorCounts[actor]++
 		}
-		if item.SideB != "" {
-			actorCounts[item.SideB]++
+		if actor := normalizeActorLabel(item.SideB); actor != "" {
+			actorCounts[actor]++
 		}
 		if item.DyadName != "" {
 			dyadCounts[item.DyadName]++
@@ -225,6 +225,7 @@ func buildLensBrief(lens LensDef, items []parse.UCDPItem, now time.Time) model.Z
 	if len(hotspotList) > 4 {
 		hotspotList = hotspotList[:4]
 	}
+	recentEvents := buildRecentEvents(matched)
 
 	asOf := ""
 	if !latest.IsZero() {
@@ -271,6 +272,7 @@ func buildLensBrief(lens LensDef, items []parse.UCDPItem, now time.Time) model.Z
 		Actors:        topActors,
 		ViolenceTypes: topViolence,
 		Hotspots:      hotspotList,
+		RecentEvents:  recentEvents,
 		Metrics: model.ZoneBriefingMetrics{
 			Events7D:          events7d,
 			Events30D:         events30d,
@@ -529,6 +531,49 @@ func parseTime(raw string) time.Time {
 	return time.Time{}
 }
 
+func buildRecentEvents(items []parse.UCDPItem) []model.ZoneBriefingEvent {
+	if len(items) == 0 {
+		return nil
+	}
+	ordered := append([]parse.UCDPItem(nil), items...)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		return parseTime(ordered[i].Published).After(parseTime(ordered[j].Published))
+	})
+	out := make([]model.ZoneBriefingEvent, 0, 5)
+	seen := map[string]struct{}{}
+	for _, item := range ordered {
+		title := strings.TrimSpace(item.SourceHeadline)
+		if title == "" {
+			title = strings.TrimSpace(item.Title)
+		}
+		if title == "" {
+			continue
+		}
+		key := strings.ToLower(title + "|" + strings.TrimSpace(item.Published))
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		location := firstNonEmpty(item.Admin2, item.Admin1, item.WhereDescription, item.Country)
+		source := strings.TrimSpace(item.SourceOriginal)
+		if source == "" {
+			source = "UCDP GED"
+		}
+		out = append(out, model.ZoneBriefingEvent{
+			Date:       strings.TrimSpace(item.Published),
+			Title:      title,
+			Location:   location,
+			Fatalities: item.Fatalities,
+			Source:     source,
+			URL:        strings.TrimSpace(item.Link),
+		})
+		if len(out) >= 5 {
+			break
+		}
+	}
+	return out
+}
+
 func topKeys(counts map[string]int, limit int) []string {
 	type kv struct {
 		key   string
@@ -592,6 +637,30 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func normalizeActorLabel(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	upper := strings.ToUpper(raw)
+	if strings.HasPrefix(upper, "XXX") {
+		suffix := strings.TrimSpace(raw[3:])
+		if suffix != "" {
+			allDigits := true
+			for _, ch := range suffix {
+				if ch < '0' || ch > '9' {
+					allDigits = false
+					break
+				}
+			}
+			if allDigits {
+				return ""
+			}
+		}
+	}
+	return raw
 }
 
 func firstAt(values []string, index int) string {

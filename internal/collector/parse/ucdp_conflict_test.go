@@ -14,6 +14,7 @@ func TestParseUCDPConflicts(t *testing.T) {
 				"conflict_name": "Sudan: Government",
 				"type_of_conflict": "3",
 				"intensity_level": 2,
+				"ep_end": 0,
 				"gwno_loc": "625",
 				"start_date": "2003-02-12",
 				"year": 2025,
@@ -47,6 +48,9 @@ func TestParseUCDPConflicts(t *testing.T) {
 		found[c.ConflictID] = true
 		if c.IntensityLevel != 2 {
 			t.Fatalf("expected intensity 2, got %d for %s", c.IntensityLevel, c.ConflictID)
+		}
+		if c.ConflictID == "123" && c.EPEnd != 0 {
+			t.Fatalf("expected ep_end to be parsed, got %d", c.EPEnd)
 		}
 		if c.ConflictID == "123" && c.StartDate != "2003-02-12" {
 			t.Fatalf("expected start_date to be parsed, got %q", c.StartDate)
