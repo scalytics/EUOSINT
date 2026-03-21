@@ -2221,9 +2221,13 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	if info, err := os.Stat(cfg.ZoneBriefingsOutputPath); err == nil {
 		age := time.Since(info.ModTime())
 		conflictStatsPath := filepath.Join(outDir, "ucdp-conflict-stats.json")
+		currentConflictsPath := filepath.Join(outDir, "ucdp-current-conflicts.json")
+		conflictZonesPath := filepath.Join(outDir, "geo", "conflict-zones.geojson")
+		hasCurrentConflicts := len(readCurrentConflictsArtifact(currentConflictsPath)) > 0
 		if age < time.Duration(cfg.ZoneBriefingRefreshHours)*time.Hour &&
 			zoneBriefingsFileHasRecords(cfg.ZoneBriefingsOutputPath) &&
-			!conflictStatsNeedsLLMRefresh(conflictStatsPath) {
+			!conflictStatsNeedsLLMRefresh(conflictStatsPath) &&
+			!conflictZonesNeedsDynamicRefresh(conflictZonesPath, hasCurrentConflicts) {
 			fmt.Fprintf(r.stderr, "zone briefings: skipping, file is %.1fh old (threshold %dh)\n", age.Hours(), cfg.ZoneBriefingRefreshHours)
 			return nil
 		}
@@ -3160,6 +3164,41 @@ func conflictStatsNeedsLLMRefresh(path string) bool {
 			return true
 		}
 		if now.Sub(ts) >= 7*24*time.Hour {
+			return true
+		}
+	}
+	return false
+}
+
+func conflictZonesNeedsDynamicRefresh(path string, hasCurrentConflicts bool) bool {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return hasCurrentConflicts
+	}
+	var collection struct {
+		Features []struct {
+			Properties map[string]any `json:"properties"`
+		} `json:"features"`
+	}
+	if err := json.Unmarshal(body, &collection); err != nil {
+		return hasCurrentConflicts
+	}
+	if len(collection.Features) == 0 {
+		return hasCurrentConflicts
+	}
+	legacyLensIDs := map[string]struct{}{
+		"gaza": {}, "sudan": {}, "ukraine": {}, "red-sea": {}, "sahel": {}, "drc-east": {},
+	}
+	for _, feature := range collection.Features {
+		if feature.Properties == nil {
+			continue
+		}
+		lensID := strings.TrimSpace(stringValue(feature.Properties["lens_id"]))
+		if lensID == "" {
+			lensID = strings.TrimSpace(stringValue(feature.Properties["lensId"]))
+		}
+		lensID = strings.ToLower(lensID)
+		if _, legacy := legacyLensIDs[lensID]; legacy {
 			return true
 		}
 	}
