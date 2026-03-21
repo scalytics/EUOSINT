@@ -120,6 +120,7 @@ export function AlertFeed({
 
     let dynamicStatsMetrics: Array<{ label: string; value: string }> | undefined;
     let dynamicTopCountries = merged.topCountries;
+    let dynamicStatsEvents: ZoneBriefingEvent[] = [];
     if (activeDynamicConflict) {
       const stats = conflictStats.find((item) => item.conflictId === activeDynamicConflict.conflictId);
       const scoped = conflictCountryFocus
@@ -148,6 +149,16 @@ export function AlertFeed({
             count: Math.max(0, Math.trunc(country.fatalitiesLatest || country.fatalitiesTotal || 0)),
           }));
       }
+      if (stats?.recentEvents && stats.recentEvents.length > 0) {
+        dynamicStatsEvents = stats.recentEvents.map((event) => ({
+          date: event.date,
+          title: event.title,
+          location: event.location,
+          fatalities: event.fatalities,
+          source: event.source,
+          url: event.url,
+        }));
+      }
     }
 
     if (activeDynamicConflict && merged.alerts.length === 0) {
@@ -164,7 +175,9 @@ export function AlertFeed({
         violenceTypes: merged.violenceTypes.length > 0 ? merged.violenceTypes : [activeDynamicConflict.typeOfConflict ?? "Conflict"],
         topCountries: dynamicTopCountries,
         topSources: merged.topSources.length > 0 ? merged.topSources : [{ id: "ucdp", label: "UCDP", count: 1 }],
-        recentEvents: merged.recentEvents && merged.recentEvents.length > 0 ? merged.recentEvents : dynamicFallbackEvents,
+        recentEvents: merged.recentEvents && merged.recentEvents.length > 0
+          ? merged.recentEvents
+          : (dynamicStatsEvents.length > 0 ? dynamicStatsEvents : dynamicFallbackEvents),
         metrics: dynamicStatsMetrics ?? [
           { label: "Year", value: String(activeDynamicConflict.year) },
           { label: "Intensity", value: String(activeDynamicConflict.intensityLevel) },
@@ -181,7 +194,9 @@ export function AlertFeed({
         topCountries: dynamicTopCountries,
         actors: merged.actors.length > 0 ? merged.actors : [activeDynamicConflict.sideA, activeDynamicConflict.sideB].filter((value): value is string => (value ?? "").trim().length > 0),
         violenceTypes: merged.violenceTypes.length > 0 ? merged.violenceTypes : [activeDynamicConflict.typeOfConflict ?? "Conflict"],
-        recentEvents: merged.recentEvents && merged.recentEvents.length > 0 ? merged.recentEvents : dynamicFallbackEvents,
+        recentEvents: merged.recentEvents && merged.recentEvents.length > 0
+          ? merged.recentEvents
+          : (dynamicStatsEvents.length > 0 ? dynamicStatsEvents : dynamicFallbackEvents),
         metrics: dynamicStatsMetrics,
       };
     }

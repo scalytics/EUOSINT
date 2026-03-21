@@ -7,8 +7,18 @@ export interface ConflictCountryStat {
   latestYear: number;
 }
 
+export interface ConflictRecentEvent {
+  date: string;
+  title: string;
+  location?: string;
+  fatalities?: number;
+  source?: string;
+  url?: string;
+}
+
 export interface ConflictStatRecord {
   conflictId: string;
+  countryId?: string;
   title: string;
   year: number;
   startDate?: string;
@@ -24,4 +34,5 @@ export interface ConflictStatRecord {
   fatalitiesLatestYear: number;
   fatalitiesLatestYearYear: number;
   countries: ConflictCountryStat[];
+  recentEvents?: ConflictRecentEvent[];
 }

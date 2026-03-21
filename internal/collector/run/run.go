@@ -2319,8 +2319,17 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	if err := writeJSONArtifact(filepath.Join(outDir, "ucdp-current-conflicts.json"), currentConflicts); err != nil {
 		return err
 	}
+	recentEventsByCountryID := make(map[string][]map[string]any)
+	for _, countryID := range collectCurrentConflictCountryIDs(currentConflicts) {
+		items, err := r.fetchUCDPRecentEventsForCountryCached(ctx, cfg, headers, gedVersion, countryID, zoneDB)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN UCDP recent events %s: %v\n", countryID, err)
+			continue
+		}
+		recentEventsByCountryID[countryID] = toConflictRecentEvents(items, 5)
+	}
 	iso2ToLabel := loadISO2ToCountryName(cfg.CountryBoundariesPath)
-	conflictStats := buildCurrentConflictStats(currentConflicts, latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, gwnoToISO2Map, iso2ToLabel)
+	conflictStats := buildCurrentConflictStats(currentConflicts, latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, gwnoToISO2Map, iso2ToLabel, recentEventsByCountryID)
 	if err := writeJSONArtifact(filepath.Join(outDir, "ucdp-conflict-stats.json"), conflictStats); err != nil {
 		return err
 	}
@@ -2751,6 +2760,7 @@ func buildCurrentConflictStats(
 	latestYearByCountry map[string]int,
 	gwnoToISO2Map map[string]string,
 	iso2ToLabel map[string]string,
+	recentEventsByCountryID map[string][]map[string]any,
 ) []map[string]any {
 	out := make([]map[string]any, 0, len(currentConflicts))
 	for _, row := range currentConflicts {
@@ -2781,8 +2791,10 @@ func buildCurrentConflictStats(
 				"latest_year":       latestYear,
 			})
 		}
+		primaryCountryID := conflictPrimaryCountryID(row)
 		out = append(out, map[string]any{
 			"conflict_id":                 conflictID,
+			"country_id":                  primaryCountryID,
 			"title":                       stringValue(row["title"]),
 			"year":                        intValue(row["year"]),
 			"start_date":                  stringValue(row["start_date"]),
@@ -2798,7 +2810,59 @@ func buildCurrentConflictStats(
 			"fatalities_latest_year":      totalLatest,
 			"fatalities_latest_year_year": latestYear,
 			"countries":                   countries,
+			"recent_events":               recentEventsByCountryID[primaryCountryID],
 		})
+	}
+	return out
+}
+
+func conflictPrimaryCountryID(row map[string]any) string {
+	if id := strings.TrimSpace(stringValue(row["country_id"])); id != "" {
+		return id
+	}
+	return firstUCDPCode(stringValue(row["gwno_loc"]))
+}
+
+func collectCurrentConflictCountryIDs(rows []map[string]any) []string {
+	seen := map[string]struct{}{}
+	out := make([]string, 0, len(rows))
+	for _, row := range rows {
+		id := conflictPrimaryCountryID(row)
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out
+}
+
+func toConflictRecentEvents(items []parse.UCDPItem, limit int) []map[string]any {
+	if len(items) == 0 || limit <= 0 {
+		return []map[string]any{}
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Published > items[j].Published
+	})
+	if len(items) > limit {
+		items = items[:limit]
+	}
+	out := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		event := map[string]any{
+			"date":     item.Published,
+			"title":    firstNonEmpty(item.Title, item.Summary),
+			"location": firstNonEmpty(item.Admin2, item.Admin1, item.Country),
+			"source":   "UCDP GED",
+			"url":      item.Link,
+		}
+		if item.Fatalities > 0 {
+			event["fatalities"] = item.Fatalities
+		}
+		out = append(out, event)
 	}
 	return out
 }
@@ -3373,6 +3437,80 @@ func (r Runner) fetchUCDPBattleDeathsTotalsByCountryCached(ctx context.Context, 
 		}
 	}
 	return latestYear, cumulative, latest, nil
+}
+
+func (r Runner) fetchUCDPRecentEventsForCountryCached(
+	ctx context.Context,
+	cfg config.Config,
+	headers map[string]string,
+	version string,
+	countryID string,
+	cacheDB *sourcedb.DB,
+) ([]parse.UCDPItem, error) {
+	countryID = strings.TrimSpace(countryID)
+	if countryID == "" {
+		return nil, nil
+	}
+	now := time.Now().UTC()
+	startDate := now.AddDate(0, 0, -180).Format("2006-01-02")
+	endDate := now.Format("2006-01-02")
+	baseURL := fmt.Sprintf(
+		"https://ucdpapi.pcr.uu.se/api/gedevents/%s?Country=%s&StartDate=%s&EndDate=%s&pagesize=200",
+		url.QueryEscape(version),
+		url.QueryEscape(countryID),
+		url.QueryEscape(startDate),
+		url.QueryEscape(endDate),
+	)
+	cacheKey := "gedevents-country-recent-" + countryID
+	client := r.clientFactory(withMinUCDPTimeout(cfg))
+	body, err := client.TextWithHeaders(ctx, baseURL+"&page=0", false, "application/json", headers)
+	if err != nil {
+		if cacheDB != nil {
+			if _, payload, ok, cacheErr := cacheDB.GetUCDPDatasetCache(ctx, cacheKey, version); cacheErr == nil && ok {
+				var cached []parse.UCDPItem
+				if json.Unmarshal(payload, &cached) == nil && len(cached) > 0 {
+					return cached, nil
+				}
+			}
+		}
+		return nil, err
+	}
+	items, err := parse.ParseUCDP(body)
+	if err != nil {
+		return nil, err
+	}
+	headHash := ucdpHeadHash(items)
+	if cacheDB != nil {
+		if cachedHash, payload, ok, cacheErr := cacheDB.GetUCDPDatasetCache(ctx, cacheKey, version); cacheErr == nil && ok && cachedHash == headHash {
+			var cached []parse.UCDPItem
+			if json.Unmarshal(payload, &cached) == nil && len(cached) > 0 {
+				return cached, nil
+			}
+		}
+	}
+	totalPages := parseUCDPTotalPages(body)
+	for page := 1; page < totalPages; page++ {
+		select {
+		case <-ctx.Done():
+			page = totalPages
+		case <-time.After(200 * time.Millisecond):
+		}
+		pageBody, err := client.TextWithHeaders(ctx, fmt.Sprintf("%s&page=%d", baseURL, page), false, "application/json", headers)
+		if err != nil {
+			break
+		}
+		pageItems, err := parse.ParseUCDP(pageBody)
+		if err != nil {
+			break
+		}
+		items = append(items, pageItems...)
+	}
+	if cacheDB != nil && len(items) > 0 {
+		if payload, marshalErr := json.Marshal(items); marshalErr == nil {
+			_ = cacheDB.UpsertUCDPDatasetCache(ctx, cacheKey, version, headHash, payload)
+		}
+	}
+	return items, nil
 }
 
 func ucdpConflictHeadHash(conflicts []parse.UCDPConflict) string {

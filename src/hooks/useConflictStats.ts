@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ConflictStatRecord, ConflictCountryStat } from "@/types/conflict-stats";
+import type { ConflictStatRecord, ConflictCountryStat, ConflictRecentEvent } from "@/types/conflict-stats";
 
 const CONFLICT_STATS_URL = `${import.meta.env.BASE_URL}ucdp-conflict-stats.json`;
 const CONFLICT_STATS_REFRESH_MS = 60000;
@@ -20,9 +20,21 @@ function mapCountry(raw: Record<string, unknown>): ConflictCountryStat {
   };
 }
 
+function mapRecentEvent(raw: Record<string, unknown>): ConflictRecentEvent {
+  return {
+    date: (raw.date as string) ?? "",
+    title: (raw.title as string) ?? "",
+    location: (raw.location as string) ?? "",
+    fatalities: (raw.fatalities as number) ?? 0,
+    source: (raw.source as string) ?? "",
+    url: (raw.url as string) ?? "",
+  };
+}
+
 function mapConflict(raw: Record<string, unknown>): ConflictStatRecord {
   return {
     conflictId: (raw.conflict_id as string) ?? (raw.conflictId as string) ?? "",
+    countryId: (raw.country_id as string) ?? (raw.countryId as string),
     title: (raw.title as string) ?? "",
     year: (raw.year as number) ?? 0,
     startDate: (raw.start_date as string) ?? (raw.startDate as string),
@@ -39,6 +51,9 @@ function mapConflict(raw: Record<string, unknown>): ConflictStatRecord {
     fatalitiesLatestYearYear: (raw.fatalities_latest_year_year as number) ?? (raw.fatalitiesLatestYearYear as number) ?? 0,
     countries: Array.isArray(raw.countries)
       ? (raw.countries as Record<string, unknown>[]).map(mapCountry)
+      : [],
+    recentEvents: Array.isArray(raw.recent_events ?? raw.recentEvents)
+      ? ((raw.recent_events ?? raw.recentEvents) as Record<string, unknown>[]).map(mapRecentEvent).filter((item) => item.title.trim().length > 0)
       : [],
   };
 }
