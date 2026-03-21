@@ -165,6 +165,13 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 
 	now := time.Now().UTC()
+	// Always prefer the newest GED candidate from UCDP docs at runtime.
+	// This avoids pinning event pulls to a stale hardcoded monthly dataset.
+	if versions, err := discoverUCDPVersions(ctx); err != nil {
+		fmt.Fprintf(r.stderr, "WARN UCDP version discovery (global): %v (using %s)\n", err, cfg.UCDPAPIVersion)
+	} else if strings.TrimSpace(versions.candidate) != "" {
+		cfg.UCDPAPIVersion = strings.TrimSpace(versions.candidate)
+	}
 	geocoder := r.initGeocoder(ctx, cfg)
 	nctx := normalize.Context{Config: cfg, Now: now, Geocoder: geocoder}
 	categoryDictionary, err := dictionary.Load(cfg.CategoryDictionaryPath)
