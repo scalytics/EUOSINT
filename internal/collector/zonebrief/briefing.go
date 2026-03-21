@@ -113,7 +113,7 @@ func buildLensBrief(lens LensDef, items []parse.UCDPItem, now time.Time) model.Z
 
 	var latest time.Time
 	var events7d, events30d int
-	var fatalities7d, fatalities30d int
+	var fatalities7d, fatalities30d, fatalitiesTotal int
 	var civilians30d int
 	var oneSided30d int
 	var wherePrecSum, datePrecSum, claritySum float64
@@ -142,6 +142,7 @@ func buildLensBrief(lens LensDef, items []parse.UCDPItem, now time.Time) model.Z
 				fatalities7d += item.Fatalities
 			}
 		}
+		fatalitiesTotal += item.Fatalities
 		if item.ViolenceType != "" {
 			catCounts[item.ViolenceType]++
 		}
@@ -275,6 +276,7 @@ func buildLensBrief(lens LensDef, items []parse.UCDPItem, now time.Time) model.Z
 			Events30D:         events30d,
 			FatalitiesBest7D:  fatalities7d,
 			FatalitiesBest30D: fatalities30d,
+			FatalitiesTotal:   fatalitiesTotal,
 			CivilianDeaths30D: civilians30d,
 			Trend7D:           trendLabel(events7d, events30d-events7d),
 			Trend30D:          trendLabel(events30d, 0),
@@ -335,6 +337,7 @@ func enrichWithConflicts(brief *model.ZoneBriefingRecord, lens LensDef, conflict
 		brief.ConflictIntensity = "minor"
 	}
 	brief.ConflictType = primaryType
+	brief.ConflictStartDate = earliestConflictStartDate(matched)
 }
 
 // matchConflictsToLens returns conflicts whose gwno matches the lens countries.
@@ -357,6 +360,28 @@ func matchConflictsToLens(lens LensDef, conflicts []parse.UCDPConflict) []parse.
 		}
 	}
 	return out
+}
+
+func earliestConflictStartDate(conflicts []parse.UCDPConflict) string {
+	earliest := time.Time{}
+	minYear := 0
+	for _, c := range conflicts {
+		if t := parseTime(c.StartDate); !t.IsZero() {
+			if earliest.IsZero() || t.Before(earliest) {
+				earliest = t
+			}
+		}
+		if c.Year > 0 && (minYear == 0 || c.Year < minYear) {
+			minYear = c.Year
+		}
+	}
+	if !earliest.IsZero() {
+		return earliest.UTC().Format(time.RFC3339)
+	}
+	if minYear > 0 {
+		return fmt.Sprintf("%04d-01-01T00:00:00Z", minYear)
+	}
+	return ""
 }
 
 // enrichWithACLED adds ACLED recency data and adjusts status.

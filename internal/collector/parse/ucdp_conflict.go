@@ -17,6 +17,7 @@ type UCDPConflict struct {
 	IntensityLevel int    // 1 = minor, 2 = war
 	GWNoLoc        string // country gwno
 	Year           int
+	StartDate      string
 	Region         string
 	SideA          string
 	SideB          string
@@ -56,6 +57,7 @@ func ParseUCDPConflicts(body []byte) ([]UCDPConflict, error) {
 			IntensityLevel: intensity,
 			GWNoLoc:        firstString(row, "gwno_loc", "gwno_a"),
 			Year:           year,
+			StartDate:      firstString(row, "start_date", "start_date2"),
 			Region:         firstString(row, "region"),
 			SideA:          firstString(row, "side_a"),
 			SideB:          firstString(row, "side_b", "side_b_2nd"),

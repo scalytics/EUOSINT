@@ -2238,8 +2238,19 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	// Fetch UCDP events per lens.
 	var allItems []parse.UCDPItem
 	seen := map[string]struct{}{}
+	var zoneDB *sourcedb.DB
+	if isSQLiteRegistryPath(cfg.RegistryPath) {
+		db, err := sourcedb.Open(cfg.RegistryPath)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN UCDP lens cache DB open failed: %v\n", err)
+		} else {
+			zoneDB = db
+			defer zoneDB.Close()
+		}
+	}
+
 	for _, lens := range zonebrief.SupportedLenses {
-		lensItems, err := r.fetchUCDPItemsForLens(ctx, cfg, lens, headers, gedVersion)
+		lensItems, err := r.fetchUCDPItemsForLensCached(ctx, cfg, lens, headers, gedVersion, zoneDB)
 		if err != nil {
 			fmt.Fprintf(r.stderr, "WARN UCDP fetch for %s: %v\n", lens.ID, err)
 			continue
@@ -2274,7 +2285,7 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 	}
 	geoDir := filepath.Join(filepath.Dir(cfg.ZoneBriefingsOutputPath), "geo")
 	conflictZones, terrorZones := zonebrief.BuildConflictZonesGeoJSON(briefings), zonebrief.BuildTerrorZonesGeoJSON(briefings)
-	conflictFootprints := zonebrief.BuildConflictFootprintsGeoJSON(briefings)
+	conflictFootprints := zonebrief.BuildConflictFootprintsGeoJSON(briefings, allItems)
 	if strings.TrimSpace(cfg.CountryBoundariesPath) != "" {
 		if data, err := zonebrief.BuildConflictZonesGeoJSONFromBoundaries(briefings, cfg.CountryBoundariesPath); err == nil {
 			conflictZones = data
@@ -2399,31 +2410,16 @@ func discoverUCDPVersions(ctx context.Context) (ucdpVersions, error) {
 
 // fetchUCDPItemsForLens fetches UCDP GED events filtered by lens countries with full pagination.
 func (r Runner) fetchUCDPItemsForLens(ctx context.Context, cfg config.Config, lens zonebrief.LensDef, headers map[string]string, version string) ([]parse.UCDPItem, error) {
-	// Build country filter from lens gwno IDs.
-	var gwnos []string
-	for cc := range lens.CountryCodes {
-		if ref, ok := zonebrief.UCDPCountryRefs[cc]; ok && ref.ID != "" {
-			gwnos = append(gwnos, ref.ID)
-		}
+	startDate, endDate, page0URL, err := buildUCDPLensFeedURL(lens, version)
+	if err != nil {
+		return nil, err
 	}
-	if len(gwnos) == 0 {
+	if strings.TrimSpace(page0URL) == "" {
 		return nil, nil
 	}
-
-	now := time.Now().UTC()
-	startDate := now.AddDate(0, 0, -90).Format("2006-01-02")
-	endDate := now.Format("2006-01-02")
-
-	baseURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/gedevents/%s?Country=%s&StartDate=%s&EndDate=%s&pagesize=500",
-		url.QueryEscape(version),
-		url.QueryEscape(strings.Join(gwnos, ",")),
-		url.QueryEscape(startDate),
-		url.QueryEscape(endDate))
-
 	client := r.clientFactory(withMinUCDPTimeout(cfg))
 
-	// Page 1.
-	body, err := client.TextWithHeaders(ctx, baseURL+"&page=0", false, "application/json", headers)
+	body, err := client.TextWithHeaders(ctx, page0URL, false, "application/json", headers)
 	if err != nil {
 		return nil, err
 	}
@@ -2432,7 +2428,98 @@ func (r Runner) fetchUCDPItemsForLens(ctx context.Context, cfg config.Config, le
 		return nil, err
 	}
 	totalPages := parseUCDPTotalPages(body)
+	headHash := ucdpHeadHash(items)
+	return r.fetchUCDPItemsForLensPaged(ctx, client, headers, lens.ID, page0URL[:len(page0URL)-len("&page=0")], items, totalPages, version, startDate, endDate, headHash, nil)
+}
+
+func (r Runner) fetchUCDPItemsForLensCached(ctx context.Context, cfg config.Config, lens zonebrief.LensDef, headers map[string]string, version string, cacheDB *sourcedb.DB) ([]parse.UCDPItem, error) {
+	startDate, endDate, page0URL, err := buildUCDPLensFeedURL(lens, version)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(page0URL) == "" {
+		return nil, nil
+	}
+	client := r.clientFactory(withMinUCDPTimeout(cfg))
+	body, err := client.TextWithHeaders(ctx, page0URL, false, "application/json", headers)
+	if err != nil {
+		if cacheDB != nil {
+			if cached, loadErr := cacheDB.LoadUCDPLensEvents(ctx, lens.ID); loadErr == nil && len(cached) > 0 {
+				fmt.Fprintf(r.stderr, "UCDP %s: using cached events due to fetch error: %v\n", lens.ID, err)
+				return cached, nil
+			}
+		}
+		return nil, err
+	}
+	items, err := parse.ParseUCDP(body)
+	if err != nil {
+		return nil, err
+	}
+	totalPages := parseUCDPTotalPages(body)
+	headHash := ucdpHeadHash(items)
+	baseURL := page0URL[:len(page0URL)-len("&page=0")]
+
+	if cacheDB != nil {
+		state, ok, err := cacheDB.GetUCDPLensState(ctx, lens.ID)
+		if err != nil {
+			fmt.Fprintf(r.stderr, "WARN UCDP %s cache state read failed: %v\n", lens.ID, err)
+		} else if ok && state.Version == version && state.StartDate == startDate && state.EndDate == endDate && state.HeadHash == headHash {
+			cached, err := cacheDB.LoadUCDPLensEvents(ctx, lens.ID)
+			if err == nil && len(cached) > 0 {
+				fmt.Fprintf(r.stderr, "UCDP %s: unchanged head page, reusing %d cached events\n", lens.ID, len(cached))
+				return cached, nil
+			}
+		}
+	}
+
+	return r.fetchUCDPItemsForLensPaged(ctx, client, headers, lens.ID, baseURL, items, totalPages, version, startDate, endDate, headHash, cacheDB)
+}
+
+func buildUCDPLensFeedURL(lens zonebrief.LensDef, version string) (string, string, string, error) {
+	// Build country filter from lens gwno IDs.
+	var gwnos []string
+	for cc := range lens.CountryCodes {
+		if ref, ok := zonebrief.UCDPCountryRefs[cc]; ok && ref.ID != "" {
+			gwnos = append(gwnos, ref.ID)
+		}
+	}
+	if len(gwnos) == 0 {
+		return "", "", "", nil
+	}
+
+	now := time.Now().UTC()
+	// Pull full history so analyst metrics can include absolute totals.
+	// Cached lens state avoids refetching all pages when head page is unchanged.
+	startDate := "1989-01-01"
+	endDate := now.Format("2006-01-02")
+
+	baseURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/gedevents/%s?Country=%s&StartDate=%s&EndDate=%s&pagesize=500",
+		url.QueryEscape(version),
+		url.QueryEscape(strings.Join(gwnos, ",")),
+		url.QueryEscape(startDate),
+		url.QueryEscape(endDate))
+	return startDate, endDate, baseURL + "&page=0", nil
+}
+
+func (r Runner) fetchUCDPItemsForLensPaged(
+	ctx context.Context,
+	client *fetch.Client,
+	headers map[string]string,
+	lensID string,
+	baseURL string,
+	items []parse.UCDPItem,
+	totalPages int,
+	version string,
+	startDate string,
+	endDate string,
+	headHash string,
+	cacheDB *sourcedb.DB,
+) ([]parse.UCDPItem, error) {
+	if strings.TrimSpace(baseURL) == "" {
+		return nil, nil
+	}
 	if totalPages <= 1 {
+		r.persistUCDPLensCache(ctx, cacheDB, lensID, version, startDate, endDate, headHash, totalPages, items)
 		return items, nil
 	}
 
@@ -2446,7 +2533,7 @@ func (r Runner) fetchUCDPItemsForLens(ctx context.Context, cfg config.Config, le
 		pageURL := fmt.Sprintf("%s&page=%d", baseURL, page)
 		pageBody, err := client.TextWithHeaders(ctx, pageURL, false, "application/json", headers)
 		if err != nil {
-			fmt.Fprintf(r.stderr, "WARN UCDP page %d for %s: %v\n", page, lens.ID, err)
+			fmt.Fprintf(r.stderr, "WARN UCDP page %d for %s: %v\n", page, lensID, err)
 			break
 		}
 		pageItems, err := parse.ParseUCDP(pageBody)
@@ -2455,7 +2542,56 @@ func (r Runner) fetchUCDPItemsForLens(ctx context.Context, cfg config.Config, le
 		}
 		items = append(items, pageItems...)
 	}
+	r.persistUCDPLensCache(ctx, cacheDB, lensID, version, startDate, endDate, headHash, totalPages, items)
 	return items, nil
+}
+
+func (r Runner) persistUCDPLensCache(
+	ctx context.Context,
+	cacheDB *sourcedb.DB,
+	lensID string,
+	version string,
+	startDate string,
+	endDate string,
+	headHash string,
+	totalPages int,
+	items []parse.UCDPItem,
+) {
+	if cacheDB == nil || strings.TrimSpace(lensID) == "" {
+		return
+	}
+	if err := cacheDB.ReplaceUCDPLensEvents(ctx, lensID, items); err != nil {
+		fmt.Fprintf(r.stderr, "WARN UCDP %s cache events write failed: %v\n", lensID, err)
+		return
+	}
+	if err := cacheDB.UpsertUCDPLensState(ctx, sourcedb.UCDPLensState{
+		LensID:      lensID,
+		Version:     version,
+		StartDate:   startDate,
+		EndDate:     endDate,
+		HeadHash:    headHash,
+		TotalPages:  totalPages,
+		EventCount:  len(items),
+		RefreshedAt: time.Now().UTC().Format(time.RFC3339),
+	}); err != nil {
+		fmt.Fprintf(r.stderr, "WARN UCDP %s cache state write failed: %v\n", lensID, err)
+	}
+}
+
+func ucdpHeadHash(items []parse.UCDPItem) string {
+	if len(items) == 0 {
+		return ""
+	}
+	limit := len(items)
+	if limit > 100 {
+		limit = 100
+	}
+	h := sha1.New()
+	for i := 0; i < limit; i++ {
+		_, _ = io.WriteString(h, sourcedb.UCDPEventKey(items[i]))
+		_, _ = io.WriteString(h, "\n")
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // fetchUCDPConflicts fetches the ucdpprioconflict dataset with full pagination.

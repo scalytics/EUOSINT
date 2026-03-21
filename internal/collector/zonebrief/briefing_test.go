@@ -44,6 +44,9 @@ func TestBuildGeneratesLensBriefings(t *testing.T) {
 		if brief.Metrics.FatalitiesBest30D != 12 {
 			t.Fatalf("expected 12 fatalities, got %d", brief.Metrics.FatalitiesBest30D)
 		}
+		if brief.Metrics.FatalitiesTotal != 12 {
+			t.Fatalf("expected 12 total fatalities, got %d", brief.Metrics.FatalitiesTotal)
+		}
 		if brief.SourceURL != "https://ucdp.uu.se/country/666" {
 			t.Fatalf("expected deterministic UCDP source URL, got %q", brief.SourceURL)
 		}
@@ -134,7 +137,7 @@ func TestEnrichWithConflicts(t *testing.T) {
 		},
 	}
 	conflicts := []parse.UCDPConflict{
-		{ConflictID: "1", ConflictName: "Sudan civil war", GWNoLoc: "625", IntensityLevel: 2, TypeOfConflict: "3", Year: 2026},
+		{ConflictID: "1", ConflictName: "Sudan civil war", GWNoLoc: "625", IntensityLevel: 2, TypeOfConflict: "3", Year: 2026, StartDate: "2003-02-12"},
 	}
 	briefs := Build(items, conflicts, nil, now)
 	var found bool
@@ -149,6 +152,9 @@ func TestEnrichWithConflicts(t *testing.T) {
 		if len(brief.ActiveConflicts) != 1 {
 			t.Fatalf("expected 1 active conflict, got %d", len(brief.ActiveConflicts))
 		}
+		if brief.ConflictStartDate != "2003-02-12T00:00:00Z" {
+			t.Fatalf("expected normalized conflict start date, got %q", brief.ConflictStartDate)
+		}
 	}
 	if !found {
 		t.Fatal("expected sudan briefing")
@@ -160,11 +166,11 @@ func TestACLEDStatusFallback(t *testing.T) {
 	// No UCDP events -> status would be "inactive"
 	acledItems := []parse.ACLEDItem{
 		{
-			FeedItem:  parse.FeedItem{Published: "2026-03-19", Title: "Clash in Darfur", Lat: 13.0, Lng: 25.0},
-			EventType: "Battles",
+			FeedItem:   parse.FeedItem{Published: "2026-03-19", Title: "Clash in Darfur", Lat: 13.0, Lng: 25.0},
+			EventType:  "Battles",
 			Fatalities: 5,
-			Country:   "Sudan",
-			ISO3:      "SDN",
+			Country:    "Sudan",
+			ISO3:       "SDN",
 		},
 	}
 	briefs := Build(nil, nil, acledItems, now)

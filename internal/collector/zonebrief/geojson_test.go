@@ -7,11 +7,12 @@ import (
 	"testing"
 
 	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/euosint/internal/collector/parse"
 )
 
 func TestBuildConflictZonesGeoJSONIncludesInactive(t *testing.T) {
 	data := BuildConflictZonesGeoJSON([]model.ZoneBriefingRecord{
-		{LensID: "gaza", Title: "Gaza", Status: "active", UpdatedAt: "2026-03-20T00:00:00Z", Violence: model.ZoneBriefingViolence{Primary: "State-based conflict"}},
+		{LensID: "gaza", Title: "Gaza", Status: "active", UpdatedAt: "2026-03-20T00:00:00Z", ConflictStartDate: "2003-02-12T00:00:00Z", Violence: model.ZoneBriefingViolence{Primary: "State-based conflict"}},
 		{LensID: "ukraine", Title: "Ukraine South", Status: "inactive", UpdatedAt: "2026-03-20T00:00:00Z", Violence: model.ZoneBriefingViolence{Primary: "State-based conflict"}},
 	})
 	body, err := json.Marshal(data)
@@ -28,6 +29,9 @@ func TestBuildConflictZonesGeoJSONIncludesInactive(t *testing.T) {
 	}
 	if len(parsed.Features) != 2 {
 		t.Fatalf("expected 2 features (active + inactive), got %d", len(parsed.Features))
+	}
+	if parsed.Features[0].Properties["lens_id"] == "gaza" && parsed.Features[0].Properties["since"] != "2003" {
+		t.Fatalf("expected conflict start year from conflict_start_date, got %#v", parsed.Features[0].Properties["since"])
 	}
 }
 
@@ -91,7 +95,7 @@ func TestBuildConflictZonesGeoJSONFromBoundariesUsesCountryFeatures(t *testing.T
 	}
 }
 
-func TestBuildConflictZonesGeoJSONFromBoundariesIncludesInvolvedCountryContext(t *testing.T) {
+func TestBuildConflictZonesGeoJSONFromBoundariesUsesPrimaryOverlayCountries(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "countries.geojson")
 	body := `{
@@ -142,20 +146,11 @@ func TestBuildConflictZonesGeoJSONFromBoundariesIncludesInvolvedCountryContext(t
 	if err := json.Unmarshal(encoded, &parsed); err != nil {
 		t.Fatal(err)
 	}
-	if len(parsed.Features) != 2 {
-		t.Fatalf("expected 2 involved-country features (primary + context), got %d", len(parsed.Features))
+	if len(parsed.Features) != 1 {
+		t.Fatalf("expected only primary overlay country feature, got %d", len(parsed.Features))
 	}
-	rolesByCode := map[string]string{}
-	for _, feature := range parsed.Features {
-		code, _ := feature.Properties["country_code"].(string)
-		role, _ := feature.Properties["country_role"].(string)
-		rolesByCode[code] = role
-	}
-	if rolesByCode["PS"] != "primary" {
-		t.Fatalf("expected Gaza primary overlay country PS, got %#v", rolesByCode["PS"])
-	}
-	if rolesByCode["IL"] != "context" {
-		t.Fatalf("expected Israel context country for Gaza lens, got %#v", rolesByCode["IL"])
+	if parsed.Features[0].Properties["country_code"] != "PS" {
+		t.Fatalf("expected Gaza overlay country PS, got %#v", parsed.Features[0].Properties["country_code"])
 	}
 }
 
@@ -193,9 +188,6 @@ func TestBuildConflictFootprintsGeoJSONUsesSingleLensFootprint(t *testing.T) {
 			Status:    "active",
 			UpdatedAt: "2026-03-20T00:00:00Z",
 			Violence:  model.ZoneBriefingViolence{Primary: "State-based conflict"},
-			Hotspots: []model.ZoneBriefingHotspot{
-				{Label: "Gaza Strip", Lat: 31.4, Lng: 34.3, EventCount: 3},
-			},
 		},
 		{
 			LensID:    "ukraine",
@@ -204,6 +196,11 @@ func TestBuildConflictFootprintsGeoJSONUsesSingleLensFootprint(t *testing.T) {
 			UpdatedAt: "2026-03-20T00:00:00Z",
 			Violence:  model.ZoneBriefingViolence{Primary: "State-based conflict"},
 		},
+	}, []parse.UCDPItem{
+		{FeedItem: parse.FeedItem{Lat: 31.42, Lng: 34.33}, CountryCode: "PS", WherePrecision: 1},
+		{FeedItem: parse.FeedItem{Lat: 31.47, Lng: 34.42}, CountryCode: "PS", WherePrecision: 2},
+		{FeedItem: parse.FeedItem{Lat: 0, Lng: 0}, CountryCode: "PS", WherePrecision: 1},         // dropped
+		{FeedItem: parse.FeedItem{Lat: 31.40, Lng: 34.36}, CountryCode: "PS", WherePrecision: 5}, // dropped
 	})
 	body, err := json.Marshal(data)
 	if err != nil {
@@ -228,5 +225,42 @@ func TestBuildConflictFootprintsGeoJSONUsesSingleLensFootprint(t *testing.T) {
 	}
 	if parsed.Features[0].Properties["geometry_role"] != "footprint" {
 		t.Fatalf("expected geometry_role footprint, got %#v", parsed.Features[0].Properties["geometry_role"])
+	}
+}
+
+func TestBuildConflictFootprintsGeoJSONFiltersOutsideLensBounds(t *testing.T) {
+	data := BuildConflictFootprintsGeoJSON([]model.ZoneBriefingRecord{
+		{
+			LensID:    "ukraine",
+			Title:     "Ukraine South",
+			Status:    "active",
+			UpdatedAt: "2026-03-20T00:00:00Z",
+			Violence:  model.ZoneBriefingViolence{Primary: "State-based conflict"},
+		},
+	}, []parse.UCDPItem{
+		{FeedItem: parse.FeedItem{Lat: 47.5, Lng: 35.1}, CountryCode: "369", WherePrecision: 1}, // in lens bounds
+		{FeedItem: parse.FeedItem{Lat: 61.0, Lng: 90.0}, CountryCode: "365", WherePrecision: 1}, // outside bounds
+	})
+
+	body, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var parsed struct {
+		Features []struct {
+			Properties map[string]any `json:"properties"`
+			Geometry   struct {
+				Type string `json:"type"`
+			} `json:"geometry"`
+		} `json:"features"`
+	}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		t.Fatal(err)
+	}
+	if len(parsed.Features) != 1 {
+		t.Fatalf("expected 1 lens footprint feature from bounded event points, got %d", len(parsed.Features))
+	}
+	if parsed.Features[0].Properties["lens_id"] != "ukraine" {
+		t.Fatalf("expected lens_id ukraine, got %#v", parsed.Features[0].Properties["lens_id"])
 	}
 }

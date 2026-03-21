@@ -229,6 +229,46 @@ CREATE TABLE IF NOT EXISTS registry_sync_state (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS ucdp_lens_events (
+  lens_id TEXT NOT NULL,
+  event_key TEXT NOT NULL,
+  published TEXT NOT NULL DEFAULT '',
+  lat REAL NOT NULL DEFAULT 0,
+  lng REAL NOT NULL DEFAULT 0,
+  where_precision INTEGER NOT NULL DEFAULT 0,
+  date_precision INTEGER NOT NULL DEFAULT 0,
+  event_clarity INTEGER NOT NULL DEFAULT 0,
+  country TEXT NOT NULL DEFAULT '',
+  country_code TEXT NOT NULL DEFAULT '',
+  region TEXT NOT NULL DEFAULT '',
+  violence_type TEXT NOT NULL DEFAULT '',
+  fatalities INTEGER NOT NULL DEFAULT 0,
+  civilian_deaths INTEGER NOT NULL DEFAULT 0,
+  side_a TEXT NOT NULL DEFAULT '',
+  side_b TEXT NOT NULL DEFAULT '',
+  dyad_name TEXT NOT NULL DEFAULT '',
+  admin1 TEXT NOT NULL DEFAULT '',
+  admin2 TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL DEFAULT '',
+  link TEXT NOT NULL DEFAULT '',
+  summary TEXT NOT NULL DEFAULT '',
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (lens_id, event_key)
+);
+
+CREATE TABLE IF NOT EXISTS ucdp_lens_state (
+  lens_id TEXT PRIMARY KEY,
+  version TEXT NOT NULL DEFAULT '',
+  start_date TEXT NOT NULL DEFAULT '',
+  end_date TEXT NOT NULL DEFAULT '',
+  head_hash TEXT NOT NULL DEFAULT '',
+  total_pages INTEGER NOT NULL DEFAULT 0,
+  event_count INTEGER NOT NULL DEFAULT 0,
+  refreshed_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_sources_agency_id ON sources(agency_id);
 CREATE INDEX IF NOT EXISTS idx_sources_status ON sources(status);
 CREATE INDEX IF NOT EXISTS idx_sources_feed_url ON sources(feed_url);
@@ -245,6 +285,9 @@ CREATE INDEX IF NOT EXISTS idx_noise_feedback_alert ON noise_feedback(alert_id);
 CREATE INDEX IF NOT EXISTS idx_noise_feedback_source ON noise_feedback(source_id);
 CREATE INDEX IF NOT EXISTS idx_noise_feedback_verdict ON noise_feedback(verdict);
 CREATE INDEX IF NOT EXISTS idx_registry_sync_state_updated ON registry_sync_state(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ucdp_lens_events_lens ON ucdp_lens_events(lens_id);
+CREATE INDEX IF NOT EXISTS idx_ucdp_lens_events_published ON ucdp_lens_events(published DESC);
+CREATE INDEX IF NOT EXISTS idx_ucdp_lens_state_updated ON ucdp_lens_state(updated_at DESC);
 
 CREATE TABLE IF NOT EXISTS cities (
   id INTEGER PRIMARY KEY,

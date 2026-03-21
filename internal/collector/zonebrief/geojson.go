@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/euosint/internal/collector/parse"
 )
 
 type featureCollection struct {
@@ -47,9 +48,11 @@ func BuildTerrorZonesGeoJSONFromBoundaries(briefings []model.ZoneBriefingRecord,
 	return buildZonesFromBoundaries(briefings, boundariesPath, true)
 }
 
-// BuildConflictFootprintsGeoJSON builds hotspot-derived conflict footprints.
+const maxWherePrecisionForFootprint = 3
+
+// BuildConflictFootprintsGeoJSON builds event-derived conflict footprints.
 // This avoids painting entire countries as active conflict extent.
-func BuildConflictFootprintsGeoJSON(briefings []model.ZoneBriefingRecord) any {
+func BuildConflictFootprintsGeoJSON(briefings []model.ZoneBriefingRecord, items []parse.UCDPItem) any {
 	features := make([]geoFeature, 0)
 	for _, lens := range SupportedLenses {
 		brief := findBrief(briefings, lens.ID)
@@ -62,16 +65,18 @@ func BuildConflictFootprintsGeoJSON(briefings []model.ZoneBriefingRecord) any {
 		baseProps := overlayProperties(lens, brief, "", "", "", "")
 		baseProps["type"] = conflictType(brief)
 		baseProps["geometry_role"] = "footprint"
-
-		geom, ok := lensFootprintGeometry(brief.Hotspots)
-		if !ok {
-			continue
+		clusters := clusterLensEventPoints(lens, items)
+		for _, cluster := range clusters {
+			geom, ok := lensFootprintGeometryFromPoints(cluster)
+			if !ok {
+				continue
+			}
+			features = append(features, geoFeature{
+				Type:       "Feature",
+				Properties: baseProps,
+				Geometry:   clipGeometryToBounds(geom, lens.Bounds),
+			})
 		}
-		features = append(features, geoFeature{
-			Type:       "Feature",
-			Properties: baseProps,
-			Geometry:   geom,
-		})
 	}
 	return featureCollection{Type: "FeatureCollection", Features: features}
 }
@@ -155,14 +160,13 @@ func buildZonesFromBoundaries(briefings []model.ZoneBriefingRecord, boundariesPa
 				continue
 			}
 		}
-		for _, country := range sortedBoundaryCountries(lens) {
-			countryCode := country.code
+		for _, countryCode := range sortedOverlayCountryCodes(lens) {
 			boundary := findBoundaryFeature(collection.Features, countryCode)
 			if boundary == nil {
 				continue
 			}
 			ref := UCDPCountryRefs[countryCode]
-			props := overlayProperties(lens, brief, countryCode, ref.Label, ref.ID, country.role)
+			props := overlayProperties(lens, brief, countryCode, ref.Label, ref.ID, "primary")
 			if terrorOnly {
 				props["type"] = terrorType(brief.Status)
 				props["threat"] = joinOrDefault(brief.Actors, "Structured organized-violence actors")
@@ -184,7 +188,7 @@ func overlayProperties(lens LensDef, brief *model.ZoneBriefingRecord, countryCod
 		"name":           brief.Title,
 		"lens_id":        brief.LensID,
 		"status":         brief.Status,
-		"since":          sinceYear(brief.UpdatedAt),
+		"since":          sinceYear(firstNonEmpty(brief.ConflictStartDate, brief.UpdatedAt)),
 		"source":         brief.Source,
 		"source_url":     brief.SourceURL,
 		"coverage_note":  brief.CoverageNote,
@@ -290,34 +294,6 @@ func sortedOverlayCountryCodes(lens LensDef) []string {
 	return out
 }
 
-type boundaryCountry struct {
-	code string
-	role string
-}
-
-func sortedBoundaryCountries(lens LensDef) []boundaryCountry {
-	primaryCodes := sortedOverlayCountryCodes(lens)
-	primarySet := make(map[string]struct{}, len(primaryCodes))
-	out := make([]boundaryCountry, 0, len(primaryCodes)+len(lens.CountryCodes))
-	for _, code := range primaryCodes {
-		primarySet[code] = struct{}{}
-		out = append(out, boundaryCountry{code: code, role: "primary"})
-	}
-
-	allCodes := make([]string, 0, len(lens.CountryCodes))
-	for code := range lens.CountryCodes {
-		allCodes = append(allCodes, code)
-	}
-	sortStrings(allCodes)
-	for _, code := range allCodes {
-		if _, ok := primarySet[code]; ok {
-			continue
-		}
-		out = append(out, boundaryCountry{code: code, role: "context"})
-	}
-	return out
-}
-
 func sortStrings(values []string) {
 	if len(values) < 2 {
 		return
@@ -360,6 +336,157 @@ func featureLensID(props map[string]any) string {
 type geoPoint struct {
 	x float64 // lng
 	y float64 // lat
+}
+
+func clusterLensEventPoints(lens LensDef, items []parse.UCDPItem) [][]geoPoint {
+	points := make([]geoPoint, 0)
+	for _, item := range items {
+		if !isValidFootprintPoint(item) {
+			continue
+		}
+		if !pointWithinBounds(item.Lat, item.Lng, lens.Bounds) {
+			continue
+		}
+		if !matchesLens(lens, item) {
+			continue
+		}
+		points = append(points, geoPoint{x: item.Lng, y: item.Lat})
+	}
+	if len(points) == 0 {
+		return nil
+	}
+
+	eps := lensClusterDistance(lens.Bounds)
+	visited := make([]bool, len(points))
+	clusters := make([][]geoPoint, 0)
+	for i := range points {
+		if visited[i] {
+			continue
+		}
+		visited[i] = true
+		cluster := []geoPoint{points[i]}
+		queue := []int{i}
+		for len(queue) > 0 {
+			idx := queue[0]
+			queue = queue[1:]
+			for j := range points {
+				if visited[j] {
+					continue
+				}
+				if pointDistance(points[idx], points[j]) > eps {
+					continue
+				}
+				visited[j] = true
+				cluster = append(cluster, points[j])
+				queue = append(queue, j)
+			}
+		}
+		clusters = append(clusters, cluster)
+	}
+	return clusters
+}
+
+func isValidFootprintPoint(item parse.UCDPItem) bool {
+	if item.Lat == 0 && item.Lng == 0 {
+		return false
+	}
+	if item.WherePrecision > 0 && item.WherePrecision > maxWherePrecisionForFootprint {
+		return false
+	}
+	return true
+}
+
+func pointWithinBounds(lat float64, lng float64, b Bounds) bool {
+	return lat >= b.South && lat <= b.North && lng >= b.West && lng <= b.East
+}
+
+func lensClusterDistance(bounds Bounds) float64 {
+	latSpan := bounds.North - bounds.South
+	lngSpan := bounds.East - bounds.West
+	span := latSpan
+	if lngSpan > span {
+		span = lngSpan
+	}
+	eps := span * 0.12
+	if eps < 0.3 {
+		return 0.3
+	}
+	if eps > 1.8 {
+		return 1.8
+	}
+	return eps
+}
+
+func pointDistance(a geoPoint, b geoPoint) float64 {
+	dx := a.x - b.x
+	dy := a.y - b.y
+	return math.Hypot(dx, dy)
+}
+
+func lensFootprintGeometryFromPoints(points []geoPoint) (map[string]any, bool) {
+	if len(points) == 0 {
+		return nil, false
+	}
+	padding := 0.12 + float64(len(points))*0.002
+	if padding > 0.4 {
+		padding = 0.4
+	}
+	if len(points) == 1 {
+		return circlePolygon(points[0], padding), true
+	}
+	if len(points) == 2 {
+		return segmentBoxPolygon(points[0], points[1], padding), true
+	}
+	hull := convexHull(points)
+	if len(hull) < 3 {
+		return segmentBoxPolygon(points[0], points[1], padding), true
+	}
+	return expandedHullPolygon(hull, padding*0.45), true
+}
+
+func clipGeometryToBounds(geom map[string]any, b Bounds) map[string]any {
+	typ, _ := geom["type"].(string)
+	if typ != "Polygon" {
+		return geom
+	}
+	rawCoords, ok := geom["coordinates"].([][][]float64)
+	if !ok {
+		return geom
+	}
+	out := make([][][]float64, 0, len(rawCoords))
+	for _, ring := range rawCoords {
+		clipped := make([][]float64, 0, len(ring))
+		for _, coord := range ring {
+			if len(coord) < 2 {
+				continue
+			}
+			lng := coord[0]
+			lat := coord[1]
+			if lng < b.West {
+				lng = b.West
+			}
+			if lng > b.East {
+				lng = b.East
+			}
+			if lat < b.South {
+				lat = b.South
+			}
+			if lat > b.North {
+				lat = b.North
+			}
+			clipped = append(clipped, []float64{lng, lat})
+		}
+		if len(clipped) > 0 {
+			if clipped[0][0] != clipped[len(clipped)-1][0] || clipped[0][1] != clipped[len(clipped)-1][1] {
+				clipped = append(clipped, []float64{clipped[0][0], clipped[0][1]})
+			}
+			out = append(out, clipped)
+		}
+	}
+	return map[string]any{
+		"type":        "Polygon",
+		"coordinates": out,
+	}
 }
 
 func lensFootprintGeometry(hotspots []model.ZoneBriefingHotspot) (map[string]any, bool) {
