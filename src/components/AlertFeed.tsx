@@ -748,7 +748,7 @@ export function AlertFeed({
                   onClick={() => onSelect(activeConflictBrief.latestAlert!.alert_id)}
                   className="w-full rounded-lg border border-siem-accent/35 bg-siem-accent/10 px-3 py-2 text-left transition-colors hover:bg-siem-accent/14"
                 >
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Latest alert in lens</div>
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Latest event in lens</div>
                   <div className="mt-1 text-2xs text-siem-text line-clamp-2">{activeConflictBrief.latestAlert.title}</div>
                   <div className="mt-1 text-2xs text-siem-muted">
                     {activeConflictBrief.latestAlert.source.authority_name} · {freshnessLabel(activeConflictBrief.latestAlert.freshness_hours)}
@@ -874,7 +874,7 @@ export function AlertFeed({
           ) : (
             <div className="rounded-lg border border-siem-border bg-siem-panel/35 p-4 text-center">
               <p className="text-xs text-siem-muted uppercase tracking-wider">
-                No context items in this conflict lens
+                No current events recorded
               </p>
             </div>
           )

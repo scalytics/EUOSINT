@@ -957,7 +957,7 @@ export function GlobeView({
           </div>
           {effectiveConflictLens && (
             <div className="mt-2 text-2xs uppercase tracking-[0.14em] text-siem-muted">
-              {visibleNowAlerts.length + visibleHistoryAlertsRendered.length} visible alerts in current lens
+              {visibleNowAlerts.length + visibleHistoryAlertsRendered.length} event records in current lens
             </div>
           )}
         </div>
