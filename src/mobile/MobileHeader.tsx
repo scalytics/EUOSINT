@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Monitor, ChevronDown, Check } from "lucide-react";
+import { Shield, ChevronDown, Check } from "lucide-react";
 
 const REGIONS = [
   { value: "all", label: "Global" },
@@ -25,11 +25,6 @@ export function MobileHeader({ regionFilter, onRegionChange, clock }: Props) {
     setPickerOpen(false);
   }
 
-  function switchToDesktop() {
-    document.cookie = "euosint_prefer_desktop=1;path=/;max-age=31536000";
-    location.href = "/";
-  }
-
   const currentLabel = REGIONS.find((r) => r.value === regionFilter)?.label ?? "Global";
 
   return (
@@ -47,14 +42,6 @@ export function MobileHeader({ regionFilter, onRegionChange, clock }: Props) {
         </button>
 
         <span className="text-[10px] font-mono text-slate-500 tabular-nums">{clock}</span>
-
-        <button
-          className="p-1.5 text-slate-500 hover:text-slate-300"
-          onClick={switchToDesktop}
-          title="Switch to desktop"
-        >
-          <Monitor size={16} />
-        </button>
       </div>
 
       {pickerOpen && (
