@@ -119,13 +119,14 @@ export function MobileMapView({ alerts, regionFilter, onSelectAlert }: Props) {
 
     const ro = new ResizeObserver(() => map.invalidateSize());
     ro.observe(containerRef.current);
+    const layers = overlayLayers.current;
 
     return () => {
       ro.disconnect();
       map.remove();
       mapRef.current = null;
       clusterRef.current = null;
-      overlayLayers.current.clear();
+      layers.clear();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
