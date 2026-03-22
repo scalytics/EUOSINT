@@ -714,6 +714,11 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		eventCountryCode = ""
 	}
 	canonicalCategory := canonicalCategory(meta.Category)
+	// Cross-country/aggregator alerts with no resolvable location are
+	// geopolitical context, not actionable events — reclassify as legislative.
+	if isCrossCountry && !geocoded && allowDynamicGeocode {
+		canonicalCategory = "legislative"
+	}
 	canonicalSeverity := inferSeverity(title, defaultSeverity(canonicalCategory))
 	if canonicalCategory == "informational" {
 		canonicalSeverity = "info"
@@ -832,7 +837,7 @@ func shouldUseDynamicGeocoding(category string) bool {
 		"travel_warning", "humanitarian_tasking", "humanitarian_security",
 		"conflict_monitoring", "maritime_security", "logistics_incident",
 		"health_emergency", "disease_outbreak", "environmental_disaster",
-		"emergency_management":
+		"emergency_management", "terrorism_tip":
 		return true
 	default:
 		return false
