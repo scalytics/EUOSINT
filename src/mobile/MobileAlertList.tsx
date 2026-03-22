@@ -40,8 +40,7 @@ export function MobileAlertList({
     [alerts, severityFilter],
   );
 
-  // Count per severity for pill badges
-  const counts = useMemo(() => {
+  const sevCounts = useMemo(() => {
     const c: Record<string, number> = { all: alerts.length };
     for (const a of alerts) c[a.severity] = (c[a.severity] ?? 0) + 1;
     return c;
@@ -84,8 +83,8 @@ export function MobileAlertList({
             onClick={() => onSeverityChange(value)}
           >
             {label}
-            {(counts[value] ?? 0) > 0 && (
-              <span className="ml-1 opacity-60">{counts[value]}</span>
+            {(sevCounts[value] ?? 0) > 0 && (
+              <span className="ml-1 opacity-60">{sevCounts[value]}</span>
             )}
           </button>
         ))}

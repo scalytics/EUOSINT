@@ -245,7 +245,7 @@ export function MobileMapView({ alerts, regionFilter, onSelectAlert }: Props) {
             className="mobile-sheet-backdrop"
             onClick={() => setClusterAlerts([])}
           />
-          <div className="mobile-picker-sheet" style={{ maxHeight: "75vh" }}>
+          <div className="mobile-picker-sheet" style={{ maxHeight: "75dvh" }}>
             <div className="mobile-sheet-handle" />
             <div className="mobile-picker-title">
               Area Alerts ({clusterAlerts.length})

@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, lazy, Suspense, useCallback } from "react";
 import { useAlerts } from "@/hooks/useAlerts";
 import { alertMatchesRegionFilter } from "@/lib/regions";
-import type { Alert, Severity } from "@/types/alert";
+import { categoryLabels, categoryOrder } from "@/lib/severity";
+import type { Alert, Severity, AlertCategory } from "@/types/alert";
 import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNav, type MobileTab } from "./MobileBottomNav";
 import { MobileAlertList } from "./MobileAlertList";
@@ -26,6 +27,7 @@ export function MobileApp() {
   const [regionFilter, setRegionFilter] = useState("Europe");
   const [activeTab, setActiveTab] = useState<MobileTab>("alerts");
   const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<Set<AlertCategory>>(new Set());
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const clock = useUTCClock();
 
@@ -35,20 +37,38 @@ export function MobileApp() {
     [alerts, regionFilter],
   );
 
+  // Apply category filter
+  const categoryFiltered = useMemo(
+    () =>
+      categoryFilter.size === 0
+        ? regionAlerts
+        : regionAlerts.filter((a) => categoryFilter.has(a.category)),
+    [regionAlerts, categoryFilter],
+  );
+
   // Sort: most recent first
   const sorted = useMemo(
     () =>
-      [...regionAlerts].sort(
+      [...categoryFiltered].sort(
         (a, b) => new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime(),
       ),
-    [regionAlerts],
+    [categoryFiltered],
   );
 
   // Count critical+high for badge
   const urgentCount = useMemo(
-    () => regionAlerts.filter((a) => a.severity === "critical" || a.severity === "high").length,
-    [regionAlerts],
+    () => categoryFiltered.filter((a) => a.severity === "critical" || a.severity === "high").length,
+    [categoryFiltered],
   );
+
+  // Categories with counts for the picker (based on region alerts, before category filter)
+  const categoriesWithCounts = useMemo(() => {
+    const countMap: Record<string, number> = {};
+    for (const a of regionAlerts) countMap[a.category] = (countMap[a.category] ?? 0) + 1;
+    return categoryOrder
+      .filter((c) => countMap[c])
+      .map((c) => ({ value: c, label: categoryLabels[c] ?? c, count: countMap[c] }));
+  }, [regionAlerts]);
 
   // Find selected alert across all alerts (search results may not be in regionAlerts)
   const selectedAlert: Alert | null = useMemo(
@@ -69,6 +89,9 @@ export function MobileApp() {
       <MobileHeader
         regionFilter={regionFilter}
         onRegionChange={setRegionFilter}
+        categoryFilter={categoryFilter}
+        onCategoryChange={setCategoryFilter}
+        categoriesWithCounts={categoriesWithCounts}
         clock={clock}
       />
 

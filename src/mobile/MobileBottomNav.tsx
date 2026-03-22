@@ -18,7 +18,7 @@ export function MobileBottomNav({ activeTab, onTabChange, alertCount }: Props) {
         <div className="relative">
           <Bell size={22} />
           {alertCount > 0 && (
-            <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 flex items-center justify-center px-1 text-[9px] font-bold bg-red-500 text-white rounded-full">
+            <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-bold bg-red-500 text-white rounded-full">
               {alertCount > 99 ? "99+" : alertCount}
             </span>
           )}

@@ -26,7 +26,21 @@ const appVersion =
 
 export default defineConfig({
   base: process.env.BASE_PATH ?? "/",
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    {
+      name: "mobile-spa-fallback",
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url && /^\/mobile(\/(?!index\.html).*)?\/?(\?.*)?$/.test(req.url)) {
+            req.url = "/mobile/index.html";
+          }
+          next();
+        });
+      },
+    },
+  ],
   build: {
     rollupOptions: {
       input: {

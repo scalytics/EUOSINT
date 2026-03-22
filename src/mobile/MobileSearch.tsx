@@ -39,7 +39,13 @@ export function MobileSearch({ onSelectAlert }: Props) {
       <div className="px-3 pt-3">
         <input
           className="mobile-search-input"
-          type="text"
+          type="search"
+          inputMode="search"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          enterKeyHint="search"
           placeholder="Search alerts..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
