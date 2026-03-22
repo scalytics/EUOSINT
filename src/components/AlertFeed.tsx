@@ -829,16 +829,18 @@ export function AlertFeed({
                 </div>
               )}
 
-              <div>
-                <div className="text-xs uppercase tracking-[0.14em] text-siem-muted">Violence / focus</div>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {activeConflictBrief.violenceTypes.map((item) => (
-                    <span key={item} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-xs text-siem-text">
-                      {item}
-                    </span>
-                  ))}
+              {activeConflictBrief.violenceTypes.length > 0 && (
+                <div>
+                  <div className="text-xs uppercase tracking-[0.14em] text-siem-muted">Violence / focus</div>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {activeConflictBrief.violenceTypes.map((item) => (
+                      <span key={item} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-xs text-siem-text">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {activeConflictBrief.latestAlert && (
                 <button

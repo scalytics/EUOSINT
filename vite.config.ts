@@ -26,13 +26,32 @@ const appVersion =
 
 export default defineConfig({
   base: process.env.BASE_PATH ?? "/",
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    {
+      name: "mobile-spa-fallback",
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url && /^\/mobile(\/(?!index\.html).*)?\/?(\?.*)?$/.test(req.url)) {
+            req.url = "/mobile/index.html";
+          }
+          next();
+        });
+      },
+    },
+  ],
   build: {
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        mobile: path.resolve(__dirname, "mobile/index.html"),
+      },
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
-          if (id.includes("leaflet") || id.includes("three")) return "vendor-map";
+          if (id.includes("three")) return "vendor-three";
+          if (id.includes("leaflet")) return "vendor-leaflet";
           if (id.includes("react") || id.includes("scheduler")) return "vendor-react";
           if (id.includes("lucide-react")) return "vendor-icons";
           return "vendor";

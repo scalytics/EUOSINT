@@ -1,0 +1,49 @@
+@theme {
+  /* ── Relative type scale (scales with html font-size) ──────────── */
+  --font-size-4xs: 0.615rem;   /* ~8px at 13px root  */
+  --font-size-3xs: 0.692rem;   /* ~9px at 13px root  */
+  --font-size-2xs: 0.77rem;    /* ~10px at 13px root */
+  --font-size-xxs: 0.846rem;   /* ~11px at 13px root */
+
+  /* ── Brand ──────────────────────────────────────────────────────── */
+  --color-siem-bg: #070E1A;
+  --color-siem-panel: #0b1120;
+  --color-siem-panel-strong: #131d2e;
+  --color-siem-border: #1e293b;
+  --color-siem-text: #e6edf5;
+  --color-siem-muted: #5A7B95;
+  --color-siem-accent: #E8630A;
+  --color-siem-accent-strong: #FF8533;
+  --color-siem-neutral: #9ca3af;
+
+  /* ── Severity ───────────────────────────────────────────────────── */
+  --color-siem-critical: #ff5d5d;
+  --color-siem-high: #f29d4b;
+  --color-siem-medium: #e3c867;
+  --color-siem-low: #4ccb8d;
+  --color-siem-info: #60a5fa;
+
+  /* ── Category ───────────────────────────────────────────────────── */
+  --color-cat-informational: #60a5fa;
+  --color-cat-cyber: #3b82f6;
+  --color-cat-education: #4f95a4;
+  --color-cat-humanitarian: #2f8c8c;
+  --color-cat-conflict: #725f95;
+  --color-cat-humsec: #3a7395;
+  --color-cat-wanted: #a14a5b;
+  --color-cat-missing: #aa8b43;
+  --color-cat-appeal: #5577a4;
+  --color-cat-fraud: #338c66;
+  --color-cat-safety: #5b6887;
+  --color-cat-terrorism: #a34c4c;
+  --color-cat-private: #8f6a46;
+  --color-cat-travel: #c27a3a;
+  --color-cat-health: #4ca38c;
+  --color-cat-intel: #7a6eab;
+  --color-cat-emergency: #b85c4a;
+  --color-cat-environment: #4a8b6e;
+  --color-cat-disease: #c45e8a;
+  --color-cat-maritime: #2a7a9b;
+  --color-cat-logistics: #8b6e4a;
+  --color-cat-legislative: #6b7f45;
+}

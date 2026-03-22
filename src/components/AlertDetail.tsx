@@ -79,9 +79,10 @@ export function AlertDetail({ alert, onClose }: Props) {
         </h2>
         <button
           onClick={onClose}
-          className="p-1 rounded hover:bg-siem-accent/12 hover:text-siem-accent text-siem-muted transition-colors"
+          className="p-2 -mr-1 rounded-lg active:bg-siem-accent/12 active:text-siem-accent text-siem-muted transition-colors"
+          style={{ WebkitTapHighlightColor: "transparent", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
         >
-          <X size={14} />
+          <X size={18} />
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -239,7 +240,8 @@ export function AlertDetail({ alert, onClose }: Props) {
           href={alert.canonical_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-siem-accent hover:bg-siem-accent/80 text-white font-bold text-sm rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-siem-accent active:bg-siem-accent/80 text-white font-bold text-sm rounded-lg transition-colors"
+          style={{ WebkitTapHighlightColor: "transparent", minHeight: 48, touchAction: "manipulation" }}
         >
           <ExternalLink size={16} />
           GO TO OFFICIAL ALERT

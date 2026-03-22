@@ -1,0 +1,16 @@
+{
+  "name": "EUOSINT",
+  "short_name": "EUOSINT",
+  "description": "Open-Source Intelligence Monitor",
+  "start_url": "/m/",
+  "display": "standalone",
+  "background_color": "#030610",
+  "theme_color": "#030610",
+  "icons": [
+    {
+      "src": "/favicon-shield.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

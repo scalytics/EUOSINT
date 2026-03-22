@@ -16,6 +16,7 @@ FROM caddy:2.10-alpine
 
 COPY docker/Caddyfile /etc/caddy/Caddyfile
 COPY --from=build /app/dist /srv
+COPY --from=build /app/mobile/manifest.json /srv/mobile/manifest.json
 
 EXPOSE 80 443
 
