@@ -28,7 +28,7 @@ const OVERLAY_FALLBACK_URLS: Record<string, string> = {
 };
 
 const LENS_REGION_FILTERS: Record<string, string> = {
-  gaza: "Asia",
+  gaza: "Middle East",
   sudan: "Africa",
   ukraine: "Europe",
   "red-sea": "Africa",
@@ -40,7 +40,8 @@ const BASES_REGION_URLS: Record<string, string> = {
   Europe: "/geo/military-bases.europe.geojson",
   Africa: "/geo/military-bases.africa.geojson",
   "North America": "/geo/military-bases.north-america.geojson",
-  Asia: "/geo/military-bases.asia.geojson",
+  "Middle East": "/geo/military-bases.asia.geojson",
+  "Asia-Pacific": "/geo/military-bases.asia.geojson",
   all: "/geo/military-bases.all.geojson",
 };
 
@@ -49,10 +50,10 @@ function normalizeOverlayRegion(regionFilter: string): string {
   const value = regionFilter.trim().toLowerCase();
   if (value.includes("europe")) return "Europe";
   if (value.includes("africa")) return "Africa";
-  if (value.includes("asia") || value.includes("middle east")) return "Asia";
+  if (value.includes("middle east")) return "Middle East";
+  if (value.includes("asia") || value.includes("oceania")) return "Asia-Pacific";
   if (value.includes("north america") || value.includes("caribbean")) return "North America";
   if (value.includes("south america") || value.includes("latin america")) return "all";
-  if (value.includes("oceania")) return "all";
   return "all";
 }
 

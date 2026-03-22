@@ -39,14 +39,13 @@ export function latLngToRegion(lat: number, lng: number): string | null {
   if (lat >= 34 && lat <= 72 && lng >= -12 && lng <= 45) return "Europe";
   // Africa: full continent including Madagascar
   if (lat >= -36 && lat <= 38 && lng >= -18 && lng <= 52) return "Africa";
-  // Middle East bridges into Asia
-  if (lat >= 12 && lat <= 42 && lng >= 34 && lng <= 60) return "Asia";
-  // Asia: main body + far-east dateline wrap
-  if (lat >= -11 && lat <= 78 && lng >= 40 && lng <= 180) return "Asia";
-  if (lat >= 30 && lat <= 78 && lng >= -180 && lng <= -168) return "Asia";
-  // Oceania: Australia, NZ, Pacific islands
-  if (lat >= -50 && lat <= 0 && lng >= 110 && lng <= 180) return "Oceania";
-  if (lat >= -50 && lat <= 15 && lng >= 95 && lng <= 180) return "Oceania";
+  // Middle East: Arabian peninsula, Levant, Iran, Iraq
+  if (lat >= 12 && lat <= 42 && lng >= 34 && lng <= 60) return "Middle East";
+  // Asia-Pacific: main body + far-east dateline wrap + Oceania
+  if (lat >= -11 && lat <= 78 && lng >= 40 && lng <= 180) return "Asia-Pacific";
+  if (lat >= 30 && lat <= 78 && lng >= -180 && lng <= -168) return "Asia-Pacific";
+  if (lat >= -50 && lat <= 0 && lng >= 110 && lng <= 180) return "Asia-Pacific";
+  if (lat >= -50 && lat <= 15 && lng >= 95 && lng <= 180) return "Asia-Pacific";
   return null;
 }
 
@@ -70,6 +69,13 @@ export function alertMatchesRegionFilter(alert: Alert, regionFilter: string): bo
     return (
       alert.source.region === "Middle East" ||
       MIDDLE_EAST_CODES.has(alert.source.country_code)
+    );
+  }
+  if (regionFilter === "Asia-Pacific") {
+    return (
+      alert.source.region === "Asia" ||
+      alert.source.region === "Asia-Pacific" ||
+      alert.source.region === "Oceania"
     );
   }
   return alert.source.region === regionFilter;

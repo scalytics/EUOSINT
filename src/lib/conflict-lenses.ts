@@ -25,7 +25,7 @@ export const CONFLICT_LENSES: ConflictLens[] = [
   {
     id: "gaza",
     label: "Gaza",
-    regionFilter: "Asia",
+    regionFilter: "Middle East",
     overlays: ["conflicts"],
     description: "Gaza, southern Israel, and eastern Mediterranean escalation picture.",
     countryCodes: ["PS", "IL", "EG", "LB", "JO"],

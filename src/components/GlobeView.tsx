@@ -1046,8 +1046,8 @@ export function GlobeView({
 
         <div className="flex flex-col gap-2">
           <div className="rounded-2xl border border-siem-border bg-siem-panel p-2 space-y-1.5">
-          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-5">
-            {["Europe", "Africa", "North America", "Asia", "all"].map((region) => (
+          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-6">
+            {["Europe", "Middle East", "Africa", "North America", "Asia-Pacific", "all"].map((region) => (
               <button
                 key={region}
                 type="button"

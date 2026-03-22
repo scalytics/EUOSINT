@@ -30,24 +30,24 @@ function normalizeConflictRegion(raw: string): string {
   // UCDP region codes in conflict tables:
   // 1=Europe, 2=Middle East, 3=Asia, 4=Africa, 5=Americas
   if (value === "1") return "Europe";
-  if (value === "2") return "Asia";
-  if (value === "3") return "Asia";
+  if (value === "2") return "Middle East";
+  if (value === "3") return "Asia-Pacific";
   if (value === "4") return "Africa";
   if (value === "5") return "North America";
   if (value.includes(",")) {
     const first = value.split(",")[0]?.trim() ?? "";
     if (first === "1") return "Europe";
-    if (first === "2") return "Asia";
-    if (first === "3") return "Asia";
+    if (first === "2") return "Middle East";
+    if (first === "3") return "Asia-Pacific";
     if (first === "4") return "Africa";
     if (first === "5") return "North America";
   }
   if (value.includes("europe")) return "Europe";
   if (value.includes("africa")) return "Africa";
-  if (value.includes("asia") || value.includes("middle east")) return "Asia";
+  if (value.includes("middle east")) return "Middle East";
+  if (value.includes("asia") || value.includes("oceania")) return "Asia-Pacific";
   if (value.includes("north america") || value.includes("caribbean")) return "North America";
   if (value.includes("south america") || value.includes("latin america")) return "South America";
-  if (value.includes("oceania")) return "Oceania";
   return "";
 }
 

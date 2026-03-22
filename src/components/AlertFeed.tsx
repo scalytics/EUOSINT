@@ -27,7 +27,7 @@ import type { ConflictCountryFocus } from "@/types/current-conflicts";
 import { Clock, Building2, ChevronDown, Globe } from "lucide-react";
 
 const LIVE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
-const PREFERRED_REGION_ORDER = ["Europe", "Africa", "North America", "Asia"] as const;
+const PREFERRED_REGION_ORDER = ["Europe", "Middle East", "Africa", "North America", "Asia-Pacific"] as const;
 const INT_FORMAT = new Intl.NumberFormat("en-US");
 
 interface Props {
