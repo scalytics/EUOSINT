@@ -77,7 +77,7 @@ func NewBrowser(opts BrowserOptions) (*BrowserClient, error) {
 func initRemoteAllocator(wsURL string, timeoutMS int, connectRetries int, retryDelay time.Duration) (context.Context, context.CancelFunc, error) {
 	var lastErr error
 	for i := 1; i <= connectRetries; i++ {
-		allocCtx, cancel := chromedp.NewRemoteAllocator(context.Background(), wsURL)
+		allocCtx, cancel := chromedp.NewRemoteAllocator(context.Background(), wsURL, chromedp.NoModifyURL)
 		taskCtx, taskCancel := chromedp.NewContext(allocCtx)
 		probeTimeout := time.Duration(timeoutMS) * time.Millisecond
 		if probeTimeout > 10*time.Second {
