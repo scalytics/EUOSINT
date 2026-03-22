@@ -530,10 +530,24 @@ export function GlobeView({
       { maxZoom: 18, subdomains: "abcd", noWrap: true },
     ).addTo(map);
 
-    // Custom panes: overlays on top so risk dots are clickable above alert clusters.
-    // Leaflet default markerPane is z-index 600; we push overlays above it.
-    const overlayPane = map.createPane("overlayPane");
-    overlayPane.style.zIndex = "650";
+    // Custom panes for proper layering (Leaflet defaults: overlay 400, marker 600, tooltip 650, popup 700).
+    //  1. linesPane   (401) — cables, shipping lanes: visual only, no interaction
+    //  2. zonesPane   (402) — conflict/sanctions/piracy/terror polygons: tooltips, below clusters
+    //  3. pointsPane  (650) — risk dots, bases, ports, nuclear: interactive popups, above clusters
+    // Alert clusters live in default markerPane (600) — between zones and points.
+    // Tooltips (800) and popups (700+) always render on top of everything.
+    const linesPane = map.createPane("linesPane");
+    linesPane.style.zIndex = "401";
+    linesPane.style.pointerEvents = "none"; // pure visual, no interaction
+    const zonesPane = map.createPane("zonesPane");
+    zonesPane.style.zIndex = "402";
+    const pointsPane = map.createPane("pointsPane");
+    pointsPane.style.zIndex = "650";
+    // Bump tooltips above everything so they're always readable.
+    const tooltipPane = map.getPane("tooltipPane");
+    if (tooltipPane) tooltipPane.style.zIndex = "800";
+    const popupPane = map.getPane("popupPane");
+    if (popupPane) popupPane.style.zIndex = "850";
 
     L.control.zoom({ position: "bottomright" }).addTo(map);
 

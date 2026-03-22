@@ -246,9 +246,17 @@ export async function loadOverlay(
   const leafletGeoJSON = toGeoJsonObject(geojson);
   const group = L.layerGroup();
 
+  // Assign each overlay to the correct map pane for proper z-ordering:
+  //   linesPane  (z 401) — cables, shipping lanes (visual only)
+  //   zonesPane  (z 402) — conflict/sanctions/piracy/terror polygons (below alert clusters)
+  //   pointsPane (z 650) — risk dots, bases, ports, nuclear (above alert clusters)
+  const ZONE_IDS = new Set(["conflicts", "sanctions", "piracy", "terrorism"]);
+  const LINE_IDS = new Set(["cables", "shipping"]);
+  const pane = LINE_IDS.has(def.id) ? "linesPane" : ZONE_IDS.has(def.id) ? "zonesPane" : "pointsPane";
+
   if (def.id === "conflicts") {
     L.geoJSON(leafletGeoJSON, {
-      pane: "overlayPane",
+      pane,
       style: (feature) => {
         const type = feature?.properties?.type ?? "active_conflict";
         const countryRole = feature?.properties?.country_role ?? "primary";
@@ -280,7 +288,7 @@ export async function loadOverlay(
     }).addTo(group);
   } else if (def.id === "ports") {
     L.geoJSON(leafletGeoJSON, {
-      pane: "overlayPane",
+      pane,
       pointToLayer: (_feature, latlng) => {
         const type = _feature.properties?.type ?? "container";
         return L.circleMarker(latlng, {
@@ -318,7 +326,7 @@ export async function loadOverlay(
       const icon = baseTypeIcons[type] ?? "\u2605";
 
       const marker = L.circleMarker(latlng, {
-        pane: "overlayPane",
+        pane,
         radius: 4,
         fillColor: def.color,
         color: `${def.color}99`,
@@ -333,7 +341,7 @@ export async function loadOverlay(
     }
   } else if (def.id === "nuclear") {
     L.geoJSON(leafletGeoJSON, {
-      pane: "overlayPane",
+      pane,
       pointToLayer: (_feature, latlng) => {
         return L.circleMarker(latlng, {
           radius: 5,
@@ -355,7 +363,7 @@ export async function loadOverlay(
     }).addTo(group);
   } else if (def.id === "sanctions") {
     L.geoJSON(leafletGeoJSON, {
-      pane: "overlayPane",
+      pane,
       style: (feature) => {
         const type = feature?.properties?.type ?? "comprehensive";
         return {
@@ -376,7 +384,7 @@ export async function loadOverlay(
     }).addTo(group);
   } else if (def.id === "piracy") {
     L.geoJSON(leafletGeoJSON, {
-      pane: "overlayPane",
+      pane,
       style: (feature) => {
         const type = feature?.properties?.type ?? "elevated";
         return {
@@ -440,7 +448,7 @@ export async function loadOverlay(
           const color = total > 100 ? "#dc2626" : total > 50 ? "#ef4444" : total > 10 ? "#f97316" : total > 5 ? "#eab308" : "#06b6d4";
           const radius = total > 100 ? 14 : total > 50 ? 11 : total > 10 ? 9 : 7;
           const marker = L.circleMarker(center, {
-            pane: "overlayPane",
+            pane,
             radius,
             fillColor: color,
             color: "#fff",
@@ -494,7 +502,7 @@ export async function loadOverlay(
     viewsGroup.addTo(group);
   } else if (def.id === "terrorism") {
     L.geoJSON(leafletGeoJSON, {
-      pane: "overlayPane",
+      pane,
       style: (feature) => {
         const type = feature?.properties?.type ?? "active";
         return {
@@ -515,7 +523,7 @@ export async function loadOverlay(
     }).addTo(group);
   } else if (def.id === "cables") {
     L.geoJSON(leafletGeoJSON, {
-      pane: "overlayPane",
+      pane,
       style: (feature) => ({
         color: feature?.properties?.color ?? def.color,
         weight: 1.5,
@@ -535,7 +543,7 @@ export async function loadOverlay(
     const laneWeight: Record<string, number> = { Major: 2, Middle: 1.4 };
     const laneOpacity: Record<string, number> = { Major: 0.5, Middle: 0.35 };
     L.geoJSON(leafletGeoJSON, {
-      pane: "overlayPane",
+      pane,
       style: (feature) => {
         const type = feature?.properties?.Type ?? "Major";
         return {

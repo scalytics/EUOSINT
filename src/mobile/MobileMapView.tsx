@@ -68,8 +68,18 @@ export function MobileMapView({ alerts, regionFilter, onSelectAlert }: Props) {
       attributionControl: false,
     });
 
-    const overlayPane = map.createPane("overlayPane");
-    overlayPane.style.zIndex = "650";
+    // Custom panes — same layering as desktop GlobeView.
+    const linesPane = map.createPane("linesPane");
+    linesPane.style.zIndex = "401";
+    linesPane.style.pointerEvents = "none";
+    const zonesPane = map.createPane("zonesPane");
+    zonesPane.style.zIndex = "402";
+    const pointsPane = map.createPane("pointsPane");
+    pointsPane.style.zIndex = "650";
+    const tooltipPane = map.getPane("tooltipPane");
+    if (tooltipPane) tooltipPane.style.zIndex = "800";
+    const popupPane = map.getPane("popupPane");
+    if (popupPane) popupPane.style.zIndex = "850";
 
     L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
