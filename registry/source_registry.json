@@ -8318,5 +8318,1052 @@
       "war"
     ],
     "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-public-safety",
+      "authority_name": "Public Safety Canada",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.publicsafety.gc.ca"
+    },
+    "feed_url": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=publicsafetycanada&sort=publishedDate&orderBy=desc&format=atom",
+    "category": "national_security",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-rcmp-national",
+      "authority_name": "RCMP — National News",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "law_enforcement",
+      "base_url": "https://rcmp.ca"
+    },
+    "feed_url": "https://rcmp.ca/en/feed-flux/news-nouvelles",
+    "category": "law_enforcement",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-cccs-alerts",
+      "authority_name": "Canadian Cyber Security — Alerts",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "cert",
+      "base_url": "https://cyber.gc.ca"
+    },
+    "feed_url": "https://cyber.gc.ca/webservice/en/rss/alerts",
+    "category": "cyber_advisory",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-cccs-news",
+      "authority_name": "Canadian Cyber Security — News",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "cert",
+      "base_url": "https://cyber.gc.ca"
+    },
+    "feed_url": "https://cyber.gc.ca/webservice/en/rss/news",
+    "category": "cyber_advisory",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-earthquakes",
+      "authority_name": "Earthquakes Canada",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "seismic",
+      "base_url": "https://earthquakescanada.nrcan.gc.ca"
+    },
+    "feed_url": "https://www.earthquakescanada.nrcan.gc.ca/cache/earthquakes/canada-en.atom",
+    "category": "seismic",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-cbsa-news",
+      "authority_name": "Canada Border Services Agency",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "law_enforcement",
+      "base_url": "https://www.cbsa-asfc.gc.ca"
+    },
+    "feed_url": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=canadaborderservicesagency&sort=publishedDate&orderBy=desc&format=atom",
+    "category": "border_security",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-cnsc-news",
+      "authority_name": "Canadian Nuclear Safety Commission",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://www.cnsc-ccsn.gc.ca"
+    },
+    "feed_url": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=canadiannuclearsafetycommission&sort=publishedDate&orderBy=desc&format=atom",
+    "category": "nuclear",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-transport-ship-safety",
+      "authority_name": "Transport Canada — Ship Safety",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://tc.canada.ca"
+    },
+    "feed_url": "https://tc.canada.ca/ssb-news.xml",
+    "category": "maritime_security",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-dnd-caf",
+      "authority_name": "Canadian Armed Forces / DND",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.canada.ca/en/department-national-defence.html"
+    },
+    "feed_url": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentnationaldefence&sort=publishedDate&orderBy=desc&format=atom",
+    "category": "national_security",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-csis",
+      "authority_name": "Canadian Security Intelligence Service",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.canada.ca/en/security-intelligence-service.html"
+    },
+    "feed_url": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=canadiansecurityintelligenceservice&sort=publishedDate&orderBy=desc&format=atom",
+    "category": "national_security",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-global-affairs",
+      "authority_name": "Global Affairs Canada",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "national_security",
+      "base_url": "https://www.international.gc.ca"
+    },
+    "feed_url": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=globalaffairs&sort=publishedDate&orderBy=desc&format=atom",
+    "category": "diplomatic",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ca-irb",
+      "authority_name": "Immigration and Refugee Board of Canada",
+      "country": "Canada",
+      "country_code": "CA",
+      "region": "North America",
+      "authority_type": "regulatory",
+      "base_url": "https://irb.gc.ca"
+    },
+    "feed_url": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=immigrationandrefugeeboard&sort=publishedDate&orderBy=desc&format=atom",
+    "category": "legislative",
+    "region_tag": "NA",
+    "lat": 45.42,
+    "lng": -75.69
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-pan",
+      "authority_name": "AllAfrica — Pan-Africa",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/africa/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 0.0,
+    "lng": 20.0
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-nigeria",
+      "authority_name": "AllAfrica — Nigeria",
+      "country": "Nigeria",
+      "country_code": "NG",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/nigeria/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 9.06,
+    "lng": 7.49
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-kenya",
+      "authority_name": "AllAfrica — Kenya",
+      "country": "Kenya",
+      "country_code": "KE",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/kenya/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": -1.29,
+    "lng": 36.82
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-sudan",
+      "authority_name": "AllAfrica — Sudan",
+      "country": "Sudan",
+      "country_code": "SD",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/sudan/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 15.59,
+    "lng": 32.53
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-ethiopia",
+      "authority_name": "AllAfrica — Ethiopia",
+      "country": "Ethiopia",
+      "country_code": "ET",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/ethiopia/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 9.01,
+    "lng": 38.75
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-somalia",
+      "authority_name": "AllAfrica — Somalia",
+      "country": "Somalia",
+      "country_code": "SO",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/somalia/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 2.05,
+    "lng": 45.32
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-mali",
+      "authority_name": "AllAfrica — Mali",
+      "country": "Mali",
+      "country_code": "ML",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/mali/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 12.64,
+    "lng": -8.0
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-southafrica",
+      "authority_name": "AllAfrica — South Africa",
+      "country": "South Africa",
+      "country_code": "ZA",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/southafrica/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": -25.75,
+    "lng": 28.19
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-mozambique",
+      "authority_name": "AllAfrica — Mozambique",
+      "country": "Mozambique",
+      "country_code": "MZ",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/mozambique/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": -25.97,
+    "lng": 32.57
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-burkina",
+      "authority_name": "AllAfrica — Burkina Faso",
+      "country": "Burkina Faso",
+      "country_code": "BF",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/burkinafaso/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 12.37,
+    "lng": -1.52
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-niger",
+      "authority_name": "AllAfrica — Niger",
+      "country": "Niger",
+      "country_code": "NE",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/niger/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 13.51,
+    "lng": 2.11
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-cameroon",
+      "authority_name": "AllAfrica — Cameroon",
+      "country": "Cameroon",
+      "country_code": "CM",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/cameroon/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 3.87,
+    "lng": 11.52
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-libya",
+      "authority_name": "AllAfrica — Libya",
+      "country": "Libya",
+      "country_code": "LY",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/libya/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 32.9,
+    "lng": 13.18
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "allafrica-egypt",
+      "authority_name": "AllAfrica — Egypt",
+      "country": "Egypt",
+      "country_code": "EG",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://allafrica.com"
+    },
+    "feed_url": "https://allafrica.com/tools/headlines/rdf/egypt/headlines.rdf",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 30.04,
+    "lng": 31.24
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "reliefweb-sahel",
+      "authority_name": "ReliefWeb — Sahel",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Africa",
+      "authority_type": "international_org",
+      "base_url": "https://reliefweb.int"
+    },
+    "feed_url": "https://reliefweb.int/updates/rss.xml?search=country.name%3A%22Mali%22+OR+country.name%3A%22Niger%22+OR+country.name%3A%22Burkina+Faso%22",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 14.0,
+    "lng": 0.0
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "reliefweb-horn",
+      "authority_name": "ReliefWeb — Horn of Africa",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Africa",
+      "authority_type": "international_org",
+      "base_url": "https://reliefweb.int"
+    },
+    "feed_url": "https://reliefweb.int/updates/rss.xml?search=country.name%3A%22Somalia%22+OR+country.name%3A%22Ethiopia%22+OR+country.name%3A%22Sudan%22",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 8.0,
+    "lng": 42.0
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "crisisgroup-africa",
+      "authority_name": "International Crisis Group — Africa",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Africa",
+      "authority_type": "research",
+      "base_url": "https://www.crisisgroup.org"
+    },
+    "feed_url": "https://www.crisisgroup.org/rss/1",
+    "category": "conflict_monitoring",
+    "region_tag": "AF",
+    "lat": 0.0,
+    "lng": 20.0
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "africanews",
+      "authority_name": "Africanews",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Africa",
+      "authority_type": "news_aggregator",
+      "base_url": "https://www.africanews.com"
+    },
+    "feed_url": "https://www.africanews.com/feed/rss",
+    "category": "national_security",
+    "region_tag": "AF",
+    "lat": 0.0,
+    "lng": 20.0
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "br-certbr",
+      "authority_name": "CERT.br — Cybersecurity Alerts",
+      "country": "Brazil",
+      "country_code": "BR",
+      "region": "South America",
+      "authority_type": "cert",
+      "base_url": "https://www.cert.br"
+    },
+    "feed_url": "https://www.cert.br/rss/certbr-rss.xml",
+    "category": "cyber_advisory",
+    "region_tag": "SA",
+    "lat": -15.79,
+    "lng": -47.88
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "insightcrime-main",
+      "authority_name": "InSight Crime",
+      "country": "International",
+      "country_code": "INT",
+      "region": "South America",
+      "authority_type": "research",
+      "base_url": "https://insightcrime.org"
+    },
+    "feed_url": "https://insightcrime.org/feed/",
+    "category": "organized_crime",
+    "region_tag": "SA",
+    "lat": 4.71,
+    "lng": -74.07
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "insightcrime-brazil",
+      "authority_name": "InSight Crime — Brazil",
+      "country": "Brazil",
+      "country_code": "BR",
+      "region": "South America",
+      "authority_type": "research",
+      "base_url": "https://insightcrime.org"
+    },
+    "feed_url": "https://insightcrime.org/category/brazil-organized-crime-news/feed",
+    "category": "organized_crime",
+    "region_tag": "SA",
+    "lat": -15.79,
+    "lng": -47.88
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "insightcrime-colombia",
+      "authority_name": "InSight Crime — Colombia",
+      "country": "Colombia",
+      "country_code": "CO",
+      "region": "South America",
+      "authority_type": "research",
+      "base_url": "https://insightcrime.org"
+    },
+    "feed_url": "https://insightcrime.org/category/colombia-organized-crime-news/feed",
+    "category": "organized_crime",
+    "region_tag": "SA",
+    "lat": 4.71,
+    "lng": -74.07
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "insightcrime-venezuela",
+      "authority_name": "InSight Crime — Venezuela",
+      "country": "Venezuela",
+      "country_code": "VE",
+      "region": "South America",
+      "authority_type": "research",
+      "base_url": "https://insightcrime.org"
+    },
+    "feed_url": "https://insightcrime.org/category/venezuela-organized-crime-news/feed",
+    "category": "organized_crime",
+    "region_tag": "SA",
+    "lat": 10.49,
+    "lng": -66.88
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "insightcrime-mexico",
+      "authority_name": "InSight Crime — Mexico",
+      "country": "Mexico",
+      "country_code": "MX",
+      "region": "North America",
+      "authority_type": "research",
+      "base_url": "https://insightcrime.org"
+    },
+    "feed_url": "https://insightcrime.org/category/mexico-organized-crime-news/feed",
+    "category": "organized_crime",
+    "region_tag": "NA",
+    "lat": 19.43,
+    "lng": -99.13
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "insightcrime-peru",
+      "authority_name": "InSight Crime — Peru",
+      "country": "Peru",
+      "country_code": "PE",
+      "region": "South America",
+      "authority_type": "research",
+      "base_url": "https://insightcrime.org"
+    },
+    "feed_url": "https://insightcrime.org/category/peru-organized-crime-news/feed",
+    "category": "organized_crime",
+    "region_tag": "SA",
+    "lat": -12.05,
+    "lng": -77.04
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "insightcrime-argentina",
+      "authority_name": "InSight Crime — Argentina",
+      "country": "Argentina",
+      "country_code": "AR",
+      "region": "South America",
+      "authority_type": "research",
+      "base_url": "https://insightcrime.org"
+    },
+    "feed_url": "https://insightcrime.org/category/argentina-organized-crime-news/feed",
+    "category": "organized_crime",
+    "region_tag": "SA",
+    "lat": -34.6,
+    "lng": -58.38
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "insightcrime-chile",
+      "authority_name": "InSight Crime — Chile",
+      "country": "Chile",
+      "country_code": "CL",
+      "region": "South America",
+      "authority_type": "research",
+      "base_url": "https://insightcrime.org"
+    },
+    "feed_url": "https://insightcrime.org/category/chile-organized-crime-news/feed",
+    "category": "organized_crime",
+    "region_tag": "SA",
+    "lat": -33.45,
+    "lng": -70.67
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "insightcrime-ecuador",
+      "authority_name": "InSight Crime — Ecuador",
+      "country": "Ecuador",
+      "country_code": "EC",
+      "region": "South America",
+      "authority_type": "research",
+      "base_url": "https://insightcrime.org"
+    },
+    "feed_url": "https://insightcrime.org/category/ecuador-organized-crime-news/feed",
+    "category": "organized_crime",
+    "region_tag": "SA",
+    "lat": -0.18,
+    "lng": -78.47
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "reliefweb-lac",
+      "authority_name": "ReliefWeb — Latin America & Caribbean",
+      "country": "International",
+      "country_code": "INT",
+      "region": "South America",
+      "authority_type": "international_org",
+      "base_url": "https://reliefweb.int"
+    },
+    "feed_url": "https://reliefweb.int/updates/rss.xml?search=region.name%3A%22Latin+America+and+the+Caribbean%22",
+    "category": "natural_disaster",
+    "region_tag": "SA",
+    "lat": -8.0,
+    "lng": -55.0
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-africanunion",
+      "authority_name": "African Union",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Africa",
+      "authority_type": "multilateral",
+      "base_url": "https://x.com/AfricanUnion"
+    },
+    "feed_url": "https://x.com/AfricanUnion",
+    "category": "official_statement",
+    "region_tag": "AF",
+    "lat": 9.01,
+    "lng": 38.75,
+    "include_keywords": [
+      "security",
+      "peace",
+      "conflict",
+      "crisis",
+      "terror",
+      "summit",
+      "ceasefire",
+      "troops",
+      "humanitarian",
+      "sanctions"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-ecowas",
+      "authority_name": "ECOWAS",
+      "country": "International",
+      "country_code": "INT",
+      "region": "Africa",
+      "authority_type": "multilateral",
+      "base_url": "https://x.com/ECOWAS_CEDEAO"
+    },
+    "feed_url": "https://x.com/ECOWAS_CEDEAO",
+    "category": "official_statement",
+    "region_tag": "AF",
+    "lat": 6.45,
+    "lng": 3.39,
+    "include_keywords": [
+      "security",
+      "peace",
+      "conflict",
+      "crisis",
+      "terror",
+      "coup",
+      "sanctions",
+      "troops",
+      "border",
+      "sahel"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-saps",
+      "authority_name": "South Africa Police Service",
+      "country": "South Africa",
+      "country_code": "ZA",
+      "region": "Africa",
+      "authority_type": "law_enforcement",
+      "base_url": "https://x.com/SAPoliceService"
+    },
+    "feed_url": "https://x.com/SAPoliceService",
+    "category": "law_enforcement",
+    "region_tag": "AF",
+    "lat": -25.75,
+    "lng": 28.19,
+    "include_keywords": [
+      "arrest",
+      "suspect",
+      "wanted",
+      "shooting",
+      "murder",
+      "robbery",
+      "drugs",
+      "seized",
+      "operation",
+      "missing"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-kenya-police",
+      "authority_name": "Kenya National Police",
+      "country": "Kenya",
+      "country_code": "KE",
+      "region": "Africa",
+      "authority_type": "law_enforcement",
+      "base_url": "https://x.com/NPSOfficial_KE"
+    },
+    "feed_url": "https://x.com/NPSOfficial_KE",
+    "category": "law_enforcement",
+    "region_tag": "AF",
+    "lat": -1.29,
+    "lng": 36.82,
+    "include_keywords": [
+      "arrest",
+      "suspect",
+      "wanted",
+      "attack",
+      "security",
+      "operation",
+      "terror",
+      "killed",
+      "incident",
+      "alert"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-policia-federal-br",
+      "authority_name": "Polícia Federal — Brazil",
+      "country": "Brazil",
+      "country_code": "BR",
+      "region": "South America",
+      "authority_type": "law_enforcement",
+      "base_url": "https://x.com/polaborisfederal"
+    },
+    "feed_url": "https://x.com/policiafederal",
+    "category": "law_enforcement",
+    "region_tag": "SA",
+    "lat": -15.79,
+    "lng": -47.88,
+    "include_keywords": [
+      "operação",
+      "operation",
+      "preso",
+      "arrest",
+      "apreensão",
+      "seized",
+      "drogas",
+      "drugs",
+      "tráfico",
+      "trafficking",
+      "combate",
+      "fraude"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-defesa-br",
+      "authority_name": "Ministério da Defesa — Brazil",
+      "country": "Brazil",
+      "country_code": "BR",
+      "region": "South America",
+      "authority_type": "national_security",
+      "base_url": "https://x.com/defaborisesagovbr"
+    },
+    "feed_url": "https://x.com/defesagovbr",
+    "category": "national_security",
+    "region_tag": "SA",
+    "lat": -15.79,
+    "lng": -47.88,
+    "include_keywords": [
+      "defesa",
+      "defense",
+      "militar",
+      "military",
+      "operação",
+      "operation",
+      "fronteira",
+      "border",
+      "forças armadas",
+      "exercício"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-carabineros-cl",
+      "authority_name": "Carabineros de Chile",
+      "country": "Chile",
+      "country_code": "CL",
+      "region": "South America",
+      "authority_type": "law_enforcement",
+      "base_url": "https://x.com/Carabdechile"
+    },
+    "feed_url": "https://x.com/Carabdechile",
+    "category": "law_enforcement",
+    "region_tag": "SA",
+    "lat": -33.45,
+    "lng": -70.67,
+    "include_keywords": [
+      "detenido",
+      "detained",
+      "operativo",
+      "operation",
+      "drogas",
+      "drugs",
+      "incautación",
+      "seized",
+      "seguridad",
+      "security",
+      "emergencia"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-policia-colombia",
+      "authority_name": "Policía Nacional de Colombia",
+      "country": "Colombia",
+      "country_code": "CO",
+      "region": "South America",
+      "authority_type": "law_enforcement",
+      "base_url": "https://x.com/PoliciaColombia"
+    },
+    "feed_url": "https://x.com/PoliciaColombia",
+    "category": "law_enforcement",
+    "region_tag": "SA",
+    "lat": 4.71,
+    "lng": -74.07,
+    "include_keywords": [
+      "captura",
+      "capture",
+      "operación",
+      "operation",
+      "narcotráfico",
+      "narcotrafficking",
+      "incautación",
+      "seized",
+      "seguridad",
+      "security",
+      "homicidio"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-senapred-cl",
+      "authority_name": "SENAPRED — Chile Emergency",
+      "country": "Chile",
+      "country_code": "CL",
+      "region": "South America",
+      "authority_type": "emergency",
+      "base_url": "https://x.com/Senapred"
+    },
+    "feed_url": "https://x.com/Senapred",
+    "category": "natural_disaster",
+    "region_tag": "SA",
+    "lat": -33.45,
+    "lng": -70.67,
+    "include_keywords": [
+      "alerta",
+      "alert",
+      "sismo",
+      "earthquake",
+      "tsunami",
+      "incendio",
+      "fire",
+      "evacuación",
+      "evacuation",
+      "emergencia",
+      "emergency",
+      "volcán"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-semar-mx",
+      "authority_name": "Secretaría de Marina — Mexico",
+      "country": "Mexico",
+      "country_code": "MX",
+      "region": "North America",
+      "authority_type": "military",
+      "base_url": "https://x.com/SEMAR_mx"
+    },
+    "feed_url": "https://x.com/SEMAR_mx",
+    "category": "maritime_security",
+    "region_tag": "NA",
+    "lat": 19.43,
+    "lng": -99.13,
+    "include_keywords": [
+      "operación",
+      "operation",
+      "aseguramiento",
+      "seizure",
+      "narcotráfico",
+      "rescate",
+      "rescue",
+      "seguridad",
+      "security",
+      "naval",
+      "marina"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-indeci-pe",
+      "authority_name": "INDECI — Peru Civil Defense",
+      "country": "Peru",
+      "country_code": "PE",
+      "region": "South America",
+      "authority_type": "emergency",
+      "base_url": "https://x.com/IndeciPeru"
+    },
+    "feed_url": "https://x.com/IndeciPeru",
+    "category": "natural_disaster",
+    "region_tag": "SA",
+    "lat": -12.05,
+    "lng": -77.04,
+    "include_keywords": [
+      "sismo",
+      "earthquake",
+      "alerta",
+      "alert",
+      "emergencia",
+      "emergency",
+      "tsunami",
+      "inundación",
+      "flood",
+      "huaico",
+      "volcán",
+      "evacuación"
+    ],
+    "max_items": 20
   }
 ]
