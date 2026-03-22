@@ -37,10 +37,10 @@ export function latLngToRegion(lat: number, lng: number): string | null {
   if (lat >= -57 && lat <= 15 && lng >= -82 && lng <= -33) return "South America";
   // Europe: extend south to include Mediterranean, east to cover Turkey/Scandinavia
   if (lat >= 34 && lat <= 72 && lng >= -12 && lng <= 45) return "Europe";
+  // Middle East: Arabian peninsula, Levant, Iran, Iraq — must precede Africa (overlapping lng)
+  if (lat >= 12 && lat <= 42 && lng >= 34 && lng <= 60) return "Middle East";
   // Africa: full continent including Madagascar
   if (lat >= -36 && lat <= 38 && lng >= -18 && lng <= 52) return "Africa";
-  // Middle East: Arabian peninsula, Levant, Iran, Iraq
-  if (lat >= 12 && lat <= 42 && lng >= 34 && lng <= 60) return "Middle East";
   // Asia-Pacific: main body + far-east dateline wrap + Oceania
   if (lat >= -11 && lat <= 78 && lng >= 40 && lng <= 180) return "Asia-Pacific";
   if (lat >= 30 && lat <= 78 && lng >= -180 && lng <= -168) return "Asia-Pacific";
