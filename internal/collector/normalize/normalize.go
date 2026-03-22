@@ -200,6 +200,9 @@ type FeedContext struct {
 }
 
 func RSSItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
+	if isHistoricalOrReferenceContent(item.Link, item.Title) {
+		return nil
+	}
 	publishedAt := parseDate(item.Published)
 	if publishedAt.IsZero() {
 		publishedAt = ctx.Now
@@ -237,6 +240,9 @@ func RSSItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model
 }
 
 func HTMLItem(ctx Context, meta model.RegistrySource, item parse.FeedItem) *model.Alert {
+	if isHistoricalOrReferenceContent(item.Link, item.Title) {
+		return nil
+	}
 	alert := baseAlert(ctx, meta, item.Title, item.Link, item.Title+"\n"+item.Summary, ctx.Now)
 	triage := score(ctx.Config, alert, FeedContext{
 		Summary:  item.Summary,
@@ -503,6 +509,9 @@ func EONETAlert(ctx Context, meta model.RegistrySource, ev parse.EONETItem) *mod
 }
 
 func GDELTAlert(ctx Context, meta model.RegistrySource, item parse.FeedItem, sourceCountry string) *model.Alert {
+	if isHistoricalOrReferenceContent(item.Link, item.Title) {
+		return nil
+	}
 	publishedAt := parseDate(item.Published)
 	if publishedAt.IsZero() {
 		publishedAt = ctx.Now
@@ -1245,6 +1254,71 @@ func inferSeverity(title string, fallback string) string {
 	default:
 		return fallback
 	}
+}
+
+// referenceDomains are encyclopedia/archive/history sites whose content
+// describes past events, not current incidents.
+var referenceDomains = []string{
+	// Encyclopedias
+	"britannica.com",
+	"encyclopedia.com",
+	"wikipedia.org",
+	"grokipedia.com",
+	"scholarpedia.org",
+	"newworldencyclopedia.org",
+	"infoplease.com",
+	"encarta.msn.com",
+	"universalis.fr",
+	"treccani.it",
+	"brockhaus.de",
+	"larousse.fr",
+	// History / archive
+	"history.com",
+	"worldhistory.org",
+	"ancient.eu",
+	"historynet.com",
+	"historyextra.com",
+	"archive.org",
+	// Academic reference
+	"jstor.org",
+	"academia.edu",
+	"researchgate.net",
+	"scholar.google.com",
+}
+
+// historicalURLPatterns match URL slugs referencing past events by year.
+var historicalURLPatterns = []*regexp.Regexp{
+	// "earthquake-of-1908", "war-of-1812", "famine-of-1845"
+	regexp.MustCompile(`[-/](of|in|during)[-_](1[0-9]{3}|200[0-9]|201[0-9])`),
+	// "/event/messina-earthquake-1908", "/topic/world-war-ii"
+	regexp.MustCompile(`/(event|topic|history|historical|archive)/`),
+}
+
+// historicalTitlePatterns match titles about dated historical events.
+var historicalTitlePatterns = []*regexp.Regexp{
+	// "... of 1908", "... in 1845", "... (1914-1918)"
+	regexp.MustCompile(`(?i)\b(of|in|during)\s+(1[0-9]{3}|200[0-9]|201[0-9])\b`),
+	regexp.MustCompile(`(?i)\(\s*1[0-9]{3}\s*[-–]\s*1[0-9]{3}\s*\)`),
+}
+
+func isHistoricalOrReferenceContent(url string, title string) bool {
+	urlLower := strings.ToLower(url)
+	for _, domain := range referenceDomains {
+		if strings.Contains(urlLower, domain) {
+			return true
+		}
+	}
+	for _, pattern := range historicalURLPatterns {
+		if pattern.MatchString(urlLower) {
+			return true
+		}
+	}
+	for _, pattern := range historicalTitlePatterns {
+		if pattern.MatchString(title) {
+			return true
+		}
+	}
+	return false
 }
 
 func parseDate(value string) time.Time {
