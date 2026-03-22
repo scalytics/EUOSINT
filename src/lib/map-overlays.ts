@@ -58,16 +58,16 @@ function normalizeOverlayRegion(regionFilter: string): string {
 }
 
 export const DEFAULT_OVERLAYS: OverlayDef[] = [
-  { id: "conflicts", label: "Conflict Zones", color: "#ff5d5d", url: "/geo/conflict-zones.geojson" },
-  { id: "cables", label: "Undersea Cables", color: "#60a5fa", url: "/geo/submarine-cables.geojson" },
-  { id: "shipping", label: "Shipping Lanes", color: "#4ccb8d", url: "/geo/shipping-lanes.geojson" },
-  { id: "ports", label: "Strategic Ports", color: "#f29d4b", url: "/geo/strategic-ports.geojson" },
-  { id: "bases", label: "Military Bases", color: "#a78bfa", url: "/geo/military-bases.geojson" },
+  { id: "conflicts", label: "Conflict Zones", color: "#ef4444", url: "/geo/conflict-zones.geojson" },
+  { id: "cables", label: "Undersea Cables", color: "#38bdf8", url: "/geo/submarine-cables.geojson" },
+  { id: "shipping", label: "Shipping Lanes", color: "#22c55e", url: "/geo/shipping-lanes.geojson" },
+  { id: "ports", label: "Strategic Ports", color: "#f5f5f4", url: "/geo/strategic-ports.geojson" },
+  { id: "bases", label: "Military Bases", color: "#a855f7", url: "/geo/military-bases.geojson" },
   { id: "nuclear", label: "Nuclear Sites", color: "#facc15", url: "/geo/nuclear-sites.geojson" },
-  { id: "sanctions", label: "Sanctions Zones", color: "#f87171", url: "/geo/sanctions-zones.geojson" },
-  { id: "piracy", label: "Piracy Zones", color: "#38bdf8", url: "/geo/piracy-zones.geojson" },
-  { id: "terrorism", label: "Terror Zones", color: "#e879f9", url: "/geo/terrorism-zones.geojson" },
-  { id: "views-risk", label: "Conflict Risk", color: "#06b6d4", url: "/views-risk.json" },
+  { id: "sanctions", label: "Sanctions Zones", color: "#fb923c", url: "/geo/sanctions-zones.geojson" },
+  { id: "piracy", label: "Piracy Zones", color: "#2dd4bf", url: "/geo/piracy-zones.geojson" },
+  { id: "terrorism", label: "Terror Zones", color: "#84cc16", url: "/geo/terrorism-zones.geojson" },
+  { id: "views-risk", label: "Conflict Risk", color: "#818cf8", url: "/views-risk.json" },
 ];
 
 const EMPTY_FEATURE_COLLECTION: GeoJSONLike = { type: "FeatureCollection", features: [] };
@@ -116,12 +116,12 @@ export async function loadOverlayDefs(): Promise<OverlayDef[]> {
 }
 
 const conflictTypeColors: Record<string, string> = {
-  active_war: "#ff3333",
-  active_conflict: "#ff6b3d",
-  insurgency: "#e8913a",
-  high_tension: "#c9c23a",
+  active_war: "#dc2626",
+  active_conflict: "#ef4444",
+  insurgency: "#f87171",
+  high_tension: "#fca5a5",
   frozen_conflict: "#7a8899",
-  low_intensity: "#b8863a",
+  low_intensity: "#fecaca",
 };
 
 const portTypeIcons: Record<string, string> = {
@@ -197,21 +197,21 @@ function inferBaseType(name: string, description: string, component: string, isJ
 }
 
 const sanctionTypeColors: Record<string, string> = {
-  comprehensive: "#f87171",
+  comprehensive: "#ea580c",
   sectoral: "#fb923c",
-  targeted: "#fbbf24",
+  targeted: "#fdba74",
 };
 
 const piracyTypeColors: Record<string, string> = {
-  high_risk: "#ef4444",
-  elevated: "#f59e0b",
-  moderate: "#38bdf8",
+  high_risk: "#0d9488",
+  elevated: "#2dd4bf",
+  moderate: "#99f6e4",
 };
 
 const terrorismTypeColors: Record<string, string> = {
-  active: "#e879f9",
-  degraded: "#a78bfa",
-  elevated: "#f472b6",
+  active: "#84cc16",
+  degraded: "#bef264",
+  elevated: "#65a30d",
 };
 
 export async function loadOverlay(
@@ -262,8 +262,8 @@ export async function loadOverlay(
         const countryRole = feature?.properties?.country_role ?? "primary";
         const isContext = countryRole === "context";
         return {
-          color: conflictTypeColors[type] ?? "#ff5d5d",
-          fillColor: conflictTypeColors[type] ?? "#ff5d5d",
+          color: conflictTypeColors[type] ?? "#ef4444",
+          fillColor: conflictTypeColors[type] ?? "#ef4444",
           fillOpacity: isContext ? 0.04 : 0.12,
           weight: isContext ? 1 : 1.5,
           dashArray: isContext ? "4,3" : (type === "frozen_conflict" || type === "high_tension" ? "6,4" : undefined),
@@ -367,8 +367,8 @@ export async function loadOverlay(
       style: (feature) => {
         const type = feature?.properties?.type ?? "comprehensive";
         return {
-          color: sanctionTypeColors[type] ?? "#f87171",
-          fillColor: sanctionTypeColors[type] ?? "#f87171",
+          color: sanctionTypeColors[type] ?? "#fb923c",
+          fillColor: sanctionTypeColors[type] ?? "#fb923c",
           fillOpacity: 0.08,
           weight: 1.5,
           dashArray: type === "targeted" ? "6,4" : undefined,
@@ -388,8 +388,8 @@ export async function loadOverlay(
       style: (feature) => {
         const type = feature?.properties?.type ?? "elevated";
         return {
-          color: piracyTypeColors[type] ?? "#38bdf8",
-          fillColor: piracyTypeColors[type] ?? "#38bdf8",
+          color: piracyTypeColors[type] ?? "#2dd4bf",
+          fillColor: piracyTypeColors[type] ?? "#2dd4bf",
           fillOpacity: 0.10,
           weight: 1.5,
           dashArray: type === "moderate" ? "6,4" : undefined,
@@ -506,8 +506,8 @@ export async function loadOverlay(
       style: (feature) => {
         const type = feature?.properties?.type ?? "active";
         return {
-          color: terrorismTypeColors[type] ?? "#e879f9",
-          fillColor: terrorismTypeColors[type] ?? "#e879f9",
+          color: terrorismTypeColors[type] ?? "#84cc16",
+          fillColor: terrorismTypeColors[type] ?? "#84cc16",
           fillOpacity: 0.10,
           weight: 1.5,
           dashArray: type === "degraded" ? "6,4" : undefined,
