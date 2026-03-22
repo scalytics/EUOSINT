@@ -225,7 +225,7 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 50;
+  z-index: 900;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -238,7 +238,7 @@ body {
   background: rgba(15, 23, 42, 0.98);
   border-top: 1px solid rgba(71, 85, 105, 0.4);
   border-radius: 16px 16px 0 0;
-  z-index: 51;
+  z-index: 901;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -367,7 +367,7 @@ body {
   background: rgba(15, 23, 42, 0.98);
   border-top: 1px solid rgba(71, 85, 105, 0.4);
   border-radius: 16px 16px 0 0;
-  z-index: 51;
+  z-index: 901;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: calc(var(--sab) + 8px);
