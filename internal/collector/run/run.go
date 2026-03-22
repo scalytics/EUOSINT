@@ -142,6 +142,9 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	if err := r.refreshMilitaryBasesLayer(ctx, cfg, client); err != nil {
 		fmt.Fprintf(r.stderr, "WARN military bases layer refresh failed: %v\n", err)
 	}
+	if err := r.refreshVIEWSRiskLayer(ctx); err != nil {
+		fmt.Fprintf(r.stderr, "WARN VIEWS risk layer refresh failed: %v\n", err)
+	}
 	var runStore *sourcedb.DB
 	if isSQLiteRegistryPath(cfg.RegistryPath) {
 		db, err := sourcedb.Open(cfg.RegistryPath)

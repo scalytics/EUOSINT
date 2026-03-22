@@ -67,6 +67,7 @@ export const DEFAULT_OVERLAYS: OverlayDef[] = [
   { id: "sanctions", label: "Sanctions Zones", color: "#f87171", url: "/geo/sanctions-zones.geojson" },
   { id: "piracy", label: "Piracy Zones", color: "#38bdf8", url: "/geo/piracy-zones.geojson" },
   { id: "terrorism", label: "Terror Zones", color: "#e879f9", url: "/geo/terrorism-zones.geojson" },
+  { id: "views-risk", label: "Conflict Risk (VIEWS)", color: "#06b6d4", url: "/views-risk.json" },
 ];
 
 const EMPTY_FEATURE_COLLECTION: GeoJSONLike = { type: "FeatureCollection", features: [] };
@@ -388,6 +389,93 @@ export async function loadOverlay(
         );
       },
     }).addTo(group);
+  } else if (def.id === "views-risk") {
+    // VIEWS/PRIO conflict risk layer — country markers + grid heatmap
+    const viewsGroup = L.layerGroup();
+    try {
+      const [countryResp, gridResp] = await Promise.all([
+        fetch("/views-risk.json").then((r) => r.ok ? r.json() : null).catch(() => null),
+        fetch("/geo/views-risk-grid.json").then((r) => r.ok ? r.json() : null).catch(() => null),
+      ]);
+
+      // Grid-level heatmap circles (sub-country detail)
+      if (gridResp?.cells && Array.isArray(gridResp.cells)) {
+        for (const cell of gridResp.cells as Array<{ lat: number; lng: number; sb_mean: number; ns_mean: number; os_mean: number; sb_dich: number; ns_dich: number; os_dich: number }>) {
+          const total = cell.sb_mean + cell.ns_mean + cell.os_mean;
+          if (total < 0.5) continue;
+          const intensity = Math.min(1, total / 50);
+          const radius = 4 + intensity * 8;
+          const color = total > 20 ? "#ef4444" : total > 5 ? "#f97316" : total > 1 ? "#eab308" : "#06b6d4";
+          const marker = L.circleMarker([cell.lat, cell.lng], {
+            radius,
+            fillColor: color,
+            color: `${color}66`,
+            weight: 0.5,
+            fillOpacity: 0.25 + intensity * 0.3,
+          });
+          marker.bindTooltip(
+            `<div style="min-width:160px"><strong>\u26A0 VIEWS Grid Risk</strong><br/>`
+            + `<span style="color:#94a3b8">State-based:</span> ${cell.sb_mean.toFixed(1)} fatalities/mo (${Math.round(cell.sb_dich * 100)}%)<br/>`
+            + `<span style="color:#94a3b8">Non-state:</span> ${cell.ns_mean.toFixed(1)} fatalities/mo (${Math.round(cell.ns_dich * 100)}%)<br/>`
+            + `<span style="color:#94a3b8">One-sided:</span> ${cell.os_mean.toFixed(1)} fatalities/mo (${Math.round(cell.os_dich * 100)}%)<br/>`
+            + `<span style="color:#94a3b8">Combined:</span> <strong>${total.toFixed(1)}</strong> fatalities/mo<br/>`
+            + `<span style="color:#64748b;font-size:9px">PRIO/VIEWS Early Warning System</span></div>`,
+            { className: "siem-tooltip", direction: "top" },
+          );
+          marker.addTo(viewsGroup);
+        }
+      }
+
+      // Country-level markers (larger, labeled)
+      if (countryResp?.countries && Array.isArray(countryResp.countries)) {
+        const countryCenters: Record<string, [number, number]> = {
+          UKR: [48.4, 31.2], SDN: [15.5, 32.5], SOM: [5.2, 46.2], PAK: [30.4, 69.3],
+          ETH: [9.1, 40.5], MMR: [19.8, 96.2], BFA: [12.3, -1.6], ISR: [31.0, 34.9],
+          SYR: [35.0, 38.5], NGA: [9.1, 7.5], YEM: [15.6, 48.5], COD: [-4.0, 21.8],
+          MLI: [17.6, -4.0], RUS: [55.8, 37.6], NER: [17.6, 8.1], AFG: [33.9, 67.7],
+          MOZ: [-18.7, 35.5], IRQ: [33.2, 43.7], TCD: [15.5, 18.7], CMR: [7.4, 12.4],
+          COL: [4.6, -74.3], IND: [20.6, 79.0], TUR: [39.9, 32.9], EGY: [26.8, 30.8],
+          PSE: [31.9, 35.2], LBY: [26.3, 17.2], SSD: [6.9, 31.3], KEN: [0.0, 38.0],
+          PHL: [12.9, 121.8], THA: [15.9, 100.9], MEX: [23.6, -102.6], BRA: [-14.2, -51.9],
+          ZAF: [-30.6, 22.9], SAU: [23.9, 45.1], IRN: [32.4, 53.7], LBN: [33.9, 35.5],
+          MYS: [4.2, 101.9], IDN: [-0.8, 113.9], TZA: [-6.4, 34.9], UGA: [-1.4, 32.3],
+          HTI: [19.0, -72.1], CAF: [6.6, 20.9], GIN: [9.9, -12.0], SEN: [14.5, -14.5],
+          CIV: [7.5, -5.5], GHA: [7.9, -1.0], ZWE: [-19.0, 29.2], AGO: [-11.2, 17.9],
+        };
+        for (const c of countryResp.countries as Array<{ iso: string; name: string; sb_mean: number; ns_mean: number; os_mean: number; sb_dich: number; ns_dich: number; os_dich: number }>) {
+          const total = c.sb_mean + c.ns_mean + c.os_mean;
+          if (total < 1) continue;
+          const center = countryCenters[c.iso];
+          if (!center) continue;
+          const color = total > 100 ? "#dc2626" : total > 50 ? "#ef4444" : total > 10 ? "#f97316" : total > 5 ? "#eab308" : "#06b6d4";
+          const radius = total > 100 ? 14 : total > 50 ? 11 : total > 10 ? 9 : 7;
+          const marker = L.circleMarker(center, {
+            radius,
+            fillColor: color,
+            color: "#fff",
+            weight: 1.5,
+            fillOpacity: 0.85,
+          });
+          marker.bindPopup(
+            `<div style="min-width:200px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6">`
+            + `<div style="font-size:13px;font-weight:700;margin-bottom:6px">\u26A0 ${c.name} (${c.iso})</div>`
+            + `<table style="width:100%;border-collapse:collapse">`
+            + `<tr style="border-bottom:1px solid #334155"><td style="color:#94a3b8;padding:2px 8px 2px 0">State-based</td><td style="text-align:right">${c.sb_mean.toFixed(1)}/mo</td><td style="text-align:right;color:#64748b">${Math.round(c.sb_dich * 100)}%</td></tr>`
+            + `<tr style="border-bottom:1px solid #334155"><td style="color:#94a3b8;padding:2px 8px 2px 0">Non-state</td><td style="text-align:right">${c.ns_mean.toFixed(1)}/mo</td><td style="text-align:right;color:#64748b">${Math.round(c.ns_dich * 100)}%</td></tr>`
+            + `<tr style="border-bottom:1px solid #334155"><td style="color:#94a3b8;padding:2px 8px 2px 0">One-sided</td><td style="text-align:right">${c.os_mean.toFixed(1)}/mo</td><td style="text-align:right;color:#64748b">${Math.round(c.os_dich * 100)}%</td></tr>`
+            + `<tr><td style="color:#f8fafc;font-weight:700;padding:4px 8px 2px 0">Combined</td><td style="text-align:right;font-weight:700;color:#f8fafc">${total.toFixed(1)}/mo</td><td></td></tr>`
+            + `</table>`
+            + `<div style="margin-top:8px;color:#64748b;font-size:9px">Predicted fatalities/month &middot; PRIO/VIEWS Early Warning System<br/>Run: ${countryResp.run ?? "unknown"}</div>`
+            + `</div>`,
+            { className: "siem-popup", maxWidth: 280 },
+          );
+          marker.addTo(viewsGroup);
+        }
+      }
+    } catch {
+      // Non-fatal — layer just shows empty
+    }
+    viewsGroup.addTo(group);
   } else if (def.id === "terrorism") {
     L.geoJSON(leafletGeoJSON, {
       style: (feature) => {
