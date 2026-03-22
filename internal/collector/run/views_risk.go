@@ -121,8 +121,8 @@ func discoverLatestRun(ctx context.Context) (string, error) {
 }
 
 type viewsAPIResponse struct {
-	NextPage string `json:"next_page"`
-	RowCount int    `json:"row_count"`
+	NextPage string            `json:"next_page"`
+	RowCount int               `json:"row_count"`
 	Data     []json.RawMessage `json:"data"`
 }
 
