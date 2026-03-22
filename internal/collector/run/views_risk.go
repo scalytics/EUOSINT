@@ -49,6 +49,7 @@ type viewsCountryRisk struct {
 // viewsGridCell is a single grid-cell forecast row with derived coordinates.
 type viewsGridCell struct {
 	PgID   int     `json:"pg_id"`
+	ISO    string  `json:"iso"`
 	Lat    float64 `json:"lat"`
 	Lng    float64 `json:"lng"`
 	SbMean float64 `json:"sb_mean"`
@@ -288,7 +289,7 @@ func fetchGridForecasts(ctx context.Context, run string, monthID int, isoCodes [
 				entry, ok := merged[row.PgID]
 				if !ok {
 					lat, lng := prioGridToLatLng(row.PgID)
-					entry = &viewsGridCell{PgID: row.PgID, Lat: lat, Lng: lng}
+					entry = &viewsGridCell{PgID: row.PgID, ISO: strings.ToUpper(iso), Lat: lat, Lng: lng}
 					merged[row.PgID] = entry
 				}
 				if vt.setSb {

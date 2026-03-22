@@ -530,6 +530,12 @@ export function GlobeView({
       { maxZoom: 18, subdomains: "abcd", noWrap: true },
     ).addTo(map);
 
+    // Custom panes: alerts underneath, overlays on top (clickable risk dots)
+    const alertPane = map.createPane("alertPane");
+    alertPane.style.zIndex = "450";
+    const overlayPane = map.createPane("overlayPane");
+    overlayPane.style.zIndex = "500";
+
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
     L.control
@@ -606,6 +612,7 @@ export function GlobeView({
       const selected = alert.alert_id === selectedId;
       const text = textHex();
       const marker = L.circleMarker([alert.lat, alert.lng], {
+        pane: "alertPane",
         radius: selected ? (isNowAndHistoryMode ? 9 : 10) : (isNowAndHistoryMode ? 5 : 6),
         fillColor: severityHex(alert.severity),
         color: selected ? `${text}${isNowAndHistoryMode ? "AA" : "CC"}` : `${text}${isNowAndHistoryMode ? "4D" : "66"}`,
@@ -631,6 +638,7 @@ export function GlobeView({
       const selected = alert.alert_id === selectedId;
       const text = textHex();
       const marker = L.circleMarker([alert.lat, alert.lng], {
+        pane: "alertPane",
         radius: selected ? 11 : 7,
         fillColor: severityHex(alert.severity),
         color: selected ? text : `${text}59`,

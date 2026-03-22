@@ -248,14 +248,13 @@ select option {
 }
 
 .siem-risk-popup {
-  min-width: 220px;
-  max-width: 300px;
+  min-width: 240px;
+  max-width: 320px;
 }
 
 .siem-risk-popup-title {
   font-size: 14px;
   font-weight: 700;
-  margin-bottom: 8px;
 }
 
 .siem-risk-popup-table {
@@ -291,6 +290,54 @@ select option {
   text-align: right;
   color: #f8fafc;
   font-weight: 700;
+}
+
+.siem-risk-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.siem-risk-popup-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.siem-risk-popup-bar-cell {
+  width: 60px;
+  padding: 3px 6px;
+}
+
+.siem-risk-popup-bar {
+  height: 6px;
+  border-radius: 3px;
+  min-width: 2px;
+}
+
+.siem-risk-popup-grid {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #1e293b;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.siem-risk-popup-grid-stat {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.siem-risk-popup-grid-hot {
+  color: #ef4444;
+  font-weight: 600;
 }
 
 .siem-risk-popup-meta {

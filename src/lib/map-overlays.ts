@@ -248,6 +248,7 @@ export async function loadOverlay(
 
   if (def.id === "conflicts") {
     L.geoJSON(leafletGeoJSON, {
+      pane: "overlayPane",
       style: (feature) => {
         const type = feature?.properties?.type ?? "active_conflict";
         const countryRole = feature?.properties?.country_role ?? "primary";
@@ -279,6 +280,7 @@ export async function loadOverlay(
     }).addTo(group);
   } else if (def.id === "ports") {
     L.geoJSON(leafletGeoJSON, {
+      pane: "overlayPane",
       pointToLayer: (_feature, latlng) => {
         const type = _feature.properties?.type ?? "container";
         return L.circleMarker(latlng, {
@@ -316,6 +318,7 @@ export async function loadOverlay(
       const icon = baseTypeIcons[type] ?? "\u2605";
 
       const marker = L.circleMarker(latlng, {
+        pane: "overlayPane",
         radius: 4,
         fillColor: def.color,
         color: `${def.color}99`,
@@ -330,6 +333,7 @@ export async function loadOverlay(
     }
   } else if (def.id === "nuclear") {
     L.geoJSON(leafletGeoJSON, {
+      pane: "overlayPane",
       pointToLayer: (_feature, latlng) => {
         return L.circleMarker(latlng, {
           radius: 5,
@@ -351,6 +355,7 @@ export async function loadOverlay(
     }).addTo(group);
   } else if (def.id === "sanctions") {
     L.geoJSON(leafletGeoJSON, {
+      pane: "overlayPane",
       style: (feature) => {
         const type = feature?.properties?.type ?? "comprehensive";
         return {
@@ -371,6 +376,7 @@ export async function loadOverlay(
     }).addTo(group);
   } else if (def.id === "piracy") {
     L.geoJSON(leafletGeoJSON, {
+      pane: "overlayPane",
       style: (feature) => {
         const type = feature?.properties?.type ?? "elevated";
         return {
@@ -398,35 +404,19 @@ export async function loadOverlay(
         fetch("/geo/views-risk-grid.json").then((r) => r.ok ? r.json() : null).catch(() => null),
       ]);
 
-      // Grid-level heatmap circles (sub-country detail)
+      // Index grid cells by country ISO for per-country mini heatmaps
+      type GridCell = { iso: string; lat: number; lng: number; sb_mean: number; ns_mean: number; os_mean: number };
+      const gridByIso = new Map<string, GridCell[]>();
       if (gridResp?.cells && Array.isArray(gridResp.cells)) {
-        for (const cell of gridResp.cells as Array<{ lat: number; lng: number; sb_mean: number; ns_mean: number; os_mean: number; sb_dich: number; ns_dich: number; os_dich: number }>) {
-          const total = cell.sb_mean + cell.ns_mean + cell.os_mean;
-          if (total < 0.5) continue;
-          const intensity = Math.min(1, total / 50);
-          const radius = 4 + intensity * 8;
-          const color = total > 20 ? "#ef4444" : total > 5 ? "#f97316" : total > 1 ? "#eab308" : "#06b6d4";
-          const marker = L.circleMarker([cell.lat, cell.lng], {
-            radius,
-            fillColor: color,
-            color: `${color}66`,
-            weight: 0.5,
-            fillOpacity: 0.25 + intensity * 0.3,
-          });
-          marker.bindTooltip(
-            `<div style="min-width:160px"><strong>\u26A0 VIEWS Grid Risk</strong><br/>`
-            + `<span style="color:#94a3b8">State-based:</span> ${cell.sb_mean.toFixed(1)} fatalities/mo (${Math.round(cell.sb_dich * 100)}%)<br/>`
-            + `<span style="color:#94a3b8">Non-state:</span> ${cell.ns_mean.toFixed(1)} fatalities/mo (${Math.round(cell.ns_dich * 100)}%)<br/>`
-            + `<span style="color:#94a3b8">One-sided:</span> ${cell.os_mean.toFixed(1)} fatalities/mo (${Math.round(cell.os_dich * 100)}%)<br/>`
-            + `<span style="color:#94a3b8">Combined:</span> <strong>${total.toFixed(1)}</strong> fatalities/mo<br/>`
-            + `<span style="color:#64748b;font-size:9px">PRIO/VIEWS Early Warning System</span></div>`,
-            { className: "siem-tooltip", direction: "top" },
-          );
-          marker.addTo(viewsGroup);
+        for (const cell of gridResp.cells as GridCell[]) {
+          if (!cell.iso) continue;
+          const arr = gridByIso.get(cell.iso) ?? [];
+          arr.push(cell);
+          gridByIso.set(cell.iso, arr);
         }
       }
 
-      // Country-level markers (larger, labeled)
+      // Country-level markers (larger, labeled) with inline grid heatmaps
       if (countryResp?.countries && Array.isArray(countryResp.countries)) {
         const countryCenters: Record<string, [number, number]> = {
           UKR: [48.4, 31.2], SDN: [15.5, 32.5], SOM: [5.2, 46.2], PAK: [30.4, 69.3],
@@ -450,24 +440,50 @@ export async function loadOverlay(
           const color = total > 100 ? "#dc2626" : total > 50 ? "#ef4444" : total > 10 ? "#f97316" : total > 5 ? "#eab308" : "#06b6d4";
           const radius = total > 100 ? 14 : total > 50 ? 11 : total > 10 ? 9 : 7;
           const marker = L.circleMarker(center, {
+            pane: "overlayPane",
             radius,
             fillColor: color,
             color: "#fff",
             weight: 1.5,
             fillOpacity: 0.85,
           });
+          // Threat level badge
+          const threatLevel = total > 100 ? "CRITICAL" : total > 50 ? "HIGH" : total > 10 ? "ELEVATED" : "MODERATE";
+          const threatColor = total > 100 ? "#dc2626" : total > 50 ? "#ef4444" : total > 10 ? "#f97316" : "#eab308";
+
+          // Proportion bars — widths relative to the dominant type
+          const maxType = Math.max(c.sb_mean, c.ns_mean, c.os_mean, 0.1);
+          const sbPct = Math.round((c.sb_mean / maxType) * 100);
+          const nsPct = Math.round((c.ns_mean / maxType) * 100);
+          const osPct = Math.round((c.os_mean / maxType) * 100);
+
+          // Grid cell summary
+          const countryCells = gridByIso.get(c.iso) ?? [];
+          let gridHtml = "";
+          if (countryCells.length > 0) {
+            const hotCells = countryCells.filter(g => (g.sb_mean + g.ns_mean + g.os_mean) > 5).length;
+            gridHtml = `<div class="siem-risk-popup-grid">`
+              + `<span class="siem-risk-popup-grid-stat">${countryCells.length}</span> grid cells`
+              + (hotCells > 0 ? ` · <span class="siem-risk-popup-grid-hot">${hotCells} high-risk</span>` : "")
+              + `</div>`;
+          }
+
           marker.bindPopup(
             `<div class="siem-risk-popup">`
+            + `<div class="siem-risk-popup-header">`
             + `<div class="siem-risk-popup-title">\u26A0 ${c.name} (${c.iso})</div>`
+            + `<span class="siem-risk-popup-badge" style="background:${threatColor}">${threatLevel}</span>`
+            + `</div>`
             + `<table class="siem-risk-popup-table">`
-            + `<tr class="siem-risk-popup-row"><td class="siem-risk-popup-label">State-based</td><td class="siem-risk-popup-value">${c.sb_mean.toFixed(1)}/mo</td><td class="siem-risk-popup-prob">${Math.round(c.sb_dich * 100)}%</td></tr>`
-            + `<tr class="siem-risk-popup-row"><td class="siem-risk-popup-label">Non-state</td><td class="siem-risk-popup-value">${c.ns_mean.toFixed(1)}/mo</td><td class="siem-risk-popup-prob">${Math.round(c.ns_dich * 100)}%</td></tr>`
-            + `<tr class="siem-risk-popup-row"><td class="siem-risk-popup-label">One-sided</td><td class="siem-risk-popup-value">${c.os_mean.toFixed(1)}/mo</td><td class="siem-risk-popup-prob">${Math.round(c.os_dich * 100)}%</td></tr>`
-            + `<tr><td class="siem-risk-popup-total">Combined</td><td class="siem-risk-popup-total-value">${total.toFixed(1)}/mo</td><td></td></tr>`
+            + `<tr class="siem-risk-popup-row"><td class="siem-risk-popup-label">State-based</td><td class="siem-risk-popup-bar-cell"><div class="siem-risk-popup-bar" style="width:${sbPct}%;background:#ef4444"></div></td><td class="siem-risk-popup-value">${c.sb_mean.toFixed(1)}/mo</td><td class="siem-risk-popup-prob">${Math.round(c.sb_dich * 100)}%</td></tr>`
+            + `<tr class="siem-risk-popup-row"><td class="siem-risk-popup-label">Non-state</td><td class="siem-risk-popup-bar-cell"><div class="siem-risk-popup-bar" style="width:${nsPct}%;background:#f97316"></div></td><td class="siem-risk-popup-value">${c.ns_mean.toFixed(1)}/mo</td><td class="siem-risk-popup-prob">${Math.round(c.ns_dich * 100)}%</td></tr>`
+            + `<tr class="siem-risk-popup-row"><td class="siem-risk-popup-label">One-sided</td><td class="siem-risk-popup-bar-cell"><div class="siem-risk-popup-bar" style="width:${osPct}%;background:#eab308"></div></td><td class="siem-risk-popup-value">${c.os_mean.toFixed(1)}/mo</td><td class="siem-risk-popup-prob">${Math.round(c.os_dich * 100)}%</td></tr>`
+            + `<tr><td class="siem-risk-popup-total">Combined</td><td></td><td class="siem-risk-popup-total-value">${total.toFixed(1)}/mo</td><td></td></tr>`
             + `</table>`
-            + `<div class="siem-risk-popup-meta">Predicted fatalities/month &middot; PRIO/VIEWS Early Warning System<br/>Run: ${countryResp.run ?? "unknown"}</div>`
+            + gridHtml
+            + `<div class="siem-risk-popup-meta">Predicted fatalities/month &middot; PRIO/VIEWS EWS<br/>Run: ${countryResp.run ?? "unknown"}</div>`
             + `</div>`,
-            { className: "siem-popup", maxWidth: 280 },
+            { className: "siem-popup", maxWidth: 320 },
           );
           marker.addTo(viewsGroup);
         }
@@ -478,6 +494,7 @@ export async function loadOverlay(
     viewsGroup.addTo(group);
   } else if (def.id === "terrorism") {
     L.geoJSON(leafletGeoJSON, {
+      pane: "overlayPane",
       style: (feature) => {
         const type = feature?.properties?.type ?? "active";
         return {
@@ -498,6 +515,7 @@ export async function loadOverlay(
     }).addTo(group);
   } else if (def.id === "cables") {
     L.geoJSON(leafletGeoJSON, {
+      pane: "overlayPane",
       style: (feature) => ({
         color: feature?.properties?.color ?? def.color,
         weight: 1.5,
@@ -517,6 +535,7 @@ export async function loadOverlay(
     const laneWeight: Record<string, number> = { Major: 2, Middle: 1.4 };
     const laneOpacity: Record<string, number> = { Major: 0.5, Middle: 0.35 };
     L.geoJSON(leafletGeoJSON, {
+      pane: "overlayPane",
       style: (feature) => {
         const type = feature?.properties?.Type ?? "Major";
         return {
