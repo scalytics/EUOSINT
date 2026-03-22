@@ -662,122 +662,6 @@ export function AlertFeed({
           </div>
         )}
 
-        {isConflictContextMode && activeConflictBrief && (
-          <div className="rounded-lg border border-siem-border bg-siem-panel-strong px-3 py-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-2xs uppercase tracking-[0.16em] text-siem-muted">Zone brief</div>
-                <div className="mt-1 text-2xs text-siem-text">{activeConflictBrief.lens.label}</div>
-                <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-siem-muted">
-                  {activeConflictBrief.sourceLabel}
-                </div>
-                {activeConflictBrief.sourceURL && (
-                  <a
-                    href={activeConflictBrief.sourceURL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-flex text-[10px] uppercase tracking-[0.14em] text-siem-accent hover:text-siem-text"
-                  >
-                    More about this zone
-                  </a>
-                )}
-              </div>
-              <div className="text-2xs uppercase tracking-[0.14em] text-siem-muted">
-                {activeConflictBrief.asOf ? `As of ${new Date(activeConflictBrief.asOf).toISOString().slice(0, 10)}` : "No dated context"}
-              </div>
-            </div>
-
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {activeConflictBrief.metrics.map((metric) => (
-                <div key={metric.label} className="rounded border border-siem-border bg-white/5 px-2 py-1.5">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">{metric.label}</div>
-                  <div className="mt-1 text-2xs font-mono text-siem-text">{metric.value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 space-y-2">
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Dominant categories</div>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {activeConflictBrief.topCategories.map((item) => (
-                    <span key={item.key} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
-                      <span>{item.label}</span>
-                      <span className="text-siem-muted">{item.count}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Hot countries</div>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {activeConflictBrief.topCountries.map((item) => (
-                    <span key={item.code} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
-                      <span>{item.label}</span>
-                      <span className="text-siem-muted">{item.count}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Actors / entities</div>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {activeConflictBrief.actors.filter((item) => !/^XXX\d+$/i.test(item.trim())).map((item) => (
-                    <span key={item} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Violence / focus</div>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {activeConflictBrief.violenceTypes.map((item) => (
-                    <span key={item} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Top sources</div>
-                <div className="mt-1 space-y-1">
-                  {activeConflictBrief.topSources.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between rounded border border-siem-border bg-white/5 px-2 py-1.5 text-2xs">
-                      <span className="truncate text-siem-text">{item.label}</span>
-                      <span className="shrink-0 font-mono text-siem-muted">{item.count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {activeConflictBrief.coverageNote && (
-                <div className="rounded border border-siem-border bg-white/5 px-2 py-2 text-2xs text-siem-muted">
-                  {activeConflictBrief.coverageNote}
-                </div>
-              )}
-
-              {activeConflictBrief.latestAlert && (
-                <button
-                  type="button"
-                  onClick={() => onSelect(activeConflictBrief.latestAlert!.alert_id)}
-                  className="w-full rounded-lg border border-siem-accent/35 bg-siem-accent/10 px-3 py-2 text-left transition-colors hover:bg-siem-accent/14"
-                >
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Latest event in lens</div>
-                  <div className="mt-1 text-2xs text-siem-text line-clamp-2">{activeConflictBrief.latestAlert.title}</div>
-                  <div className="mt-1 text-2xs text-siem-muted">
-                    {activeConflictBrief.latestAlert.source.authority_name} · {freshnessLabel(activeConflictBrief.latestAlert.freshness_hours)}
-                  </div>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
         {!isConflictContextMode && viewMode === "now_history" && (
           <div className="rounded border border-siem-border bg-white/5 px-2 py-1.5 text-2xs font-mono uppercase tracking-wide">
             <span className="text-siem-muted">Delta 24h vs baseline:</span>{" "}
@@ -885,6 +769,124 @@ export function AlertFeed({
           isRefreshingList ? "animate-alert-list-refresh" : ""
         }`}
       >
+        {isConflictContextMode && activeConflictBrief && (
+          <div className="rounded-lg border border-siem-border bg-siem-panel-strong px-3 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-2xs uppercase tracking-[0.16em] text-siem-muted">Zone brief</div>
+                <div className="mt-1 text-2xs text-siem-text">{activeConflictBrief.lens.label}</div>
+                <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-siem-muted">
+                  {activeConflictBrief.sourceLabel}
+                </div>
+                {activeConflictBrief.sourceURL && (
+                  <a
+                    href={activeConflictBrief.sourceURL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-flex text-[10px] uppercase tracking-[0.14em] text-siem-accent hover:text-siem-text"
+                  >
+                    More about this zone
+                  </a>
+                )}
+              </div>
+              <div className="text-2xs uppercase tracking-[0.14em] text-siem-muted">
+                {activeConflictBrief.asOf ? `As of ${new Date(activeConflictBrief.asOf).toISOString().slice(0, 10)}` : "No dated context"}
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {activeConflictBrief.metrics.map((metric) => (
+                <div key={metric.label} className="rounded border border-siem-border bg-white/5 px-2 py-1.5">
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">{metric.label}</div>
+                  <div className="mt-1 text-2xs font-mono text-siem-text">{metric.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Dominant categories</div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {activeConflictBrief.topCategories.map((item) => (
+                    <span key={item.key} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
+                      <span>{item.label}</span>
+                      <span className="text-siem-muted">{item.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Hot countries</div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {activeConflictBrief.topCountries.map((item) => (
+                    <span key={item.code} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
+                      <span>{item.label}</span>
+                      <span className="text-siem-muted">{item.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {activeConflictBrief.actors.length > 0 && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Actors / entities</div>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {activeConflictBrief.actors.filter((item) => !/^XXX\d+$/i.test(item.trim())).map((item) => (
+                      <span key={item} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Violence / focus</div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {activeConflictBrief.violenceTypes.map((item) => (
+                    <span key={item} className="inline-flex items-center gap-1 rounded-full border border-siem-border bg-white/5 px-2 py-1 text-2xs text-siem-text">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Top sources</div>
+                <div className="mt-1 space-y-1">
+                  {activeConflictBrief.topSources.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between rounded border border-siem-border bg-white/5 px-2 py-1.5 text-2xs">
+                      <span className="truncate text-siem-text">{item.label}</span>
+                      <span className="shrink-0 font-mono text-siem-muted">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {activeConflictBrief.coverageNote && (
+                <div className="rounded border border-siem-border bg-white/5 px-2 py-2 text-2xs text-siem-muted">
+                  {activeConflictBrief.coverageNote}
+                </div>
+              )}
+
+              {activeConflictBrief.latestAlert && (
+                <button
+                  type="button"
+                  onClick={() => onSelect(activeConflictBrief.latestAlert!.alert_id)}
+                  className="w-full rounded-lg border border-siem-accent/35 bg-siem-accent/10 px-3 py-2 text-left transition-colors hover:bg-siem-accent/14"
+                >
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-siem-muted">Latest event in lens</div>
+                  <div className="mt-1 text-2xs text-siem-text line-clamp-2">{activeConflictBrief.latestAlert.title}</div>
+                  <div className="mt-1 text-2xs text-siem-muted">
+                    {activeConflictBrief.latestAlert.source.authority_name} · {freshnessLabel(activeConflictBrief.latestAlert.freshness_hours)}
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {isConflictContextMode ? (
           currentAlerts.length > 0 ? (
             <>

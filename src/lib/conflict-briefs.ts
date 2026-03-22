@@ -203,7 +203,7 @@ export function buildConflictBrief(alerts: Alert[], lens: ConflictLens | null): 
       label: entry.label,
       count: entry.count,
     })),
-    actors: buildRankedList(sourceCounts, 3).map((entry) => entry.label),
+    actors: [],
     violenceTypes: buildRankedList(categoryCounts, 3).map((entry) => entry.label),
     hotspots: deriveHotspots(lensAlerts, lens),
     latestAlert,
