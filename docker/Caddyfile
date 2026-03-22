@@ -10,6 +10,8 @@
 	encode zstd gzip
 
 	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 		Permissions-Policy "camera=(), geolocation=(), microphone=()"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		X-Content-Type-Options "nosniff"
@@ -17,7 +19,9 @@
 	}
 
 	handle /api/* {
-		reverse_proxy collector:3001
+		reverse_proxy collector:3001 {
+			header_up Authorization "Bearer {$API_BEARER_TOKEN:}"
+		}
 	}
 
 	handle /alerts.json {
