@@ -10,6 +10,16 @@ import "./index.css";
 import App from "./App.tsx";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
+// Redirect mobile devices to the dedicated mobile app
+if (
+  /Android|iPhone|iPod/.test(navigator.userAgent) &&
+  window.innerWidth < 768 &&
+  !new URLSearchParams(location.search).has("desktop") &&
+  !document.cookie.includes("euosint_prefer_desktop")
+) {
+  location.replace("/m/");
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>

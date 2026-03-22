@@ -4,7 +4,7 @@
  * See NOTICE for provenance and LICENSE for repository-local terms.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Alert } from "@/types/alert";
 import { appURL } from "@/lib/app-url";
 
@@ -42,6 +42,8 @@ export function useAlerts() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loadRef = useRef<() => Promise<void>>();
 
   useEffect(() => {
     let cancelled = false;
@@ -74,8 +76,9 @@ export function useAlerts() {
       }
     }
 
+    loadRef.current = load;
     load();
-    const interval = setInterval(load, POLL_MS);
+    intervalRef.current = setInterval(load, POLL_MS);
     const onFocus = () => load();
     const onVisible = () => {
       if (document.visibilityState === "visible") load();
@@ -85,13 +88,20 @@ export function useAlerts() {
 
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      if (intervalRef.current) clearInterval(intervalRef.current);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 
+  const refetch = useCallback(() => {
+    // Trigger immediate fetch and reset the poll timer
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    loadRef.current?.();
+    intervalRef.current = setInterval(() => loadRef.current?.(), POLL_MS);
+  }, []);
+
   const sourceCount = useMemo(() => new Set(alerts.map((a) => a.source_id)).size, [alerts]);
 
-  return { alerts, isLive, isLoading, sourceCount };
+  return { alerts, isLive, isLoading, sourceCount, refetch };
 }
