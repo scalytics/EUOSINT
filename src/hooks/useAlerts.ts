@@ -43,7 +43,7 @@ export function useAlerts() {
   const [isLive, setIsLive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const loadRef = useRef<() => Promise<void>>();
+  const loadRef = useRef<() => Promise<void>>(undefined);
 
   useEffect(() => {
     let cancelled = false;
