@@ -314,6 +314,13 @@ configure_env() {
     info "Localhost mode — ports set to 8080/8443."
   fi
 
+  # Auto-generate or rotate API bearer token on every install/update.
+  # Shared between Caddy (injects on proxy) and collector (validates).
+  local new_token
+  new_token="$(head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 40)"
+  upsert_env "$env_file" "API_BEARER_TOKEN" "$new_token"
+  info "API bearer token rotated."
+
   echo ""
   info "Configuration saved to $env_file"
 }

@@ -32,6 +32,7 @@ type Server struct {
 	stderr         io.Writer
 	llmCfg         ZoneBriefLLMConfig
 	allowedOrigins []string
+	bearerToken    string
 }
 
 type ZoneBriefLLMConfig struct {
@@ -44,8 +45,8 @@ type ZoneBriefLLMConfig struct {
 	VettingTemperature float64
 }
 
-func New(db *sourcedb.DB, addr string, stderr io.Writer, allowedOrigins []string) *Server {
-	s := &Server{db: db, addr: addr, stderr: stderr, allowedOrigins: allowedOrigins}
+func New(db *sourcedb.DB, addr string, stderr io.Writer, allowedOrigins []string, bearerToken string) *Server {
+	s := &Server{db: db, addr: addr, stderr: stderr, allowedOrigins: allowedOrigins, bearerToken: strings.TrimSpace(bearerToken)}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/search", s.handleSearch)
 	mux.HandleFunc("GET /api/digest", s.handleDigest)
@@ -56,7 +57,7 @@ func New(db *sourcedb.DB, addr string, stderr io.Writer, allowedOrigins []string
 	rl := newRateLimiter(30, 5, 10*time.Minute) // 30 requests burst, 5/sec refill
 	s.srv = &http.Server{
 		Addr:         addr,
-		Handler:      s.corsMiddleware(rateLimit(rl, mux)),
+		Handler:      s.corsMiddleware(s.bearerAuth(rateLimit(rl, mux))),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 120 * time.Second,
 	}
@@ -361,10 +362,31 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) bearerAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// No token configured — auth disabled (dev / legacy).
+		if s.bearerToken == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		// Health endpoint is always public (used by load balancers / probes).
+		if r.URL.Path == "/api/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		auth := strings.TrimSpace(r.Header.Get("Authorization"))
+		if !strings.HasPrefix(auth, "Bearer ") || strings.TrimSpace(auth[7:]) != s.bearerToken {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 			return
 		}
 		next.ServeHTTP(w, r)
