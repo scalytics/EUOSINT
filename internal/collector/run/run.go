@@ -5481,8 +5481,8 @@ func (r Runner) initGeocoder(ctx context.Context, cfg config.Config) *normalize.
 
 	geocoder := normalize.NewGeocoder(cities, nominatim)
 
-	// Wire LLM geocoding fallback if the vetting endpoint is configured.
-	if cfg.VettingAPIKey != "" {
+	// Wire LLM geocoding fallback only when explicitly enabled.
+	if cfg.AlertLLMEnabled && cfg.VettingAPIKey != "" {
 		client := vet.NewClient(cfg)
 		geocoder.SetLLM(&geoLLMAdapter{client: client, stderr: r.stderr})
 	}
