@@ -6,7 +6,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Alert } from "@/types/alert";
-const ALERTS_URL = `${import.meta.env.BASE_URL}alerts.json`;
+import { appURL } from "@/lib/app-url";
+
+const ALERTS_URL = appURL("alerts.json");
 const POLL_MS = 15000;
 
 function normalizeAlerts(data: unknown): Alert[] | null {

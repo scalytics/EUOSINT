@@ -10,13 +10,21 @@
 	encode zstd gzip
 
 	header {
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+		Access-Control-Allow-Origin "*"
+		Access-Control-Allow-Methods "GET, POST, OPTIONS"
+		Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+		Access-Control-Expose-Headers "Content-Length, Content-Type"
+		Vary "Origin"
 		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 		Permissions-Policy "camera=(), geolocation=(), microphone=()"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 	}
+
+	@preflight method OPTIONS
+	respond @preflight 204
 
 	handle /api/* {
 		reverse_proxy collector:3001 {
@@ -25,54 +33,114 @@
 	}
 
 	handle /alerts.json {
-		root * /var/lib/euosint
-		file_server
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
 	}
 
 	handle /alerts-filtered.json {
-		root * /var/lib/euosint
-		file_server
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
 	}
 
 	handle /alerts-state.json {
-		root * /var/lib/euosint
-		file_server
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
 	}
 
 	handle /source-health.json {
-		root * /var/lib/euosint
-		file_server
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
 	}
 
 	handle /zone-briefings.json {
-		root * /var/lib/euosint
-		file_server
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
 	}
 
 	handle /ucdp-current-conflicts.json {
-		root * /var/lib/euosint
-		file_server
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
 	}
 
 	handle /ucdp-conflict-stats.json {
-		root * /var/lib/euosint
-		file_server
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
 	}
 
 	@runtime_geo path /geo/conflict-zones*.geojson /geo/conflict-footprints*.geojson /geo/terrorism-zones*.geojson
 	handle @runtime_geo {
-		root * /var/lib/euosint
-		file_server
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
 	}
 
 	handle /views-risk.json {
-		root * /var/lib/euosint
-		file_server
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
 	}
 
 	handle /geo/views-risk-grid.json {
-		root * /var/lib/euosint
-		file_server
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
 	}
 
 	handle {

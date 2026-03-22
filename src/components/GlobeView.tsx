@@ -1062,7 +1062,7 @@ export function GlobeView({
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-5 gap-1 md:grid-cols-9">
+          <div className="grid grid-cols-5 gap-1 md:grid-cols-10">
             {sortedOverlayDefs.map((overlay) => (
               <button
                 key={overlay.id}

@@ -110,6 +110,7 @@ services:
       - "${EUOSINT_HTTPS_PORT:-8443}:443"
     volumes:
       - feed-data:/var/lib/euosint:ro
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     restart: unless-stopped

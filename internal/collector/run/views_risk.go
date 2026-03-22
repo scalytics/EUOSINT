@@ -14,15 +14,21 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/scalytics/euosint/internal/collector/config"
 )
 
 const (
-	viewsAPIBase          = "https://api.viewsforecasting.org"
 	viewsRefreshHours     = 168 // weekly
 	viewsCountryPageSize  = 500
 	viewsGridPageSize     = 1000
 	viewsGridTopCountries = 20
 	viewsGridMinMean      = 0.5
+)
+
+var (
+	viewsAPIBase    = "https://api.viewsforecasting.org"
+	viewsHTTPClient = &http.Client{Timeout: 30 * time.Second}
 )
 
 // viewsCountryRisk is a single country-month forecast row.
@@ -83,7 +89,7 @@ func discoverLatestRun(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := viewsHTTPClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -151,7 +157,7 @@ func viewsFetchJSON(ctx context.Context, url string) (*viewsAPIResponse, error) 
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Encoding", "gzip, deflate")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := viewsHTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -329,9 +335,13 @@ func currentVIEWSMonthID(t time.Time) int {
 	return (t.Year()-1980)*12 + int(t.Month())
 }
 
-func (r Runner) refreshVIEWSRiskLayer(ctx context.Context) error {
-	countryPath := filepath.Join("public", "views-risk.json")
-	gridPath := filepath.Join("public", "geo", "views-risk-grid.json")
+func (r Runner) refreshVIEWSRiskLayer(ctx context.Context, cfg config.Config) error {
+	outDir := filepath.Dir(strings.TrimSpace(cfg.OutputPath))
+	if strings.TrimSpace(outDir) == "" || outDir == "." {
+		outDir = "public"
+	}
+	countryPath := filepath.Join(outDir, "views-risk.json")
+	gridPath := filepath.Join(outDir, "geo", "views-risk-grid.json")
 
 	if !shouldRefreshOutput(countryPath, viewsRefreshHours, time.Now().UTC()) {
 		return nil
@@ -345,12 +355,31 @@ func (r Runner) refreshVIEWSRiskLayer(ctx context.Context) error {
 	fmt.Fprintf(r.stderr, "VIEWS risk layer: using run %s\n", run)
 
 	now := time.Now().UTC()
-	monthID := currentVIEWSMonthID(now)
-
-	// Fetch country-level forecasts
-	countries, err := fetchCountryForecasts(ctx, run, monthID)
-	if err != nil {
-		return fmt.Errorf("views risk countries: %w", err)
+	currentMonthID := currentVIEWSMonthID(now)
+	candidateMonths := []int{currentMonthID, currentMonthID - 1, currentMonthID - 2}
+	monthID := currentMonthID
+	var countries []viewsCountryRisk
+	var lastErr error
+	for _, candidate := range candidateMonths {
+		if candidate <= 0 {
+			continue
+		}
+		countries, err = fetchCountryForecasts(ctx, run, candidate)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if len(countries) == 0 {
+			continue
+		}
+		monthID = candidate
+		break
+	}
+	if len(countries) == 0 {
+		if lastErr != nil {
+			return fmt.Errorf("views risk countries: %w", lastErr)
+		}
+		return fmt.Errorf("views risk countries: no forecast rows for months %v", candidateMonths)
 	}
 	fmt.Fprintf(r.stderr, "VIEWS risk layer: %d countries fetched\n", len(countries))
 

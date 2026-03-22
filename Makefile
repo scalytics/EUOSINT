@@ -26,7 +26,7 @@ RELEASE_LEVEL ?= patch
 	npm-install-if-needed \
 	go-fmt go-fmt-check go-test go-race go-cover go-vet go-codeql commit-check \
 	docker-build docker-up docker-down docker-logs docker-shell \
-	dev-start dev-stop dev-stop-clean dev-restart dev-restart-clean dev-logs \
+	dev-start dev-stop dev-stop-clean dev-restart dev-restart-clean dev-logs dev-ensure-env \
 	code-ql code-ql-summary \
 	release-patch release-minor release-major \
 	branch-protection
@@ -141,7 +141,10 @@ dev-collector-bin: ## Compile collector binary natively for Docker target arch
 	@mkdir -p .tmp
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(DOCKER_ARCH) go build -o .tmp/euosint-collector ./cmd/euosint-collector
 
-dev-start: registry/cities500.txt dev-collector-bin ## Start the local HTTP dev stack on localhost
+dev-ensure-env: ## Ensure local .env contains API_BEARER_TOKEN for local API proxy auth
+	@bash scripts/ensure_local_api_bearer.sh .env
+
+dev-start: registry/cities500.txt dev-collector-bin dev-ensure-env ## Start the local HTTP dev stack on localhost
 	docker build -f Dockerfile.collector.dev -t euosint-collector:dev .
 	$(DOCKER_COMPOSE) build euosint
 	EUOSINT_COLLECTOR_IMAGE=euosint-collector:dev $(DOCKER_COMPOSE) up -d --no-build
@@ -157,7 +160,7 @@ dev-stop-clean: ## Stop stack, remove feed-data volume, and aggressively prune D
 	@docker image prune -af >/dev/null 2>&1 || true
 	@docker builder prune -af >/dev/null 2>&1 || true
 
-dev-restart: registry/cities500.txt dev-collector-bin ## Restart the local dev stack (removes volumes, rebuilds)
+dev-restart: registry/cities500.txt dev-collector-bin dev-ensure-env ## Restart the local dev stack (removes volumes, rebuilds)
 	$(DOCKER_COMPOSE) down --remove-orphans -v
 	docker build -f Dockerfile.collector.dev -t euosint-collector:dev .
 	$(DOCKER_COMPOSE) build euosint
@@ -165,7 +168,7 @@ dev-restart: registry/cities500.txt dev-collector-bin ## Restart the local dev s
 	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
 
-dev-restart-clean: registry/cities500.txt dev-collector-bin ## Restart from scratch (removes volumes, prunes caches)
+dev-restart-clean: registry/cities500.txt dev-collector-bin dev-ensure-env ## Restart from scratch (removes volumes, prunes caches)
 	$(DOCKER_COMPOSE) down --remove-orphans -v
 	@docker image prune -af >/dev/null 2>&1 || true
 	@docker builder prune -af >/dev/null 2>&1 || true

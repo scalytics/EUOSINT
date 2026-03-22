@@ -67,7 +67,7 @@ export const DEFAULT_OVERLAYS: OverlayDef[] = [
   { id: "sanctions", label: "Sanctions Zones", color: "#f87171", url: "/geo/sanctions-zones.geojson" },
   { id: "piracy", label: "Piracy Zones", color: "#38bdf8", url: "/geo/piracy-zones.geojson" },
   { id: "terrorism", label: "Terror Zones", color: "#e879f9", url: "/geo/terrorism-zones.geojson" },
-  { id: "views-risk", label: "Conflict Risk (VIEWS)", color: "#06b6d4", url: "/views-risk.json" },
+  { id: "views-risk", label: "Conflict Risk", color: "#06b6d4", url: "/views-risk.json" },
 ];
 
 const EMPTY_FEATURE_COLLECTION: GeoJSONLike = { type: "FeatureCollection", features: [] };
