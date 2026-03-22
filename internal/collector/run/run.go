@@ -2867,8 +2867,23 @@ func buildDynamicTerrorZonesFromAlerts(boundariesPath string, statePath string, 
 	return baseCollection, overlays, nil
 }
 
+func isTerrorExcludedSourceType(authorityType string) bool {
+	at := strings.ToLower(strings.TrimSpace(authorityType))
+	return at == "regulatory" || at == "private_sector" || at == "educational"
+}
+
+func isTerrorExcludedCategory(category string) bool {
+	return category == "legislative" || category == "fraud_alert" || category == "travel_warning"
+}
+
 func terrorSignalEvidence(alert model.Alert, actorAliases map[string]string) (bool, string, string) {
+	if isTerrorExcludedSourceType(alert.Source.AuthorityType) {
+		return false, "", ""
+	}
 	category := strings.ToLower(strings.TrimSpace(alert.Category))
+	if isTerrorExcludedCategory(category) {
+		return false, "", ""
+	}
 	title := strings.TrimSpace(alert.Title)
 	subcategory := strings.ToLower(strings.TrimSpace(alert.Subcategory))
 	text := strings.ToLower(strings.TrimSpace(title + " " + subcategory))
