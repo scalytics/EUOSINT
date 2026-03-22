@@ -697,25 +697,25 @@ export function GlobeView({
                 const link = escapeHtml(alert.canonical_url);
                 const sev = escapeHtml(alert.severity.toUpperCase());
                 const meta = subcategory
-                  ? `<div style="font-size:10px;line-height:1.2;color:#94a3b8;margin-top:2px;">${subcategory}</div>`
+                  ? `<div style="font-size:11px;line-height:1.25;color:#94a3b8;margin-top:3px;">${subcategory}</div>`
                   : "";
                 const sourceLink = link
-                  ? `<a href="${link}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:4px;font-size:10px;color:#60a5fa;text-decoration:none;">Open source ↗</a>`
+                  ? `<a href="${link}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:5px;font-size:11px;color:#60a5fa;text-decoration:none;">Open source ↗</a>`
                   : "";
-                return `<div style="border-bottom:1px solid rgba(148,163,184,.16);padding:6px 0;"><button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;cursor:pointer;font-size:12px;line-height:1.3;color:#f3f4f6;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;border:1px solid rgba(148,163,184,.35);padding:1px 4px;border-radius:4px;">${sev}</span><span>${idx + 1}. ${title}</span></div>${meta}</button>${sourceLink}</div>`;
+                return `<div style="border-bottom:1px solid rgba(148,163,184,.16);padding:7px 0;"><button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;cursor:pointer;font-size:13px;line-height:1.35;color:#f3f4f6;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;border:1px solid rgba(148,163,184,.35);padding:1px 4px;border-radius:4px;">${sev}</span><span>${idx + 1}. ${title}</span></div>${meta}</button>${sourceLink}</div>`;
               })
               .join("");
-            return `<div style="margin-bottom:8px;"><div style="display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#cbd5e1;border:1px solid rgba(148,163,184,.35);background:rgba(15,23,42,.45);padding:2px 8px;border-radius:999px;margin:4px 0 6px 0;">${categoryLabel}<span style="color:#94a3b8;">(${items.length})</span></div>${rows}</div>`;
+            return `<div style="margin-bottom:8px;"><div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#cbd5e1;border:1px solid rgba(148,163,184,.35);background:rgba(15,23,42,.45);padding:3px 8px;border-radius:999px;margin:4px 0 6px 0;">${categoryLabel}<span style="color:#94a3b8;">(${items.length})</span></div>${rows}</div>`;
           })
           .join("");
 
         const hasMore = limit < childAlerts.length;
         const remaining = childAlerts.length - limit;
         const loadMore = hasMore
-          ? `<button data-load-more="1" style="display:block;width:100%;margin-top:4px;padding:6px 8px;border:1px solid rgba(148,163,184,.3);border-radius:8px;background:rgba(15,23,42,.45);color:#cbd5e1;font-size:11px;cursor:pointer;">Load more alerts (+${remaining})</button>`
+          ? `<button data-load-more="1" style="display:block;width:100%;margin-top:4px;padding:7px 8px;border:1px solid rgba(148,163,184,.3);border-radius:8px;background:rgba(15,23,42,.45);color:#cbd5e1;font-size:12px;cursor:pointer;">Load more alerts (+${remaining})</button>`
           : "";
 
-        return `<div style="min-width:300px;max-width:430px;"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">${countryLabel} AREA ALERTS (${childAlerts.length})</div><div style="max-height:300px;overflow:auto;padding-right:2px;">${sections}${loadMore}</div></div>`;
+        return `<div style="min-width:320px;max-width:460px;"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:7px;">${countryLabel} AREA ALERTS (${childAlerts.length})</div><div style="max-height:320px;overflow:auto;padding-right:2px;">${sections}${loadMore}</div></div>`;
       };
 
       const popup = L.popup({
@@ -1109,11 +1109,11 @@ export function GlobeView({
           </div>
 
           {activeConflictBrief && (
-            <div className="absolute bottom-3 left-3 z-[1000] w-[23rem] max-w-[calc(100%-1.5rem)] rounded-xl border border-siem-border/80 bg-siem-panel/95 p-3 text-2xs text-siem-text shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+            <div className="absolute bottom-3 left-3 z-[1000] w-[24rem] max-w-[calc(100%-1.5rem)] rounded-xl border border-siem-border/80 bg-siem-panel/95 p-3 text-sm text-siem-text shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-sm">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="text-2xs uppercase tracking-[0.14em] text-siem-muted">Zone brief</div>
-                  <div className="mt-1 text-2xs">{activeConflictBrief.lens.label}</div>
+                  <div className="text-xs uppercase tracking-[0.14em] text-siem-muted">Zone brief</div>
+                  <div className="mt-1 text-sm">{activeConflictBrief.lens.label}</div>
                 </div>
               </div>
               <div className="mt-3 space-y-1.5 text-sm leading-relaxed text-siem-text">
@@ -1142,13 +1142,13 @@ export function GlobeView({
                       void requestZoneBriefNarrative();
                     }}
                     disabled={isZoneBriefNarrativeLoading || !activeDynamicConflict}
-                    className="rounded border border-siem-border bg-white/5 px-2 py-1 text-2xs uppercase tracking-[0.12em] text-siem-text hover:bg-siem-accent/12 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded border border-siem-border bg-white/5 px-2 py-1 text-xs uppercase tracking-[0.12em] text-siem-text hover:bg-siem-accent/12 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isZoneBriefNarrativeLoading ? "Generating..." : "History / Analysis"}
                   </button>
                 ) : (
                   <div className="space-y-1">
-                    <div className="text-2xs text-siem-muted">
+                    <div className="text-xs text-siem-muted">
                       History ready
                       {analysisUpdatedLabel ? ` · Analysis updated ${analysisUpdatedLabel}` : ""}
                     </div>
@@ -1159,7 +1159,7 @@ export function GlobeView({
                           void requestZoneBriefNarrative();
                         }}
                         disabled={isZoneBriefNarrativeLoading || !activeDynamicConflict}
-                        className="rounded border border-siem-border bg-white/5 px-2 py-1 text-2xs uppercase tracking-[0.12em] text-siem-text hover:bg-siem-accent/12 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded border border-siem-border bg-white/5 px-2 py-1 text-xs uppercase tracking-[0.12em] text-siem-text hover:bg-siem-accent/12 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {isZoneBriefNarrativeLoading ? "Refreshing..." : "Refresh Analysis"}
                       </button>
@@ -1167,7 +1167,7 @@ export function GlobeView({
                   </div>
                 )}
                 {zoneBriefNarrativeError && (
-                  <div className="mt-1 text-2xs text-siem-high">{zoneBriefNarrativeError}</div>
+                  <div className="mt-1 text-sm text-siem-high">{zoneBriefNarrativeError}</div>
                 )}
               </div>
               {displayedHistoricalSummary && (
@@ -1182,7 +1182,7 @@ export function GlobeView({
               )}
               {activeConflictBrief.recentEvents && activeConflictBrief.recentEvents.length > 0 && (
                 <div className="mt-3 space-y-1">
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-siem-muted">Latest events</div>
+                  <div className="text-xs uppercase tracking-[0.12em] text-siem-muted">Latest events</div>
                   {activeConflictBrief.recentEvents.slice(0, 3).map((event, idx) => (
                     <a
                       key={`${event.title}-${event.date}-${idx}`}
@@ -1191,8 +1191,8 @@ export function GlobeView({
                       rel={event.url ? "noreferrer" : undefined}
                       className="block rounded border border-siem-border bg-white/5 px-2 py-1.5 hover:bg-siem-accent/8"
                     >
-                      <div className="text-2xs text-siem-text line-clamp-2">{event.title}</div>
-                      <div className="mt-0.5 text-2xs text-siem-muted">
+                      <div className="text-sm text-siem-text line-clamp-2">{event.title}</div>
+                      <div className="mt-0.5 text-sm text-siem-muted">
                         {event.date ? new Date(event.date).toISOString().slice(0, 10) : "n/a"}
                         {event.location ? ` · ${event.location}` : ""}
                       </div>

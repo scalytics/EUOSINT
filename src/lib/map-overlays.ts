@@ -457,15 +457,15 @@ export async function loadOverlay(
             fillOpacity: 0.85,
           });
           marker.bindPopup(
-            `<div style="min-width:200px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6">`
-            + `<div style="font-size:13px;font-weight:700;margin-bottom:6px">\u26A0 ${c.name} (${c.iso})</div>`
-            + `<table style="width:100%;border-collapse:collapse">`
-            + `<tr style="border-bottom:1px solid #334155"><td style="color:#94a3b8;padding:2px 8px 2px 0">State-based</td><td style="text-align:right">${c.sb_mean.toFixed(1)}/mo</td><td style="text-align:right;color:#64748b">${Math.round(c.sb_dich * 100)}%</td></tr>`
-            + `<tr style="border-bottom:1px solid #334155"><td style="color:#94a3b8;padding:2px 8px 2px 0">Non-state</td><td style="text-align:right">${c.ns_mean.toFixed(1)}/mo</td><td style="text-align:right;color:#64748b">${Math.round(c.ns_dich * 100)}%</td></tr>`
-            + `<tr style="border-bottom:1px solid #334155"><td style="color:#94a3b8;padding:2px 8px 2px 0">One-sided</td><td style="text-align:right">${c.os_mean.toFixed(1)}/mo</td><td style="text-align:right;color:#64748b">${Math.round(c.os_dich * 100)}%</td></tr>`
-            + `<tr><td style="color:#f8fafc;font-weight:700;padding:4px 8px 2px 0">Combined</td><td style="text-align:right;font-weight:700;color:#f8fafc">${total.toFixed(1)}/mo</td><td></td></tr>`
+            `<div class="siem-risk-popup">`
+            + `<div class="siem-risk-popup-title">\u26A0 ${c.name} (${c.iso})</div>`
+            + `<table class="siem-risk-popup-table">`
+            + `<tr class="siem-risk-popup-row"><td class="siem-risk-popup-label">State-based</td><td class="siem-risk-popup-value">${c.sb_mean.toFixed(1)}/mo</td><td class="siem-risk-popup-prob">${Math.round(c.sb_dich * 100)}%</td></tr>`
+            + `<tr class="siem-risk-popup-row"><td class="siem-risk-popup-label">Non-state</td><td class="siem-risk-popup-value">${c.ns_mean.toFixed(1)}/mo</td><td class="siem-risk-popup-prob">${Math.round(c.ns_dich * 100)}%</td></tr>`
+            + `<tr class="siem-risk-popup-row"><td class="siem-risk-popup-label">One-sided</td><td class="siem-risk-popup-value">${c.os_mean.toFixed(1)}/mo</td><td class="siem-risk-popup-prob">${Math.round(c.os_dich * 100)}%</td></tr>`
+            + `<tr><td class="siem-risk-popup-total">Combined</td><td class="siem-risk-popup-total-value">${total.toFixed(1)}/mo</td><td></td></tr>`
             + `</table>`
-            + `<div style="margin-top:8px;color:#64748b;font-size:9px">Predicted fatalities/month &middot; PRIO/VIEWS Early Warning System<br/>Run: ${countryResp.run ?? "unknown"}</div>`
+            + `<div class="siem-risk-popup-meta">Predicted fatalities/month &middot; PRIO/VIEWS Early Warning System<br/>Run: ${countryResp.run ?? "unknown"}</div>`
             + `</div>`,
             { className: "siem-popup", maxWidth: 280 },
           );
