@@ -27,11 +27,11 @@ type MapViewport = { center: [number, number]; zoom: number };
 
 const REGION_VIEWPORTS: Record<string, MapViewport> = {
   Europe: { center: [50, 10], zoom: 4 },
+  "Middle East": { center: [28, 46], zoom: 5 },
   "North America": { center: [42, -100], zoom: 4 },
   "South America": { center: [-15, -60], zoom: 3 },
   Africa: { center: [4, 20], zoom: 4 },
-  Asia: { center: [30, 90], zoom: 4 },
-  Oceania: { center: [-28, 140], zoom: 4 },
+  "Asia-Pacific": { center: [20, 100], zoom: 3 },
   Caribbean: { center: [18, -75], zoom: 5 },
   International: { center: [20, 0], zoom: 3 },
   all: { center: [20, 0], zoom: 3 },
