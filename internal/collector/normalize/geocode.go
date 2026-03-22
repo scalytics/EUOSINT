@@ -377,22 +377,22 @@ var geoAliases = map[string]string{
 	"ingushetia": "Russia",
 
 	// Iran conflict/nuclear locations
-	"natanz":   "Iran",
-	"isfahan":  "Iran",
-	"bushehr":  "Iran",
-	"tehran":   "Iran",
-	"ahvaz":    "Iran",
+	"natanz":       "Iran",
+	"isfahan":      "Iran",
+	"bushehr":      "Iran",
+	"tehran":       "Iran",
+	"ahvaz":        "Iran",
 	"bandar abbas": "Iran",
 
 	// Syria cities/regions
-	"al-suwaidaa":  "Syria",
-	"suwaidaa":     "Syria",
-	"deir ez-zor":  "Syria",
-	"raqqa":        "Syria",
-	"homs":         "Syria",
-	"daraa":        "Syria",
-	"latakia":      "Syria",
-	"damascus":     "Syria",
+	"al-suwaidaa": "Syria",
+	"suwaidaa":    "Syria",
+	"deir ez-zor": "Syria",
+	"raqqa":       "Syria",
+	"homs":        "Syria",
+	"daraa":       "Syria",
+	"latakia":     "Syria",
+	"damascus":    "Syria",
 
 	// Israel/Palestine locations
 	"dimona":     "Israel",
@@ -402,31 +402,31 @@ var geoAliases = map[string]string{
 	"negev":      "Israel",
 
 	// Lebanon
-	"beirut":   "Lebanon",
+	"beirut":    "Lebanon",
 	"hezbollah": "Lebanon",
 
 	// Middle East as a region — map to Iraq as centroid
 	"middle east": "Iraq",
 
 	// Institutional/military abbreviations → home country
-	"idf":  "Israel",
-	"irgc": "Iran",
+	"idf":   "Israel",
+	"irgc":  "Iran",
 	"hamas": "Gaza",
 
 	// Other conflict cities
-	"khartoum":  "Sudan",
-	"port sudan": "Sudan",
-	"maiduguri": "Nigeria",
-	"abuja":     "Nigeria",
-	"lagos":     "Nigeria",
-	"nairobi":   "Kenya",
-	"kampala":   "Uganda",
-	"bamako":    "Mali",
+	"khartoum":    "Sudan",
+	"port sudan":  "Sudan",
+	"maiduguri":   "Nigeria",
+	"abuja":       "Nigeria",
+	"lagos":       "Nigeria",
+	"nairobi":     "Kenya",
+	"kampala":     "Uganda",
+	"bamako":      "Mali",
 	"ouagadougou": "Burkina Faso",
-	"niamey":    "Niger",
-	"bangui":    "Central African Republic",
-	"kinshasa":  "Congo",
-	"goma":      "Congo",
+	"niamey":      "Niger",
+	"bangui":      "Central African Republic",
+	"kinshasa":    "Congo",
+	"goma":        "Congo",
 }
 
 // geoIndex maps lowercased country names to their centroid. Built once at init.
