@@ -246,9 +246,9 @@ configure_env() {
     [[ -z "$key" ]] && continue
     local example_val="${line#*=}"
 
-    # Ports are auto-derived from EUOSINT_SITE_ADDRESS — skip.
+    # Ports are auto-derived; bearer token is auto-rotated — skip.
     case "$key" in
-      EUOSINT_HTTP_PORT|EUOSINT_HTTPS_PORT) continue ;;
+      EUOSINT_HTTP_PORT|EUOSINT_HTTPS_PORT|API_BEARER_TOKEN) continue ;;
     esac
 
     # Current value from .env if present, otherwise .env.example default.
