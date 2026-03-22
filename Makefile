@@ -234,6 +234,7 @@ commit-check: ## Run the same quality gate as GitHub CI
 		"go-fmt:go format (auto-fix)" \
 		"lint:ui lint" \
 		"typecheck:ui typecheck" \
+		"test:ui tests" \
 		"build:ui build" \
 		"go-fmt-check:go format check" \
 		"go-test:go test" \

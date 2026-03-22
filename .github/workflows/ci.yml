@@ -45,6 +45,9 @@ jobs:
       - name: UI typecheck
         run: npm run typecheck
 
+      - name: UI tests
+        run: npm test
+
       - name: UI build
         run: npm run build
 
