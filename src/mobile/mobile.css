@@ -414,7 +414,7 @@ body {
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 30;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
