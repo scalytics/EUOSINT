@@ -473,24 +473,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "cisa-ics",
-      "authority_name": "CISA ICS-CERT",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "cert",
-      "base_url": "https://www.cisa.gov"
-    },
-    "feed_url": "https://www.cisa.gov/uscert/ics/advisories/advisories.xml",
-    "category": "cyber_advisory",
-    "region_tag": "US",
-    "lat": 38.89,
-    "lng": -77.03,
-    "max_items": 15
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "cert-eu-advisories",
       "authority_name": "CERT-EU Security Advisories",
       "country": "Belgium",
@@ -1126,30 +1108,6 @@
     "type": "rss",
     "followRedirects": true,
     "source": {
-      "source_id": "crimestoppers-uk",
-      "authority_name": "Crimestoppers UK",
-      "country": "United Kingdom",
-      "country_code": "GB",
-      "region": "Europe",
-      "authority_type": "public_safety_program",
-      "base_url": "https://www.crimestoppers-uk.org"
-    },
-    "feed_url": "https://www.crimestoppers-uk.org/give-information/latest-news-feeds/rss",
-    "category": "public_appeal",
-    "region_tag": "GB",
-    "lat": 51.52,
-    "lng": -0.08,
-    "reporting": {
-      "label": "Report to Crimestoppers",
-      "url": "https://crimestoppers-uk.org/give-information",
-      "phone": "0800 555 111",
-      "notes": "100% anonymous. You can also report online."
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
       "source_id": "polisen-se",
       "authority_name": "Polisen Sweden",
       "country": "Sweden",
@@ -1224,34 +1182,6 @@
     "type": "rss",
     "followRedirects": true,
     "source": {
-      "source_id": "pnp-pe",
-      "authority_name": "Policía Nacional del Perú",
-      "country": "Peru",
-      "country_code": "PE",
-      "region": "South America",
-      "authority_type": "police",
-      "base_url": "https://www.policia.gob.pe"
-    },
-    "feed_url": "https://www.policia.gob.pe/feed/",
-    "feed_urls": [
-      "https://www.policia.gob.pe/feed/",
-      "https://www.policia.gob.pe/rss",
-      "https://www.gob.pe/institucion/pnp/noticias.rss"
-    ],
-    "category": "public_appeal",
-    "region_tag": "PE",
-    "lat": -12.05,
-    "lng": -77.04,
-    "reporting": {
-      "label": "Report to PNP Peru",
-      "url": "https://www.policia.gob.pe/denuncia/",
-      "phone": "105 (Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
       "source_id": "policia-ec",
       "authority_name": "Policía Nacional Ecuador",
       "country": "Ecuador",
@@ -1274,34 +1204,6 @@
       "label": "Report to Policía Ecuador",
       "url": "https://www.policia.gob.ec/servicios/",
       "phone": "911 (Emergency) / 1800-DELITO"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "policia-bo",
-      "authority_name": "Policía Boliviana",
-      "country": "Bolivia",
-      "country_code": "BO",
-      "region": "South America",
-      "authority_type": "police",
-      "base_url": "https://www.policia.bo"
-    },
-    "feed_url": "https://www.policia.bo/feed/",
-    "feed_urls": [
-      "https://www.policia.bo/feed/",
-      "https://www.policia.bo/rss",
-      "https://www.policia.bo/category/noticias/feed/"
-    ],
-    "category": "public_appeal",
-    "region_tag": "BO",
-    "lat": -16.5,
-    "lng": -68.15,
-    "reporting": {
-      "label": "Report to Policía Boliviana",
-      "url": "https://www.policia.bo/",
-      "phone": "110 (Emergency)"
     }
   },
   {
@@ -1443,34 +1345,6 @@
     "type": "rss",
     "followRedirects": true,
     "source": {
-      "source_id": "pdrm-my",
-      "authority_name": "PDRM Malaysia",
-      "country": "Malaysia",
-      "country_code": "MY",
-      "region": "Asia",
-      "authority_type": "police",
-      "base_url": "https://www.pdrm.gov.my"
-    },
-    "feed_url": "https://www.pdrm.gov.my/rss",
-    "feed_urls": [
-      "https://www.pdrm.gov.my/rss",
-      "https://www.rmp.gov.my/rss",
-      "https://www.rmp.gov.my/feed/"
-    ],
-    "category": "public_appeal",
-    "region_tag": "MY",
-    "lat": 3.14,
-    "lng": 101.69,
-    "reporting": {
-      "label": "Report to PDRM",
-      "url": "https://semakonline.rmp.gov.my/",
-      "phone": "999 (Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
       "source_id": "ttps",
       "authority_name": "Trinidad & Tobago Police",
       "country": "Trinidad and Tobago",
@@ -1488,29 +1362,6 @@
       "label": "Report to TTPS",
       "url": "https://www.ttps.gov.tt/",
       "phone": "999 (Emergency) / 555 (Crime Stoppers)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "jcf-jm",
-      "authority_name": "JCF Jamaica",
-      "country": "Jamaica",
-      "country_code": "JM",
-      "region": "Caribbean",
-      "authority_type": "police",
-      "base_url": "https://www.jcf.gov.jm"
-    },
-    "feed_url": "https://www.jcf.gov.jm/rss",
-    "category": "public_appeal",
-    "region_tag": "JM",
-    "lat": 18,
-    "lng": -76.79,
-    "reporting": {
-      "label": "Report to JCF",
-      "url": "https://www.jcf.gov.jm/",
-      "phone": "119 (Emergency) / 311 (Crime Stop)"
     }
   },
   {
@@ -1571,29 +1422,6 @@
     "type": "rss",
     "followRedirects": true,
     "source": {
-      "source_id": "knpa-kr",
-      "authority_name": "Korea National Police",
-      "country": "South Korea",
-      "country_code": "KR",
-      "region": "Asia",
-      "authority_type": "police",
-      "base_url": "https://www.police.go.kr"
-    },
-    "feed_url": "https://www.police.go.kr/eng/portal/rss/rss.do",
-    "category": "public_safety",
-    "region_tag": "KR",
-    "lat": 37.58,
-    "lng": 126.97,
-    "reporting": {
-      "label": "Report to Korean Police",
-      "url": "https://www.police.go.kr/eng/index.do",
-      "phone": "112 (Emergency)"
-    }
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
       "source_id": "thaicert",
       "authority_name": "ThaiCERT",
       "country": "Thailand",
@@ -1643,34 +1471,6 @@
       "label": "Report to MyCERT",
       "url": "https://www.mycert.org.my/portal/report-incident",
       "email": "mycert@cybersecurity.my"
-    },
-    "max_items": 15
-  },
-  {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "bssn-id",
-      "authority_name": "BSSN Indonesia",
-      "country": "Indonesia",
-      "country_code": "ID",
-      "region": "Asia",
-      "authority_type": "cert",
-      "base_url": "https://bssn.go.id"
-    },
-    "feed_url": "https://bssn.go.id/feed/",
-    "feed_urls": [
-      "https://bssn.go.id/feed/",
-      "https://bssn.go.id/category/peringatan-keamanan/feed/"
-    ],
-    "category": "cyber_advisory",
-    "region_tag": "ID",
-    "lat": -6.2,
-    "lng": 106.82,
-    "reporting": {
-      "label": "Report to BSSN",
-      "url": "https://bssn.go.id/",
-      "notes": "Use official BSSN contact channels for incident reporting."
     },
     "max_items": 15
   },
@@ -1945,33 +1745,6 @@
     }
   },
   {
-    "type": "rss",
-    "followRedirects": true,
-    "source": {
-      "source_id": "cert-mu",
-      "authority_name": "CERT-MU Mauritius",
-      "country": "Mauritius",
-      "country_code": "MU",
-      "region": "Africa",
-      "authority_type": "cert",
-      "base_url": "https://cert-mu.govmu.org"
-    },
-    "feed_url": "https://cert-mu.govmu.org/rss",
-    "feed_urls": [
-      "https://cert-mu.govmu.org/rss",
-      "https://cert-mu.govmu.org/English/Pages/rss.aspx"
-    ],
-    "category": "cyber_advisory",
-    "region_tag": "MU",
-    "lat": -20.160891,
-    "lng": 57.501222,
-    "max_items": 100,
-    "reporting": {
-      "label": "Report Incident to CERT-MU",
-      "url": "https://cert-mu.govmu.org/Pages/incident-reporting.aspx"
-    }
-  },
-  {
     "type": "html-list",
     "followRedirects": true,
     "source": {
@@ -2042,49 +1815,6 @@
     "reporting": {
       "label": "Report to MP Honduras",
       "url": "https://www.mp.hn"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "fgr-sv-casos",
-      "authority_name": "Fiscalia El Salvador Casos",
-      "country": "El Salvador",
-      "country_code": "SV",
-      "region": "North America",
-      "authority_type": "regulatory",
-      "base_url": "https://www.fiscalia.gob.sv"
-    },
-    "feed_url": "https://www.fiscalia.gob.sv/category/noticias/",
-    "feed_urls": [
-      "https://www.fiscalia.gob.sv/category/noticias/",
-      "https://www.fiscalia.gob.sv/noticias/",
-      "https://www.fiscalia.gob.sv"
-    ],
-    "category": "public_appeal",
-    "region_tag": "SV",
-    "lat": 13.6929,
-    "lng": -89.2182,
-    "max_items": 120,
-    "include_keywords": [
-      "desaparec",
-      "secuestro",
-      "se busca",
-      "captura",
-      "informacion",
-      "denuncia",
-      "fiscalia",
-      "homicidio"
-    ],
-    "exclude_keywords": [
-      "evento",
-      "agenda",
-      "acto protocolario"
-    ],
-    "reporting": {
-      "label": "Report to FGR El Salvador",
-      "url": "https://www.fiscalia.gob.sv"
     }
   },
   {
@@ -2165,47 +1895,6 @@
     "reporting": {
       "label": "Report to MP Panama",
       "url": "https://ministeriopublico.gob.pa"
-    }
-  },
-  {
-    "type": "html-list",
-    "followRedirects": true,
-    "source": {
-      "source_id": "mp-ni-casos",
-      "authority_name": "Ministerio Publico Nicaragua Casos",
-      "country": "Nicaragua",
-      "country_code": "NI",
-      "region": "North America",
-      "authority_type": "regulatory",
-      "base_url": "https://www.ministeriopublico.gob.ni"
-    },
-    "feed_url": "https://www.ministeriopublico.gob.ni/noticias/",
-    "feed_urls": [
-      "https://www.ministeriopublico.gob.ni/noticias/",
-      "https://www.ministeriopublico.gob.ni"
-    ],
-    "category": "public_appeal",
-    "region_tag": "NI",
-    "lat": 12.1364,
-    "lng": -86.2514,
-    "max_items": 120,
-    "include_keywords": [
-      "desaparec",
-      "secuestro",
-      "captura",
-      "investigacion",
-      "denuncia",
-      "fiscalia",
-      "homicidio"
-    ],
-    "exclude_keywords": [
-      "agenda",
-      "evento",
-      "boletin"
-    ],
-    "reporting": {
-      "label": "Report to MP Nicaragua",
-      "url": "https://www.ministeriopublico.gob.ni"
     }
   },
   {
@@ -2660,32 +2349,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "politi-dk",
-      "authority_name": "Danish Police",
-      "country": "Denmark",
-      "country_code": "DK",
-      "region": "Europe",
-      "authority_type": "police",
-      "base_url": "https://politi.dk"
-    },
-    "feed_url": "https://politi.dk/rss",
-    "feed_urls": [
-      "https://politi.dk/rss",
-      "https://politi.dk/nyheder/rss"
-    ],
-    "category": "public_appeal",
-    "region_tag": "DK",
-    "lat": 55.68,
-    "lng": 12.57,
-    "reporting": {
-      "label": "Report to Danish Police",
-      "url": "https://politi.dk/anmeld",
-      "phone": "114"
-    }
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "poliisi-fi",
       "authority_name": "Finnish Police",
       "country": "Finland",
@@ -2992,7 +2655,7 @@
       "authority_type": "public_safety_program",
       "base_url": "https://www.icrc.org"
     },
-    "feed_url": "https://www.icrc.org/en/rss",
+    "feed_url": "https://www.icrc.org/en/rss/news",
     "category": "humanitarian_security",
     "region_tag": "INT",
     "lat": 46.22,
@@ -3359,24 +3022,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "cia-newsroom",
-      "authority_name": "CIA Newsroom",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "intelligence",
-      "base_url": "https://www.cia.gov"
-    },
-    "feed_url": "https://www.cia.gov/rss/press-releases.xml",
-    "category": "intelligence_report",
-    "region_tag": "US",
-    "lat": 38.95,
-    "lng": -77.15,
-    "fetch_mode": "browser"
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "nsa-advisories",
       "authority_name": "NSA Cybersecurity Advisories",
       "country": "United States",
@@ -3527,23 +3172,6 @@
     "region_tag": "AU",
     "lat": -35.28,
     "lng": 149.13
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "csis-canada",
-      "authority_name": "CSIS (Canadian Intelligence)",
-      "country": "Canada",
-      "country_code": "CA",
-      "region": "North America",
-      "authority_type": "intelligence",
-      "base_url": "https://www.canada.ca/en/security-intelligence-service"
-    },
-    "feed_url": "https://www.canada.ca/en/security-intelligence-service.atom.xml",
-    "category": "intelligence_report",
-    "region_tag": "CA",
-    "lat": 45.42,
-    "lng": -75.69
   },
   {
     "type": "rss",
@@ -3753,24 +3381,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "dhs-news",
-      "authority_name": "DHS Press Releases",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "national_security",
-      "base_url": "https://www.dhs.gov"
-    },
-    "feed_url": "https://www.dhs.gov/news-releases/press-releases/rss.xml",
-    "category": "public_safety",
-    "region_tag": "US",
-    "lat": 38.88,
-    "lng": -77.02,
-    "fetch_mode": "browser"
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "doj-press",
       "authority_name": "US DOJ Press Releases",
       "country": "United States",
@@ -3877,59 +3487,6 @@
     "lng": 4.27
   },
   {
-    "type": "html-list",
-    "source": {
-      "source_id": "us-dhs-ntas",
-      "authority_name": "US DHS NTAS (National Terrorism Advisory System)",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "national_security",
-      "base_url": "https://www.dhs.gov"
-    },
-    "feed_url": "https://www.dhs.gov/ntas/1.1/feed.xml",
-    "category": "terrorism_tip",
-    "region_tag": "US",
-    "lat": 38.89,
-    "lng": -77.03,
-    "include_keywords": [
-      "national terrorism advisory",
-      "bulletin",
-      "alert",
-      "credible threat",
-      "extremist",
-      "domestic violent extremist",
-      "terrorism"
-    ],
-    "max_items": 30
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "us-dhs-ntas-alerts",
-      "authority_name": "US DHS NTAS Alerts",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "national_security",
-      "base_url": "https://www.dhs.gov"
-    },
-    "feed_url": "https://www.dhs.gov/ntas/1.1/alerts.xml",
-    "category": "terrorism_tip",
-    "region_tag": "US",
-    "lat": 38.89,
-    "lng": -77.03,
-    "include_keywords": [
-      "alert",
-      "imminent threat",
-      "elevated threat",
-      "terrorism",
-      "attack",
-      "extremist"
-    ],
-    "max_items": 30
-  },
-  {
     "type": "rss",
     "source": {
       "source_id": "mi5-threats",
@@ -4018,41 +3575,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "ru-gov-cert",
-      "authority_name": "GOV-CERT Russia",
-      "country": "Russia",
-      "country_code": "RU",
-      "region": "Europe",
-      "authority_type": "cert",
-      "base_url": "https://www.gov-cert.ru"
-    },
-    "feed_url": "https://www.gov-cert.ru/rss",
-    "category": "cyber_advisory",
-    "region_tag": "RU",
-    "lat": 55.75,
-    "lng": 37.62,
-    "max_items": 15
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "ru-mvd",
-      "authority_name": "MVD Russia (Interior Ministry)",
-      "country": "Russia",
-      "country_code": "RU",
-      "region": "Europe",
-      "authority_type": "police",
-      "base_url": "https://мвд.рф"
-    },
-    "feed_url": "https://мвд.рф/news/feed",
-    "category": "public_appeal",
-    "region_tag": "RU",
-    "lat": 55.75,
-    "lng": 37.62
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "no-pst",
       "authority_name": "PST (Norwegian Police Security)",
       "country": "Norway",
@@ -4105,23 +3627,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "dk-pet",
-      "authority_name": "PET (Danish Security Intelligence)",
-      "country": "Denmark",
-      "country_code": "DK",
-      "region": "Europe",
-      "authority_type": "intelligence",
-      "base_url": "https://pet.dk"
-    },
-    "feed_url": "https://pet.dk/rss",
-    "category": "intelligence_report",
-    "region_tag": "DK",
-    "lat": 55.68,
-    "lng": 12.57
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "dk-cfcs",
       "authority_name": "CFCS (Danish Centre for Cyber Security)",
       "country": "Denmark",
@@ -4136,23 +3641,6 @@
     "lat": 55.68,
     "lng": 12.57,
     "max_items": 15
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "dk-politi",
-      "authority_name": "Danish Police",
-      "country": "Denmark",
-      "country_code": "DK",
-      "region": "Europe",
-      "authority_type": "police",
-      "base_url": "https://politi.dk"
-    },
-    "feed_url": "https://politi.dk/rss",
-    "category": "public_appeal",
-    "region_tag": "DK",
-    "lat": 55.68,
-    "lng": 12.57
   },
   {
     "type": "rss",
@@ -4325,23 +3813,6 @@
     "region_tag": "RO",
     "lat": 44.43,
     "lng": 26.1
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "sk-police",
-      "authority_name": "Slovak Police",
-      "country": "Slovakia",
-      "country_code": "SK",
-      "region": "Europe",
-      "authority_type": "police",
-      "base_url": "https://www.minv.sk"
-    },
-    "feed_url": "https://www.minv.sk/?rss",
-    "category": "public_appeal",
-    "region_tag": "SK",
-    "lat": 48.15,
-    "lng": 17.11
   },
   {
     "type": "rss",
@@ -4758,23 +4229,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "ge-ssg",
-      "authority_name": "Georgian State Security Service",
-      "country": "Georgia",
-      "country_code": "GE",
-      "region": "Europe",
-      "authority_type": "intelligence",
-      "base_url": "https://ssg.gov.ge"
-    },
-    "feed_url": "https://ssg.gov.ge/en/feed",
-    "category": "intelligence_report",
-    "region_tag": "GE",
-    "lat": 41.69,
-    "lng": 44.8
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "md-sis",
       "authority_name": "Moldova SIS (Intelligence & Security)",
       "country": "Moldova",
@@ -4839,24 +4293,6 @@
     "region_tag": "CY",
     "lat": 35.17,
     "lng": 33.36
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "cy-csirt",
-      "authority_name": "CSIRT Cyprus",
-      "country": "Cyprus",
-      "country_code": "CY",
-      "region": "Europe",
-      "authority_type": "cert",
-      "base_url": "https://csirt.cy"
-    },
-    "feed_url": "https://csirt.cy/en/feed/",
-    "category": "cyber_advisory",
-    "region_tag": "CY",
-    "lat": 35.17,
-    "lng": 33.36,
-    "max_items": 15
   },
   {
     "type": "rss",
@@ -4967,24 +4403,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "qa-ncsa",
-      "authority_name": "Qatar NCSA",
-      "country": "Qatar",
-      "country_code": "QA",
-      "region": "Middle East",
-      "authority_type": "cert",
-      "base_url": "https://www.ncsa.gov.qa"
-    },
-    "feed_url": "https://www.ncsa.gov.qa/en/rss",
-    "category": "cyber_advisory",
-    "region_tag": "QA",
-    "lat": 25.29,
-    "lng": 51.53,
-    "max_items": 15
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "au-african-union",
       "authority_name": "African Union Peace & Security",
       "country": "Ethiopia",
@@ -5015,24 +4433,6 @@
     "region_tag": "EG",
     "lat": 30.04,
     "lng": 31.24,
-    "max_items": 15
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "ma-dgssi",
-      "authority_name": "Morocco DGSSI (maCERT)",
-      "country": "Morocco",
-      "country_code": "MA",
-      "region": "Africa",
-      "authority_type": "cert",
-      "base_url": "https://www.dgssi.gov.ma"
-    },
-    "feed_url": "https://www.dgssi.gov.ma/fr/feed",
-    "category": "cyber_advisory",
-    "region_tag": "MA",
-    "lat": 33.97,
-    "lng": -6.85,
     "max_items": 15
   },
   {
@@ -5408,23 +4808,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "fatf-updates",
-      "authority_name": "FATF (Financial Action Task Force)",
-      "country": "France",
-      "country_code": "FR",
-      "region": "International",
-      "authority_type": "regulatory",
-      "base_url": "https://www.fatf-gafi.org"
-    },
-    "feed_url": "https://www.fatf-gafi.org/rss/publications.xml",
-    "category": "fraud_alert",
-    "region_tag": "INT",
-    "lat": 48.86,
-    "lng": 2.33
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "opensanctions",
       "authority_name": "OpenSanctions",
       "country": "Global",
@@ -5728,7 +5111,7 @@
     "feed_url": "https://www.worldbank.org/en/topic/edutech/rss.xml",
     "category": "education_digital_capacity",
     "region_tag": "INT",
-    "lat": 38.90,
+    "lat": 38.9,
     "lng": -77.04
   },
   {
@@ -6010,7 +5393,22 @@
     "lat": 38.88,
     "lng": -77.02,
     "max_items": 20,
-    "include_keywords": ["military", "conflict", "troops", "strike", "missile", "attack", "invasion", "war", "combat", "airstrike", "ceasefire", "offensive", "deployed", "escalation"]
+    "include_keywords": [
+      "military",
+      "conflict",
+      "troops",
+      "strike",
+      "missile",
+      "attack",
+      "invasion",
+      "war",
+      "combat",
+      "airstrike",
+      "ceasefire",
+      "offensive",
+      "deployed",
+      "escalation"
+    ]
   },
   {
     "type": "gdelt-json",
@@ -6033,7 +5431,20 @@
     "lat": 38.88,
     "lng": -77.02,
     "max_items": 20,
-    "include_keywords": ["terrorist", "terrorism", "bombing", "insurgent", "extremist", "piracy", "hijack", "maritime attack", "Houthi", "militia", "hostage", "kidnap"]
+    "include_keywords": [
+      "terrorist",
+      "terrorism",
+      "bombing",
+      "insurgent",
+      "extremist",
+      "piracy",
+      "hijack",
+      "maritime attack",
+      "Houthi",
+      "militia",
+      "hostage",
+      "kidnap"
+    ]
   },
   {
     "type": "gdelt-json",
@@ -6056,7 +5467,19 @@
     "lat": 38.88,
     "lng": -77.02,
     "max_items": 15,
-    "include_keywords": ["sanctions", "embargo", "asset freeze", "blacklist", "DEFCON", "nuclear", "mobilization", "threat level", "escalation", "no-fly zone", "blockade"]
+    "include_keywords": [
+      "sanctions",
+      "embargo",
+      "asset freeze",
+      "blacklist",
+      "DEFCON",
+      "nuclear",
+      "mobilization",
+      "threat level",
+      "escalation",
+      "no-fly zone",
+      "blockade"
+    ]
   },
   {
     "type": "rss",
@@ -6158,7 +5581,7 @@
     "category": "disease_outbreak",
     "region_tag": "EU",
     "lat": 59.35,
-    "lng": 18.10
+    "lng": 18.1
   },
   {
     "type": "rss",
@@ -6175,7 +5598,7 @@
     "category": "disease_outbreak",
     "region_tag": "EU",
     "lat": 59.35,
-    "lng": 18.10
+    "lng": 18.1
   },
   {
     "type": "rss",
@@ -6191,7 +5614,7 @@
     "feed_url": "https://tools.cdc.gov/api/v2/resources/media/132608.rss",
     "category": "disease_outbreak",
     "region_tag": "US",
-    "lat": 33.80,
+    "lat": 33.8,
     "lng": -84.39
   },
   {
@@ -6210,11 +5633,24 @@
     "region_tag": "INT",
     "lat": 48.86,
     "lng": 2.32,
-    "include_keywords": ["outbreak", "avian", "influenza", "disease", "epidemic", "zoonotic", "virus", "pathogen", "infection", "surveillance", "alert", "emergency"]
+    "include_keywords": [
+      "outbreak",
+      "avian",
+      "influenza",
+      "disease",
+      "epidemic",
+      "zoonotic",
+      "virus",
+      "pathogen",
+      "infection",
+      "surveillance",
+      "alert",
+      "emergency"
+    ]
   },
-
-  {"_comment": "═══════════════ MARITIME SECURITY ═══════════════"},
-
+  {
+    "_comment": "═══════════════ MARITIME SECURITY ═══════════════"
+  },
   {
     "type": "rss",
     "source": {
@@ -6231,7 +5667,23 @@
     "region_tag": "US",
     "lat": 38.87,
     "lng": -77.01,
-    "include_keywords": ["piracy", "maritime", "shipping", "vessel", "naval", "fleet", "strait", "gulf", "houthi", "red sea", "patrol", "intercept", "seizure", "smuggling", "freedom of navigation"]
+    "include_keywords": [
+      "piracy",
+      "maritime",
+      "shipping",
+      "vessel",
+      "naval",
+      "fleet",
+      "strait",
+      "gulf",
+      "houthi",
+      "red sea",
+      "patrol",
+      "intercept",
+      "seizure",
+      "smuggling",
+      "freedom of navigation"
+    ]
   },
   {
     "type": "rss",
@@ -6249,7 +5701,23 @@
     "region_tag": "INT",
     "lat": 38.87,
     "lng": -77.01,
-    "include_keywords": ["piracy", "maritime security", "shipping", "naval", "strait", "chokepoint", "attack", "vessel", "threat", "patrol", "red sea", "gulf", "houthi", "mine", "boarding"]
+    "include_keywords": [
+      "piracy",
+      "maritime security",
+      "shipping",
+      "naval",
+      "strait",
+      "chokepoint",
+      "attack",
+      "vessel",
+      "threat",
+      "patrol",
+      "red sea",
+      "gulf",
+      "houthi",
+      "mine",
+      "boarding"
+    ]
   },
   {
     "type": "rss",
@@ -6267,7 +5735,27 @@
     "region_tag": "INT",
     "lat": 37.77,
     "lng": -122.42,
-    "include_keywords": ["piracy", "attack", "seized", "hijack", "missile", "houthi", "drone strike", "maritime security", "boarding", "smuggling", "sanctions", "detained", "navy", "warship", "patrol", "red sea", "gulf of aden", "strait of hormuz", "malacca"]
+    "include_keywords": [
+      "piracy",
+      "attack",
+      "seized",
+      "hijack",
+      "missile",
+      "houthi",
+      "drone strike",
+      "maritime security",
+      "boarding",
+      "smuggling",
+      "sanctions",
+      "detained",
+      "navy",
+      "warship",
+      "patrol",
+      "red sea",
+      "gulf of aden",
+      "strait of hormuz",
+      "malacca"
+    ]
   },
   {
     "type": "rss",
@@ -6302,7 +5790,26 @@
     "region_tag": "INT",
     "lat": 33.77,
     "lng": -118.19,
-    "include_keywords": ["piracy", "attack", "seized", "hijack", "missile", "houthi", "security", "boarding", "smuggling", "sanctions", "detained", "navy", "warship", "patrol", "collision", "grounding", "sinking", "rescue"]
+    "include_keywords": [
+      "piracy",
+      "attack",
+      "seized",
+      "hijack",
+      "missile",
+      "houthi",
+      "security",
+      "boarding",
+      "smuggling",
+      "sanctions",
+      "detained",
+      "navy",
+      "warship",
+      "patrol",
+      "collision",
+      "grounding",
+      "sinking",
+      "rescue"
+    ]
   },
   {
     "type": "html-list",
@@ -6321,7 +5828,21 @@
     "region_tag": "EU",
     "lat": 11.59,
     "lng": 43.15,
-    "include_keywords": ["piracy", "operation", "vessel", "patrol", "escort", "maritime", "incident", "seized", "rescue", "suspicious", "attack", "atalanta", "aspides"]
+    "include_keywords": [
+      "piracy",
+      "operation",
+      "vessel",
+      "patrol",
+      "escort",
+      "maritime",
+      "incident",
+      "seized",
+      "rescue",
+      "suspicious",
+      "attack",
+      "atalanta",
+      "aspides"
+    ]
   },
   {
     "type": "html-list",
@@ -6340,46 +5861,23 @@
     "region_tag": "INT",
     "lat": 38.88,
     "lng": -77.02,
-    "include_keywords": ["advisory", "threat", "piracy", "attack", "vessel", "maritime", "security", "warning", "alert", "strait", "gulf", "red sea"]
-  },
-
-  {"_comment": "═══════════════ LOGISTICS / TRANSPORTATION INCIDENTS ═══════════════"},
-
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "asn-aviation-safety",
-      "authority_name": "Aviation Safety Network",
-      "country": "International",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "regulatory",
-      "base_url": "https://aviation-safety.net"
-    },
-    "feed_url": "https://aviation-safety.net/rss/latest-accidents.xml",
-    "category": "logistics_incident",
-    "region_tag": "INT",
-    "lat": 52.31,
-    "lng": 4.77,
-    "include_keywords": ["crash", "accident", "incident", "emergency", "fatality", "fatal", "wreckage", "missing", "overrun", "ditching", "fire", "collision", "hijack", "shot down", "explosion"]
+    "include_keywords": [
+      "advisory",
+      "threat",
+      "piracy",
+      "attack",
+      "vessel",
+      "maritime",
+      "security",
+      "warning",
+      "alert",
+      "strait",
+      "gulf",
+      "red sea"
+    ]
   },
   {
-    "type": "rss",
-    "source": {
-      "source_id": "easa-safety",
-      "authority_name": "EASA Safety Information",
-      "country": "European Union",
-      "country_code": "EU",
-      "region": "Europe",
-      "authority_type": "regulatory",
-      "base_url": "https://www.easa.europa.eu"
-    },
-    "feed_url": "https://www.easa.europa.eu/en/rss-feeds/safety-information-bulletins",
-    "category": "logistics_incident",
-    "region_tag": "EU",
-    "lat": 50.86,
-    "lng": 7.14,
-    "include_keywords": ["safety", "airworthiness", "directive", "emergency", "accident", "incident", "grounding", "inspection", "defect", "failure"]
+    "_comment": "═══════════════ LOGISTICS / TRANSPORTATION INCIDENTS ═══════════════"
   },
   {
     "type": "rss",
@@ -6397,7 +5895,21 @@
     "region_tag": "US",
     "lat": 38.89,
     "lng": -77.02,
-    "include_keywords": ["aviation", "marine", "railroad", "pipeline", "accident", "crash", "collision", "fatality", "derailment", "sinking", "grounding", "explosion", "fire"]
+    "include_keywords": [
+      "aviation",
+      "marine",
+      "railroad",
+      "pipeline",
+      "accident",
+      "crash",
+      "collision",
+      "fatality",
+      "derailment",
+      "sinking",
+      "grounding",
+      "explosion",
+      "fire"
+    ]
   },
   {
     "type": "rss",
@@ -6413,7 +5925,7 @@
     "feed_url": "https://www.gov.uk/government/organisations/marine-accident-investigation-branch.atom",
     "category": "logistics_incident",
     "region_tag": "GB",
-    "lat": 50.80,
+    "lat": 50.8,
     "lng": -1.09
   },
   {
@@ -6436,57 +5948,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "bfu-germany",
-      "authority_name": "BFU German Federal Bureau of Aircraft Accident Investigation",
-      "country": "Germany",
-      "country_code": "DE",
-      "region": "Europe",
-      "authority_type": "regulatory",
-      "base_url": "https://www.bfu-web.de"
-    },
-    "feed_url": "https://www.bfu-web.de/EN/Publications/Investigation%20Report/RSS/rss_node.xml",
-    "category": "logistics_incident",
-    "region_tag": "DE",
-    "lat": 38.07,
-    "lng": 12.53
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "bsu-germany",
-      "authority_name": "BSU German Federal Bureau of Maritime Casualty Investigation",
-      "country": "Germany",
-      "country_code": "DE",
-      "region": "Europe",
-      "authority_type": "regulatory",
-      "base_url": "https://www.bsu-bund.de"
-    },
-    "feed_url": "https://www.bsu-bund.de/EN/Publications/RSS/rss_node.xml",
-    "category": "logistics_incident",
-    "region_tag": "DE",
-    "lat": 53.55,
-    "lng": 9.99
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "bea-france",
-      "authority_name": "BEA French Aviation Investigation Bureau",
-      "country": "France",
-      "country_code": "FR",
-      "region": "Europe",
-      "authority_type": "regulatory",
-      "base_url": "https://www.bea.aero"
-    },
-    "feed_url": "https://www.bea.aero/en/investigation-reports/rss.xml",
-    "category": "logistics_incident",
-    "region_tag": "FR",
-    "lat": 48.86,
-    "lng": 2.35
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "flightradar24-blog",
       "authority_name": "Flightradar24 Blog",
       "country": "International",
@@ -6500,29 +5961,25 @@
     "region_tag": "INT",
     "lat": 57.71,
     "lng": 11.97,
-    "include_keywords": ["incident", "accident", "crash", "emergency", "diversion", "mayday", "squawk", "intercept", "military", "closure", "grounding", "collision", "missing"]
+    "include_keywords": [
+      "incident",
+      "accident",
+      "crash",
+      "emergency",
+      "diversion",
+      "mayday",
+      "squawk",
+      "intercept",
+      "military",
+      "closure",
+      "grounding",
+      "collision",
+      "missing"
+    ]
   },
   {
-    "type": "rss",
-    "source": {
-      "source_id": "gcaptain-casualties",
-      "authority_name": "gCaptain Shipping Casualties",
-      "country": "International",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "private_sector",
-      "base_url": "https://gcaptain.com"
-    },
-    "feed_url": "https://gcaptain.com/tag/shipping-casualty/feed/",
-    "category": "logistics_incident",
-    "region_tag": "INT",
-    "lat": 37.77,
-    "lng": -122.42,
-    "include_keywords": ["collision", "grounding", "sinking", "capsized", "fire", "explosion", "adrift", "rescue", "missing", "oil spill", "pollution", "casualty", "wreck", "salvage"]
+    "_comment": "═══════════════ LEGISLATIVE / POLITICAL OSINT ═══════════════"
   },
-
-  {"_comment": "═══════════════ LEGISLATIVE / POLITICAL OSINT ═══════════════"},
-
   {
     "type": "rss",
     "source": {
@@ -6537,9 +5994,29 @@
     "feed_url": "https://www.europarl.europa.eu/rss/doc/press-releases/en",
     "category": "legislative",
     "region_tag": "EU",
-    "lat": 48.60,
+    "lat": 48.6,
     "lng": 7.77,
-    "include_keywords": ["sanction", "defence", "defense", "security", "border", "migration", "terrorism", "cyber", "intelligence", "military", "war", "conflict", "foreign affairs", "resolution", "embargo", "arms", "threat", "crisis", "nato"]
+    "include_keywords": [
+      "sanction",
+      "defence",
+      "defense",
+      "security",
+      "border",
+      "migration",
+      "terrorism",
+      "cyber",
+      "intelligence",
+      "military",
+      "war",
+      "conflict",
+      "foreign affairs",
+      "resolution",
+      "embargo",
+      "arms",
+      "threat",
+      "crisis",
+      "nato"
+    ]
   },
   {
     "type": "rss",
@@ -6557,25 +6034,27 @@
     "region_tag": "EU",
     "lat": 50.84,
     "lng": 4.37,
-    "include_keywords": ["sanction", "defence", "defense", "security", "border", "migration", "terrorism", "cyber", "intelligence", "military", "war", "conflict", "foreign", "resolution", "embargo", "arms", "threat", "crisis", "restrictive measures"]
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "eeas-press",
-      "authority_name": "EU External Action Service",
-      "country": "European Union",
-      "country_code": "EU",
-      "region": "Europe",
-      "authority_type": "national_security",
-      "base_url": "https://www.eeas.europa.eu"
-    },
-    "feed_url": "https://www.eeas.europa.eu/eeas/press-material_en?f%5B0%5D=press_material_type%3APress+release&_format=rss",
-    "category": "legislative",
-    "region_tag": "EU",
-    "lat": 50.84,
-    "lng": 4.38,
-    "include_keywords": ["sanction", "security", "defence", "defense", "conflict", "military", "war", "crisis", "terrorism", "foreign", "humanitarian", "ceasefire", "peace", "threat", "arms", "embargo", "nato", "statement"]
+    "include_keywords": [
+      "sanction",
+      "defence",
+      "defense",
+      "security",
+      "border",
+      "migration",
+      "terrorism",
+      "cyber",
+      "intelligence",
+      "military",
+      "war",
+      "conflict",
+      "foreign",
+      "resolution",
+      "embargo",
+      "arms",
+      "threat",
+      "crisis",
+      "restrictive measures"
+    ]
   },
   {
     "type": "rss",
@@ -6593,7 +6072,23 @@
     "region_tag": "EU",
     "lat": 50.84,
     "lng": 4.38,
-    "include_keywords": ["sanction", "security", "defence", "defense", "border", "migration", "terrorism", "cyber", "military", "crisis", "threat", "embargo", "arms", "restrictive measures", "disinformation"]
+    "include_keywords": [
+      "sanction",
+      "security",
+      "defence",
+      "defense",
+      "border",
+      "migration",
+      "terrorism",
+      "cyber",
+      "military",
+      "crisis",
+      "threat",
+      "embargo",
+      "arms",
+      "restrictive measures",
+      "disinformation"
+    ]
   },
   {
     "type": "rss",
@@ -6609,9 +6104,27 @@
     "feed_url": "https://lordsbusiness.parliament.uk/ItemOfBusiness/atom",
     "category": "legislative",
     "region_tag": "GB",
-    "lat": 51.50,
+    "lat": 51.5,
     "lng": -0.12,
-    "include_keywords": ["sanction", "security", "defence", "defense", "border", "migration", "terrorism", "cyber", "intelligence", "military", "war", "conflict", "foreign affairs", "arms", "threat", "crisis", "nato"]
+    "include_keywords": [
+      "sanction",
+      "security",
+      "defence",
+      "defense",
+      "border",
+      "migration",
+      "terrorism",
+      "cyber",
+      "intelligence",
+      "military",
+      "war",
+      "conflict",
+      "foreign affairs",
+      "arms",
+      "threat",
+      "crisis",
+      "nato"
+    ]
   },
   {
     "type": "rss",
@@ -6629,25 +6142,25 @@
     "region_tag": "US",
     "lat": 38.89,
     "lng": -77.01,
-    "include_keywords": ["sanction", "security", "defense", "border", "immigration", "terrorism", "cyber", "intelligence", "military", "war", "conflict", "foreign", "arms", "threat", "national defense", "nato", "maritime"]
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "us-state-dept-press",
-      "authority_name": "US State Department Press",
-      "country": "United States",
-      "country_code": "US",
-      "region": "North America",
-      "authority_type": "national_security",
-      "base_url": "https://www.state.gov"
-    },
-    "feed_url": "https://www.state.gov/rss-feed/press-releases/feed/",
-    "category": "legislative",
-    "region_tag": "US",
-    "lat": 38.89,
-    "lng": -77.05,
-    "include_keywords": ["sanction", "security", "defense", "terrorism", "conflict", "war", "crisis", "ceasefire", "peace", "threat", "arms", "embargo", "nuclear", "nato", "humanitarian", "statement"]
+    "include_keywords": [
+      "sanction",
+      "security",
+      "defense",
+      "border",
+      "immigration",
+      "terrorism",
+      "cyber",
+      "intelligence",
+      "military",
+      "war",
+      "conflict",
+      "foreign",
+      "arms",
+      "threat",
+      "national defense",
+      "nato",
+      "maritime"
+    ]
   },
   {
     "type": "rss",
@@ -6665,25 +6178,23 @@
     "region_tag": "US",
     "lat": 38.87,
     "lng": -77.06,
-    "include_keywords": ["operation", "strike", "deploy", "missile", "threat", "conflict", "attack", "defense", "military", "patrol", "exercise", "nato", "coalition", "airstrike", "maritime"]
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "nato-news",
-      "authority_name": "NATO News",
-      "country": "International",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "national_security",
-      "base_url": "https://www.nato.int"
-    },
-    "feed_url": "https://www.nato.int/cps/en/natolive/news.xml",
-    "category": "conflict_monitoring",
-    "region_tag": "INT",
-    "lat": 50.88,
-    "lng": 4.42,
-    "include_keywords": ["security", "defence", "defense", "military", "operation", "deploy", "threat", "conflict", "exercise", "summit", "alliance", "deterrence", "cyber", "maritime", "air", "nuclear"]
+    "include_keywords": [
+      "operation",
+      "strike",
+      "deploy",
+      "missile",
+      "threat",
+      "conflict",
+      "attack",
+      "defense",
+      "military",
+      "patrol",
+      "exercise",
+      "nato",
+      "coalition",
+      "airstrike",
+      "maritime"
+    ]
   },
   {
     "type": "rss",
@@ -6701,7 +6212,22 @@
     "region_tag": "INT",
     "lat": 48.21,
     "lng": 16.37,
-    "include_keywords": ["conflict", "security", "election", "monitoring", "border", "ceasefire", "crisis", "military", "weapons", "arms", "human rights", "detention", "freedom", "threat"]
+    "include_keywords": [
+      "conflict",
+      "security",
+      "election",
+      "monitoring",
+      "border",
+      "ceasefire",
+      "crisis",
+      "military",
+      "weapons",
+      "arms",
+      "human rights",
+      "detention",
+      "freedom",
+      "threat"
+    ]
   },
   {
     "type": "rss",
@@ -6719,25 +6245,22 @@
     "region_tag": "INT",
     "lat": 40.75,
     "lng": -73.97,
-    "include_keywords": ["sanction", "resolution", "conflict", "security", "peace", "ceasefire", "military", "threat", "war", "humanitarian", "arms", "embargo", "nuclear", "terrorism"]
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "icg-crisiswatch",
-      "authority_name": "International Crisis Group",
-      "country": "International",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "regulatory",
-      "base_url": "https://www.crisisgroup.org"
-    },
-    "feed_url": "https://www.crisisgroup.org/crisiswatch/feed",
-    "category": "conflict_monitoring",
-    "region_tag": "INT",
-    "lat": 50.84,
-    "lng": 4.36,
-    "include_keywords": ["conflict", "crisis", "war", "violence", "tension", "ceasefire", "peace", "military", "insurgency", "coup", "protest", "clashes", "escalation", "deteriorat"]
+    "include_keywords": [
+      "sanction",
+      "resolution",
+      "conflict",
+      "security",
+      "peace",
+      "ceasefire",
+      "military",
+      "threat",
+      "war",
+      "humanitarian",
+      "arms",
+      "embargo",
+      "nuclear",
+      "terrorism"
+    ]
   },
   {
     "type": "rss",
@@ -6755,7 +6278,25 @@
     "region_tag": "DE",
     "lat": 52.52,
     "lng": 13.38,
-    "include_keywords": ["sanction", "security", "conflict", "crisis", "military", "war", "terrorism", "defence", "defense", "nato", "humanitarian", "ceasefire", "peace", "threat", "arms", "embargo", "nuclear"]
+    "include_keywords": [
+      "sanction",
+      "security",
+      "conflict",
+      "crisis",
+      "military",
+      "war",
+      "terrorism",
+      "defence",
+      "defense",
+      "nato",
+      "humanitarian",
+      "ceasefire",
+      "peace",
+      "threat",
+      "arms",
+      "embargo",
+      "nuclear"
+    ]
   },
   {
     "type": "rss",
@@ -6773,7 +6314,23 @@
     "region_tag": "FR",
     "lat": 48.86,
     "lng": 2.32,
-    "include_keywords": ["sanction", "security", "conflict", "crisis", "military", "war", "terrorism", "defence", "defense", "nato", "humanitarian", "ceasefire", "peace", "threat", "arms"]
+    "include_keywords": [
+      "sanction",
+      "security",
+      "conflict",
+      "crisis",
+      "military",
+      "war",
+      "terrorism",
+      "defence",
+      "defense",
+      "nato",
+      "humanitarian",
+      "ceasefire",
+      "peace",
+      "threat",
+      "arms"
+    ]
   },
   {
     "type": "telegram",
@@ -7016,41 +6573,6 @@
   {
     "type": "rss",
     "source": {
-      "source_id": "us-state-fto",
-      "authority_name": "US State Dept — Foreign Terrorist Organizations",
-      "country": "United States",
-      "country_code": "US",
-      "region": "International",
-      "authority_type": "national_security",
-      "base_url": "https://www.state.gov"
-    },
-    "feed_url": "https://www.state.gov/foreign-terrorist-organizations/",
-    "category": "terrorism_tip",
-    "region_tag": "INT",
-    "lat": 38.89,
-    "lng": -77.05,
-    "include_keywords": ["terrorist", "designation", "sanction", "FTO", "counter-terrorism", "threat", "attack", "extremist", "listing"]
-  },
-  {
-    "type": "html-list",
-    "source": {
-      "source_id": "us-state-dipsec",
-      "authority_name": "US State Dept — Diplomatic Security",
-      "country": "United States",
-      "country_code": "US",
-      "region": "International",
-      "authority_type": "national_security",
-      "base_url": "https://www.state.gov"
-    },
-    "feed_url": "https://www.state.gov/rss-feed/diplomatic-security/feed/",
-    "category": "public_safety",
-    "region_tag": "INT",
-    "lat": 38.89,
-    "lng": -77.05
-  },
-  {
-    "type": "rss",
-    "source": {
       "source_id": "us-nctc-alerts",
       "authority_name": "US NCTC / ODNI Press",
       "country": "United States",
@@ -7064,115 +6586,15 @@
     "region_tag": "INT",
     "lat": 38.93,
     "lng": -77.02,
-    "include_keywords": ["terrorist", "threat", "extremist", "counterterrorism", "attack", "homeland", "assessment"]
-  },
-  {
-    "type": "rss",
-    "source": {
-      "source_id": "eu-council-sanctions",
-      "authority_name": "EU Council — Sanctions / Restrictive Measures",
-      "country": "Belgium",
-      "country_code": "BE",
-      "region": "Europe",
-      "authority_type": "regulatory",
-      "base_url": "https://www.consilium.europa.eu"
-    },
-    "feed_url": "https://www.consilium.europa.eu/en/policies/sanctions/",
-    "category": "terrorism_tip",
-    "region_tag": "EU",
-    "lat": 50.84,
-    "lng": 4.36,
-    "include_keywords": ["terrorist", "sanctions", "designation", "restrictive measures", "listing", "al-Qaeda", "ISIS", "ISIL", "Daesh", "proliferation"]
-  },
-  {
-    "type": "html-list",
-    "source": {
-      "source_id": "uk-home-proscribed",
-      "authority_name": "UK Home Office — Proscribed Organisations",
-      "country": "United Kingdom",
-      "country_code": "GB",
-      "region": "Europe",
-      "authority_type": "national_security",
-      "base_url": "https://www.gov.uk"
-    },
-    "feed_url": "https://www.gov.uk/government/publications/proscribed-terror-groups-or-organisations--2",
-    "category": "terrorism_tip",
-    "region_tag": "GB",
-    "lat": 51.5,
-    "lng": -0.13,
-    "include_keywords": ["proscribed", "terrorist", "organisation", "designation", "ban", "extremist"]
-  },
-  {
-    "type": "html-list",
-    "source": {
-      "source_id": "un-sc-sanctions",
-      "authority_name": "UN Security Council — Sanctions Committees",
-      "country": "International",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "regulatory",
-      "base_url": "https://www.un.org"
-    },
-    "feed_url": "https://www.un.org/securitycouncil/sanctions/information",
-    "category": "terrorism_tip",
-    "region_tag": "INT",
-    "lat": 40.75,
-    "lng": -73.97,
-    "include_keywords": ["sanctions", "terrorist", "ISIL", "Al-Qaida", "listing", "designation", "Taliban", "arms embargo", "travel ban", "asset freeze"]
-  },
-  {
-    "type": "html-list",
-    "source": {
-      "source_id": "fatf-statements",
-      "authority_name": "FATF — Financial Action Task Force",
-      "country": "International",
-      "country_code": "INT",
-      "region": "International",
-      "authority_type": "regulatory",
-      "base_url": "https://www.fatf-gafi.org"
-    },
-    "feed_url": "https://www.fatf-gafi.org/en/publications.html",
-    "category": "terrorism_tip",
-    "region_tag": "INT",
-    "lat": 48.86,
-    "lng": 2.32,
-    "include_keywords": ["terrorist", "financing", "money laundering", "high-risk", "jurisdiction", "grey list", "black list", "sanctions", "proliferation"]
-  },
-  {
-    "type": "html-list",
-    "source": {
-      "source_id": "au-asio-threats",
-      "authority_name": "ASIO — Australian Security Intelligence",
-      "country": "Australia",
-      "country_code": "AU",
-      "region": "Oceania",
-      "authority_type": "intelligence",
-      "base_url": "https://www.asio.gov.au"
-    },
-    "feed_url": "https://www.asio.gov.au/newsroom",
-    "category": "terrorism_tip",
-    "region_tag": "AU",
-    "lat": -35.28,
-    "lng": 149.13,
-    "include_keywords": ["terrorist", "threat", "extremist", "espionage", "security", "assessment", "attack"]
-  },
-  {
-    "type": "html-list",
-    "source": {
-      "source_id": "fr-dgsi-news",
-      "authority_name": "DGSI — French Internal Security",
-      "country": "France",
-      "country_code": "FR",
-      "region": "Europe",
-      "authority_type": "intelligence",
-      "base_url": "https://www.dgsi.interieur.gouv.fr"
-    },
-    "feed_url": "https://www.dgsi.interieur.gouv.fr/actualites",
-    "category": "terrorism_tip",
-    "region_tag": "FR",
-    "lat": 48.86,
-    "lng": 2.32,
-    "include_keywords": ["terrorisme", "menace", "attentat", "radicalisation", "extremisme", "terrorist", "threat"]
+    "include_keywords": [
+      "terrorist",
+      "threat",
+      "extremist",
+      "counterterrorism",
+      "attack",
+      "homeland",
+      "assessment"
+    ]
   },
   {
     "type": "acled-json",
@@ -7466,7 +6888,18 @@
     "region_tag": "IL",
     "lat": 31.78,
     "lng": 35.22,
-    "include_keywords": ["strike", "airstrike", "missile", "operation", "intercept", "attack", "warning", "evacuation", "terror", "rocket"],
+    "include_keywords": [
+      "strike",
+      "airstrike",
+      "missile",
+      "operation",
+      "intercept",
+      "attack",
+      "warning",
+      "evacuation",
+      "terror",
+      "rocket"
+    ],
     "max_items": 20
   },
   {
@@ -7486,7 +6919,17 @@
     "region_tag": "US",
     "lat": 38.9,
     "lng": -77.04,
-    "include_keywords": ["strike", "airstrike", "degrade", "military", "operation", "force protection", "threat", "terror", "deterrence"],
+    "include_keywords": [
+      "strike",
+      "airstrike",
+      "degrade",
+      "military",
+      "operation",
+      "force protection",
+      "threat",
+      "terror",
+      "deterrence"
+    ],
     "max_items": 20
   },
   {
@@ -7506,7 +6949,17 @@
     "region_tag": "US",
     "lat": 38.9,
     "lng": -77.04,
-    "include_keywords": ["advisory", "warning", "sanction", "terror", "security", "evacuation", "conflict", "ceasefire", "attack"],
+    "include_keywords": [
+      "advisory",
+      "warning",
+      "sanction",
+      "terror",
+      "security",
+      "evacuation",
+      "conflict",
+      "ceasefire",
+      "attack"
+    ],
     "max_items": 20
   },
   {
@@ -7526,7 +6979,17 @@
     "region_tag": "INT",
     "lat": 50.85,
     "lng": 4.35,
-    "include_keywords": ["security", "deterrence", "defence", "defense", "threat", "exercise", "operation", "conflict", "allies"],
+    "include_keywords": [
+      "security",
+      "deterrence",
+      "defence",
+      "defense",
+      "threat",
+      "exercise",
+      "operation",
+      "conflict",
+      "allies"
+    ],
     "max_items": 20
   },
   {
@@ -7546,7 +7009,18 @@
     "region_tag": "INT",
     "lat": 35.0,
     "lng": 38.0,
-    "include_keywords": ["breaking", "strike", "missile", "attack", "explosion", "troops", "drone", "intercept", "terror", "escalation"],
+    "include_keywords": [
+      "breaking",
+      "strike",
+      "missile",
+      "attack",
+      "explosion",
+      "troops",
+      "drone",
+      "intercept",
+      "terror",
+      "escalation"
+    ],
     "max_items": 20
   },
   {
@@ -7566,7 +7040,17 @@
     "region_tag": "INT",
     "lat": 50.0,
     "lng": 30.5,
-    "include_keywords": ["geolocation", "strike", "missile", "drone", "battlefield", "air defense", "explosion", "verified", "footage"],
+    "include_keywords": [
+      "geolocation",
+      "strike",
+      "missile",
+      "drone",
+      "battlefield",
+      "air defense",
+      "explosion",
+      "verified",
+      "footage"
+    ],
     "max_items": 20
   },
   {
@@ -7586,7 +7070,15 @@
     "region_tag": "INT",
     "lat": 52.37,
     "lng": 4.9,
-    "include_keywords": ["geolocation", "confirmed", "verified", "strike", "impact", "coordinates", "visual evidence"],
+    "include_keywords": [
+      "geolocation",
+      "confirmed",
+      "verified",
+      "strike",
+      "impact",
+      "coordinates",
+      "visual evidence"
+    ],
     "max_items": 20
   },
   {
@@ -7606,7 +7098,18 @@
     "region_tag": "INT",
     "lat": 34.0,
     "lng": 36.0,
-    "include_keywords": ["air defense", "radar", "missile", "intercept", "drone", "threat", "warning", "strike", "syria", "iran"],
+    "include_keywords": [
+      "air defense",
+      "radar",
+      "missile",
+      "intercept",
+      "drone",
+      "threat",
+      "warning",
+      "strike",
+      "syria",
+      "iran"
+    ],
     "max_items": 20
   },
   {
@@ -7626,7 +7129,18 @@
     "region_tag": "INT",
     "lat": 31.5,
     "lng": 35.0,
-    "include_keywords": ["strike", "airstrike", "missile", "rocket", "drone", "attack", "idf", "hezbollah", "iran", "escalation"],
+    "include_keywords": [
+      "strike",
+      "airstrike",
+      "missile",
+      "rocket",
+      "drone",
+      "attack",
+      "idf",
+      "hezbollah",
+      "iran",
+      "escalation"
+    ],
     "max_items": 20
   },
   {
@@ -7646,7 +7160,18 @@
     "region_tag": "INT",
     "lat": 33.9,
     "lng": 35.5,
-    "include_keywords": ["breaking", "strike", "airstrike", "missile", "attack", "explosion", "drone", "intercept", "warning", "escalation"],
+    "include_keywords": [
+      "breaking",
+      "strike",
+      "airstrike",
+      "missile",
+      "attack",
+      "explosion",
+      "drone",
+      "intercept",
+      "warning",
+      "escalation"
+    ],
     "max_items": 20
   },
   {
@@ -7666,7 +7191,17 @@
     "region_tag": "INT",
     "lat": 14.6,
     "lng": 20.9,
-    "include_keywords": ["aircraft", "movement", "deployment", "airlift", "tracking", "conflict", "strike", "military", "map"],
+    "include_keywords": [
+      "aircraft",
+      "movement",
+      "deployment",
+      "airlift",
+      "tracking",
+      "conflict",
+      "strike",
+      "military",
+      "map"
+    ],
     "max_items": 20
   },
   {
@@ -7686,7 +7221,17 @@
     "region_tag": "INT",
     "lat": 33.5,
     "lng": 36.3,
-    "include_keywords": ["radar", "air defense", "missile", "drone", "airspace", "strike", "threat", "warning", "intercept"],
+    "include_keywords": [
+      "radar",
+      "air defense",
+      "missile",
+      "drone",
+      "airspace",
+      "strike",
+      "threat",
+      "warning",
+      "intercept"
+    ],
     "max_items": 20
   },
   {
@@ -7706,7 +7251,17 @@
     "region_tag": "INT",
     "lat": 35.0,
     "lng": 39.0,
-    "include_keywords": ["naval", "aircraft", "convoy", "missile", "drone", "military", "movement", "tracking", "operation"],
+    "include_keywords": [
+      "naval",
+      "aircraft",
+      "convoy",
+      "missile",
+      "drone",
+      "military",
+      "movement",
+      "tracking",
+      "operation"
+    ],
     "max_items": 20
   },
   {
@@ -7726,7 +7281,17 @@
     "region_tag": "INT",
     "lat": 36.0,
     "lng": 29.0,
-    "include_keywords": ["naval", "fleet", "warship", "maritime", "missile", "drone", "strike", "deployment", "port"],
+    "include_keywords": [
+      "naval",
+      "fleet",
+      "warship",
+      "maritime",
+      "missile",
+      "drone",
+      "strike",
+      "deployment",
+      "port"
+    ],
     "max_items": 20
   },
   {
@@ -7745,7 +7310,17 @@
     "region_tag": "EU",
     "lat": 50.85,
     "lng": 4.35,
-    "include_keywords": ["attack", "bomb", "explosion", "killed", "hostage", "shooting", "terrorist", "arrested", "suspect"],
+    "include_keywords": [
+      "attack",
+      "bomb",
+      "explosion",
+      "killed",
+      "hostage",
+      "shooting",
+      "terrorist",
+      "arrested",
+      "suspect"
+    ],
     "max_items": 10
   },
   {
@@ -7764,7 +7339,17 @@
     "region_tag": "EU",
     "lat": 50.85,
     "lng": 4.35,
-    "include_keywords": ["earthquake", "tsunami", "flood", "wildfire", "eruption", "evacuation", "casualties", "magnitude", "destroyed"],
+    "include_keywords": [
+      "earthquake",
+      "tsunami",
+      "flood",
+      "wildfire",
+      "eruption",
+      "evacuation",
+      "casualties",
+      "magnitude",
+      "destroyed"
+    ],
     "max_items": 10
   },
   {
@@ -7783,7 +7368,955 @@
     "region_tag": "INT",
     "lat": 35.0,
     "lng": 39.0,
-    "include_keywords": ["airstrike", "strike", "military", "conflict", "ceasefire", "shelling", "troops", "offensive", "casualties", "killed", "wounded"],
+    "include_keywords": [
+      "airstrike",
+      "strike",
+      "military",
+      "conflict",
+      "ceasefire",
+      "shelling",
+      "troops",
+      "offensive",
+      "casualties",
+      "killed",
+      "wounded"
+    ],
     "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-tas-police",
+      "authority_name": "Tasmania Police",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "police",
+      "base_url": "https://www.police.tas.gov.au"
+    },
+    "feed_url": "https://www.police.tas.gov.au/feed/",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -42.88,
+    "lng": 147.33,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-nsw",
+      "authority_name": "Bureau of Meteorology — NSW & ACT Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00054.warnings_nsw.xml",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -33.87,
+    "lng": 151.21,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-vic",
+      "authority_name": "Bureau of Meteorology — Victoria Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00059.warnings_vic.xml",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -37.81,
+    "lng": 144.96,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-qld",
+      "authority_name": "Bureau of Meteorology — Queensland Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00056.warnings_qld.xml",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -27.47,
+    "lng": 153.03,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-wa",
+      "authority_name": "Bureau of Meteorology — Western Australia Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00060.warnings_wa.xml",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -31.95,
+    "lng": 115.86,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-sa",
+      "authority_name": "Bureau of Meteorology — South Australia Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00057.warnings_sa.xml",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -34.93,
+    "lng": 138.6,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-tas",
+      "authority_name": "Bureau of Meteorology — Tasmania Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00058.warnings_tas.xml",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -42.88,
+    "lng": 147.33,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-nt",
+      "authority_name": "Bureau of Meteorology — Northern Territory Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00055.warnings_nt.xml",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -12.46,
+    "lng": 130.84,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-nsw-marine",
+      "authority_name": "Bureau of Meteorology — NSW Marine Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00068.warnings_marine_nsw.xml",
+    "category": "maritime_security",
+    "region_tag": "AU",
+    "lat": -33.87,
+    "lng": 151.21,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-vic-marine",
+      "authority_name": "Bureau of Meteorology — Victoria Marine Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00073.warnings_marine_vic.xml",
+    "category": "maritime_security",
+    "region_tag": "AU",
+    "lat": -38.14,
+    "lng": 144.36,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-qld-marine",
+      "authority_name": "Bureau of Meteorology — Queensland Marine Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00070.warnings_marine_qld.xml",
+    "category": "maritime_security",
+    "region_tag": "AU",
+    "lat": -27.47,
+    "lng": 153.03,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-wa-marine",
+      "authority_name": "Bureau of Meteorology — WA Marine Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00074.warnings_marine_wa.xml",
+    "category": "maritime_security",
+    "region_tag": "AU",
+    "lat": -31.95,
+    "lng": 115.86,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-sa-marine",
+      "authority_name": "Bureau of Meteorology — SA Marine Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00071.warnings_marine_sa.xml",
+    "category": "maritime_security",
+    "region_tag": "AU",
+    "lat": -34.93,
+    "lng": 138.6,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-tas-marine",
+      "authority_name": "Bureau of Meteorology — Tasmania Marine Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00072.warnings_marine_tas.xml",
+    "category": "maritime_security",
+    "region_tag": "AU",
+    "lat": -42.88,
+    "lng": 147.33,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-nt-marine",
+      "authority_name": "Bureau of Meteorology — NT Marine Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00069.warnings_marine_nt.xml",
+    "category": "maritime_security",
+    "region_tag": "AU",
+    "lat": -12.46,
+    "lng": 130.84,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-act-land",
+      "authority_name": "Bureau of Meteorology — ACT Land Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00085.warnings_act.xml",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -35.28,
+    "lng": 149.13,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-vic-land",
+      "authority_name": "Bureau of Meteorology — Victoria Land Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00066.warnings_land_vic.xml",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -37.81,
+    "lng": 144.96,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-bom-qld-land",
+      "authority_name": "Bureau of Meteorology — Queensland Land Warnings",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "weather",
+      "base_url": "https://www.bom.gov.au"
+    },
+    "feed_url": "https://www.bom.gov.au/fwo/IDZ00063.warnings_land_qld.xml",
+    "category": "public_safety_program",
+    "region_tag": "AU",
+    "lat": -27.47,
+    "lng": 153.03,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-cfa-vic",
+      "authority_name": "Country Fire Authority Victoria",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "emergency",
+      "base_url": "https://news.cfa.vic.gov.au"
+    },
+    "feed_url": "https://news.cfa.vic.gov.au/CFA/CFARSS.aspx?FolderId=302,304&showentries=20&ArticleSort=2&showthumbnail=true",
+    "category": "emergency",
+    "region_tag": "AU",
+    "lat": -37.81,
+    "lng": 144.96,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "au-rfs-nsw",
+      "authority_name": "NSW Rural Fire Service",
+      "country": "Australia",
+      "country_code": "AU",
+      "region": "Asia-Pacific",
+      "authority_type": "emergency",
+      "base_url": "https://www.rfs.nsw.gov.au"
+    },
+    "feed_url": "https://www.rfs.nsw.gov.au/feeds/majorIncidents.xml",
+    "category": "emergency",
+    "region_tag": "AU",
+    "lat": -33.87,
+    "lng": 151.21,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "nz-ncsc",
+      "authority_name": "NCSC / CERT NZ",
+      "country": "New Zealand",
+      "country_code": "NZ",
+      "region": "Asia-Pacific",
+      "authority_type": "cert",
+      "base_url": "https://www.ncsc.govt.nz"
+    },
+    "feed_url": "https://www.ncsc.govt.nz/rss/news/",
+    "category": "cyber_advisory",
+    "region_tag": "NZ",
+    "lat": -41.29,
+    "lng": 174.78,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "nz-nema",
+      "authority_name": "NEMA Civil Defence NZ",
+      "country": "New Zealand",
+      "country_code": "NZ",
+      "region": "Asia-Pacific",
+      "authority_type": "emergency",
+      "base_url": "https://alerthub.civildefence.govt.nz"
+    },
+    "feed_url": "https://alerthub.civildefence.govt.nz/rss/pwp",
+    "category": "emergency",
+    "region_tag": "NZ",
+    "lat": -41.29,
+    "lng": 174.78,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "aljazeera",
+      "authority_name": "Al Jazeera",
+      "country": "Qatar",
+      "country_code": "QA",
+      "region": "Middle East",
+      "authority_type": "news_agency",
+      "base_url": "https://www.aljazeera.com"
+    },
+    "feed_url": "https://www.aljazeera.com/xml/rss/all.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "QA",
+    "lat": 25.29,
+    "lng": 51.53,
+    "include_keywords": [
+      "conflict",
+      "attack",
+      "strike",
+      "military",
+      "security",
+      "killed",
+      "ceasefire",
+      "terrorism",
+      "explosion",
+      "war"
+    ],
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ly-nissa",
+      "authority_name": "NISSA Libya",
+      "country": "Libya",
+      "country_code": "LY",
+      "region": "Africa",
+      "authority_type": "cert",
+      "base_url": "https://nissa.gov.ly"
+    },
+    "feed_url": "https://nissa.gov.ly/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "LY",
+    "lat": 32.9,
+    "lng": 13.18,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "tass",
+      "authority_name": "TASS Russian News Agency",
+      "country": "Russia",
+      "country_code": "RU",
+      "region": "Europe",
+      "authority_type": "news_agency",
+      "base_url": "https://tass.com"
+    },
+    "feed_url": "https://tass.com/rss/v2.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "RU",
+    "lat": 55.76,
+    "lng": 37.62,
+    "include_keywords": [
+      "military",
+      "defence",
+      "security",
+      "attack",
+      "strike",
+      "conflict",
+      "sanctions",
+      "nuclear"
+    ],
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-human-rights",
+      "authority_name": "UN News — Human Rights",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "international_org",
+      "base_url": "https://news.un.org"
+    },
+    "feed_url": "https://news.un.org/feed/subscribe/en/news/topic/human-rights/feed/rss.xml",
+    "category": "regulatory",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.97,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-africa",
+      "authority_name": "UN News — Africa",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "international_org",
+      "base_url": "https://news.un.org"
+    },
+    "feed_url": "https://news.un.org/feed/subscribe/en/news/region/africa/feed/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT-AF",
+    "lat": 0.0,
+    "lng": 25.0,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-asia-pacific",
+      "authority_name": "UN News — Asia-Pacific",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "international_org",
+      "base_url": "https://news.un.org"
+    },
+    "feed_url": "https://news.un.org/feed/subscribe/en/news/region/asia-pacific/feed/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT-AP",
+    "lat": 35.0,
+    "lng": 105.0,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-europe",
+      "authority_name": "UN News — Europe",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "international_org",
+      "base_url": "https://news.un.org"
+    },
+    "feed_url": "https://news.un.org/feed/subscribe/en/news/region/europe/feed/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT-EU",
+    "lat": 50.0,
+    "lng": 10.0,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-middle-east",
+      "authority_name": "UN News — Middle East",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "international_org",
+      "base_url": "https://news.un.org"
+    },
+    "feed_url": "https://news.un.org/feed/subscribe/en/news/region/middle-east/feed/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT-ME",
+    "lat": 33.0,
+    "lng": 44.0,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "un-americas",
+      "authority_name": "UN News — Americas",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "international_org",
+      "base_url": "https://news.un.org"
+    },
+    "feed_url": "https://news.un.org/feed/subscribe/en/news/region/americas/feed/rss.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "INT-AM",
+    "lat": 19.0,
+    "lng": -99.0,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "fr-senate",
+      "authority_name": "French Senate",
+      "country": "France",
+      "country_code": "FR",
+      "region": "Europe",
+      "authority_type": "legislative",
+      "base_url": "https://www.senat.fr"
+    },
+    "feed_url": "https://www.senat.fr/rss/presse.rss",
+    "category": "legislative",
+    "region_tag": "FR",
+    "lat": 48.85,
+    "lng": 2.34,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "uk-parliament-bills",
+      "authority_name": "UK Parliament — Bills",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "legislative",
+      "base_url": "https://bills.parliament.uk"
+    },
+    "feed_url": "https://bills.parliament.uk/rss/allbills.rss",
+    "category": "legislative",
+    "region_tag": "GB",
+    "lat": 51.5,
+    "lng": -0.12,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "uk-parliament-live",
+      "authority_name": "UK Parliament Live Events",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Europe",
+      "authority_type": "legislative",
+      "base_url": "http://data.parliamentlive.tv"
+    },
+    "feed_url": "http://data.parliamentlive.tv/api/event/feed",
+    "category": "legislative",
+    "region_tag": "GB",
+    "lat": 51.5,
+    "lng": -0.12,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "amnesty-intl",
+      "authority_name": "Amnesty International",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "ngo",
+      "base_url": "https://www.amnesty.org"
+    },
+    "feed_url": "https://www.amnesty.org/en/rss/",
+    "category": "regulatory",
+    "region_tag": "INT",
+    "lat": 51.53,
+    "lng": -0.09,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "hrw",
+      "authority_name": "Human Rights Watch",
+      "country": "International",
+      "country_code": "INT",
+      "region": "International",
+      "authority_type": "ngo",
+      "base_url": "https://www.hrw.org"
+    },
+    "feed_url": "https://www.hrw.org/rss/news",
+    "category": "regulatory",
+    "region_tag": "INT",
+    "lat": 40.75,
+    "lng": -73.98,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "jp-kantei",
+      "authority_name": "Japan Prime Minister's Office (Kantei)",
+      "country": "Japan",
+      "country_code": "JP",
+      "region": "Asia-Pacific",
+      "authority_type": "government",
+      "base_url": "https://japan.kantei.go.jp"
+    },
+    "feed_url": "https://japan.kantei.go.jp/index-e2.rdf",
+    "category": "national_security",
+    "region_tag": "JP",
+    "lat": 35.68,
+    "lng": 139.75,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "tr-mfa",
+      "authority_name": "Turkish Ministry of Foreign Affairs",
+      "country": "Turkey",
+      "country_code": "TR",
+      "region": "Middle East",
+      "authority_type": "government",
+      "base_url": "https://www.mfa.gov.tr"
+    },
+    "feed_url": "https://www.mfa.gov.tr/rss.en.mfa",
+    "category": "national_security",
+    "region_tag": "TR",
+    "lat": 39.93,
+    "lng": 32.86,
+    "max_items": 10
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "il-times-of-israel",
+      "authority_name": "Times of Israel",
+      "country": "Israel",
+      "country_code": "IL",
+      "region": "Middle East",
+      "authority_type": "news_agency",
+      "base_url": "https://www.timesofisrael.com"
+    },
+    "feed_url": "https://www.timesofisrael.com/feed/",
+    "category": "conflict_monitoring",
+    "region_tag": "IL",
+    "lat": 32.07,
+    "lng": 34.78,
+    "include_keywords": [
+      "military",
+      "attack",
+      "strike",
+      "security",
+      "IDF",
+      "Hamas",
+      "Hezbollah",
+      "Iran",
+      "missile",
+      "conflict",
+      "ceasefire",
+      "killed"
+    ],
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "il-haaretz",
+      "authority_name": "Haaretz",
+      "country": "Israel",
+      "country_code": "IL",
+      "region": "Middle East",
+      "authority_type": "news_agency",
+      "base_url": "https://www.haaretz.com"
+    },
+    "feed_url": "https://www.haaretz.com/srv/haaretz-latest-headlines",
+    "category": "conflict_monitoring",
+    "region_tag": "IL",
+    "lat": 32.07,
+    "lng": 34.78,
+    "include_keywords": [
+      "military",
+      "attack",
+      "strike",
+      "security",
+      "IDF",
+      "Hamas",
+      "Hezbollah",
+      "Iran",
+      "missile",
+      "conflict",
+      "ceasefire"
+    ],
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "il-jpost",
+      "authority_name": "The Jerusalem Post",
+      "country": "Israel",
+      "country_code": "IL",
+      "region": "Middle East",
+      "authority_type": "news_agency",
+      "base_url": "https://www.jpost.com"
+    },
+    "feed_url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+    "category": "conflict_monitoring",
+    "region_tag": "IL",
+    "lat": 31.77,
+    "lng": 35.23,
+    "include_keywords": [
+      "military",
+      "attack",
+      "strike",
+      "security",
+      "IDF",
+      "Hamas",
+      "Hezbollah",
+      "Iran",
+      "missile",
+      "conflict",
+      "ceasefire"
+    ],
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "al-monitor",
+      "authority_name": "Al-Monitor",
+      "country": "United States",
+      "country_code": "US",
+      "region": "Middle East",
+      "authority_type": "news_agency",
+      "base_url": "https://www.al-monitor.com"
+    },
+    "feed_url": "https://www.al-monitor.com/rss",
+    "category": "conflict_monitoring",
+    "region_tag": "INT-ME",
+    "lat": 38.91,
+    "lng": -77.04,
+    "include_keywords": [
+      "military",
+      "attack",
+      "strike",
+      "security",
+      "Iran",
+      "Israel",
+      "Turkey",
+      "Syria",
+      "Iraq",
+      "conflict",
+      "ceasefire",
+      "sanctions"
+    ],
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "middle-east-eye",
+      "authority_name": "Middle East Eye",
+      "country": "United Kingdom",
+      "country_code": "GB",
+      "region": "Middle East",
+      "authority_type": "news_agency",
+      "base_url": "https://www.middleeasteye.net"
+    },
+    "feed_url": "https://www.middleeasteye.net/rss",
+    "category": "conflict_monitoring",
+    "region_tag": "INT-ME",
+    "lat": 51.52,
+    "lng": -0.08,
+    "include_keywords": [
+      "military",
+      "attack",
+      "strike",
+      "security",
+      "conflict",
+      "ceasefire",
+      "killed",
+      "war",
+      "missile"
+    ],
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "tr-daily-sabah",
+      "authority_name": "Daily Sabah",
+      "country": "Turkey",
+      "country_code": "TR",
+      "region": "Middle East",
+      "authority_type": "news_agency",
+      "base_url": "https://www.dailysabah.com"
+    },
+    "feed_url": "https://www.dailysabah.com/rssFeed/main",
+    "category": "conflict_monitoring",
+    "region_tag": "TR",
+    "lat": 41.01,
+    "lng": 28.98,
+    "include_keywords": [
+      "military",
+      "attack",
+      "security",
+      "conflict",
+      "terrorism",
+      "PKK",
+      "Syria",
+      "defense"
+    ],
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "sy-sana",
+      "authority_name": "Syrian Arab News Agency (SANA)",
+      "country": "Syria",
+      "country_code": "SY",
+      "region": "Middle East",
+      "authority_type": "news_agency",
+      "base_url": "https://sana.sy"
+    },
+    "feed_url": "https://sana.sy/en/?feed=rss2",
+    "category": "conflict_monitoring",
+    "region_tag": "SY",
+    "lat": 33.51,
+    "lng": 36.29,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "ir-presstv",
+      "authority_name": "PressTV — West Asia",
+      "country": "Iran",
+      "country_code": "IR",
+      "region": "Middle East",
+      "authority_type": "news_agency",
+      "base_url": "https://www.presstv.ir"
+    },
+    "feed_url": "https://www.presstv.ir/rss/rss-102.xml",
+    "category": "conflict_monitoring",
+    "region_tag": "IR",
+    "lat": 35.69,
+    "lng": 51.39,
+    "include_keywords": [
+      "military",
+      "attack",
+      "strike",
+      "missile",
+      "IRGC",
+      "resistance",
+      "Israel",
+      "defense",
+      "war"
+    ],
+    "max_items": 15
   }
 ]
