@@ -143,15 +143,14 @@
 		}
 	}
 
+	@mobile_bare path /m
+	redir @mobile_bare /m/ permanent
+
 	handle /m/* {
 		uri strip_prefix /m
 		root * /srv
 		try_files {path} /mobile/index.html
 		file_server
-	}
-
-	handle /m {
-		redir /m/ permanent
 	}
 
 	handle {
