@@ -66,9 +66,10 @@ type DuplicateSample struct {
 }
 
 type DuplicateAudit struct {
-	SuppressedVariantDuplicates int               `json:"suppressed_variant_duplicates"`
-	RepeatedTitleGroupsInActive int               `json:"repeated_title_groups_in_active"`
-	RepeatedTitleSamples        []DuplicateSample `json:"repeated_title_samples"`
+	SuppressedVariantDuplicates     int               `json:"suppressed_variant_duplicates"`
+	SuppressedCrossSourceDuplicates int               `json:"suppressed_cross_source_duplicates"`
+	RepeatedTitleGroupsInActive     int               `json:"repeated_title_groups_in_active"`
+	RepeatedTitleSamples            []DuplicateSample `json:"repeated_title_samples"`
 }
 
 type SourceHealthEntry struct {
