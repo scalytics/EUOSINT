@@ -31,7 +31,7 @@ const REGION_VIEWPORTS: Record<string, MapViewport> = {
   "North America": { center: [42, -100], zoom: 4 },
   "South America": { center: [-15, -60], zoom: 3 },
   Africa: { center: [4, 20], zoom: 4 },
-  "Asia-Pacific": { center: [20, 100], zoom: 3 },
+  "Asia-Pacific": { center: [15, 105], zoom: 4 },
   Caribbean: { center: [18, -75], zoom: 5 },
   International: { center: [20, 0], zoom: 3 },
   all: { center: [20, 0], zoom: 3 },
