@@ -2764,8 +2764,12 @@ func buildDynamicTerrorZonesFromAlerts(boundariesPath string, statePath string, 
 			countByCode90d[code]++
 		}
 	}
+	const minTerrorEvents365d = 3
 	baseFeatures := make([]any, 0, len(countByCode365d))
 	for code, count365 := range countByCode365d {
+		if count365 < minTerrorEvents365d {
+			continue
+		}
 		boundary, ok := byISO2[code]
 		if !ok {
 			continue
@@ -2818,7 +2822,7 @@ func buildDynamicTerrorZonesFromAlerts(boundariesPath string, statePath string, 
 		lensFeatures := make([]any, 0, len(codes))
 		for _, code := range codes {
 			code = strings.ToUpper(strings.TrimSpace(code))
-			if countByCode365d[code] == 0 {
+			if countByCode365d[code] < minTerrorEvents365d {
 				continue
 			}
 			boundary, ok := byISO2[code]
@@ -2999,9 +3003,9 @@ func loadTerrorActorAliases() map[string]string {
 			aliases[value] = canonical
 		}
 	}
-	add("Islamic State", "islamic state", "isis", "isil", "daesh", "is")
+	add("Islamic State", "islamic state", "isis", "isil", "daesh")
 	add("ISWAP", "iswap", "is west africa province", "islamic state west africa province")
-	add("Al-Qaeda", "al-qaeda", "al qaeda", "aq")
+	add("Al-Qaeda", "al-qaeda", "al qaeda")
 	add("AQIM", "aqim", "al-qaeda in the islamic maghreb", "al qaeda in the islamic maghreb")
 	add("JNIM", "jnim", "jamaat nusrat al-islam wal-muslimin", "jama'at nusrat al-islam wal-muslimin")
 	add("Al-Shabaab", "al-shabaab", "al shabaab", "harakat al-shabaab")
