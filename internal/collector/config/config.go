@@ -133,6 +133,7 @@ type Config struct {
 	ZoneBriefingRefreshHours         int
 	ZoneBriefingACLEDEnabled         bool
 	CollectorRole                    string
+	CORSAllowedOrigins               []string
 }
 
 func Default() Config {
@@ -343,6 +344,7 @@ func FromEnv() Config {
 	cfg.ZoneBriefingRefreshHours = envInt("ZONE_BRIEFING_REFRESH_HOURS", cfg.ZoneBriefingRefreshHours)
 	cfg.ZoneBriefingACLEDEnabled = envBool("ZONE_BRIEFING_ACLED_ENABLED", cfg.ZoneBriefingACLEDEnabled)
 	cfg.CollectorRole = strings.ToLower(strings.TrimSpace(envString("COLLECTOR_ROLE", cfg.CollectorRole)))
+	cfg.CORSAllowedOrigins = envCSV("CORS_ALLOWED_ORIGINS", cfg.CORSAllowedOrigins)
 	return cfg
 }
 

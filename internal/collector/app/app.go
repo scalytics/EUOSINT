@@ -165,7 +165,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		}
 		defer apiDB.Close()
 
-		srv := api.New(apiDB, cfg.APIAddr, stderr)
+		srv := api.New(apiDB, cfg.APIAddr, stderr, cfg.CORSAllowedOrigins)
 		srv.ConfigureZoneBriefLLM(api.ZoneBriefLLMConfig{
 			RuntimeDir:         filepath.Dir(cfg.RegistryPath),
 			VettingTimeoutMS:   cfg.VettingTimeoutMS,

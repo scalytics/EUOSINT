@@ -26,11 +26,12 @@ import (
 
 // Server serves the search API backed by SQLite FTS5.
 type Server struct {
-	db     *sourcedb.DB
-	addr   string
-	srv    *http.Server
-	stderr io.Writer
-	llmCfg ZoneBriefLLMConfig
+	db             *sourcedb.DB
+	addr           string
+	srv            *http.Server
+	stderr         io.Writer
+	llmCfg         ZoneBriefLLMConfig
+	allowedOrigins []string
 }
 
 type ZoneBriefLLMConfig struct {
@@ -43,8 +44,8 @@ type ZoneBriefLLMConfig struct {
 	VettingTemperature float64
 }
 
-func New(db *sourcedb.DB, addr string, stderr io.Writer) *Server {
-	s := &Server{db: db, addr: addr, stderr: stderr}
+func New(db *sourcedb.DB, addr string, stderr io.Writer, allowedOrigins []string) *Server {
+	s := &Server{db: db, addr: addr, stderr: stderr, allowedOrigins: allowedOrigins}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/search", s.handleSearch)
 	mux.HandleFunc("GET /api/digest", s.handleDigest)
@@ -55,7 +56,7 @@ func New(db *sourcedb.DB, addr string, stderr io.Writer) *Server {
 	rl := newRateLimiter(30, 5, 10*time.Minute) // 30 requests burst, 5/sec refill
 	s.srv = &http.Server{
 		Addr:         addr,
-		Handler:      cors(rateLimit(rl, mux)),
+		Handler:      s.corsMiddleware(rateLimit(rl, mux)),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 120 * time.Second,
 	}
@@ -335,11 +336,33 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = enc.Encode(v)
 }
 
-func cors(next http.Handler) http.Handler {
+func (s *Server) corsMiddleware(next http.Handler) http.Handler {
+	allowed := make(map[string]bool, len(s.allowedOrigins))
+	for _, origin := range s.allowedOrigins {
+		allowed[strings.TrimRight(strings.TrimSpace(origin), "/")] = true
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := strings.TrimSpace(r.Header.Get("Origin"))
+		if origin == "" {
+			// Same-origin requests (no Origin header) — always allow.
+			next.ServeHTTP(w, r)
+			return
+		}
+		if len(allowed) == 0 || allowed[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+		} else {
+			// Reject cross-origin request from unknown origin.
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "origin not allowed"})
+			return
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Max-Age", "86400")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return

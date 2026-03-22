@@ -97,7 +97,7 @@ func TestSearchReturnsRankedResults(t *testing.T) {
 	defer db.Close()
 	seedAlerts(t, db)
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 
 	req := httptest.NewRequest("GET", "/api/search?q=drug+trafficking", nil)
@@ -127,7 +127,7 @@ func TestSearchWithCategoryFilter(t *testing.T) {
 	defer db.Close()
 	seedAlerts(t, db)
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 
 	req := httptest.NewRequest("GET", "/api/search?category=cyber_advisory", nil)
@@ -155,7 +155,7 @@ func TestSearchEmptyQueryReturns400(t *testing.T) {
 	db := testDB(t)
 	defer db.Close()
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 
 	req := httptest.NewRequest("GET", "/api/search", nil)
@@ -229,7 +229,7 @@ func TestSearchDefaultsToActiveStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 	req := httptest.NewRequest("GET", "/api/search?category=cyber_advisory", nil)
 	w := httptest.NewRecorder()
@@ -308,7 +308,7 @@ func TestSearchIncludeFilteredAndRemovedOptIn(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 	req := httptest.NewRequest("GET", "/api/search?category=cyber_advisory&include_filtered=true&include_removed=true", nil)
 	w := httptest.NewRecorder()
@@ -375,7 +375,7 @@ func TestSearchLaneFilter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 	req := httptest.NewRequest("GET", "/api/search?region=EU&status=active&lane=intel", nil)
 	w := httptest.NewRecorder()
@@ -447,7 +447,7 @@ func TestSearchGlobalViewHidesLocalLawEnforcementByDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 	req := httptest.NewRequest("GET", "/api/search?status=active&category=wanted_suspect", nil)
 	w := httptest.NewRecorder()
@@ -496,7 +496,7 @@ func TestSearchCountryViewIncludesLocalLawEnforcement(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 	req := httptest.NewRequest("GET", "/api/search?status=active&region=GH&category=wanted_suspect", nil)
 	w := httptest.NewRecorder()
@@ -520,7 +520,7 @@ func TestRateLimitReturns429(t *testing.T) {
 	defer db.Close()
 	seedAlerts(t, db)
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 
 	// Under -race, request handling can be slow enough for token refill to occur.
@@ -548,7 +548,7 @@ func TestRateLimitSkipsHealth(t *testing.T) {
 	db := testDB(t)
 	defer db.Close()
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 
 	// Even after many requests, health should never be rate limited.
@@ -567,7 +567,7 @@ func TestHealthEndpoint(t *testing.T) {
 	db := testDB(t)
 	defer db.Close()
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 
 	req := httptest.NewRequest("GET", "/api/health", nil)
@@ -584,7 +584,7 @@ func TestNoiseFeedbackCreateAndStats(t *testing.T) {
 	defer db.Close()
 	seedAlerts(t, db)
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 
 	body := []byte(`{"alert_id":"a1","verdict":"false_positive","analyst":"ops","notes":"noise from broad source"}`)
@@ -638,7 +638,7 @@ func TestDigestEndpointReturnsCountryTerms(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv := New(db, ":0", os.Stderr)
+	srv := New(db, ":0", os.Stderr, nil)
 	handler := srv.srv.Handler
 
 	// Single country digest.

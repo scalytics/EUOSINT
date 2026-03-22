@@ -61,6 +61,16 @@
 		file_server
 	}
 
+	handle /views-risk.json {
+		root * /var/lib/euosint
+		file_server
+	}
+
+	handle /geo/views-risk-grid.json {
+		root * /var/lib/euosint
+		file_server
+	}
+
 	handle {
 		try_files {path} /index.html
 		file_server
