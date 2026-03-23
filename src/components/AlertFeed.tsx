@@ -45,6 +45,9 @@ interface Props {
     historyIds: string[];
     mode: "now" | "history" | "now_history" | "briefing";
   }) => void;
+  /** When set, switches the right panel to this view mode. Bump requestedViewModeKey to re-trigger the same mode. */
+  requestedViewMode?: "now" | "history" | "now_history" | "briefing" | null;
+  requestedViewModeKey?: number;
 }
 
 export function AlertFeed({
@@ -58,8 +61,17 @@ export function AlertFeed({
   conflictCountryFocus,
   onRegionChange,
   onVisibleAlertIdsChange,
+  requestedViewMode,
+  requestedViewModeKey,
 }: Props) {
   const [viewMode, setViewMode] = useState<"now" | "history" | "now_history" | "briefing">("now");
+
+  // Allow parent to switch view mode (e.g. left panel click → show now+history)
+  useEffect(() => {
+    if (requestedViewMode) {
+      setViewMode(requestedViewMode);
+    }
+  }, [requestedViewMode, requestedViewModeKey]);
   const [severityFilter, setSeverityFilter] = useState<Severity | "all">("all");
   const [briefDetailsOpen, setBriefDetailsOpen] = useState(false);
   const [isRefreshingList, setIsRefreshingList] = useState(false);

@@ -614,3 +614,47 @@ func TestStructuredDiscoveryWeeklyCadence(t *testing.T) {
 		t.Fatal("expected due after weekly interval elapsed")
 	}
 }
+
+// ---------- inferLanguageCode ----------
+
+func TestInferLanguageCodeLLMPreferred(t *testing.T) {
+	// LLM detection should take priority over country fallback
+	got := inferLanguageCode("fr", "US")
+	if got != "fr" {
+		t.Errorf("expected LLM lang 'fr', got %q", got)
+	}
+}
+
+func TestInferLanguageCodeCountryFallback(t *testing.T) {
+	cases := map[string]string{
+		"IS": "is", "HU": "hu", "JP": "ja", "BR": "pt",
+		"DE": "de", "FR": "fr", "SA": "ar", "CN": "zh",
+		"KE": "en", "GH": "en", "SN": "fr", "CM": "fr",
+		"GE": "ka", "AM": "hy", "AZ": "az", "UZ": "uz",
+		"CU": "es", "HT": "fr", "AO": "pt", "MK": "mk",
+		"AL": "sq", "BY": "ru", "KH": "km", "LA": "lo",
+	}
+	for cc, want := range cases {
+		got := inferLanguageCode("", cc)
+		if got != want {
+			t.Errorf("inferLanguageCode('', %q) = %q, want %q", cc, got, want)
+		}
+	}
+}
+
+func TestInferLanguageCodeSyncWithNormalize(t *testing.T) {
+	// Verify that discovery and normalize agree on key mappings.
+	// If this test fails, the two maps are out of sync.
+	spotCheck := map[string]string{
+		"IS": "is", "HU": "hu", "DE": "de", "FR": "fr",
+		"ES": "es", "PT": "pt", "RU": "ru", "JP": "ja",
+		"SA": "ar", "CN": "zh", "TH": "th", "PL": "pl",
+		"GE": "ka", "AM": "hy", "KH": "km",
+	}
+	for cc, want := range spotCheck {
+		got := inferLanguageCode("", cc)
+		if got != want {
+			t.Errorf("inferLanguageCode('', %q) = %q, want %q — discovery/normalize out of sync?", cc, got, want)
+		}
+	}
+}

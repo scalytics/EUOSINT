@@ -820,7 +820,7 @@ func vetAndPromote(ctx context.Context, cfg config.Config, client *fetch.Client,
 			Level:                verdict.Level,
 			MissionTags:          verdict.MissionTags,
 			OperationalRelevance: float64(verdict.OperationalRelevance),
-			LanguageCode:         "",
+			LanguageCode:         inferLanguageCode(verdict.LanguageCode, strings.ToUpper(firstNonEmpty(candidate.CountryCode, discovered.CountryCode))),
 		},
 	}
 	if src.Source.BaseURL == "" {
@@ -999,6 +999,143 @@ func firstNonEmpty(values ...string) string {
 		if value != "" {
 			return value
 		}
+	}
+	return ""
+}
+
+// inferLanguageCode returns the best language code for a discovered source.
+// Prefers the LLM-detected language; falls back to country→language mapping.
+// Mirrors normalize.countryToLang — covers all 195 UN member states.
+func inferLanguageCode(llmLang string, countryCode string) string {
+	if llmLang != "" {
+		return strings.ToLower(llmLang)
+	}
+	cc := strings.ToUpper(countryCode)
+	switch cc {
+	// English-speaking
+	case "US", "GB", "AU", "NZ", "CA", "IE", "SG", "PH", "MT", "LK", "MV", "BT",
+		"JM", "TT", "BB", "BS", "BZ", "GY",
+		"FJ", "WS", "TO", "PG",
+		"GH", "NG", "KE", "ZA", "ZM", "ZW", "UG", "TZ", "MW", "BW", "NA", "LS",
+		"SZ", "RW", "SS", "SL", "LR", "GM", "MU", "ET", "SO", "ER",
+		"INT", "EU":
+		return "en"
+	// Nordic
+	case "IS":
+		return "is"
+	case "DK":
+		return "da"
+	case "NO":
+		return "nb"
+	case "SE":
+		return "sv"
+	case "FI":
+		return "fi"
+	// Germanic
+	case "DE", "AT", "CH", "LU", "LI":
+		return "de"
+	case "NL", "BE", "SR":
+		return "nl"
+	// French-speaking
+	case "FR", "MC", "HT",
+		"SN", "ML", "BF", "NE", "CM", "CI", "GN", "BJ", "TG", "TD",
+		"CF", "CG", "GA", "DJ", "MR", "MG", "CD", "BI":
+		return "fr"
+	// Spanish-speaking
+	case "ES", "AD", "MX", "GT", "SV", "HN", "NI", "CR", "PA", "CU", "DO",
+		"CO", "VE", "EC", "PE", "BO", "PY", "CL", "AR", "UY":
+		return "es"
+	// Portuguese-speaking
+	case "PT", "BR", "MZ", "AO", "GW", "TL":
+		return "pt"
+	// Italian
+	case "IT", "SM", "VA":
+		return "it"
+	// Romanian
+	case "RO", "MD":
+		return "ro"
+	// Slavic
+	case "PL":
+		return "pl"
+	case "CZ":
+		return "cs"
+	case "SK":
+		return "sk"
+	case "BG":
+		return "bg"
+	case "HR", "BA":
+		return "hr"
+	case "SI":
+		return "sl"
+	case "RS", "ME":
+		return "sr"
+	case "MK":
+		return "mk"
+	case "AL", "XK":
+		return "sq"
+	case "RU", "BY", "KZ", "KG", "TJ", "TM":
+		return "ru"
+	case "UA":
+		return "uk"
+	case "UZ":
+		return "uz"
+	// Baltic
+	case "LV":
+		return "lv"
+	case "LT":
+		return "lt"
+	case "EE":
+		return "et"
+	// Other European
+	case "GR", "CY":
+		return "el"
+	case "TR":
+		return "tr"
+	case "HU":
+		return "hu"
+	// Caucasus
+	case "GE":
+		return "ka"
+	case "AM":
+		return "hy"
+	case "AZ":
+		return "az"
+	case "AF":
+		return "ps"
+	// Middle East / North Africa
+	case "SA", "AE", "QA", "BH", "KW", "OM",
+		"EG", "JO", "LB", "IQ",
+		"DZ", "TN", "LY", "MA",
+		"SD", "YE", "PS", "SY",
+		"IR", "PK":
+		return "ar"
+	case "IL":
+		return "he"
+	// East Asia
+	case "JP":
+		return "ja"
+	case "KR", "KP":
+		return "ko"
+	case "CN", "TW", "HK", "MO":
+		return "zh"
+	case "MN":
+		return "mn"
+	// South-East Asia
+	case "TH":
+		return "th"
+	case "VN":
+		return "vi"
+	case "MY", "ID", "BN":
+		return "ms"
+	case "MM":
+		return "my"
+	case "KH":
+		return "km"
+	case "LA":
+		return "lo"
+	// South Asia
+	case "IN", "BD", "NP":
+		return "hi"
 	}
 	return ""
 }

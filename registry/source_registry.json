@@ -9365,5 +9365,286 @@
       "evacuación"
     ],
     "max_items": 20
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "gov-si-news",
+      "authority_name": "Government of Slovenia",
+      "country": "Slovenia",
+      "country_code": "SI",
+      "region": "Europe",
+      "authority_type": "national_security",
+      "base_url": "https://www.gov.si"
+    },
+    "feed_url": "https://www.gov.si/en/news/rss/",
+    "category": "national_security",
+    "region_tag": "SI",
+    "lat": 46.06,
+    "lng": 14.51,
+    "max_items": 15
+  },
+  {
+    "type": "rss",
+    "source": {
+      "source_id": "nki-hu",
+      "authority_name": "NKI Hungary",
+      "country": "Hungary",
+      "country_code": "HU",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://nki.gov.hu"
+    },
+    "feed_url": "https://nki.gov.hu/figyelmeztetesek/riasztas/feed/",
+    "category": "cyber_advisory",
+    "region_tag": "HU",
+    "lat": 47.50,
+    "lng": 19.04,
+    "max_items": 15
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-policija-si",
+      "authority_name": "Slovenian Police",
+      "country": "Slovenia",
+      "country_code": "SI",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://x.com/policija_si"
+    },
+    "feed_url": "https://x.com/policija_si",
+    "category": "public_safety",
+    "region_tag": "SI",
+    "lat": 46.06,
+    "lng": 14.51,
+    "include_keywords": [
+      "incident",
+      "arrest",
+      "investigation",
+      "wanted",
+      "missing",
+      "accident",
+      "warning",
+      "border",
+      "drug",
+      "fraud"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-police-hu",
+      "authority_name": "Hungarian Police",
+      "country": "Hungary",
+      "country_code": "HU",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://x.com/police_HU"
+    },
+    "feed_url": "https://x.com/police_HU",
+    "category": "public_safety",
+    "region_tag": "HU",
+    "lat": 47.50,
+    "lng": 19.04,
+    "include_keywords": [
+      "incident",
+      "arrest",
+      "investigation",
+      "wanted",
+      "missing",
+      "accident",
+      "warning",
+      "border",
+      "drug",
+      "fraud"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-politseiamet",
+      "authority_name": "Estonian Police & Border Guard",
+      "country": "Estonia",
+      "country_code": "EE",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://x.com/politseiamet"
+    },
+    "feed_url": "https://x.com/politseiamet",
+    "category": "public_safety",
+    "region_tag": "EE",
+    "lat": 59.44,
+    "lng": 24.75,
+    "include_keywords": [
+      "incident",
+      "arrest",
+      "investigation",
+      "wanted",
+      "missing",
+      "accident",
+      "warning",
+      "border",
+      "drug",
+      "fraud"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-vp-latvija",
+      "authority_name": "Latvian State Police",
+      "country": "Latvia",
+      "country_code": "LV",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://x.com/VP_Latvija"
+    },
+    "feed_url": "https://x.com/VP_Latvija",
+    "category": "public_safety",
+    "region_tag": "LV",
+    "lat": 56.95,
+    "lng": 24.11,
+    "include_keywords": [
+      "incident",
+      "arrest",
+      "investigation",
+      "wanted",
+      "missing",
+      "accident",
+      "warning",
+      "border",
+      "drug",
+      "fraud"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-lietuvos-policija",
+      "authority_name": "Lithuanian Police",
+      "country": "Lithuania",
+      "country_code": "LT",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://x.com/LietuvosPolicija"
+    },
+    "feed_url": "https://x.com/LietuvosPolicija",
+    "category": "public_safety",
+    "region_tag": "LT",
+    "lat": 54.69,
+    "lng": 25.28,
+    "include_keywords": [
+      "incident",
+      "arrest",
+      "investigation",
+      "wanted",
+      "missing",
+      "accident",
+      "warning",
+      "border",
+      "drug",
+      "fraud"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-kaitseministeerium",
+      "authority_name": "Estonian Defence Ministry",
+      "country": "Estonia",
+      "country_code": "EE",
+      "region": "Europe",
+      "authority_type": "military",
+      "base_url": "https://x.com/kaitseministeerium"
+    },
+    "feed_url": "https://x.com/kaitseministeerium",
+    "category": "conflict_monitoring",
+    "region_tag": "EE",
+    "lat": 59.44,
+    "lng": 24.75,
+    "include_keywords": [
+      "defence",
+      "military",
+      "NATO",
+      "exercise",
+      "threat",
+      "border",
+      "security",
+      "Russia",
+      "deployment"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-am-latvia",
+      "authority_name": "Latvian Defence Ministry",
+      "country": "Latvia",
+      "country_code": "LV",
+      "region": "Europe",
+      "authority_type": "military",
+      "base_url": "https://x.com/AM_Latvia"
+    },
+    "feed_url": "https://x.com/AM_Latvia",
+    "category": "conflict_monitoring",
+    "region_tag": "LV",
+    "lat": 56.95,
+    "lng": 24.11,
+    "include_keywords": [
+      "defence",
+      "military",
+      "NATO",
+      "exercise",
+      "threat",
+      "border",
+      "security",
+      "Russia",
+      "deployment"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-kam-lietuva",
+      "authority_name": "Lithuanian Defence Ministry",
+      "country": "Lithuania",
+      "country_code": "LT",
+      "region": "Europe",
+      "authority_type": "military",
+      "base_url": "https://x.com/KAM_Lietuva"
+    },
+    "feed_url": "https://x.com/KAM_Lietuva",
+    "category": "conflict_monitoring",
+    "region_tag": "LT",
+    "lat": 54.69,
+    "lng": 25.28,
+    "include_keywords": [
+      "defence",
+      "military",
+      "NATO",
+      "exercise",
+      "threat",
+      "border",
+      "security",
+      "Russia",
+      "deployment"
+    ],
+    "max_items": 20
   }
 ]

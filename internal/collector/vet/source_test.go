@@ -85,6 +85,31 @@ func TestDeterministicRejectsMissingSamplesOnly(t *testing.T) {
 	}
 }
 
+func TestDecodeVerdictParsesLanguageCode(t *testing.T) {
+	verdict, err := decodeVerdict(`{"approve":true,"promotion_status":"active","category":"public_safety","language_code":"is","level":"national","source_quality":0.85,"operational_relevance":0.9,"mission_tags":["public_safety"],"reason":"Icelandic police feed"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verdict.normalize()
+	if verdict.LanguageCode != "is" {
+		t.Errorf("expected language_code 'is', got %q", verdict.LanguageCode)
+	}
+	if verdict.Category != "public_safety" {
+		t.Errorf("expected category 'public_safety', got %q", verdict.Category)
+	}
+}
+
+func TestDecodeVerdictLanguageCodeNormalized(t *testing.T) {
+	verdict, err := decodeVerdict(`{"approve":true,"promotion_status":"active","language_code":" FR ","level":"national","source_quality":0.7,"operational_relevance":0.7,"mission_tags":[],"reason":"test"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verdict.normalize()
+	if verdict.LanguageCode != "fr" {
+		t.Errorf("expected language_code 'fr', got %q", verdict.LanguageCode)
+	}
+}
+
 func TestSamplesFromFeedItemsHonorsLimit(t *testing.T) {
 	items := []parse.FeedItem{
 		{Title: "One", Link: "https://one"},

@@ -7,18 +7,222 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"math"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/model"
 	"github.com/scalytics/euosint/internal/collector/parse"
 )
+
+// ---------- multilingual incident terms (loaded once from incident_terms.json) ----------
+
+// incidentTermIndex maps tier names to per-language term lists.
+// Tiers: "critical", "high", "medium", "incident_indicators"
+type incidentTermIndex struct {
+	tiersPerLang map[string]map[string][]string // tier → langCode → []lowercase terms
+}
+
+var (
+	globalIncidentTerms *incidentTermIndex
+	incidentTermsOnce   sync.Once
+)
+
+func loadIncidentTerms() *incidentTermIndex {
+	incidentTermsOnce.Do(func() {
+		globalIncidentTerms = buildIncidentTermIndex()
+	})
+	return globalIncidentTerms
+}
+
+func buildIncidentTermIndex() *incidentTermIndex {
+	paths := []string{
+		"registry/incident_terms.json",
+		"../../../registry/incident_terms.json",
+		"/app/registry/incident_terms.json",
+	}
+
+	// Structure: { "_meta": {...}, "critical": { "murder": { "is": ["morð"], ... } }, ... }
+	var raw map[string]json.RawMessage
+	for _, path := range paths {
+		body, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		if err := json.Unmarshal(body, &raw); err != nil {
+			continue
+		}
+		break
+	}
+
+	idx := &incidentTermIndex{
+		tiersPerLang: make(map[string]map[string][]string),
+	}
+
+	for tier, data := range raw {
+		if tier == "_meta" {
+			continue
+		}
+		// data is { "murder": { "is": ["morð", ...], ... }, ... }
+		var concepts map[string]map[string][]string
+		if err := json.Unmarshal(data, &concepts); err != nil {
+			continue
+		}
+		langMap := make(map[string][]string)
+		for _, langs := range concepts {
+			for langCode, words := range langs {
+				for _, w := range words {
+					lower := strings.ToLower(w)
+					runeLen := len([]rune(lower))
+					// CJK terms are meaningful at 2 chars; Latin-script terms need 3+.
+					minLen := 3
+					if hasCJK(lower) {
+						minLen = 2
+					}
+					if runeLen >= minLen {
+						langMap[langCode] = append(langMap[langCode], lower)
+					}
+				}
+			}
+		}
+		idx.tiersPerLang[tier] = langMap
+	}
+
+	return idx
+}
+
+// hasCJK returns true if the string contains CJK Unified Ideographs or Kana.
+func hasCJK(s string) bool {
+	for _, r := range s {
+		if r >= 0x4E00 && r <= 0x9FFF || // CJK Unified Ideographs
+			r >= 0x3040 && r <= 0x309F || // Hiragana
+			r >= 0x30A0 && r <= 0x30FF || // Katakana
+			r >= 0xAC00 && r <= 0xD7AF { // Hangul Syllables
+			return true
+		}
+	}
+	return false
+}
+
+// matchesIncidentTerm checks if text contains any multilingual incident term
+// for the given language. langCode should be an ISO-639-1 code (e.g. "is", "hu").
+// If langCode is "en" or empty, returns "" (English is handled by keyword lists).
+// Returns the tier name ("critical", "high", "medium", "incident_indicators") or "".
+func matchesIncidentTerm(text string, langCode string) string {
+	if langCode == "" || langCode == "en" {
+		return ""
+	}
+	idx := loadIncidentTerms()
+	if idx == nil {
+		return ""
+	}
+	lower := strings.ToLower(text)
+	// Check tiers in priority order.
+	for _, tier := range []string{"critical", "high", "medium", "incident_indicators"} {
+		terms, ok := idx.tiersPerLang[tier]
+		if !ok {
+			continue
+		}
+		langTerms, ok := terms[langCode]
+		if !ok {
+			continue
+		}
+		for _, term := range langTerms {
+			if strings.Contains(lower, term) {
+				return tier
+			}
+		}
+	}
+	return ""
+}
+
+// countryToLang maps country codes to their primary language ISO-639-1 code.
+// English-speaking countries are mapped to "en" so we skip multilingual matching.
+// "INT" and "EU" are mapped to "en" as their feeds are typically in English.
+// countryToLang maps ISO 3166-1 alpha-2 country codes to their primary
+// language ISO-639-1 code. Covers all 195 UN member states plus common
+// codes (INT, EU, TW, HK, XK, etc.). English countries map to "en" so
+// we skip multilingual matching (English keywords already handled).
+var countryToLang = map[string]string{
+	// International / supranational
+	"INT": "en", "EU": "en",
+	// English-speaking
+	"US": "en", "GB": "en", "AU": "en", "NZ": "en", "CA": "en", "IE": "en",
+	"SG": "en", "PH": "en", "MT": "en", "LK": "en", "MV": "en", "BT": "en",
+	"JM": "en", "TT": "en", "BB": "en", "BS": "en", "BZ": "en", "GY": "en",
+	"FJ": "en", "WS": "en", "TO": "en", "PG": "en",
+	"GH": "en", "NG": "en", "KE": "en", "ZA": "en", "ZM": "en", "ZW": "en",
+	"UG": "en", "TZ": "en", "MW": "en", "BW": "en", "NA": "en", "LS": "en",
+	"SZ": "en", "RW": "en", "SS": "en", "SL": "en", "LR": "en", "GM": "en",
+	"MU": "en", "ET": "en", "SO": "en", "ER": "en",
+	// Nordic
+	"IS": "is", "DK": "da", "NO": "nb", "SE": "sv", "FI": "fi",
+	// Germanic
+	"DE": "de", "AT": "de", "CH": "de", "LU": "de", "LI": "de",
+	"NL": "nl", "BE": "nl", "SR": "nl",
+	// French-speaking
+	"FR": "fr", "MC": "fr", "HT": "fr",
+	"SN": "fr", "ML": "fr", "BF": "fr", "NE": "fr", "CM": "fr",
+	"CI": "fr", "GN": "fr", "BJ": "fr", "TG": "fr", "TD": "fr",
+	"CF": "fr", "CG": "fr", "GA": "fr", "DJ": "fr", "MR": "fr",
+	"MG": "fr", "CD": "fr", "BI": "fr",
+	// Spanish-speaking
+	"ES": "es", "AD": "es",
+	"MX": "es", "GT": "es", "SV": "es", "HN": "es", "NI": "es",
+	"CR": "es", "PA": "es", "CU": "es", "DO": "es",
+	"CO": "es", "VE": "es", "EC": "es", "PE": "es", "BO": "es",
+	"PY": "es", "CL": "es", "AR": "es", "UY": "es",
+	// Portuguese-speaking
+	"PT": "pt", "BR": "pt", "MZ": "pt", "AO": "pt", "GW": "pt", "TL": "pt",
+	// Italian
+	"IT": "it", "SM": "it", "VA": "it",
+	// Romanian
+	"RO": "ro", "MD": "ro",
+	// Slavic
+	"PL": "pl", "CZ": "cs", "SK": "sk", "BG": "bg",
+	"HR": "hr", "BA": "hr",
+	"SI": "sl",
+	"RS": "sr", "ME": "sr",
+	"MK": "mk", "AL": "sq", "XK": "sq",
+	"RU": "ru", "BY": "ru",
+	"UA": "uk",
+	// Baltic
+	"LV": "lv", "LT": "lt", "EE": "et",
+	// Other European
+	"GR": "el", "CY": "el",
+	"TR": "tr",
+	"HU": "hu",
+	// Caucasus
+	"GE": "ka", "AM": "hy", "AZ": "az",
+	// Central Asia
+	"KZ": "ru", "KG": "ru", "TJ": "ru", "TM": "ru", "UZ": "uz",
+	"AF": "ps",
+	// Middle East / North Africa
+	"SA": "ar", "AE": "ar", "QA": "ar", "BH": "ar", "KW": "ar", "OM": "ar",
+	"EG": "ar", "JO": "ar", "LB": "ar", "IQ": "ar",
+	"DZ": "ar", "TN": "ar", "LY": "ar", "MA": "ar",
+	"SD": "ar", "YE": "ar", "PS": "ar", "SY": "ar",
+	"IR": "ar", "PK": "ar",
+	"IL": "he",
+	// East Asia
+	"JP": "ja", "KR": "ko", "KP": "ko",
+	"CN": "zh", "TW": "zh", "HK": "zh", "MO": "zh",
+	"MN": "mn",
+	// South-East Asia
+	"TH": "th", "VN": "vi",
+	"MY": "ms", "ID": "ms", "BN": "ms",
+	"MM": "my", "KH": "km", "LA": "lo",
+	// South Asia
+	"IN": "hi", "BD": "hi", "NP": "hi",
+}
 
 var (
 	technicalSignalPatterns = []*regexp.Regexp{
@@ -737,14 +941,21 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 		eventCountryCode = ""
 	}
 	canonicalCategory := canonicalCategory(meta.Category)
+	// Derive language code for multilingual incident term matching.
+	// Prefer explicit language_code from source metadata; fall back to country→lang map.
+	srcLang := source.LanguageCode
+	if srcLang == "" {
+		srcLang = countryToLang[source.CountryCode]
+	}
+
 	// Cross-country/aggregator alerts with no resolvable location are
 	// geopolitical context, not actionable events — reclassify as legislative.
 	// Exception: titles with clear incident indicators (fire, explosion, attack)
 	// stay in their original category even without a map pin.
-	if isCrossCountry && !geocoded && allowDynamicGeocode && !hasIncidentIndicators(title) {
+	if isCrossCountry && !geocoded && allowDynamicGeocode && !hasIncidentIndicators(title, srcLang) {
 		canonicalCategory = "legislative"
 	}
-	canonicalSeverity := inferSeverity(title, defaultSeverity(canonicalCategory))
+	canonicalSeverity := inferSeverity(title, defaultSeverity(canonicalCategory), srcLang)
 	if canonicalCategory == "informational" {
 		canonicalSeverity = "info"
 	}
@@ -1244,7 +1455,7 @@ func defaultSeverity(category string) string {
 	}
 }
 
-func inferSeverity(title string, fallback string) string {
+func inferSeverity(title string, fallback string, langCode ...string) string {
 	t := strings.ToLower(title)
 	// Informational content overrides keyword-based severity — a conference
 	// about pandemics or a review of nuclear infrastructure is not an alert.
@@ -1268,6 +1479,22 @@ func inferSeverity(title string, fallback string) string {
 	case containsAny(t, "low", "informational", "infopaket", "infoblatt", "handreichung", "leitfaden", "newsletter"):
 		return "info"
 	default:
+		// Multilingual fallback: check incident_terms.json translations
+		// scoped to the source's language.
+		lc := ""
+		if len(langCode) > 0 {
+			lc = langCode[0]
+		}
+		if tier := matchesIncidentTerm(title, lc); tier != "" {
+			switch tier {
+			case "critical":
+				return "critical"
+			case "high", "incident_indicators":
+				return "high"
+			case "medium":
+				return "medium"
+			}
+		}
 		return fallback
 	}
 }
@@ -1464,9 +1691,9 @@ func IsInformationalTitle(title string) bool {
 // hasIncidentIndicators returns true if the title describes a concrete
 // physical event (fire, explosion, attack, etc.) that should not be
 // reclassified as legislative even when geocoding fails.
-func hasIncidentIndicators(title string) bool {
+func hasIncidentIndicators(title string, langCode string) bool {
 	t := strings.ToLower(title)
-	return containsAny(t,
+	if containsAny(t,
 		"fire", "explosion", "attack", "strike", "bombing",
 		"shooting", "killed", "dead", "injured", "wounded",
 		"crash", "collision", "derailment", "sinking",
@@ -1474,9 +1701,12 @@ func hasIncidentIndicators(title string) bool {
 		"evacuated", "evacuation", "rescue",
 		"seized", "arrested", "detained",
 		"missile", "rocket", "drone", "shelling",
-		"incendio", "explosión", "ataque", "muertos",
-		"incendie", "attaque", "tués",
-	)
+	) {
+		return true
+	}
+	// Multilingual fallback: check incident_terms.json translations
+	// scoped to the source's language to avoid cross-language false positives.
+	return matchesIncidentTerm(title, langCode) != ""
 }
 
 func containsAny(value string, needles ...string) bool {
@@ -1841,15 +2071,24 @@ func FilterActive(cfg config.Config, alerts []model.Alert) (active []model.Alert
 		// publish date) are filtered out even if the feed keeps serving them.
 		// Government/military/seismic sources get 2x the window since their
 		// advisories stay relevant longer.
-		cap := maxFresh
-		switch alert.Source.AuthorityType {
-		case "national_security", "military", "seismic", "cert", "police",
-			"law_enforcement", "emergency", "regulatory", "international_org":
-			cap = maxFresh * 2
+		// Certain categories are exempt — wanted/missing persons stay
+		// relevant indefinitely regardless of publish age.
+		freshnessExempt := false
+		switch strings.ToLower(alert.Category) {
+		case "wanted_suspect", "missing_person", "public_appeal":
+			freshnessExempt = true
 		}
-		if alert.FreshnessHours > cap {
-			filtered = append(filtered, alert)
-			continue
+		if !freshnessExempt {
+			cap := maxFresh
+			switch alert.Source.AuthorityType {
+			case "national_security", "military", "seismic", "cert", "police",
+				"law_enforcement", "emergency", "regulatory", "international_org":
+				cap = maxFresh * 2
+			}
+			if alert.FreshnessHours > cap {
+				filtered = append(filtered, alert)
+				continue
+			}
 		}
 
 		threshold := thresholdForAlert(cfg, alert)

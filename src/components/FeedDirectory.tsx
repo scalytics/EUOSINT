@@ -31,6 +31,7 @@ interface DigestTerm {
 interface Props {
   view: View;
   alerts: Alert[];
+  historicalAlerts?: Alert[];
   sourceHealth: SourceHealthDocument | null;
   isLoading: boolean;
   selectedSourceIds: string[];
@@ -46,6 +47,7 @@ interface Props {
 
 export function FeedDirectory({
   alerts,
+  historicalAlerts = [],
   sourceHealth,
   isLoading,
   selectedSourceIds,
@@ -105,42 +107,54 @@ export function FeedDirectory({
     [alerts, regionFilter],
   );
 
-  /* ── Derived stats (all from region-scoped alerts) ─────────────── */
+  const regionHistorical = useMemo(
+    () => regionFilter === "all" ? historicalAlerts : historicalAlerts.filter((a) => alertMatchesRegionFilter(a, regionFilter)),
+    [historicalAlerts, regionFilter],
+  );
+
+  // Combined now + history (deduped) for total counts
+  const allRegionAlerts = useMemo(() => {
+    const seen = new Set(regionAlerts.map((a) => a.alert_id));
+    const extras = regionHistorical.filter((a) => !seen.has(a.alert_id));
+    return [...regionAlerts, ...extras];
+  }, [regionAlerts, regionHistorical]);
+
+  /* ── Derived stats (from combined now + history) ────────────────── */
 
   const severityCounts = useMemo(() => {
     const counts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
-    for (const a of regionAlerts) {
+    for (const a of allRegionAlerts) {
       counts[a.severity] = (counts[a.severity] ?? 0) + 1;
     }
     return counts;
-  }, [regionAlerts]);
+  }, [allRegionAlerts]);
 
   const countryCounts = useMemo(() => {
     const map = new Map<string, { name: string; code: string; count: number }>();
-    for (const a of regionAlerts) {
+    for (const a of allRegionAlerts) {
       const key = a.source.country_code;
       const existing = map.get(key);
       if (existing) existing.count++;
       else map.set(key, { name: a.source.country, code: key, count: 1 });
     }
     return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 12);
-  }, [regionAlerts]);
+  }, [allRegionAlerts]);
 
   const categoryCounts = useMemo(() => {
     const counts: Partial<Record<AlertCategory, number>> = {};
-    for (const a of regionAlerts) {
+    for (const a of allRegionAlerts) {
       counts[a.category] = (counts[a.category] ?? 0) + 1;
     }
     return categoryOrder
       .filter((cat) => cat !== "informational" && (counts[cat] ?? 0) > 0)
       .map((cat) => ({ category: cat, count: counts[cat]! }))
       .sort((a, b) => b.count - a.count);
-  }, [regionAlerts]);
+  }, [allRegionAlerts]);
 
   const topSources = useMemo(() => {
     const filtered = categoryFilter === "all"
-      ? regionAlerts
-      : regionAlerts.filter((a) => a.category === categoryFilter);
+      ? allRegionAlerts
+      : allRegionAlerts.filter((a) => a.category === categoryFilter);
     const map = new Map<string, { name: string; sourceId: string; count: number; maxItems: number }>();
     for (const a of filtered) {
       const key = a.source_id;
@@ -149,10 +163,10 @@ export function FeedDirectory({
       else map.set(key, { name: a.source.authority_name, sourceId: key, count: 1, maxItems: 0 });
     }
     return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 12);
-  }, [regionAlerts, categoryFilter]);
+  }, [allRegionAlerts, categoryFilter]);
 
   const summaryAlerts = useMemo(() => {
-    let filtered = regionAlerts;
+    let filtered = allRegionAlerts;
     if (selectedSourceIds.length > 0) {
       const selectedSet = new Set(selectedSourceIds);
       filtered = filtered.filter((a) => selectedSet.has(a.source_id));
@@ -164,7 +178,7 @@ export function FeedDirectory({
       filtered = filtered.filter((a) => a.severity === severityFilter);
     }
     return filtered;
-  }, [regionAlerts, selectedSourceIds, categoryFilter, severityFilter]);
+  }, [allRegionAlerts, selectedSourceIds, categoryFilter, severityFilter]);
 
   /* ── Zone summary stats ─────────────────────────────────────────── */
   const zoneSummary = useMemo(() => {

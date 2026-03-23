@@ -723,7 +723,7 @@ export function GlobeView({
                 const sourceLink = link
                   ? `<a href="${link}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:5px;font-size:11px;color:#60a5fa;text-decoration:none;">Open source ↗</a>`
                   : "";
-                return `<div style="border-bottom:1px solid rgba(148,163,184,.16);padding:7px 0;"><button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;cursor:pointer;font-size:13px;line-height:1.35;color:#f3f4f6;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;border:1px solid rgba(148,163,184,.35);padding:1px 4px;border-radius:4px;">${sev}</span><span>${idx + 1}. ${title}</span></div>${meta}</button>${sourceLink}</div>`;
+                return `<div style="border-bottom:1px solid rgba(148,163,184,.16);padding:7px 0;"><button data-alert-id="${alert.alert_id}" class="cluster-list-row" style="display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;cursor:pointer;font-size:13px;line-height:1.35;color:#f3f4f6;"><div style="display:flex;align-items:center;gap:6px;min-width:0;"><span style="flex-shrink:0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;border:1px solid rgba(148,163,184,.35);padding:1px 4px;border-radius:4px;">${sev}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${idx + 1}. ${title}</span></div>${meta}</button>${sourceLink}</div>`;
               })
               .join("");
             return `<div style="margin-bottom:8px;"><div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#cbd5e1;border:1px solid rgba(148,163,184,.35);background:rgba(15,23,42,.45);padding:3px 8px;border-radius:999px;margin:4px 0 6px 0;">${categoryLabel}<span style="color:#94a3b8;">(${items.length})</span></div>${rows}</div>`;
@@ -744,6 +744,7 @@ export function GlobeView({
         closeOnClick: false,
         closeButton: true,
         className: "siem-cluster-list-popup",
+        autoPanPadding: L.point(40, 40),
       })
         .setLatLng(cl.getLatLng())
         .setContent(renderContent(visibleLimit))

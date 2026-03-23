@@ -601,8 +601,8 @@ var regionalHQIndex = map[string]regionalHQEntry{
 	// NATO
 	"nato": {50.85, 4.35, "NATO"},
 	// United Nations
-	"un":             {40.75, -73.97, "United Nations"},
-	"united nations": {40.75, -73.97, "United Nations"},
+	"un":                  {40.75, -73.97, "United Nations"},
+	"united nations":      {40.75, -73.97, "United Nations"},
 	"un security council": {40.75, -73.97, "United Nations"},
 	// African Union
 	"african union": {9.01, 38.75, "African Union"},
@@ -617,18 +617,18 @@ var regionalHQIndex = map[string]regionalHQEntry{
 	// Mercosur
 	"mercosur": {-34.60, -58.38, "Mercosur"},
 	// G7/G20 — pin to host-neutral Washington as convention
-	"g7": {38.91, -77.04, "G7"},
+	"g7":  {38.91, -77.04, "G7"},
 	"g20": {38.91, -77.04, "G20"},
 	// Regional labels
-	"north america": {38.91, -77.04, "North America"},
-	"latin america": {-15.79, -47.88, "Latin America"},
-	"middle east":   {24.71, 46.68, "Middle East"},
-	"sahel":         {12.64, -8.0, "Sahel"},
-	"horn of africa": {8.0, 42.0, "Horn of Africa"},
+	"north america":   {38.91, -77.04, "North America"},
+	"latin america":   {-15.79, -47.88, "Latin America"},
+	"middle east":     {24.71, 46.68, "Middle East"},
+	"sahel":           {12.64, -8.0, "Sahel"},
+	"horn of africa":  {8.0, 42.0, "Horn of Africa"},
 	"south china sea": {12.0, 114.0, "South China Sea"},
-	"baltic":         {56.95, 24.11, "Baltic"},
-	"arctic":         {64.15, -21.95, "Arctic"},
-	"caribbean":      {18.0, -75.0, "Caribbean"},
+	"baltic":          {56.95, 24.11, "Baltic"},
+	"arctic":          {64.15, -21.95, "Arctic"},
+	"caribbean":       {18.0, -75.0, "Caribbean"},
 }
 
 // resolveRegionalHQ scans text for supranational/org references and

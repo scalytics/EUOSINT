@@ -91,6 +91,8 @@ export default function App() {
   const [visibleNowAlertIds, setVisibleNowAlertIds] = useState<string[]>([]);
   const [visibleHistoryAlertIds, setVisibleHistoryAlertIds] = useState<string[]>([]);
   const [mobilePane, setMobilePane] = useState<"intel" | "map" | "alerts">("map");
+  const [requestedViewMode, setRequestedViewMode] = useState<"now" | "history" | "now_history" | "briefing" | null>(null);
+  const [requestedViewModeKey, setRequestedViewModeKey] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const preLensRegionRef = useRef<string | null>(null);
   const preLensSourcesRef = useRef<string[] | null>(null);
@@ -304,6 +306,9 @@ export default function App() {
     setSelectedSourceIds([]);
     setCategoryFilter("all");
     setSelectedId(null);
+    // Switch right panel to now+history so counts match left panel totals
+    setRequestedViewModeKey((k) => k + 1);
+    setRequestedViewMode("now_history");
   }, []);
 
   const handleConflictCountryFocusChange = useCallback((focus: ConflictCountryFocus | null) => {
@@ -319,9 +324,19 @@ export default function App() {
     setConflictCountryFocus(focus);
   }, [handleConflictLensChange, handleCountrySelect]);
 
+  const handleCategorySelect = useCallback((category: AlertCategory | "all") => {
+    setCategoryFilter(category);
+    // Switch right panel to now+history so counts match left panel totals
+    setRequestedViewModeKey((k) => k + 1);
+    setRequestedViewMode("now_history");
+  }, []);
+
   const handleSourceSelectionChange = useCallback((sourceIds: string[]) => {
     setSelectedSourceIds(sourceIds);
     setSelectedId(null);
+    // Switch right panel to now+history so counts match left panel totals
+    setRequestedViewModeKey((k) => k + 1);
+    setRequestedViewMode("now_history");
   }, []);
 
 
@@ -381,12 +396,13 @@ export default function App() {
             <FeedDirectory
               view="overview"
               alerts={regionScopedAlerts}
+              historicalAlerts={stateRegionScopedAlerts}
               sourceHealth={sourceHealth}
               isLoading={isSourceHealthLoading}
               selectedSourceIds={selectedSourceIds}
               onSelectSourceIdsChange={handleSourceSelectionChange}
               categoryFilter={categoryFilter}
-              onSelectCategory={setCategoryFilter}
+              onSelectCategory={handleCategorySelect}
               regionFilter={regionFilter}
               onSelectCountry={handleCountrySelect}
               severityFilter={severityFilter}
@@ -439,6 +455,8 @@ export default function App() {
                     setVisibleNowAlertIds(nowIds);
                     setVisibleHistoryAlertIds(historyIds);
                   }}
+                  requestedViewMode={requestedViewMode}
+                  requestedViewModeKey={requestedViewModeKey}
                 />
               </Suspense>
             )}

@@ -38,6 +38,7 @@ type Verdict struct {
 	Approve              bool      `json:"approve"`
 	PromotionStatus      string    `json:"promotion_status"`
 	Category             string    `json:"category,omitempty"`
+	LanguageCode         string    `json:"language_code,omitempty"`
 	Level                string    `json:"level"`
 	MissionTags          []string  `json:"mission_tags"`
 	SourceQuality        flexFloat `json:"source_quality"`
@@ -163,11 +164,13 @@ Valid categories (pick the best match):
 - private_sector: corporate security, supply chain disruptions
 - informational: general information, educational content
 
-Return strict JSON only with keys: approve, promotion_status, category, level, mission_tags, source_quality, operational_relevance, reason.`,
+Also detect the primary content language from the sample titles/summaries and return it as an ISO 639-1 code (e.g. "en", "fr", "de", "is", "hu", "ar", "ja"). Use "en" if the content is in English.
+
+Return strict JSON only with keys: approve, promotion_status, category, language_code, level, mission_tags, source_quality, operational_relevance, reason.`,
 		},
 		{
 			Role:    "user",
-			Content: "Evaluate this discovered source and return JSON with keys approve, promotion_status, category, level, mission_tags, source_quality, operational_relevance, reason.\n\n" + string(payload),
+			Content: "Evaluate this discovered source and return JSON with keys approve, promotion_status, category, language_code, level, mission_tags, source_quality, operational_relevance, reason.\n\n" + string(payload),
 		},
 	})
 	if err != nil {
@@ -236,6 +239,7 @@ func (v *Verdict) normalize() {
 	if !validCategories[v.Category] {
 		v.Category = ""
 	}
+	v.LanguageCode = strings.ToLower(strings.TrimSpace(v.LanguageCode))
 	v.Level = strings.ToLower(strings.TrimSpace(v.Level))
 	switch v.Level {
 	case "international", "supranational", "federal", "national", "regional", "local":
