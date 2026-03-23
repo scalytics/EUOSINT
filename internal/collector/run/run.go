@@ -37,6 +37,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/trends"
 	"github.com/scalytics/euosint/internal/collector/vet"
 	"github.com/scalytics/euosint/internal/collector/zonebrief"
+	"github.com/scalytics/euosint/internal/collector/zonebriefllm"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
@@ -4345,32 +4346,29 @@ func (r Runner) ensureZoneBriefLLMSummary(
 					label, c.ConflictID, parse.NormalizeConflictType(c.TypeOfConflict), c.StartDate, c.EPEnd != 0)
 			}
 		}
-		msgs := []vet.Message{
-			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
-			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the historic summary block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\nCover all major conflicts listed, not just the current one.\n" + historicalContext},
-		}
+		msgs := zonebriefllm.HistoricalMessages(zonebriefllm.PromptConfig{
+			ZoneLabel:                     zoneLabel,
+			Context:                       historicalContext,
+			IncludeHistoricalCoverageNote: true,
+		})
 		resp, err := llm.Complete(ctx, msgs)
 		if err == nil && strings.TrimSpace(resp) != "" {
-			existing.HistoricalSummary = limitWords(strings.TrimSpace(resp), 80)
+			existing.HistoricalSummary = zonebriefllm.LimitWords(strings.TrimSpace(resp), zonebriefllm.MaxHistoricalWords)
 			existing.HistoricalUpdatedAt = time.Now().UTC().Format(time.RFC3339)
 		}
 	}
 	if needsAnalysis {
 		analysisContext := baseContext
-		if len(recentHeadlines) > 0 {
-			limit := len(recentHeadlines)
-			if limit > 20 {
-				limit = 20
-			}
-			analysisContext += "\n\nRecent alert headlines from live feeds (last 48h):\n- " + strings.Join(recentHeadlines[:limit], "\n- ")
-		}
-		msgs := []vet.Message{
-			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
-			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the current analysis block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\nFocus only on current dynamics (roughly last 6-12 months): momentum, intensity direction, territorial/control shifts, and near-term operational outlook.\nDo NOT repeat conflict start date or cumulative death totals from historical summary.\nIncorporate the recent alert headlines if provided — they represent real-time intelligence from live OSINT feeds.\nAs-of date: " + time.Now().UTC().Format("2006-01-02") + "\n" + analysisContext},
-		}
+		analysisContext = zonebriefllm.AppendRecentHeadlines(analysisContext, recentHeadlines, zonebriefllm.MaxRecentHeadlines)
+		msgs := zonebriefllm.CurrentAnalysisMessages(zonebriefllm.PromptConfig{
+			ZoneLabel:                  zoneLabel,
+			Context:                    analysisContext,
+			AsOfDate:                   time.Now().UTC(),
+			IncludeRecentHeadlinesNote: true,
+		})
 		resp, err := llm.Complete(ctx, msgs)
 		if err == nil && strings.TrimSpace(resp) != "" {
-			existing.CurrentAnalysis = limitWords(strings.TrimSpace(resp), 60)
+			existing.CurrentAnalysis = zonebriefllm.LimitWords(strings.TrimSpace(resp), zonebriefllm.MaxCurrentAnalysisWords)
 			existing.AnalysisUpdatedAt = time.Now().UTC().Format(time.RFC3339)
 		}
 	}
@@ -4455,17 +4453,6 @@ func buildRecentHeadlinesByGWNO(ctx context.Context, cfg config.Config, gwnoToIS
 		}
 	}
 	return out
-}
-
-func limitWords(text string, maxWords int) string {
-	if maxWords <= 0 {
-		return ""
-	}
-	words := strings.Fields(text)
-	if len(words) <= maxWords {
-		return strings.TrimSpace(text)
-	}
-	return strings.Join(words[:maxWords], " ")
 }
 
 func ucdpRowsHeadHash(rows []map[string]any) string {

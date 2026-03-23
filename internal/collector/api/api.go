@@ -21,6 +21,7 @@ import (
 	"github.com/scalytics/euosint/internal/collector/model"
 	"github.com/scalytics/euosint/internal/collector/trends"
 	"github.com/scalytics/euosint/internal/collector/vet"
+	"github.com/scalytics/euosint/internal/collector/zonebriefllm"
 	"github.com/scalytics/euosint/internal/sourcedb"
 )
 
@@ -604,31 +605,33 @@ func (s *Server) ensureZoneBriefLLM(ctx context.Context, row conflictStatRow) (s
 	now := time.Now().UTC().Format(time.RFC3339)
 
 	if needsHistorical {
-		resp, err := llm.Complete(ctx, []vet.Message{
-			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
-			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the historic summary block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\n" + baseContext},
-		})
+		resp, err := llm.Complete(ctx, zonebriefllm.HistoricalMessages(zonebriefllm.PromptConfig{
+			ZoneLabel: zoneLabel,
+			Context:   baseContext,
+		}))
 		if err != nil {
 			return existing, false, false, fmt.Errorf("generate historic summary: %w", err)
 		}
 		text := strings.TrimSpace(resp)
 		if text != "" {
-			existing.HistoricalSummary = limitWords(text, 80)
+			existing.HistoricalSummary = zonebriefllm.LimitWords(text, zonebriefllm.MaxHistoricalWords)
 			existing.HistoricalUpdatedAt = now
 			refreshedHistorical = true
 		}
 	}
 	if needsAnalysis {
-		resp, err := llm.Complete(ctx, []vet.Message{
-			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
-			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the current analysis block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\nFocus only on current dynamics (roughly last 6-12 months): momentum, intensity direction, territorial/control shifts, and near-term operational outlook.\nDo NOT repeat conflict start date or cumulative death totals from historical summary.\nIf recent evidence is weak, give a cautious best-available assessment from the provided context.\nAs-of date: " + time.Now().UTC().Format("2006-01-02") + "\n" + baseContext},
-		})
+		resp, err := llm.Complete(ctx, zonebriefllm.CurrentAnalysisMessages(zonebriefllm.PromptConfig{
+			ZoneLabel:                       zoneLabel,
+			Context:                         baseContext,
+			AsOfDate:                        time.Now().UTC(),
+			IncludeWeakEvidenceFallbackNote: true,
+		}))
 		if err != nil {
 			return existing, refreshedHistorical, false, fmt.Errorf("generate current analysis: %w", err)
 		}
 		text := strings.TrimSpace(resp)
 		if text != "" {
-			existing.CurrentAnalysis = limitWords(text, 60)
+			existing.CurrentAnalysis = zonebriefllm.LimitWords(text, zonebriefllm.MaxCurrentAnalysisWords)
 			existing.AnalysisUpdatedAt = now
 			refreshedAnalysis = true
 		}
@@ -637,17 +640,6 @@ func (s *Server) ensureZoneBriefLLM(ctx context.Context, row conflictStatRow) (s
 		return existing, refreshedHistorical, refreshedAnalysis, err
 	}
 	return existing, refreshedHistorical, refreshedAnalysis, nil
-}
-
-func limitWords(text string, maxWords int) string {
-	if maxWords <= 0 {
-		return ""
-	}
-	words := strings.Fields(text)
-	if len(words) <= maxWords {
-		return strings.TrimSpace(text)
-	}
-	return strings.Join(words[:maxWords], " ")
 }
 
 // ---------- per-IP token bucket rate limiter ----------
