@@ -66,7 +66,7 @@ export const DEFAULT_OVERLAYS: OverlayDef[] = [
   { id: "nuclear", label: "Nuclear Sites", color: "#facc15", url: "/geo/nuclear-sites.geojson" },
   { id: "sanctions", label: "Sanctions Zones", color: "#fb923c", url: "/geo/sanctions-zones.geojson" },
   { id: "piracy", label: "Piracy Zones", color: "#2dd4bf", url: "/geo/piracy-zones.geojson" },
-  { id: "terrorism", label: "Terror Zones", color: "#84cc16", url: "/geo/terrorism-zones.geojson" },
+  { id: "terrorism", label: "Terror Zones", color: "#e11d48", url: "/geo/terrorism-zones.geojson" },
   { id: "views-risk", label: "Conflict Risk", color: "#818cf8", url: "/views-risk.json" },
 ];
 
@@ -209,9 +209,9 @@ const piracyTypeColors: Record<string, string> = {
 };
 
 const terrorismTypeColors: Record<string, string> = {
-  active: "#84cc16",
-  degraded: "#bef264",
-  elevated: "#65a30d",
+  active: "#e11d48",
+  degraded: "#fda4af",
+  elevated: "#be123c",
 };
 
 export async function loadOverlay(
@@ -506,8 +506,8 @@ export async function loadOverlay(
       style: (feature) => {
         const type = feature?.properties?.type ?? "active";
         return {
-          color: terrorismTypeColors[type] ?? "#84cc16",
-          fillColor: terrorismTypeColors[type] ?? "#84cc16",
+          color: terrorismTypeColors[type] ?? "#e11d48",
+          fillColor: terrorismTypeColors[type] ?? "#e11d48",
           fillOpacity: 0.10,
           weight: 1.5,
           dashArray: type === "degraded" ? "6,4" : undefined,
