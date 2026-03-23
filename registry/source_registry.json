@@ -9398,7 +9398,7 @@
     "feed_url": "https://nki.gov.hu/figyelmeztetesek/riasztas/feed/",
     "category": "cyber_advisory",
     "region_tag": "HU",
-    "lat": 47.50,
+    "lat": 47.5,
     "lng": 19.04,
     "max_items": 15
   },
@@ -9448,7 +9448,7 @@
     "feed_url": "https://x.com/police_HU",
     "category": "public_safety",
     "region_tag": "HU",
-    "lat": 47.50,
+    "lat": 47.5,
     "lng": 19.04,
     "include_keywords": [
       "incident",
@@ -9644,6 +9644,239 @@
       "security",
       "Russia",
       "deployment"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "rss",
+    "followRedirects": true,
+    "source": {
+      "source_id": "mcf-se",
+      "authority_name": "Myndigheten för civilt försvar (MCF)",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "authority_type": "civil_protection",
+      "base_url": "https://www.mcf.se"
+    },
+    "feed_url": "https://www.mcf.se/sv/rss-floden/rss-alla-nyheter-fran-myndigheten-for-civilt-forsvar/",
+    "category": "public_safety",
+    "region_tag": "SE",
+    "language_code": "sv",
+    "lat": 59.33,
+    "lng": 18.07
+  },
+  {
+    "type": "rss",
+    "followRedirects": true,
+    "source": {
+      "source_id": "ncsc-fi-vuln",
+      "authority_name": "NCSC-FI – Vulnerabilities & Alerts",
+      "country": "Finland",
+      "country_code": "FI",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.kyberturvallisuuskeskus.fi"
+    },
+    "feed_url": "https://www.kyberturvallisuuskeskus.fi/feed/rss/fi/400",
+    "category": "cyber_advisory",
+    "region_tag": "FI",
+    "language_code": "fi",
+    "lat": 60.17,
+    "lng": 24.94
+  },
+  {
+    "type": "rss",
+    "followRedirects": true,
+    "source": {
+      "source_id": "puolustusvoimat-fi",
+      "authority_name": "Finnish Defence Forces",
+      "country": "Finland",
+      "country_code": "FI",
+      "region": "Europe",
+      "authority_type": "military",
+      "base_url": "https://puolustusvoimat.fi"
+    },
+    "feed_url": "https://puolustusvoimat.fi/en/current-issues/-/asset_publisher/JIbSQ9miX9H6/rss",
+    "category": "public_safety",
+    "region_tag": "FI",
+    "language_code": "en",
+    "lat": 60.17,
+    "lng": 24.94
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-forsvarsmakten",
+      "authority_name": "Swedish Armed Forces",
+      "country": "Sweden",
+      "country_code": "SE",
+      "region": "Europe",
+      "authority_type": "military",
+      "base_url": "https://x.com/forsvarsmakten"
+    },
+    "feed_url": "https://x.com/forsvarsmakten",
+    "category": "public_safety",
+    "region_tag": "SE",
+    "language_code": "sv",
+    "lat": 59.33,
+    "lng": 18.07,
+    "include_keywords": [
+      "attack",
+      "beredskap",
+      "insats",
+      "operation",
+      "varning",
+      "hot",
+      "övning",
+      "försvar"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-forsvaret-no",
+      "authority_name": "Norwegian Armed Forces",
+      "country": "Norway",
+      "country_code": "NO",
+      "region": "Europe",
+      "authority_type": "military",
+      "base_url": "https://x.com/Forsvaret_no"
+    },
+    "feed_url": "https://x.com/Forsvaret_no",
+    "category": "public_safety",
+    "region_tag": "NO",
+    "language_code": "no",
+    "lat": 59.91,
+    "lng": 10.75,
+    "include_keywords": [
+      "operasjon",
+      "beredskap",
+      "trussel",
+      "øvelse",
+      "forsvar",
+      "angrep",
+      "varsel"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-politiet-no",
+      "authority_name": "Norwegian Police",
+      "country": "Norway",
+      "country_code": "NO",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://x.com/politiet_no"
+    },
+    "feed_url": "https://x.com/politiet_no",
+    "category": "public_appeal",
+    "region_tag": "NO",
+    "language_code": "no",
+    "lat": 59.91,
+    "lng": 10.75,
+    "include_keywords": [
+      "etterlyst",
+      "savnet",
+      "pågrepet",
+      "hendelse",
+      "ulykke",
+      "brann",
+      "drap",
+      "ran"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-politi-dk",
+      "authority_name": "Danish Police",
+      "country": "Denmark",
+      "country_code": "DK",
+      "region": "Europe",
+      "authority_type": "police",
+      "base_url": "https://x.com/politi_dk"
+    },
+    "feed_url": "https://x.com/politi_dk",
+    "category": "public_appeal",
+    "region_tag": "DK",
+    "language_code": "da",
+    "lat": 55.68,
+    "lng": 12.57,
+    "include_keywords": [
+      "efterlyst",
+      "savnet",
+      "anholdt",
+      "hændelse",
+      "ulykke",
+      "brand",
+      "drab",
+      "røveri"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-almannavarnir",
+      "authority_name": "Icelandic Civil Protection",
+      "country": "Iceland",
+      "country_code": "IS",
+      "region": "Europe",
+      "authority_type": "civil_protection",
+      "base_url": "https://x.com/almannavarnir"
+    },
+    "feed_url": "https://x.com/almannavarnir",
+    "category": "public_safety",
+    "region_tag": "IS",
+    "language_code": "is",
+    "lat": 64.15,
+    "lng": -21.94,
+    "include_keywords": [
+      "eldgos",
+      "jarðskjálfti",
+      "flóð",
+      "hætta",
+      "viðvörun",
+      "rýming",
+      "neyðarástand"
+    ],
+    "max_items": 20
+  },
+  {
+    "type": "x",
+    "fetch_mode": "browser",
+    "source": {
+      "source_id": "x-rajavartiolaitos",
+      "authority_name": "Finnish Border Guard",
+      "country": "Finland",
+      "country_code": "FI",
+      "region": "Europe",
+      "authority_type": "border_guard",
+      "base_url": "https://x.com/raja_rajavartiolaitos"
+    },
+    "feed_url": "https://x.com/raja_rajavartiolaitos",
+    "category": "public_safety",
+    "region_tag": "FI",
+    "language_code": "fi",
+    "lat": 60.17,
+    "lng": 24.94,
+    "include_keywords": [
+      "raja",
+      "valvonta",
+      "turvallisuus",
+      "pidätetty",
+      "pelastus",
+      "meripelastus"
     ],
     "max_items": 20
   }

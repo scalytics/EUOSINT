@@ -55,10 +55,13 @@ export function MobileApp() {
     [categoryFiltered],
   );
 
-  // Count critical+high for badge
-  const urgentCount = useMemo(
-    () => categoryFiltered.filter((a) => a.severity === "critical" || a.severity === "high").length,
-    [categoryFiltered],
+  // Badge count: visible alerts after all filters (severity + category + region)
+  const visibleCount = useMemo(
+    () =>
+      severityFilter === "all"
+        ? categoryFiltered.length
+        : categoryFiltered.filter((a) => a.severity === severityFilter).length,
+    [categoryFiltered, severityFilter],
   );
 
   // Categories with counts for the picker (based on region alerts, before category filter)
@@ -132,7 +135,7 @@ export function MobileApp() {
       <MobileBottomNav
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        alertCount={urgentCount}
+        alertCount={visibleCount}
       />
 
       <MobileAlertSheet alert={selectedAlert} onClose={handleCloseSheet} />
