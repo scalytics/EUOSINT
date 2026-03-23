@@ -93,3 +93,14 @@ ON CONFLICT(country_id) DO UPDATE SET
 	}
 	return nil
 }
+
+func (db *DB) ResetZoneBriefLLM(ctx context.Context) error {
+	if err := db.Init(ctx); err != nil {
+		return err
+	}
+	_, err := db.sql.ExecContext(ctx, `DELETE FROM zone_brief_llm`)
+	if err != nil {
+		return fmt.Errorf("reset zone brief llm: %w", err)
+	}
+	return nil
+}

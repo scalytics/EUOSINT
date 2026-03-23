@@ -137,6 +137,7 @@ type Config struct {
 	CollectorRole                    string
 	CORSAllowedOrigins               []string
 	APIBearerToken                   string
+	ResetZoneBriefLLM                bool
 }
 
 func Default() Config {
@@ -351,6 +352,7 @@ func FromEnv() Config {
 	cfg.CollectorRole = strings.ToLower(strings.TrimSpace(envString("COLLECTOR_ROLE", cfg.CollectorRole)))
 	cfg.CORSAllowedOrigins = envCSV("CORS_ALLOWED_ORIGINS", cfg.CORSAllowedOrigins)
 	cfg.APIBearerToken = envString("API_BEARER_TOKEN", cfg.APIBearerToken)
+	cfg.ResetZoneBriefLLM = envBool("RESET_ZONE_BRIEF_LLM", cfg.ResetZoneBriefLLM)
 	return cfg
 }
 

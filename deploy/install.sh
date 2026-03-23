@@ -468,6 +468,20 @@ preflight_tls_checks() {
   fi
 }
 
+prompt_reset_zone_briefs() {
+  local env_file="$INSTALL_DIR/.env"
+  local choice
+  choice="$(read_prompt "Reset conflict history and analysis? [no]: ")"
+  choice="${choice:-no}"
+  choice="$(echo "$choice" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$choice" == "yes" || "$choice" == "y" ]]; then
+    upsert_env "$env_file" "RESET_ZONE_BRIEF_LLM" "1"
+    info "Zone brief LLM history will be regenerated on next collector startup."
+  else
+    upsert_env "$env_file" "RESET_ZONE_BRIEF_LLM" "0"
+  fi
+}
+
 start_stack() {
   local start_choice
   start_choice="$(read_prompt "Start/restart EUOSINT now? [yes]: ")"
@@ -566,6 +580,7 @@ main() {
   refresh_watchdog_files_direct
 
   configure_env
+  prompt_reset_zone_briefs
   print_runtime_summary
   start_stack
   install_user_watchdog_timer

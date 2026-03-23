@@ -182,6 +182,17 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 		fmt.Fprintf(stdout, "Search API listening on %s\n", cfg.APIAddr)
 	}
 
+	if cfg.ResetZoneBriefLLM && strings.HasSuffix(cfg.RegistryPath, ".db") {
+		if db, err := sourcedb.Open(cfg.RegistryPath); err == nil {
+			if err := db.ResetZoneBriefLLM(ctx); err != nil {
+				fmt.Fprintf(stderr, "WARN reset zone brief LLM: %v\n", err)
+			} else {
+				fmt.Fprintf(stdout, "Reset zone brief LLM history and analysis — will regenerate on next cycle\n")
+			}
+			db.Close()
+		}
+	}
+
 	return run.New(stdout, stderr).Run(ctx, cfg)
 }
 

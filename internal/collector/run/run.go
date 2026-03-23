@@ -2346,10 +2346,15 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 		}
 		recentEventsByCountryID[countryID] = toConflictRecentEvents(items, 5)
 	}
+	// Load recent alert headlines keyed by GWNO country ID for LLM current analysis.
+	recentHeadlinesByGWNO := buildRecentHeadlinesByGWNO(ctx, cfg, gwnoToISO2Map)
+	// Build per-country conflict history from the full (non-deduplicated) conflict list.
+	allConflictsByCountry := groupConflictsByPrimaryCountry(conflicts)
 	llmNarrativesByCountryID := map[string]sourcedb.ZoneBriefLLM{}
 	if zoneDB != nil && strings.TrimSpace(cfg.VettingAPIKey) != "" {
 		for _, row := range currentConflicts {
-			narrative, err := r.ensureZoneBriefLLMSummary(ctx, cfg, zoneDB, row, latestYear, cumulativeBattleDeaths, latestYearBattleDeaths)
+			countryID := conflictPrimaryCountryID(row)
+			narrative, err := r.ensureZoneBriefLLMSummary(ctx, cfg, zoneDB, row, latestYear, cumulativeBattleDeaths, latestYearBattleDeaths, recentHeadlinesByGWNO[countryID], allConflictsByCountry[countryID])
 			if err != nil {
 				continue
 			}
@@ -4265,6 +4270,8 @@ func (r Runner) ensureZoneBriefLLMSummary(
 	latestYear int,
 	cumulativeByCountry map[string]int,
 	latestYearByCountry map[string]int,
+	recentHeadlines []string,
+	allCountryConflicts []parse.UCDPConflict,
 ) (sourcedb.ZoneBriefLLM, error) {
 	if cacheDB == nil || strings.TrimSpace(cfg.VettingAPIKey) == "" {
 		return sourcedb.ZoneBriefLLM{}, nil
@@ -4320,9 +4327,27 @@ func (r Runner) ensureZoneBriefLLMSummary(
 		zoneLabel = strings.TrimSpace(sideA) + " vs " + strings.TrimSpace(sideB)
 	}
 	if needsHistorical {
+		historicalContext := baseContext
+		if len(allCountryConflicts) > 0 {
+			historicalContext += "\n\nAll recorded conflicts for this country (UCDP dataset):"
+			seen := map[string]struct{}{}
+			for _, c := range allCountryConflicts {
+				key := c.ConflictID
+				if _, ok := seen[key]; ok {
+					continue
+				}
+				seen[key] = struct{}{}
+				label := strings.TrimSpace(c.SideA)
+				if strings.TrimSpace(c.SideB) != "" {
+					label += " vs " + strings.TrimSpace(c.SideB)
+				}
+				historicalContext += fmt.Sprintf("\n- %s (id=%s, type=%s, start=%s, ended=%v)",
+					label, c.ConflictID, parse.NormalizeConflictType(c.TypeOfConflict), c.StartDate, c.EPEnd != 0)
+			}
+		}
 		msgs := []vet.Message{
 			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
-			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the historic summary block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\n" + baseContext},
+			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the historic summary block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\nCover all major conflicts listed, not just the current one.\n" + historicalContext},
 		}
 		resp, err := llm.Complete(ctx, msgs)
 		if err == nil && strings.TrimSpace(resp) != "" {
@@ -4331,9 +4356,17 @@ func (r Runner) ensureZoneBriefLLMSummary(
 		}
 	}
 	if needsAnalysis {
+		analysisContext := baseContext
+		if len(recentHeadlines) > 0 {
+			limit := len(recentHeadlines)
+			if limit > 20 {
+				limit = 20
+			}
+			analysisContext += "\n\nRecent alert headlines from live feeds (last 48h):\n- " + strings.Join(recentHeadlines[:limit], "\n- ")
+		}
 		msgs := []vet.Message{
 			{Role: "system", Content: "You are an OSINT analyst. Return plain text only. Facts only. Neutral tone. No fluff. No speculation."},
-			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the current analysis block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\nFocus only on current dynamics (roughly last 6-12 months): momentum, intensity direction, territorial/control shifts, and near-term operational outlook.\nDo NOT repeat conflict start date or cumulative death totals from historical summary.\nIf recent evidence is weak, give a cautious best-available assessment from the provided context.\nAs-of date: " + time.Now().UTC().Format("2006-01-02") + "\n" + baseContext},
+			{Role: "user", Content: "Short historic summary about conflict zone " + zoneLabel + " in max 80 words and current analysis in max 60 words.\nNow return only the current analysis block.\nConstraints: factual only, no bullets, no disclaimers, no filler.\nFocus only on current dynamics (roughly last 6-12 months): momentum, intensity direction, territorial/control shifts, and near-term operational outlook.\nDo NOT repeat conflict start date or cumulative death totals from historical summary.\nIncorporate the recent alert headlines if provided — they represent real-time intelligence from live OSINT feeds.\nAs-of date: " + time.Now().UTC().Format("2006-01-02") + "\n" + analysisContext},
 		}
 		resp, err := llm.Complete(ctx, msgs)
 		if err == nil && strings.TrimSpace(resp) != "" {
@@ -4365,6 +4398,63 @@ func ucdpConflictHeadHash(conflicts []parse.UCDPConflict) string {
 		_, _ = io.WriteString(h, "\n")
 	}
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// groupConflictsByPrimaryCountry groups the full UCDP conflict list by primary GWNO,
+// deduplicating by conflict_id (keeping the most recent year entry).
+func groupConflictsByPrimaryCountry(conflicts []parse.UCDPConflict) map[string][]parse.UCDPConflict {
+	// First deduplicate by conflict_id keeping the highest year.
+	best := map[string]parse.UCDPConflict{}
+	for _, c := range conflicts {
+		if existing, ok := best[c.ConflictID]; !ok || c.Year > existing.Year {
+			best[c.ConflictID] = c
+		}
+	}
+	out := map[string][]parse.UCDPConflict{}
+	for _, c := range best {
+		primary := firstUCDPCode(c.GWNoLoc)
+		if primary == "" {
+			continue
+		}
+		out[primary] = append(out[primary], c)
+	}
+	return out
+}
+
+// buildRecentHeadlinesByGWNO loads current alerts and groups titles by GWNO country ID.
+// This provides real-time context for the LLM current analysis prompt.
+func buildRecentHeadlinesByGWNO(ctx context.Context, cfg config.Config, gwnoToISO2 map[string]string) map[string][]string {
+	out := map[string][]string{}
+	alerts, err := loadPreviousAlerts(ctx, cfg)
+	if err != nil || len(alerts) == 0 {
+		return out
+	}
+	// Build reverse map: ISO2 → []GWNO
+	iso2ToGWNOs := map[string][]string{}
+	for gwno, iso2 := range gwnoToISO2 {
+		iso2ToGWNOs[iso2] = append(iso2ToGWNOs[iso2], gwno)
+	}
+	cutoff := time.Now().UTC().Add(-48 * time.Hour)
+	for _, a := range alerts {
+		cc := strings.ToUpper(strings.TrimSpace(a.EventCountryCode))
+		if cc == "" || strings.TrimSpace(a.Title) == "" {
+			continue
+		}
+		if t, err := time.Parse(time.RFC3339, a.FirstSeen); err == nil && t.Before(cutoff) {
+			continue
+		}
+		gwnos := iso2ToGWNOs[cc]
+		if len(gwnos) == 0 {
+			continue
+		}
+		title := strings.TrimSpace(a.Title)
+		for _, gwno := range gwnos {
+			if len(out[gwno]) < 30 {
+				out[gwno] = append(out[gwno], title)
+			}
+		}
+	}
+	return out
 }
 
 func limitWords(text string, maxWords int) string {
