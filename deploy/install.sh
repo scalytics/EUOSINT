@@ -18,6 +18,7 @@ IMAGE_TAG="${IMAGE_TAG:-latest}"
 INSTALL_MODE="${INSTALL_MODE:-update}"
 TLS_MODE="false"
 REPO_SLUG=""
+RESET_ZONE_BRIEF_REQUESTED="0"
 
 info() { echo "[euosint-install] $*"; }
 warn() { echo "[euosint-install][warn] $*" >&2; }
@@ -469,14 +470,20 @@ preflight_tls_checks() {
 prompt_reset_zone_briefs() {
   local env_file="$INSTALL_DIR/.env"
   local choice
-  choice="$(read_prompt "Reset conflict history and analysis? [no]: ")"
-  choice="${choice:-no}"
+  local default_choice="no"
+  if [[ "$INSTALL_MODE" == "update" ]]; then
+    default_choice="yes"
+  fi
+  choice="$(read_prompt "Reset conflict history and analysis? [${default_choice}]: ")"
+  choice="${choice:-$default_choice}"
   choice="$(echo "$choice" | tr '[:upper:]' '[:lower:]')"
   if [[ "$choice" == "yes" || "$choice" == "y" ]]; then
     upsert_env "$env_file" "RESET_ZONE_BRIEF_LLM" "1"
+    RESET_ZONE_BRIEF_REQUESTED="1"
     info "Zone brief LLM history will be regenerated on next collector startup."
   else
     upsert_env "$env_file" "RESET_ZONE_BRIEF_LLM" "0"
+    RESET_ZONE_BRIEF_REQUESTED="0"
   fi
 }
 
@@ -513,6 +520,13 @@ start_stack() {
     cd "$INSTALL_DIR"
     $COMPOSE_CMD up -d --no-build
   )
+
+  # One-shot reset flag: keep enabled for this startup, then turn it off
+  # to avoid wiping narratives on every future restart.
+  if [[ "$RESET_ZONE_BRIEF_REQUESTED" == "1" ]]; then
+    upsert_env "$INSTALL_DIR/.env" "RESET_ZONE_BRIEF_LLM" "0"
+    info "RESET_ZONE_BRIEF_LLM auto-cleared to 0 after startup (one-shot reset applied)."
+  fi
 
   local site_addr http_port host_name live_url
   site_addr="$(grep -E '^EUOSINT_SITE_ADDRESS=' "$INSTALL_DIR/.env" | head -1 | cut -d= -f2- || true)"
