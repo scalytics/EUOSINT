@@ -584,3 +584,79 @@ func isWordBoundary(text string, start, end int) bool {
 	}
 	return true
 }
+
+// regionalHQ maps supranational/org keywords to their institutional HQ.
+type regionalHQEntry struct {
+	lat, lng float64
+	label    string
+}
+
+var regionalHQIndex = map[string]regionalHQEntry{
+	// European institutions
+	"eu":               {50.85, 4.35, "European Union"},
+	"european union":   {50.85, 4.35, "European Union"},
+	"european council": {50.85, 4.35, "European Union"},
+	"eurozone":         {50.85, 4.35, "European Union"},
+	"brussels":         {50.85, 4.35, "European Union"},
+	// NATO
+	"nato": {50.85, 4.35, "NATO"},
+	// United Nations
+	"un":             {40.75, -73.97, "United Nations"},
+	"united nations": {40.75, -73.97, "United Nations"},
+	"un security council": {40.75, -73.97, "United Nations"},
+	// African Union
+	"african union": {9.01, 38.75, "African Union"},
+	// ECOWAS
+	"ecowas": {9.06, 7.49, "ECOWAS"},
+	// ASEAN
+	"asean": {-6.21, 106.85, "ASEAN"},
+	// Arab League
+	"arab league": {30.04, 31.24, "Arab League"},
+	// OAS
+	"oas": {38.91, -77.04, "OAS"},
+	// Mercosur
+	"mercosur": {-34.60, -58.38, "Mercosur"},
+	// G7/G20 — pin to host-neutral Washington as convention
+	"g7": {38.91, -77.04, "G7"},
+	"g20": {38.91, -77.04, "G20"},
+	// Regional labels
+	"north america": {38.91, -77.04, "North America"},
+	"latin america": {-15.79, -47.88, "Latin America"},
+	"middle east":   {24.71, 46.68, "Middle East"},
+	"sahel":         {12.64, -8.0, "Sahel"},
+	"horn of africa": {8.0, 42.0, "Horn of Africa"},
+	"south china sea": {12.0, 114.0, "South China Sea"},
+	"baltic":         {56.95, 24.11, "Baltic"},
+	"arctic":         {64.15, -21.95, "Arctic"},
+	"caribbean":      {18.0, -75.0, "Caribbean"},
+}
+
+// resolveRegionalHQ scans text for supranational/org references and
+// returns the HQ coordinates if found.
+func resolveRegionalHQ(text string) (lat, lng float64, label string, ok bool) {
+	lower := strings.ToLower(text)
+	// Try longest keys first to prefer "european union" over "eu".
+	bestLen := 0
+	var best *regionalHQEntry
+	for key, entry := range regionalHQIndex {
+		if len(key) <= bestLen {
+			continue
+		}
+		idx := strings.Index(lower, key)
+		if idx < 0 {
+			continue
+		}
+		// Require word boundary for short keys (≤3 chars) to avoid
+		// false matches like "euro" inside "europe".
+		if len(key) <= 3 && !isWordBoundary(lower, idx, idx+len(key)) {
+			continue
+		}
+		bestLen = len(key)
+		e := entry
+		best = &e
+	}
+	if best != nil {
+		return best.lat, best.lng, best.label, true
+	}
+	return 0, 0, "", false
+}

@@ -1,5 +1,5 @@
 {
-  "version": "v1.1.0",
+  "version": "v1.2.0",
   "hard_block_terms": [
     "casino bonus",
     "sports betting",
@@ -41,7 +41,32 @@
     "training course",
     "webinar registration",
     "job vacancy",
-    "recruitment"
+    "recruitment",
+    "head of product",
+    "head of sales",
+    "head of marketing",
+    "head of engineering",
+    "chief executive",
+    "chief operating",
+    "chief financial",
+    "chief technology",
+    "names new",
+    "appoints new",
+    "appointed as",
+    "joins as",
+    "promoted to",
+    "hires new",
+    "steps down",
+    "steps up as",
+    "product launch",
+    "funding round",
+    "series a",
+    "series b",
+    "series c",
+    "ipo filing",
+    "quarterly earnings",
+    "revenue growth",
+    "market share"
   ],
   "actionable_overrides": [
     "wanted",
@@ -70,6 +95,18 @@
       "requires_any": ["explosion", "attack", "shooting", "abduction"],
       "with_any": ["police", "authority", "alert", "warning", "evacuation", "response"],
       "effect": "keep"
+    },
+    {
+      "name": "corporate-false-positive",
+      "requires_any": ["flood", "storm", "blaze", "quake", "fire", "crash", "surge"],
+      "with_any": ["appoints", "names", "hires", "ceo", "cto", "cfo", "product", "startup", "fintech", "partnership", "revenue", "funding", "series"],
+      "effect": "drop"
+    },
+    {
+      "name": "metaphorical-disaster-language",
+      "requires_any": ["tsunami", "flood", "avalanche", "earthquake", "storm", "firestorm", "meltdown", "explosion"],
+      "with_any": ["price", "cost", "market", "economy", "debt", "inflation", "regulation", "policy", "political", "opinion", "hostage"],
+      "effect": "downgrade"
     }
   ]
 }

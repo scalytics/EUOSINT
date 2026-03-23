@@ -28,6 +28,9 @@ var (
 		regexp.MustCompile(`(?i)\b(?:hash|sha-?256|sha-?1|md5|yara|sigma)\b`),
 		regexp.MustCompile(`(?i)\b(?:ip(?:v4|v6)?|domain|url|hostname|command and control|c2)\b`),
 		regexp.MustCompile(`(?i)\b(?:vulnerability|exploit(?:ation)?|zero-?day|patch|mitigation|workaround)\b`),
+		// French: vulnérabilité (vulnerability), faille (flaw), correctif (patch),
+		// mise à jour de sécurité (security update), avis de sécurité (security advisory)
+		regexp.MustCompile(`(?i)\b(?:vuln[eé]rabilit[eé]s?|faille[s]?|correctif[s]?|mise [àa] jour de s[eé]curit[eé]|avis de s[eé]curit[eé])\b`),
 		// German: Schwachstelle (vulnerability), Sicherheitslücke (security flaw),
 		// Handlungsempfehlung (recommended action), Warnstufe/Risikostufe (warning/risk level)
 		regexp.MustCompile(`(?i)\b(?:schwachstelle|sicherheitsl[uü]cke|handlungsempfehlung|warnstufe|risikostufe|bedrohungslage)\b`),
@@ -691,6 +694,17 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 			}
 		}
 		if !geocoded {
+			// Try regional/org HQ fallback: "EU", "NATO" etc. pin to their
+			// institutional headquarters rather than showing no pin at all.
+			if rlat, rlng, rname, rok := resolveRegionalHQ(geoText); rok {
+				baseLat, baseLng = rlat, rlng
+				geoSource = "regional-hq"
+				geocoded = true
+				source.Country = rname
+				source.CountryCode = "INT"
+			}
+		}
+		if !geocoded {
 			// No location resolved from the alert text — zero out coords
 			// so the map doesn't show a misleading pin at the source's HQ
 			// (e.g. Athens for Hellenic Shipping, NYC for UN sources).
@@ -725,7 +739,9 @@ func baseAlert(ctx Context, meta model.RegistrySource, title string, link string
 	canonicalCategory := canonicalCategory(meta.Category)
 	// Cross-country/aggregator alerts with no resolvable location are
 	// geopolitical context, not actionable events — reclassify as legislative.
-	if isCrossCountry && !geocoded && allowDynamicGeocode {
+	// Exception: titles with clear incident indicators (fire, explosion, attack)
+	// stay in their original category even without a map pin.
+	if isCrossCountry && !geocoded && allowDynamicGeocode && !hasIncidentIndicators(title) {
 		canonicalCategory = "legislative"
 	}
 	canonicalSeverity := inferSeverity(title, defaultSeverity(canonicalCategory))
@@ -1410,6 +1426,10 @@ func isSecurityInformational(alert model.Alert, feed FeedContext) bool {
 		authorityType == "cert" ||
 		authorityType == "private_sector" ||
 		authorityType == "regulatory"
+	// CERTs publish advisories by definition — never reclassify as informational.
+	if authorityType == "cert" || publicationType == "cert_advisory" {
+		return false
+	}
 	// If the text contains technical indicators (CVE, vulnerability, patch)
 	// or actionable directives (update, warning, advisory) it's a real
 	// security advisory, not an informational update.
@@ -1439,6 +1459,24 @@ func IsActionableTitle(title string) bool {
 func IsInformationalTitle(title string) bool {
 	lower := strings.ToLower(title)
 	return hasAny(lower, informationalTitlePatterns)
+}
+
+// hasIncidentIndicators returns true if the title describes a concrete
+// physical event (fire, explosion, attack, etc.) that should not be
+// reclassified as legislative even when geocoding fails.
+func hasIncidentIndicators(title string) bool {
+	t := strings.ToLower(title)
+	return containsAny(t,
+		"fire", "explosion", "attack", "strike", "bombing",
+		"shooting", "killed", "dead", "injured", "wounded",
+		"crash", "collision", "derailment", "sinking",
+		"earthquake", "tsunami", "eruption", "flood",
+		"evacuated", "evacuation", "rescue",
+		"seized", "arrested", "detained",
+		"missile", "rocket", "drone", "shelling",
+		"incendio", "explosión", "ataque", "muertos",
+		"incendie", "attaque", "tués",
+	)
 }
 
 func containsAny(value string, needles ...string) bool {
