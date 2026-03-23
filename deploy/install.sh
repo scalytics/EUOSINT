@@ -180,6 +180,47 @@ refresh_web_runtime_files_direct() {
   info "Refreshed docker/Caddyfile from repository ref '$REPO_REF'."
 }
 
+refresh_registry_files_direct() {
+  local reg_dir="$INSTALL_DIR/registry"
+  local geo_dir="$reg_dir/geo"
+  local tmp_file
+
+  mkdir -p "$reg_dir" "$geo_dir"
+
+  local json_files=(
+    "source_registry.json"
+    "category_dictionary.json"
+    "curated_agencies.seed.json"
+    "incident_terms.json"
+    "noise_policy.json"
+    "noise_policy_b.json"
+    "source_candidates.json"
+    "source_dead_letter.json"
+    "sovereign_official_statements.seed.json"
+    "stop_words.json"
+    "terror_actor_aliases.json"
+  )
+
+  for fname in "${json_files[@]}"; do
+    tmp_file="$(mktemp)"
+    fetch_repo_file "registry/${fname}" "$tmp_file"
+    mv "$tmp_file" "$reg_dir/$fname"
+  done
+
+  local geo_files=(
+    "countries-adm0.geojson"
+    "terror-activity-seed.geojson"
+  )
+
+  for fname in "${geo_files[@]}"; do
+    tmp_file="$(mktemp)"
+    fetch_repo_file "registry/geo/${fname}" "$tmp_file"
+    mv "$tmp_file" "$geo_dir/$fname"
+  done
+
+  info "Refreshed registry files from repository ref '$REPO_REF'."
+}
+
 refresh_watchdog_files_direct() {
   local watchdog_script="$INSTALL_DIR/scripts/browser_watchdog.sh"
   local watchdog_service="$INSTALL_DIR/docs/euosint-browser-watchdog.service"
@@ -521,6 +562,7 @@ main() {
   refresh_compose_yaml_direct
   refresh_env_example_direct
   refresh_web_runtime_files_direct
+  refresh_registry_files_direct
   refresh_watchdog_files_direct
 
   configure_env

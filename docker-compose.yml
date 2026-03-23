@@ -88,6 +88,19 @@ services:
       COUNTRY_BOUNDARIES_PATH: "${COUNTRY_BOUNDARIES_PATH:-/app/registry/geo/countries-adm0.geojson}"
     volumes:
       - feed-data:/data
+      - ./registry/source_registry.json:/app/registry/source_registry.json:ro
+      - ./registry/category_dictionary.json:/app/registry/category_dictionary.json:ro
+      - ./registry/noise_policy.json:/app/registry/noise_policy.json:ro
+      - ./registry/noise_policy_b.json:/app/registry/noise_policy_b.json:ro
+      - ./registry/stop_words.json:/app/registry/stop_words.json:ro
+      - ./registry/incident_terms.json:/app/registry/incident_terms.json:ro
+      - ./registry/terror_actor_aliases.json:/app/registry/terror_actor_aliases.json:ro
+      - ./registry/source_candidates.json:/app/registry/source_candidates.json:ro
+      - ./registry/source_dead_letter.json:/app/registry/source_dead_letter.json:ro
+      - ./registry/sovereign_official_statements.seed.json:/app/registry/sovereign_official_statements.seed.json:ro
+      - ./registry/curated_agencies.seed.json:/app/registry/curated_agencies.seed.json:ro
+      - ./registry/geo/countries-adm0.geojson:/app/registry/geo/countries-adm0.geojson:ro
+      - ./registry/geo/terror-activity-seed.geojson:/app/registry/geo/terror-activity-seed.geojson:ro
     depends_on:
       browser:
         condition: service_healthy
