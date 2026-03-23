@@ -38,38 +38,39 @@ export function AlertDetail({ alert, onClose }: Props) {
   const geoConfidence = typeof alert.event_geo_confidence === "number" ? alert.event_geo_confidence : 0;
   const lowGeoConfidence = geoConfidence < 0.6;
 
-  const playbook =
-    alert.category === "cyber_advisory"
-      ? [
-          "Pivot domains/IPs in passive DNS, WHOIS history, and certificate transparency.",
-          "Search malware/hash indicators in public sandboxes and open threat intel feeds.",
-          "Document overlaps with known campaigns and map affected sectors/regions.",
-        ]
-      : alert.category === "missing_person" || alert.category === "wanted_suspect"
-      ? [
-          "Extract names, aliases, locations, vehicles, and timeline references from the bulletin.",
-          "Cross-check only with official/verified public posts and avoid reposting unverified claims.",
-          "Package evidence links and report through official authority channels listed below.",
-        ]
-      : alert.category === "humanitarian_tasking" ||
-        alert.category === "humanitarian_security" ||
-        alert.category === "conflict_monitoring"
-      ? [
-          "Map incident location and nearby critical infrastructure using open geodata sources.",
-          "Validate claims with multi-source corroboration (satellite, media, local official notices).",
-          "Share structured findings with aid partners using minimal sensitive personal data.",
-        ]
-      : alert.category === "education_digital_capacity"
-      ? [
-          "Extract target geography, school/audience scope, skills requested, and deadline/status.",
-          "Validate that the opportunity is active and identify official contact/onboarding channels.",
-          "Prepare a scoped contribution plan (training, cyber hygiene, tooling, mentorship) and report via official path.",
-        ]
-      : [
-          "Collect key entities (people, places, orgs, infrastructure) from the bulletin.",
-          "Corroborate across independent public sources and time-stamp your evidence.",
-          "Submit concise findings via the official reporting path when relevant.",
-        ];
+  const corePlaybook = [
+    "Extract core entities, locations, assets, and infrastructure.",
+    "Map linked activity across nearby regions and related actors.",
+    "Corroborate with independent sources; retain timestamps and source paths.",
+    "Produce a working picture: what happened, what changed, what needs attention now.",
+  ];
+
+  const focusByCategory: Partial<Record<Alert["category"], string>> = {
+    informational: "Focus: actionable signal only; discard commentary and stale context.",
+    cyber_advisory: "Focus: key IOCs, likely intrusion path, and sector exposure.",
+    public_appeal: "Focus: verified ask, jurisdiction, and immediate response pathway.",
+    conflict_monitoring: "Focus: front-line movement, strike patterns, and logistics routes.",
+    missing_person: "Focus: verified identity, last known movement, and official case references.",
+    wanted_suspect: "Focus: confirmed identifiers, location confidence, and lawful reporting paths.",
+    humanitarian_tasking: "Focus: access constraints, infrastructure status, and immediate aid gaps.",
+    humanitarian_security: "Focus: civilian risk concentration, route safety, and service disruption.",
+    education_digital_capacity: "Focus: target audience, operational need, and implementation constraints.",
+    terrorism_tip: "Focus: threat credibility, target set, and near-term attack indicators.",
+    fraud_alert: "Focus: fraud vector, impacted entities, and active campaign spread.",
+    public_safety: "Focus: hazard radius, exposed population, and mitigation urgency.",
+    private_sector: "Focus: operational exposure, supply-chain dependency, and business continuity risk.",
+    travel_warning: "Focus: route viability, border posture, and traveler exposure points.",
+    health_emergency: "Focus: transmission indicators, pressure points, and service continuity impact.",
+    intelligence_report: "Focus: source reliability, corroboration depth, and decision relevance.",
+    emergency_management: "Focus: incident command posture, resource gaps, and response tempo.",
+    environmental_disaster: "Focus: impact footprint, infrastructure disruption, and secondary risk.",
+    disease_outbreak: "Focus: spread trajectory, vulnerable clusters, and control effectiveness.",
+    maritime_security: "Focus: vessel identity, corridor disruption, and port-chain impact.",
+    logistics_incident: "Focus: chokepoints, reroute options, and cascading transport effects.",
+    legislative: "Focus: enforcement timeline, affected operators, and compliance exposure.",
+  };
+  const categoryFocus = focusByCategory[alert.category] ?? "Focus: highest-confidence indicators and near-term escalation signals.";
+  const signalLane = alert.signal_lane ?? (alert.severity === "info" ? "info" : "intel");
 
   return (
     <div className="flex flex-col h-full">
@@ -223,15 +224,29 @@ export function AlertDetail({ alert, onClose }: Props) {
 
         <div className="rounded-lg border border-siem-border bg-white/5 p-3 space-y-2">
           <div className="text-2xs uppercase tracking-wider text-siem-muted">
-            How To Help (OSINT Playbook)
+            Scalytics Analyst Playbook
           </div>
-          <ol className="space-y-1.5 text-xxs text-siem-text list-decimal pl-4">
-            {playbook.map((step) => (
+          <ol className="space-y-1.5 text-xxs text-siem-text list-disc pl-4">
+            {corePlaybook.map((step) => (
               <li key={step}>{step}</li>
             ))}
+            <li key={categoryFocus}>{categoryFocus}</li>
           </ol>
+          <div className="space-y-0.5 text-2xs text-siem-muted">
+            <div>Primary geography: {eventCountry}</div>
+            <div>Signal lane: {signalLane}</div>
+            <div>Geo confidence: {Math.round(geoConfidence * 100)}%</div>
+          </div>
           <p className="text-2xs text-siem-muted">
-            Do not contact suspects or victims directly. Use only official channels.
+            Need help? We&apos;re here:{" "}
+            <a
+              href="https://scalytics.io/contact"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-siem-accent hover:text-siem-text"
+            >
+              scalytics.io/contact
+            </a>
           </p>
         </div>
 
