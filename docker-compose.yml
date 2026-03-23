@@ -95,8 +95,6 @@ services:
       - ./registry/stop_words.json:/app/registry/stop_words.json:ro
       - ./registry/incident_terms.json:/app/registry/incident_terms.json:ro
       - ./registry/terror_actor_aliases.json:/app/registry/terror_actor_aliases.json:ro
-      - ./registry/source_candidates.json:/app/registry/source_candidates.json:ro
-      - ./registry/source_dead_letter.json:/app/registry/source_dead_letter.json:ro
       - ./registry/sovereign_official_statements.seed.json:/app/registry/sovereign_official_statements.seed.json:ro
       - ./registry/curated_agencies.seed.json:/app/registry/curated_agencies.seed.json:ro
       - ./registry/geo/countries-adm0.geojson:/app/registry/geo/countries-adm0.geojson:ro

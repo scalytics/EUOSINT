@@ -194,8 +194,6 @@ refresh_registry_files_direct() {
     "incident_terms.json"
     "noise_policy.json"
     "noise_policy_b.json"
-    "source_candidates.json"
-    "source_dead_letter.json"
     "sovereign_official_statements.seed.json"
     "stop_words.json"
     "terror_actor_aliases.json"
