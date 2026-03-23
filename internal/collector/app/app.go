@@ -5,9 +5,11 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -188,6 +190,12 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 				fmt.Fprintf(stderr, "WARN reset zone brief LLM: %v\n", err)
 			} else {
 				fmt.Fprintf(stdout, "Reset zone brief LLM history and analysis — will regenerate on next cycle\n")
+				runtimeDir := filepath.Dir(cfg.RegistryPath)
+				if err := clearConflictStatsNarratives(filepath.Join(runtimeDir, "ucdp-conflict-stats.json")); err != nil {
+					fmt.Fprintf(stderr, "WARN clear conflict stats narratives: %v\n", err)
+				} else {
+					fmt.Fprintf(stdout, "Cleared narrative fields in ucdp-conflict-stats.json\n")
+				}
 			}
 			db.Close()
 		}
@@ -207,4 +215,33 @@ func normalizeRole(raw string) string {
 	default:
 		return "all"
 	}
+}
+
+func clearConflictStatsNarratives(path string) error {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	var rows []map[string]any
+	if err := json.Unmarshal(body, &rows); err != nil {
+		return err
+	}
+	for i := range rows {
+		rows[i]["historical_summary"] = ""
+		rows[i]["historicalSummary"] = ""
+		rows[i]["current_analysis"] = ""
+		rows[i]["currentAnalysis"] = ""
+		rows[i]["analysis_updated_at"] = ""
+		rows[i]["analysisUpdatedAt"] = ""
+	}
+	updated, err := json.MarshalIndent(rows, "", "  ")
+	if err != nil {
+		return err
+	}
+	updated = append(updated, '\n')
+	return os.WriteFile(path, updated, 0o644)
 }
