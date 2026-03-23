@@ -26,6 +26,7 @@ const (
 	defaultCooldownHours     = 24
 	defaultStaleDays         = 14
 	defaultArchiveDays       = 90
+	defaultMaxFreshnessHours = 72
 	defaultRecentPerSource   = 20
 	defaultHTMLScrapeHours   = 24
 	defaultStopWordsPath     = "registry/stop_words.json"
@@ -45,6 +46,7 @@ type Config struct {
 	AlertCooldownHours               int
 	AlertStaleDays                   int
 	AlertArchiveDays                 int
+	MaxFreshnessHours                int
 	RecentWindowPerSource            int
 	HTMLScrapeIntervalHours          int
 	IncidentRelevanceThreshold       float64
@@ -152,6 +154,7 @@ func Default() Config {
 		AlertCooldownHours:               defaultCooldownHours,
 		AlertStaleDays:                   defaultStaleDays,
 		AlertArchiveDays:                 defaultArchiveDays,
+		MaxFreshnessHours:                defaultMaxFreshnessHours,
 		RecentWindowPerSource:            defaultRecentPerSource,
 		HTMLScrapeIntervalHours:          defaultHTMLScrapeHours,
 		IncidentRelevanceThreshold:       0.42,
@@ -254,6 +257,7 @@ func FromEnv() Config {
 	cfg.AlertCooldownHours = envInt("ALERT_COOLDOWN_HOURS", cfg.AlertCooldownHours)
 	cfg.AlertStaleDays = envInt("ALERT_STALE_DAYS", cfg.AlertStaleDays)
 	cfg.AlertArchiveDays = envInt("ALERT_ARCHIVE_DAYS", cfg.AlertArchiveDays)
+	cfg.MaxFreshnessHours = envInt("MAX_FRESHNESS_HOURS", cfg.MaxFreshnessHours)
 	cfg.RecentWindowPerSource = envInt("RECENT_WINDOW_PER_SOURCE", cfg.RecentWindowPerSource)
 	cfg.HTMLScrapeIntervalHours = envInt("HTML_SCRAPE_INTERVAL_HOURS", cfg.HTMLScrapeIntervalHours)
 	cfg.IncidentRelevanceThreshold = envFloat("INCIDENT_RELEVANCE_THRESHOLD", cfg.IncidentRelevanceThreshold)

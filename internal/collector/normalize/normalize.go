@@ -1794,7 +1794,26 @@ func Deduplicate(alerts []model.Alert) ([]model.Alert, model.DuplicateAudit) {
 }
 
 func FilterActive(cfg config.Config, alerts []model.Alert) (active []model.Alert, filtered []model.Alert) {
+	maxFresh := cfg.MaxFreshnessHours
+	if maxFresh <= 0 {
+		maxFresh = 72
+	}
 	for _, alert := range alerts {
+		// Freshness cap: alerts older than MaxFreshnessHours (based on
+		// publish date) are filtered out even if the feed keeps serving them.
+		// Government/military/seismic sources get 2x the window since their
+		// advisories stay relevant longer.
+		cap := maxFresh
+		switch alert.Source.AuthorityType {
+		case "national_security", "military", "seismic", "cert", "police",
+			"law_enforcement", "emergency", "regulatory", "international_org":
+			cap = maxFresh * 2
+		}
+		if alert.FreshnessHours > cap {
+			filtered = append(filtered, alert)
+			continue
+		}
+
 		threshold := thresholdForAlert(cfg, alert)
 		score := 0.0
 		if alert.Triage != nil {
