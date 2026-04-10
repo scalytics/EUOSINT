@@ -76,6 +76,33 @@ leave these unset and rely on built-in defaults.
 | `MILITARY_BASES_ENABLED` | `true` |
 | `MILITARY_BASES_REFRESH_HOURS` | `168` |
 
+## Kafka Alerts
+
+| Variable | Default |
+|---|---|
+| `KAFKA_ENABLED` | `false` |
+| `KAFKA_GROUP_ID` | `euosint-kafka` |
+| `KAFKA_CLIENT_ID` | `euosint-collector` |
+| `KAFKA_SECURITY_PROTOCOL` | `PLAINTEXT` |
+| `KAFKA_SASL_MECHANISM` | `PLAIN` |
+| `KAFKA_TEST_ON_START` | `true` |
+| `KAFKA_MAX_RECORD_BYTES` | `1048576` |
+| `KAFKA_MAX_PER_CYCLE` | `500` |
+| `KAFKA_POLL_TIMEOUT_MS` | `2000` |
+| `KAFKA_MAPPER_PATH` | `registry/kafka_mapper.json` |
+| `AGENTOPS_ENABLED` | `false` |
+| `AGENTOPS_GROUP_ID` | `euosint-agentops` |
+| `AGENTOPS_CLIENT_ID` | `euosint-agentops` |
+| `AGENTOPS_TOPIC_MODE` | `auto` |
+| `AGENTOPS_SECURITY_PROTOCOL` | `PLAINTEXT` |
+| `AGENTOPS_SASL_MECHANISM` | `PLAIN` |
+| `AGENTOPS_POLICY_PATH` | `/config/agentops_policy.yaml` |
+| `AGENTOPS_REPLAY_ENABLED` | `true` |
+| `AGENTOPS_REPLAY_PREFIX` | `euosint-agentops-replay` |
+| `UI_MODE` | `OSINT` |
+| `PROFILE` | `osint-default` |
+| `UI_POLICY_PATH` | `/config/ui_policy.yaml` |
+
 ## Infra + Images
 
 | Variable | Default |
