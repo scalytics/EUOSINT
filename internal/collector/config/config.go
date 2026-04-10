@@ -168,6 +168,7 @@ type Config struct {
 	AgentOpsPolicyPath               string
 	AgentOpsReplayEnabled            bool
 	AgentOpsReplayPrefix             string
+	AgentOpsOutputPath               string
 	UIMode                           string
 	Profile                          string
 	UIPolicyPath                     string
@@ -303,6 +304,7 @@ func Default() Config {
 		AgentOpsPolicyPath:               "/config/agentops_policy.yaml",
 		AgentOpsReplayEnabled:            true,
 		AgentOpsReplayPrefix:             "euosint-agentops-replay",
+		AgentOpsOutputPath:               "public/agentops-state.json",
 		UIMode:                           "OSINT",
 		Profile:                          "osint-default",
 		UIPolicyPath:                     "/config/ui_policy.yaml",
@@ -449,6 +451,7 @@ func FromEnv() Config {
 	cfg.AgentOpsPolicyPath = envString("AGENTOPS_POLICY_PATH", cfg.AgentOpsPolicyPath)
 	cfg.AgentOpsReplayEnabled = envBool("AGENTOPS_REPLAY_ENABLED", cfg.AgentOpsReplayEnabled)
 	cfg.AgentOpsReplayPrefix = envString("AGENTOPS_REPLAY_PREFIX", cfg.AgentOpsReplayPrefix)
+	cfg.AgentOpsOutputPath = envString("AGENTOPS_OUTPUT_PATH", cfg.AgentOpsOutputPath)
 	cfg.UIMode = normalizeUIMode(envString("UI_MODE", cfg.UIMode))
 	cfg.Profile = normalizeProfile(envString("PROFILE", cfg.Profile))
 	cfg.UIPolicyPath = envString("UI_POLICY_PATH", cfg.UIPolicyPath)

@@ -41,6 +41,9 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.AgentOpsTopicMode != "auto" {
 		t.Fatalf("expected agentops topic mode auto by default, got %q", cfg.AgentOpsTopicMode)
 	}
+	if cfg.AgentOpsOutputPath != "public/agentops-state.json" {
+		t.Fatalf("unexpected AgentOps output path default %q", cfg.AgentOpsOutputPath)
+	}
 	if cfg.UIMode != "OSINT" || cfg.Profile != "osint-default" {
 		t.Fatalf("unexpected UI defaults mode=%q profile=%q", cfg.UIMode, cfg.Profile)
 	}
@@ -158,6 +161,7 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	t.Setenv("AGENTOPS_POLICY_PATH", "/config/agentops_policy.yaml")
 	t.Setenv("AGENTOPS_REPLAY_ENABLED", "false")
 	t.Setenv("AGENTOPS_REPLAY_PREFIX", "replay-core")
+	t.Setenv("AGENTOPS_OUTPUT_PATH", "/data/agentops-state.json")
 	t.Setenv("UI_MODE", "agentops")
 	t.Setenv("PROFILE", "agentops-default")
 	t.Setenv("UI_POLICY_PATH", "/config/ui_policy.yaml")
@@ -237,8 +241,8 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	if !cfg.AgentOpsTLSInsecureSkipVerify {
 		t.Fatal("expected AGENTOPS_TLS_INSECURE_SKIP_VERIFY override")
 	}
-	if cfg.AgentOpsPolicyPath != "/config/agentops_policy.yaml" || cfg.AgentOpsReplayEnabled || cfg.AgentOpsReplayPrefix != "replay-core" {
-		t.Fatalf("unexpected agentops policy/replay path=%q enabled=%v prefix=%q", cfg.AgentOpsPolicyPath, cfg.AgentOpsReplayEnabled, cfg.AgentOpsReplayPrefix)
+	if cfg.AgentOpsPolicyPath != "/config/agentops_policy.yaml" || cfg.AgentOpsReplayEnabled || cfg.AgentOpsReplayPrefix != "replay-core" || cfg.AgentOpsOutputPath != "/data/agentops-state.json" {
+		t.Fatalf("unexpected agentops config policy=%q enabled=%v prefix=%q output=%q", cfg.AgentOpsPolicyPath, cfg.AgentOpsReplayEnabled, cfg.AgentOpsReplayPrefix, cfg.AgentOpsOutputPath)
 	}
 	if cfg.UIMode != "AGENTOPS" || cfg.Profile != "agentops-default" || cfg.UIPolicyPath != "/config/ui_policy.yaml" {
 		t.Fatalf("unexpected UI config mode=%q profile=%q policy=%q", cfg.UIMode, cfg.Profile, cfg.UIPolicyPath)

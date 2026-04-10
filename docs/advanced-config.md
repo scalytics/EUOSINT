@@ -99,6 +99,7 @@ leave these unset and rely on built-in defaults.
 | `AGENTOPS_POLICY_PATH` | `/config/agentops_policy.yaml` |
 | `AGENTOPS_REPLAY_ENABLED` | `true` |
 | `AGENTOPS_REPLAY_PREFIX` | `euosint-agentops-replay` |
+| `AGENTOPS_OUTPUT_PATH` | `public/agentops-state.json` |
 | `UI_MODE` | `OSINT` |
 | `PROFILE` | `osint-default` |
 | `UI_POLICY_PATH` | `/config/ui_policy.yaml` |
