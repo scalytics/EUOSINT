@@ -180,6 +180,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 			VettingModel:       cfg.VettingModel,
 			VettingTemperature: 0,
 		})
+		srv.ConfigureAgentOpsReplay(agentopskafka.StartReplay)
 		if err := srv.Start(); err != nil {
 			return err
 		}

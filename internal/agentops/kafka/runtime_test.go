@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -42,6 +43,22 @@ func TestHandleRecordRequestBuildsFlowAndTask(t *testing.T) {
 	task := svc.internal.tasks["task-1"]
 	if task == nil || task.ParentTaskID != "root-1" || task.RequesterID != "worker-a" {
 		t.Fatalf("unexpected task state: %#v", task)
+	}
+}
+
+func TestNewReplayGroupID(t *testing.T) {
+	got := newReplayGroupID("replay-core", time.Date(2026, 4, 10, 12, 30, 0, 0, time.UTC))
+	if got != "replay-core-20260410t123000" {
+		t.Fatalf("unexpected replay group id %q", got)
+	}
+}
+
+func TestStartReplayWithoutRuntime(t *testing.T) {
+	currentMu.Lock()
+	currentService = nil
+	currentMu.Unlock()
+	if _, err := StartReplay(context.Background()); err == nil {
+		t.Fatal("expected error when runtime is not active")
 	}
 }
 

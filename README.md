@@ -2,14 +2,36 @@
 
 EUOSINT is the open-source edition of our OSINT pipeline, used across multiple installations and packaged for local and server deployment.
 
+It now ships with two distinct operating surfaces:
+
+- `OSINT`: the existing globe-first external intelligence workflow
+- `AgentOps`: Kafka-backed flow tracking for KafClaw agent communication
+- `HYBRID`: AgentOps plus selective external OSINT context
+
 This repository has been prepared for public use by removing non-public, internal, and protected source integrations while keeping the operational pipeline structure intact.
 
 ## Open-Source Scope
 
 - Public-ready OSINT pipeline architecture
+- AgentOps flow tracking over Kafka for KafClaw-style agent traffic
 - Docker-first deployment for reproducible installs
 - Web dashboard + Go collector runtime
 - Configurable ingestion and refresh cadence
+
+## Operating Modes
+
+The runtime mode is driven by environment and mounted policy files.
+
+- `UI_MODE=OSINT` keeps the existing OSINT product behavior.
+- `UI_MODE=AGENTOPS` switches the desktop UI to the AgentOps flow desk.
+- `UI_MODE=HYBRID` keeps AgentOps primary and adds selective external-intel context.
+
+AgentOps is a separate bounded domain in the codebase:
+
+- backend: `internal/agentops/...`
+- frontend: `src/agentops/...`
+
+It is not implemented as a generic plugin tree.
 
 ## Run With Docker
 
@@ -77,6 +99,27 @@ INTERVAL_MS=120000 RECENT_WINDOW_PER_SOURCE=20 ALERT_STALE_DAYS=14 npm run colle
 
 Minimal required runtime variables are in [.env.example](https://github.com/scalytics/EUOSINT/blob/main/.env.example).
 Advanced tuning variables and defaults are documented in [docs/advanced-config.md](https://github.com/scalytics/EUOSINT/blob/main/docs/advanced-config.md).
+
+AgentOps-specific runtime knobs include:
+
+- `AGENTOPS_ENABLED`
+- `AGENTOPS_BROKERS`
+- `AGENTOPS_GROUP_NAME`
+- `AGENTOPS_GROUP_ID`
+- `AGENTOPS_POLICY_PATH`
+- `AGENTOPS_REPLAY_ENABLED`
+- `AGENTOPS_OUTPUT_PATH`
+- `UI_MODE`
+- `PROFILE`
+- `UI_POLICY_PATH`
+
+When AgentOps is enabled, the collector writes `agentops-state.json` into the runtime data volume and the web UI reads that state directly.
+
+Content behavior is explicit:
+
+- normal Kafka records are decoded from Kafka values and shown in AgentOps detail views
+- LFS-backed records are shown as pointer metadata only (`s3://bucket/key`)
+- the default product flow does not fetch blob content for LFS-backed records
 
 ## Operations
 

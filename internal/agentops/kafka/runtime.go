@@ -33,6 +33,11 @@ type Service struct {
 	internal state
 }
 
+var (
+	currentMu      sync.RWMutex
+	currentService *Service
+)
+
 type state struct {
 	flows  map[string]*store.Flow
 	traces map[string]*store.Trace
@@ -87,6 +92,7 @@ func Start(ctx context.Context, cfg collectorcfg.Config) error {
 		},
 	}
 	svc.bootstrapFromStore(fs.Snapshot())
+	setCurrentService(svc)
 	return svc.run(ctx)
 }
 
@@ -422,6 +428,100 @@ func (s *Service) persist() error {
 	})
 }
 
+func StartReplay(ctx context.Context) (store.ReplaySession, error) {
+	currentMu.RLock()
+	svc := currentService
+	currentMu.RUnlock()
+	if svc == nil {
+		return store.ReplaySession{}, errors.New("agentops runtime not active")
+	}
+	return svc.startReplay(ctx)
+}
+
+func (s *Service) startReplay(ctx context.Context) (store.ReplaySession, error) {
+	session := store.ReplaySession{
+		ID:        time.Now().UTC().Format("20060102T150405.000000000"),
+		GroupID:   newReplayGroupID(s.cfg.AgentOpsReplayPrefix, time.Now().UTC()),
+		Status:    "running",
+		StartedAt: time.Now().UTC().Format(time.RFC3339),
+	}
+	if err := s.file.Update(func(doc *store.Document) {
+		doc.ReplaySessions = append([]store.ReplaySession{session}, doc.ReplaySessions...)
+		if len(doc.ReplaySessions) > 10 {
+			doc.ReplaySessions = doc.ReplaySessions[:10]
+		}
+	}); err != nil {
+		return store.ReplaySession{}, err
+	}
+	go s.runReplay(context.WithoutCancel(ctx), session)
+	return session, nil
+}
+
+func (s *Service) runReplay(ctx context.Context, session store.ReplaySession) {
+	client, err := newClient(s.cfg, s.topics, session.GroupID, s.cfg.AgentOpsClientID+"-replay")
+	if err != nil {
+		s.finishReplay(session.ID, 0, "failed", err.Error())
+		return
+	}
+	defer client.Close()
+
+	idlePolls := 0
+	processed := 0
+	limit := s.policy.Grouping.ReplayMaxRecords
+	if limit <= 0 {
+		limit = 5000
+	}
+	for processed < limit {
+		pollCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		fetches := client.PollFetches(pollCtx)
+		cancel()
+		if err := firstFatalError(fetches); err != nil {
+			s.finishReplay(session.ID, processed, "failed", err.Error())
+			return
+		}
+		batch := make([]*kgo.Record, 0)
+		fetches.EachRecord(func(rec *kgo.Record) {
+			batch = append(batch, rec)
+		})
+		if len(batch) == 0 {
+			idlePolls++
+			if idlePolls >= 3 {
+				break
+			}
+			continue
+		}
+		idlePolls = 0
+		for _, rec := range batch {
+			s.handleRecord(rec)
+			processed++
+			if processed >= limit {
+				break
+			}
+		}
+		commitCtx, cancelCommit := context.WithTimeout(ctx, 5*time.Second)
+		_ = client.CommitRecords(commitCtx, batch...)
+		cancelCommit()
+		_ = s.persist()
+	}
+	s.finishReplay(session.ID, processed, "completed", "")
+}
+
+func (s *Service) finishReplay(id string, count int, status string, lastError string) {
+	_ = s.file.Update(func(doc *store.Document) {
+		for i := range doc.ReplaySessions {
+			if doc.ReplaySessions[i].ID == id {
+				doc.ReplaySessions[i].Status = status
+				doc.ReplaySessions[i].MessageCount = count
+				doc.ReplaySessions[i].FinishedAt = time.Now().UTC().Format(time.RFC3339)
+				break
+			}
+		}
+		if lastError != "" {
+			doc.Health.LastReject = lastError
+		}
+	})
+}
+
 func newClient(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (*kgo.Client, error) {
 	if len(cfg.AgentOpsBrokers) == 0 {
 		return nil, errors.New("AGENTOPS_BROKERS is required when AGENTOPS_ENABLED=true")
@@ -559,4 +659,18 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func newReplayGroupID(prefix string, now time.Time) string {
+	prefix = strings.TrimSpace(prefix)
+	if prefix == "" {
+		prefix = "euosint-agentops-replay"
+	}
+	return fmt.Sprintf("%s-%s", prefix, now.UTC().Format("20060102t150405"))
+}
+
+func setCurrentService(svc *Service) {
+	currentMu.Lock()
+	defer currentMu.Unlock()
+	currentService = svc
 }
