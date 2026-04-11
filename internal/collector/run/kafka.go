@@ -72,7 +72,13 @@ func (r Runner) collectKafkaAlerts(ctx context.Context, cfg config.Config, now t
 		return nil, entry
 	}
 
-	client, err := r.kafkaClientFactory(cfg)
+	clientFactory := r.kafkaClientFactory
+	if clientFactory == nil {
+		clientFactory = func(cfg config.Config) (kafkaClient, error) {
+			return newKafkaClient(cfg)
+		}
+	}
+	client, err := clientFactory(cfg)
 	if err != nil {
 		entry.Error = fmt.Sprintf("kafka client: %v", err)
 		entry.ErrorClass = "config"

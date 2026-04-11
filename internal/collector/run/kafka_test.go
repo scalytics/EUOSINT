@@ -163,6 +163,12 @@ func TestLoadKafkaMapperRequiresSourceAndTitle(t *testing.T) {
 	if _, err := loadKafkaMapper(path); err == nil || !strings.Contains(err.Error(), "title_path is required") {
 		t.Fatalf("expected title path validation error, got %v", err)
 	}
+	if err := os.WriteFile(path, []byte(`{`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := loadKafkaMapper(path); err == nil {
+		t.Fatal("expected invalid JSON mapper error")
+	}
 }
 
 func TestMapKafkaRecordDefaultsAndFallbacks(t *testing.T) {
@@ -253,11 +259,17 @@ func TestReadHelpersAndTimeParsing(t *testing.T) {
 	if got := readFloat(payload, "bool"); got != 0 {
 		t.Fatalf("expected bool conversion to return 0, got %v", got)
 	}
+	if got := readFloat(payload, "missing"); got != 0 {
+		t.Fatalf("expected missing float path to return 0, got %v", got)
+	}
 	if got := readString(payload, "nested.number"); got != "12.5" {
 		t.Fatalf("readString nested.number=%q", got)
 	}
 	if got := readString(payload, "bool"); got != "true" {
 		t.Fatalf("readString bool=%q", got)
+	}
+	if got := readString(payload, "missing"); got != "" {
+		t.Fatalf("expected missing string path to return empty, got %q", got)
 	}
 	if _, ok := readPath(payload, "nested.missing"); ok {
 		t.Fatal("expected missing path lookup to fail")
@@ -368,6 +380,14 @@ func TestNewKafkaClientValidation(t *testing.T) {
 		}
 		client.Close()
 	}
+	if _, err := newKafkaClient(config.Config{
+		KafkaBrokers:          []string{"localhost:9092"},
+		KafkaTopics:           []string{"alerts"},
+		KafkaGroupID:          "group-a",
+		KafkaSecurityProtocol: "SASL_SSL",
+	}); err == nil {
+		t.Fatal("expected SASL config error")
+	}
 }
 
 func TestFirstFatalKafkaError(t *testing.T) {
@@ -389,6 +409,9 @@ func TestFirstFatalKafkaError(t *testing.T) {
 	}
 	if err := firstFatalKafkaError(fetchWithSecondaryErr("alerts", want)); !errors.Is(err, want) {
 		t.Fatalf("expected secondary fetch error, got %v", err)
+	}
+	if err := firstFatalKafkaError(fetchWithSecondaryErr("alerts", context.Canceled)); err != nil {
+		t.Fatalf("expected secondary context error to be ignored, got %v", err)
 	}
 }
 
@@ -475,6 +498,41 @@ func TestCollectKafkaAlertsExecutionPaths(t *testing.T) {
 	}
 }
 
+func TestCollectKafkaAlertsHonorsMaxPerCycleAndNilFactoryFallback(t *testing.T) {
+	dir := t.TempDir()
+	mapperPath := filepath.Join(dir, "mapper.json")
+	mapperJSON := `{
+	  "topics": {
+	    "alerts": {
+	      "source": {"source_id":"kafka-alerts","authority_name":"Kafka Alerts"},
+	      "title_path":"title"
+	    }
+	  }
+	}`
+	if err := os.WriteFile(mapperPath, []byte(mapperJSON), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 4, 11, 12, 0, 0, 0, time.UTC)
+	recA := &kgo.Record{Topic: "alerts", Partition: 0, Offset: 1, Value: []byte(`{"title":"A"}`)}
+	recB := &kgo.Record{Topic: "alerts", Partition: 0, Offset: 2, Value: []byte(`{"title":"B"}`)}
+	runner := New(nil, nil)
+	mock := &mockKafkaClient{polls: []kgo.Fetches{fetchWithRecords("alerts", recA, recB)}}
+	runner.kafkaClientFactory = func(cfg config.Config) (kafkaClient, error) { return mock, nil }
+	cfg := config.Config{
+		KafkaEnabled:     true,
+		KafkaMapperPath:  mapperPath,
+		KafkaTopics:      []string{"alerts"},
+		KafkaMaxPerCycle: 1,
+	}
+	alerts, health := runner.collectKafkaAlerts(context.Background(), cfg, now)
+	if len(alerts) != 1 || health == nil || health.FetchedCount != 1 {
+		t.Fatalf("expected max-per-cycle to cap at one alert, got alerts=%d health=%#v", len(alerts), health)
+	}
+	if len(mock.committed) != 1 || mock.committed[0].Offset != 1 {
+		t.Fatalf("expected only first record committed, got %#v", mock.committed)
+	}
+}
+
 func TestCollectKafkaAlertsErrorPaths(t *testing.T) {
 	runner := New(nil, nil)
 	if alerts, health := runner.collectKafkaAlerts(context.Background(), config.Config{}, time.Now().UTC()); alerts != nil || health != nil {
@@ -523,6 +581,50 @@ func TestCollectKafkaAlertsErrorPaths(t *testing.T) {
 	alerts, health := runner.collectKafkaAlerts(context.Background(), cfg, time.Now().UTC())
 	if len(alerts) != 1 || health == nil || health.ErrorClass != "commit" {
 		t.Fatalf("expected commit error with mapped alerts, got alerts=%d health=%#v", len(alerts), health)
+	}
+
+	runner.kafkaClientFactory = func(config.Config) (kafkaClient, error) {
+		return &mockKafkaClient{polls: []kgo.Fetches{fetchWithRecords("other", &kgo.Record{
+			Topic:     "other",
+			Partition: 0,
+			Offset:    8,
+			Value:     []byte(`{"title":"B"}`),
+		})}}, nil
+	}
+	alerts, health = runner.collectKafkaAlerts(context.Background(), cfg, time.Now().UTC())
+	if len(alerts) != 0 || health == nil || !strings.Contains(health.Error, "topic mapper missing") {
+		t.Fatalf("expected missing mapper drop, got alerts=%d health=%#v", len(alerts), health)
+	}
+
+	runner.kafkaClientFactory = func(config.Config) (kafkaClient, error) {
+		return &mockKafkaClient{polls: []kgo.Fetches{fetchWithRecords("alerts", &kgo.Record{
+			Topic:     "alerts",
+			Partition: 0,
+			Offset:    9,
+			Value:     []byte(`{`),
+		})}}, nil
+	}
+	alerts, health = runner.collectKafkaAlerts(context.Background(), cfg, time.Now().UTC())
+	if len(alerts) != 0 || health == nil || !strings.Contains(health.Error, "invalid json") {
+		t.Fatalf("expected invalid payload drop, got alerts=%d health=%#v", len(alerts), health)
+	}
+}
+
+func TestCollectKafkaAlertsFactoryErrorWithNilFactoryFallback(t *testing.T) {
+	dir := t.TempDir()
+	mapperPath := filepath.Join(dir, "mapper.json")
+	if err := os.WriteFile(mapperPath, []byte(`{"topics":{"alerts":{"source":{"source_id":"s","authority_name":"a"},"title_path":"title"}}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runner := New(nil, nil)
+	runner.kafkaClientFactory = nil
+	cfg := config.Config{
+		KafkaEnabled:    true,
+		KafkaMapperPath: mapperPath,
+		KafkaTopics:     []string{"alerts"},
+	}
+	if _, health := runner.collectKafkaAlerts(context.Background(), cfg, time.Now().UTC()); health == nil || health.ErrorClass != "config" {
+		t.Fatalf("expected nil factory fallback to surface config error, got %#v", health)
 	}
 }
 

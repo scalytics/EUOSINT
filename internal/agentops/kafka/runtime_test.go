@@ -12,6 +12,7 @@ import (
 	"time"
 
 	agentcfg "github.com/scalytics/euosint/internal/agentops/config"
+	"github.com/scalytics/euosint/internal/agentops/contract"
 	"github.com/scalytics/euosint/internal/agentops/store"
 	collectorcfg "github.com/scalytics/euosint/internal/collector/config"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -145,6 +146,23 @@ func TestHandleRecordStatusAuditUnknownAndDuplicateBranches(t *testing.T) {
 	msg := svc.internal.msgs["group.core.observe.audit:0:2"]
 	if msg.Preview == "" {
 		t.Fatalf("expected audit preview, got %#v", msg)
+	}
+}
+
+func TestUpdateTraceAndTaskGuardBranches(t *testing.T) {
+	svc := &Service{
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+	}
+	svc.updateTrace("2026-04-10T12:00:00Z", contract.TracePayload{}, "worker-a")
+	svc.updateTask("2026-04-10T12:00:00Z", "", "", "", "", "", "", "", "")
+	if len(svc.internal.traces) != 0 || len(svc.internal.tasks) != 0 {
+		t.Fatalf("expected guard branches to avoid state mutation, got %#v", svc.internal)
 	}
 }
 
@@ -739,6 +757,74 @@ func TestRunHandlesFatalPollError(t *testing.T) {
 	}
 }
 
+func TestRunUsesDefaultClientFactoryWhenNil(t *testing.T) {
+	originalFactory := defaultClientFactory
+	t.Cleanup(func() {
+		defaultClientFactory = originalFactory
+	})
+	defaultFactoryCalled := false
+	defaultClientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
+		defaultFactoryCalled = true
+		return nil, errors.New("default factory used")
+	}
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:   true,
+			AgentOpsGroupName: "core",
+			AgentOpsGroupID:   "group-a",
+			AgentOpsClientID:  "client-a",
+		},
+		policy: agentcfg.DefaultPolicy("core"),
+		topics: []string{"group.core.requests"},
+		file:   mustFileStore(t),
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+		clientFactory: nil,
+	}
+	if err := svc.run(context.Background()); err == nil || err.Error() != "default factory used" {
+		t.Fatalf("expected nil clientFactory fallback error, got %v", err)
+	}
+	if !defaultFactoryCalled {
+		t.Fatal("expected default client factory to be used")
+	}
+}
+
+func TestPersistInitializesRejectedReasonMap(t *testing.T) {
+	fs, err := store.NewFileStore("", store.Document{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsGroupName: "core",
+			AgentOpsGroupID:   "group-a",
+			UIMode:            "AGENTOPS",
+			Profile:           "agentops-default",
+		},
+		policy: agentcfg.DefaultPolicy("core"),
+		topics: []string{"group.core.requests"},
+		file:   fs,
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+	}
+	if err := svc.persist(); err != nil {
+		t.Fatal(err)
+	}
+	if svc.file.Snapshot().Health.RejectedByReason == nil {
+		t.Fatal("expected rejected reason map to be initialized")
+	}
+}
+
 func TestRunReturnsCommitError(t *testing.T) {
 	svc := &Service{
 		cfg: collectorcfg.Config{
@@ -828,6 +914,97 @@ func TestRunReplayFailureAndCompletion(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitForReplayStatus(t, svc.file, session.ID, "completed")
+}
+
+func TestRunReplayUsesNilFactoryFallbackAndFatalFetchError(t *testing.T) {
+	originalFactory := defaultClientFactory
+	t.Cleanup(func() {
+		defaultClientFactory = originalFactory
+	})
+	defaultFactoryCalled := false
+	defaultClientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
+		defaultFactoryCalled = true
+		return &mockAgentOpsClient{polls: []kgo.Fetches{fetchesWithErr(errors.New("replay poll failed"))}}, nil
+	}
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:   true,
+			AgentOpsGroupName: "core",
+			AgentOpsGroupID:   "group-a",
+			AgentOpsClientID:  "client-a",
+		},
+		policy: agentcfg.DefaultPolicy("core"),
+		topics: []string{"group.core.requests"},
+		file:   mustFileStore(t),
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+	}
+	svc.runReplay(context.Background(), store.ReplaySession{ID: "session-1", GroupID: "group-replay"})
+	if !defaultFactoryCalled {
+		t.Fatal("expected default replay client factory to be used")
+	}
+	if got := svc.file.Snapshot().Health.LastReject; got != "replay poll failed" {
+		t.Fatalf("expected replay fetch error to be surfaced, got %q", got)
+	}
+}
+
+func TestRunReplayLimitFallbackAndProcessedCap(t *testing.T) {
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:   true,
+			AgentOpsGroupName: "core",
+			AgentOpsGroupID:   "group-a",
+			AgentOpsClientID:  "client-a",
+		},
+		policy: agentcfg.Policy{
+			Version:   1,
+			GroupName: "core",
+			Grouping:  agentcfg.Grouping{FlowKey: "correlation_id", ReplayMaxRecords: 0},
+		},
+		topics: []string{"group.core.requests"},
+		file:   mustFileStore(t),
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
+			records := make([]*kgo.Record, 0, 5002)
+			for i := 0; i < 5002; i++ {
+				records = append(records, &kgo.Record{
+					Topic:     "group.core.requests",
+					Partition: 0,
+					Offset:    int64(i),
+					Value:     []byte(fmt.Sprintf(`{"type":"request","correlation_id":"corr-%d","sender_id":"worker-a","payload":{"task_id":"task-%d","description":"x"}}`, i, i)),
+				})
+			}
+			return &mockAgentOpsClient{polls: []kgo.Fetches{fetchesWithRecords(records...)}, commitErr: nil}, nil
+		},
+	}
+	if err := svc.file.Update(func(doc *store.Document) {
+		doc.ReplaySessions = []store.ReplaySession{{ID: "session-limit", GroupID: "group-replay", Status: "running"}}
+	}); err != nil {
+		t.Fatal(err)
+	}
+	svc.runReplay(context.Background(), store.ReplaySession{ID: "session-limit", GroupID: "group-replay"})
+	doc := svc.file.Snapshot()
+	var session store.ReplaySession
+	for _, item := range doc.ReplaySessions {
+		if item.ID == "session-limit" {
+			session = item
+			break
+		}
+	}
+	if session.Status != "completed" || session.MessageCount != 5000 {
+		t.Fatalf("expected replay processed cap at 5000, got %#v", session)
+	}
 }
 
 func TestStartReplayReturnsUpdateError(t *testing.T) {
