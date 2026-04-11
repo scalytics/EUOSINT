@@ -239,6 +239,51 @@ func TestStartUsesDefaultClientFactoryAndBootstrapsStoredState(t *testing.T) {
 	}
 }
 
+func TestRunReturnsInitialStatePersistError(t *testing.T) {
+	dir := t.TempDir()
+	stateDir := filepath.Join(dir, "state")
+	statePath := filepath.Join(stateDir, "agentops-state.json")
+	fs, err := store.NewFileStore(statePath, store.Document{
+		Health: store.Health{RejectedByReason: map[string]int{}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(stateDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(stateDir); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(stateDir, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:   true,
+			AgentOpsGroupName: "core",
+			AgentOpsGroupID:   "group-a",
+			AgentOpsClientID:  "client-a",
+		},
+		policy: agentcfg.DefaultPolicy("core"),
+		topics: []string{"group.core.requests"},
+		file:   fs,
+		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
+			return &mockAgentOpsClient{}, nil
+		},
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+	}
+	if err := svc.run(context.Background()); err == nil {
+		t.Fatal("expected initial persist failure")
+	}
+}
+
 func TestHandleRecordResponseAndTraceUpdateTaskAndTraceState(t *testing.T) {
 	svc := &Service{
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
@@ -586,6 +631,61 @@ func TestRunProcessesRejectedRecordsAndPersistsHealth(t *testing.T) {
 	}
 }
 
+func TestRunReturnsPersistErrorAfterCommit(t *testing.T) {
+	dir := t.TempDir()
+	stateDir := filepath.Join(dir, "state")
+	statePath := filepath.Join(stateDir, "agentops-state.json")
+	fs, err := store.NewFileStore(statePath, store.Document{
+		Health: store.Health{RejectedByReason: map[string]int{}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:    true,
+			AgentOpsGroupName:  "core",
+			AgentOpsGroupID:    "group-a",
+			AgentOpsClientID:   "client-a",
+			KafkaPollTimeoutMS: 1,
+			UIMode:             "AGENTOPS",
+			Profile:            "agentops-default",
+		},
+		policy: agentcfg.DefaultPolicy("core"),
+		topics: []string{"group.core.requests"},
+		file:   fs,
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
+			return &mockAgentOpsClient{
+				polls: []kgo.Fetches{fetchesWithRecords(&kgo.Record{
+					Topic:     "group.core.requests",
+					Partition: 0,
+					Offset:    1,
+					Value:     []byte(`{"type":"request","correlation_id":"corr-1","sender_id":"worker-a","payload":{"task_id":"task-1","description":"Investigate"}}`),
+				})},
+			}, nil
+		},
+	}
+	if err := os.MkdirAll(stateDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(stateDir); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(stateDir, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.run(context.Background()); err == nil {
+		t.Fatal("expected persist error after processing")
+	}
+}
+
 func TestBootstrapFromStoreRestoresTraceAndTaskState(t *testing.T) {
 	svc := &Service{
 		internal: state{
@@ -728,6 +828,48 @@ func TestRunReplayFailureAndCompletion(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitForReplayStatus(t, svc.file, session.ID, "completed")
+}
+
+func TestStartReplayReturnsUpdateError(t *testing.T) {
+	dir := t.TempDir()
+	stateDir := filepath.Join(dir, "state")
+	statePath := filepath.Join(stateDir, "agentops-state.json")
+	fs, err := store.NewFileStore(statePath, store.Document{
+		Health: store.Health{RejectedByReason: map[string]int{}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:   true,
+			AgentOpsGroupName: "core",
+			AgentOpsGroupID:   "group-a",
+			AgentOpsClientID:  "client-a",
+		},
+		policy: agentcfg.DefaultPolicy("core"),
+		topics: []string{"group.core.requests"},
+		file:   fs,
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+	}
+	if err := os.MkdirAll(stateDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(stateDir); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(stateDir, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.startReplay(context.Background()); err == nil {
+		t.Fatal("expected replay session update error")
+	}
 }
 
 func TestStartReplayWithoutPrefixAndGlobalReplay(t *testing.T) {

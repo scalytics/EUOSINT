@@ -387,6 +387,9 @@ func TestFirstFatalKafkaError(t *testing.T) {
 	if err := firstFatalKafkaError(fetchWithErr("alerts", want)); !errors.Is(err, want) {
 		t.Fatalf("expected fatal error, got %v", err)
 	}
+	if err := firstFatalKafkaError(fetchWithSecondaryErr("alerts", want)); !errors.Is(err, want) {
+		t.Fatalf("expected secondary fetch error, got %v", err)
+	}
 }
 
 func TestMapKafkaRecordFutureTimestampClampsFreshness(t *testing.T) {
@@ -572,6 +575,22 @@ func fetchWithErr(topic string, err error) kgo.Fetches {
 					Topic: topic,
 					Partitions: []kgo.FetchPartition{
 						{Partition: 0, Err: err},
+					},
+				},
+			},
+		},
+	}
+}
+
+func fetchWithSecondaryErr(topic string, err error) kgo.Fetches {
+	return kgo.Fetches{
+		{
+			Topics: []kgo.FetchTopic{
+				{
+					Topic: topic,
+					Partitions: []kgo.FetchPartition{
+						{Partition: 0},
+						{Partition: 1, Err: err},
 					},
 				},
 			},
