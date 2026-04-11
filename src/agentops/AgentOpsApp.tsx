@@ -44,7 +44,7 @@ export function AgentOpsApp({ state, mode }: Props) {
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-siem-accent/30 bg-siem-accent/10 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-siem-accent">
                 <Workflow size={12} />
-                {mode === "HYBRID" ? "Hybrid Fusion Desk" : "AgentOps Flow Desk"}
+                {mode === "HYBRID" ? "Fusion Desk" : "Flow Desk"}
               </div>
               <div>
                 <h1 className="text-3xl font-semibold tracking-[0.04em]">{state.group_name || "AgentOps"}</h1>
@@ -73,7 +73,7 @@ export function AgentOpsApp({ state, mode }: Props) {
           </div>
         </section>
 
-        <section className={`grid gap-4 ${mode === "HYBRID" ? "xl:grid-cols-[1.1fr_1fr_0.95fr]" : "xl:grid-cols-[1.1fr_1fr_0.95fr]"}`}>
+        <section className="grid gap-4 xl:grid-cols-[1.1fr_1fr_0.95fr]">
           <Panel title={mode === "HYBRID" ? "Agent Flow" : "Flow Queue"} icon={Activity}>
             <div className="space-y-3">
               {state.flows.slice(0, 20).map((flow) => {
@@ -165,8 +165,8 @@ export function AgentOpsApp({ state, mode }: Props) {
             </div>
           </Panel>
 
-          <Panel title={mode === "HYBRID" ? "External Intel Context" : "Agent Context"} icon={ShieldAlert}>
-            <div className="space-y-4">
+          <div className="grid gap-4">
+            <Panel title={mode === "HYBRID" ? "External Intel Context" : "Agent Context"} icon={ShieldAlert}>
               <div className="grid gap-3">
                 <StatusRow label="Tracking group" value={state.health.group_id || "unconfigured"} />
                 <StatusRow label="Connected" value={state.health.connected ? "yes" : "no"} />
@@ -174,8 +174,10 @@ export function AgentOpsApp({ state, mode }: Props) {
                 <StatusRow label="Rejected" value={String(state.health.rejected_count)} />
                 <StatusRow label="Last poll" value={formatTime(state.health.last_poll_at || "")} />
               </div>
+            </Panel>
+
+            <Panel title="Topic Health" icon={RadioTower}>
               <div className="space-y-2">
-                <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Topic health</div>
                 {state.health.topic_health.slice(0, 8).map((topic) => (
                   <div key={topic.topic} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
                     <div className="font-mono text-xs text-siem-text">{topic.topic}</div>
@@ -186,9 +188,12 @@ export function AgentOpsApp({ state, mode }: Props) {
                     </div>
                   </div>
                 ))}
+                {state.health.topic_health.length === 0 ? <EmptyState text="No topic health yet. Health snapshots appear after the first successful poll." /> : null}
               </div>
+            </Panel>
+
+            <Panel title="Replay Panel" icon={TimerReset}>
               <div className="space-y-2">
-                <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Replay panel</div>
                 {(state.replay_sessions.length === 0 ? [{ id: "none", status: "idle", group_id: "", started_at: "", message_count: 0 }] : state.replay_sessions).map((session) => (
                   <div key={session.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
                     <div className="flex items-center justify-between gap-3">
@@ -203,8 +208,8 @@ export function AgentOpsApp({ state, mode }: Props) {
                   </div>
                 ))}
               </div>
-            </div>
-          </Panel>
+            </Panel>
+          </div>
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1.1fr_1fr]">
