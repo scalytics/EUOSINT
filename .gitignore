@@ -64,3 +64,6 @@ internal/collector/run/public/
 __pycache__/
 *.py[cod]
 *.tsbuildinfo
+
+# Local architecture notes
+arch/
