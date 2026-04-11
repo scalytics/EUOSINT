@@ -42,12 +42,13 @@ import (
 )
 
 type Runner struct {
-	stdout         io.Writer
-	stderr         io.Writer
-	clientFactory  func(config.Config) *fetch.Client
-	browserFactory func(config.Config) (*fetch.BrowserClient, error)
-	noiseGate      *noisegate.Engine
-	nowFn          func() time.Time
+	stdout             io.Writer
+	stderr             io.Writer
+	clientFactory      func(config.Config) *fetch.Client
+	browserFactory     func(config.Config) (*fetch.BrowserClient, error)
+	kafkaClientFactory func(config.Config) (kafkaClient, error)
+	noiseGate          *noisegate.Engine
+	nowFn              func() time.Time
 }
 
 type boundaryCollection struct {
@@ -66,6 +67,9 @@ func New(stdout io.Writer, stderr io.Writer) Runner {
 		stdout:        stdout,
 		stderr:        stderr,
 		clientFactory: fetch.New,
+		kafkaClientFactory: func(cfg config.Config) (kafkaClient, error) {
+			return newKafkaClient(cfg)
+		},
 		nowFn: func() time.Time {
 			return time.Now().UTC()
 		},

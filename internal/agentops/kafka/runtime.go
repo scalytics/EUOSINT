@@ -25,17 +25,27 @@ import (
 )
 
 type Service struct {
-	cfg      collectorcfg.Config
-	policy   agentcfg.Policy
-	topics   []string
-	file     *store.FileStore
-	stateMu  sync.Mutex
-	internal state
+	cfg           collectorcfg.Config
+	policy        agentcfg.Policy
+	topics        []string
+	file          *store.FileStore
+	clientFactory func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error)
+	stateMu       sync.Mutex
+	internal      state
+}
+
+type agentopsClient interface {
+	PollFetches(context.Context) kgo.Fetches
+	CommitRecords(context.Context, ...*kgo.Record) error
+	Close()
 }
 
 var (
-	currentMu      sync.RWMutex
-	currentService *Service
+	currentMu            sync.RWMutex
+	currentService       *Service
+	defaultClientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
+		return newClient(cfg, topics, groupID, clientID)
+	}
 )
 
 type state struct {
@@ -79,10 +89,11 @@ func Start(ctx context.Context, cfg collectorcfg.Config) error {
 		return fmt.Errorf("agentops store: %w", err)
 	}
 	svc := &Service{
-		cfg:    cfg,
-		policy: policy,
-		topics: topics,
-		file:   fs,
+		cfg:           cfg,
+		policy:        policy,
+		topics:        topics,
+		file:          fs,
+		clientFactory: defaultClientFactory,
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -97,7 +108,11 @@ func Start(ctx context.Context, cfg collectorcfg.Config) error {
 }
 
 func (s *Service) run(ctx context.Context) error {
-	client, err := newClient(s.cfg, s.topics, s.cfg.AgentOpsGroupID, s.cfg.AgentOpsClientID)
+	clientFactory := s.clientFactory
+	if clientFactory == nil {
+		clientFactory = defaultClientFactory
+	}
+	client, err := clientFactory(s.cfg, s.topics, s.cfg.AgentOpsGroupID, s.cfg.AgentOpsClientID)
 	if err != nil {
 		return err
 	}
@@ -458,7 +473,11 @@ func (s *Service) startReplay(ctx context.Context) (store.ReplaySession, error) 
 }
 
 func (s *Service) runReplay(ctx context.Context, session store.ReplaySession) {
-	client, err := newClient(s.cfg, s.topics, session.GroupID, s.cfg.AgentOpsClientID+"-replay")
+	clientFactory := s.clientFactory
+	if clientFactory == nil {
+		clientFactory = defaultClientFactory
+	}
+	client, err := clientFactory(s.cfg, s.topics, session.GroupID, s.cfg.AgentOpsClientID+"-replay")
 	if err != nil {
 		s.finishReplay(session.ID, 0, "failed", err.Error())
 		return

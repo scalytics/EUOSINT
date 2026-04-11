@@ -24,6 +24,12 @@ import (
 
 const kafkaConnectorSourceID = "kafka-consumer"
 
+type kafkaClient interface {
+	PollFetches(context.Context) kgo.Fetches
+	CommitRecords(context.Context, ...*kgo.Record) error
+	Close()
+}
+
 type kafkaMapperDocument struct {
 	Topics map[string]kafkaTopicMapper `json:"topics"`
 }
@@ -66,7 +72,7 @@ func (r Runner) collectKafkaAlerts(ctx context.Context, cfg config.Config, now t
 		return nil, entry
 	}
 
-	client, err := newKafkaClient(cfg)
+	client, err := r.kafkaClientFactory(cfg)
 	if err != nil {
 		entry.Error = fmt.Sprintf("kafka client: %v", err)
 		entry.ErrorClass = "config"
