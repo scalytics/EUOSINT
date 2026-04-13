@@ -174,12 +174,13 @@ func TestStartDisabledReturnsNil(t *testing.T) {
 
 func TestStartValidatesPolicyAndStore(t *testing.T) {
 	cfg := collectorcfg.Config{
-		AgentOpsEnabled:    true,
-		AgentOpsGroupName:  "core",
-		AgentOpsPolicyPath: filepath.Join(t.TempDir(), "missing.yaml"),
+		AgentOpsEnabled:     true,
+		AgentOpsGroupName:   "core",
+		AgentOpsPolicyPath:  filepath.Join(t.TempDir(), "missing.yaml"),
+		AgentOpsRejectTopic: "group.core.agentops.rejects",
 	}
-	if err := Start(context.Background(), cfg); err == nil || !strings.Contains(err.Error(), "agentops policy") {
-		t.Fatalf("expected policy error, got %v", err)
+	if err := Start(context.Background(), cfg); err == nil || !strings.Contains(err.Error(), "AGENTOPS_BROKERS") {
+		t.Fatalf("expected runtime config error after policy fallback, got %v", err)
 	}
 
 	dir := t.TempDir()
@@ -188,11 +189,12 @@ func TestStartValidatesPolicyAndStore(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg = collectorcfg.Config{
-		AgentOpsEnabled:    true,
-		AgentOpsGroupName:  "core",
-		AgentOpsGroupID:    "group-a",
-		AgentOpsBrokers:    []string{"localhost:9092"},
-		AgentOpsOutputPath: outputPath,
+		AgentOpsEnabled:     true,
+		AgentOpsGroupName:   "core",
+		AgentOpsGroupID:     "group-a",
+		AgentOpsBrokers:     []string{"localhost:9092"},
+		AgentOpsRejectTopic: "group.core.agentops.rejects",
+		AgentOpsOutputPath:  outputPath,
 	}
 	if err := Start(context.Background(), cfg); err == nil || !strings.Contains(err.Error(), "agentops store") {
 		t.Fatalf("expected store error, got %v", err)
@@ -238,13 +240,14 @@ func TestStartUsesDefaultClientFactoryAndBootstrapsStoredState(t *testing.T) {
 		}, nil
 	}
 	cfg := collectorcfg.Config{
-		AgentOpsEnabled:    true,
-		AgentOpsGroupName:  "core",
-		AgentOpsGroupID:    "group-a",
-		AgentOpsBrokers:    []string{"localhost:9092"},
-		AgentOpsOutputPath: outputPath,
-		UIMode:             "AGENTOPS",
-		Profile:            "agentops-default",
+		AgentOpsEnabled:     true,
+		AgentOpsGroupName:   "core",
+		AgentOpsGroupID:     "group-a",
+		AgentOpsBrokers:     []string{"localhost:9092"},
+		AgentOpsRejectTopic: "group.core.agentops.rejects",
+		AgentOpsOutputPath:  outputPath,
+		UIMode:              "AGENTOPS",
+		Profile:             "agentops-default",
 	}
 	if err := Start(ctx, cfg); err != nil {
 		t.Fatalf("expected Start to succeed with injected client: %v", err)
@@ -360,7 +363,7 @@ func TestHandleRecordResponseAndTraceUpdateTaskAndTraceState(t *testing.T) {
 		t.Fatalf("unexpected flow state: %#v", flow)
 	}
 	doc := svc.file.Snapshot()
-	if doc.Health.AcceptedCount != 3 || len(doc.Health.TopicHealth) != 3 {
+	if len(doc.Health.TopicHealth) != 3 {
 		t.Fatalf("unexpected persisted health: %#v", doc.Health)
 	}
 }
@@ -430,6 +433,221 @@ func TestPersistCapsReplayMessagesByPolicy(t *testing.T) {
 	}
 	if doc.Messages[0].ID != "c" || doc.Messages[1].ID != "b" {
 		t.Fatalf("unexpected persisted message order: %#v", doc.Messages)
+	}
+}
+
+func TestHandleRecordAcceptsRawNonJSONContent(t *testing.T) {
+	svc := &Service{
+		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
+		policy: agentcfg.DefaultPolicy("core"),
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+	}
+	rec := &kgo.Record{
+		Topic:     "group.core.responses",
+		Partition: 0,
+		Offset:    8,
+		Timestamp: time.Date(2026, 4, 10, 12, 5, 0, 0, time.UTC),
+		Value:     []byte("plain-text agent note"),
+	}
+	if reason, ok := svc.handleRecord(rec); !ok {
+		t.Fatalf("expected raw content acceptance, got %q", reason)
+	}
+	msg := svc.internal.msgs["group.core.responses:0:8"]
+	if msg.EnvelopeType != "raw" || msg.Content != "plain-text agent note" || msg.CorrelationID == "" {
+		t.Fatalf("unexpected raw message %#v", msg)
+	}
+}
+
+func TestRunCountsMirrorFailureButCommitsRejectedRecord(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:     true,
+			AgentOpsGroupName:   "core",
+			AgentOpsGroupID:     "group-a",
+			AgentOpsClientID:    "client-a",
+			AgentOpsRejectTopic: "group.core.agentops.rejects",
+			KafkaPollTimeoutMS:  1,
+		},
+		policy: agentcfg.DefaultPolicy("core"),
+		topics: []string{"group.core.requests"},
+		file:   mustFileStore(t),
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+	}
+	mock := &mockAgentOpsClient{
+		polls: []kgo.Fetches{
+			fetchesWithRecords(&kgo.Record{
+				Topic:     "group.core.requests",
+				Partition: 0,
+				Offset:    2,
+				Value:     []byte(`{`),
+			}),
+			nil,
+		},
+		produceErr: errors.New("mirror failed"),
+		onPoll: func(n int) {
+			if n >= 2 {
+				cancel()
+			}
+		},
+	}
+	svc.clientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
+		return mock, nil
+	}
+	if err := svc.run(ctx); err != nil {
+		t.Fatalf("expected graceful shutdown, got %v", err)
+	}
+	doc := svc.file.Snapshot()
+	if doc.Health.RejectedCount != 1 || doc.Health.MirroredCount != 0 || doc.Health.MirrorFailedCount != 1 {
+		t.Fatalf("unexpected mirror failure counts %#v", doc.Health)
+	}
+	if doc.Health.LastMirrorError != "mirror failed" {
+		t.Fatalf("unexpected last mirror error %q", doc.Health.LastMirrorError)
+	}
+	if len(mock.committed) != 1 {
+		t.Fatalf("expected rejected record commit, got %d", len(mock.committed))
+	}
+}
+
+func TestPersistComputesTopicHealthMetrics(t *testing.T) {
+	originalNow := nowFunc
+	nowFunc = func() time.Time {
+		return time.Date(2026, 4, 10, 13, 0, 0, 0, time.UTC)
+	}
+	t.Cleanup(func() { nowFunc = originalNow })
+
+	svc := &Service{
+		cfg:    collectorcfg.Config{AgentOpsGroupName: "core", AgentOpsGroupID: "group-a", UIMode: "AGENTOPS", Profile: "agentops-default"},
+		policy: agentcfg.DefaultPolicy("core"),
+		file:   mustFileStore(t),
+		topics: []string{"group.core.requests", "group.core.responses"},
+		internal: state{
+			flows:  map[string]*store.Flow{"corr-1": {ID: "corr-1", FirstSeen: "2026-04-10T12:00:00Z", LastSeen: "2026-04-10T12:10:00Z"}},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic: map[string]*topicStat{
+				"group.core.requests":  {Count: 120, Agents: map[string]struct{}{"worker-a": {}, "worker-b": {}}, FirstMessageAt: "2026-04-10T12:00:00Z", LastMessageAt: "2026-04-10T12:59:00Z"},
+				"group.core.responses": {Count: 1, Agents: map[string]struct{}{"worker-a": {}}, FirstMessageAt: "2026-04-10T12:00:00Z", LastMessageAt: "2026-04-10T12:00:00Z"},
+			},
+		},
+	}
+	if err := svc.persist(); err != nil {
+		t.Fatal(err)
+	}
+	doc := svc.file.Snapshot()
+	if doc.FlowCount != 1 {
+		t.Fatalf("expected flow count to persist, got %d", doc.FlowCount)
+	}
+	if len(doc.Health.TopicHealth) != 2 {
+		t.Fatalf("unexpected topic health %#v", doc.Health.TopicHealth)
+	}
+	if doc.Health.TopicHealth[0].Topic != "group.core.requests" || doc.Health.TopicHealth[0].ActiveAgents != 2 || doc.Health.TopicHealth[0].MessageDensity != "high" || doc.Health.TopicHealth[0].IsStale {
+		t.Fatalf("unexpected fresh topic health %#v", doc.Health.TopicHealth[0])
+	}
+	if !doc.Health.TopicHealth[1].IsStale || doc.Health.TopicHealth[1].MessageDensity != "low" {
+		t.Fatalf("unexpected stale topic health %#v", doc.Health.TopicHealth[1])
+	}
+}
+
+func TestReplayCancellationMarksSessionCanceled(t *testing.T) {
+	originalNow := nowFunc
+	nowFunc = func() time.Time {
+		return time.Date(2026, 4, 10, 12, 0, 0, 0, time.UTC)
+	}
+	t.Cleanup(func() { nowFunc = originalNow })
+
+	block := make(chan struct{})
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:       true,
+			AgentOpsReplayEnabled: true,
+			AgentOpsGroupName:     "core",
+			AgentOpsGroupID:       "group-a",
+			AgentOpsClientID:      "client-a",
+			AgentOpsRejectTopic:   "group.core.agentops.rejects",
+		},
+		policy: agentcfg.DefaultPolicy("core"),
+		topics: []string{"group.core.requests"},
+		file:   mustFileStore(t),
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+	}
+	svc.clientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
+		return &mockAgentOpsClient{
+			onPoll: func(int) {
+				<-block
+			},
+			polls: []kgo.Fetches{nil},
+		}, nil
+	}
+	session, err := svc.startReplay(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !svc.cancelReplay(session.ID) {
+		t.Fatal("expected replay cancel to succeed")
+	}
+	close(block)
+	waitForReplayStatus(t, svc.file, session.ID, "canceled")
+	doc := svc.file.Snapshot()
+	if doc.Health.ReplayStatus != "canceled" || doc.Health.ReplayActive != 0 {
+		t.Fatalf("unexpected replay health %#v", doc.Health)
+	}
+}
+
+func TestStartReplayWithTopicsUsesScopedSubscription(t *testing.T) {
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:       true,
+			AgentOpsReplayEnabled: true,
+			AgentOpsGroupName:     "core",
+			AgentOpsGroupID:       "group-a",
+			AgentOpsClientID:      "client-a",
+			AgentOpsRejectTopic:   "group.core.agentops.rejects",
+		},
+		policy: agentcfg.DefaultPolicy("core"),
+		topics: []string{"group.core.requests", "group.core.responses"},
+		file:   mustFileStore(t),
+		internal: state{
+			flows:  map[string]*store.Flow{},
+			traces: map[string]*store.Trace{},
+			tasks:  map[string]*store.Task{},
+			msgs:   map[string]store.Message{},
+			topic:  map[string]*topicStat{},
+		},
+	}
+	var gotTopics []string
+	svc.clientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
+		gotTopics = append([]string{}, topics...)
+		return &mockAgentOpsClient{polls: []kgo.Fetches{nil, nil, nil}}, nil
+	}
+	session, err := svc.startReplayWithTopics(context.Background(), []string{"group.core.responses"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitForReplayStatus(t, svc.file, session.ID, "completed")
+	if len(gotTopics) != 1 || gotTopics[0] != "group.core.responses" {
+		t.Fatalf("expected scoped replay topics, got %#v", gotTopics)
 	}
 }
 
@@ -588,13 +806,14 @@ func TestRunProcessesRejectedRecordsAndPersistsHealth(t *testing.T) {
 
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:    true,
-			AgentOpsGroupName:  "core",
-			AgentOpsGroupID:    "group-a",
-			AgentOpsClientID:   "client-a",
-			KafkaPollTimeoutMS: 1,
-			UIMode:             "AGENTOPS",
-			Profile:            "agentops-default",
+			AgentOpsEnabled:     true,
+			AgentOpsGroupName:   "core",
+			AgentOpsGroupID:     "group-a",
+			AgentOpsClientID:    "client-a",
+			AgentOpsRejectTopic: "group.core.agentops.rejects",
+			KafkaPollTimeoutMS:  1,
+			UIMode:              "AGENTOPS",
+			Profile:             "agentops-default",
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -641,11 +860,17 @@ func TestRunProcessesRejectedRecordsAndPersistsHealth(t *testing.T) {
 	if doc.Health.AcceptedCount != 1 || doc.Health.RejectedCount != 1 {
 		t.Fatalf("unexpected health counts %#v", doc.Health)
 	}
+	if doc.Health.MirroredCount != 1 || doc.Health.MirrorFailedCount != 0 {
+		t.Fatalf("unexpected mirror counters %#v", doc.Health)
+	}
 	if doc.Health.RejectedByReason["invalid_envelope"] != 1 {
 		t.Fatalf("expected invalid_envelope reject count, got %#v", doc.Health.RejectedByReason)
 	}
 	if len(mock.committed) != 2 {
 		t.Fatalf("expected both records committed, got %d", len(mock.committed))
+	}
+	if len(mock.produced) != 1 || mock.produced[0].Topic != "group.core.agentops.rejects" {
+		t.Fatalf("expected mirrored reject publish, got %#v", mock.produced)
 	}
 }
 
@@ -661,13 +886,14 @@ func TestRunReturnsPersistErrorAfterCommit(t *testing.T) {
 	}
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:    true,
-			AgentOpsGroupName:  "core",
-			AgentOpsGroupID:    "group-a",
-			AgentOpsClientID:   "client-a",
-			KafkaPollTimeoutMS: 1,
-			UIMode:             "AGENTOPS",
-			Profile:            "agentops-default",
+			AgentOpsEnabled:     true,
+			AgentOpsGroupName:   "core",
+			AgentOpsGroupID:     "group-a",
+			AgentOpsClientID:    "client-a",
+			AgentOpsRejectTopic: "group.core.agentops.rejects",
+			KafkaPollTimeoutMS:  1,
+			UIMode:              "AGENTOPS",
+			Profile:             "agentops-default",
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -728,11 +954,12 @@ func TestBootstrapFromStoreRestoresTraceAndTaskState(t *testing.T) {
 func TestRunHandlesFatalPollError(t *testing.T) {
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:    true,
-			AgentOpsGroupName:  "core",
-			AgentOpsGroupID:    "group-a",
-			AgentOpsClientID:   "client-a",
-			KafkaPollTimeoutMS: 1,
+			AgentOpsEnabled:     true,
+			AgentOpsGroupName:   "core",
+			AgentOpsGroupID:     "group-a",
+			AgentOpsClientID:    "client-a",
+			AgentOpsRejectTopic: "group.core.agentops.rejects",
+			KafkaPollTimeoutMS:  1,
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -769,10 +996,11 @@ func TestRunUsesDefaultClientFactoryWhenNil(t *testing.T) {
 	}
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:   true,
-			AgentOpsGroupName: "core",
-			AgentOpsGroupID:   "group-a",
-			AgentOpsClientID:  "client-a",
+			AgentOpsEnabled:     true,
+			AgentOpsGroupName:   "core",
+			AgentOpsGroupID:     "group-a",
+			AgentOpsClientID:    "client-a",
+			AgentOpsRejectTopic: "group.core.agentops.rejects",
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -801,10 +1029,11 @@ func TestPersistInitializesRejectedReasonMap(t *testing.T) {
 	}
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsGroupName: "core",
-			AgentOpsGroupID:   "group-a",
-			UIMode:            "AGENTOPS",
-			Profile:           "agentops-default",
+			AgentOpsGroupName:   "core",
+			AgentOpsGroupID:     "group-a",
+			AgentOpsRejectTopic: "group.core.agentops.rejects",
+			UIMode:              "AGENTOPS",
+			Profile:             "agentops-default",
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -828,11 +1057,12 @@ func TestPersistInitializesRejectedReasonMap(t *testing.T) {
 func TestRunReturnsCommitError(t *testing.T) {
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:    true,
-			AgentOpsGroupName:  "core",
-			AgentOpsGroupID:    "group-a",
-			AgentOpsClientID:   "client-a",
-			KafkaPollTimeoutMS: 1,
+			AgentOpsEnabled:     true,
+			AgentOpsGroupName:   "core",
+			AgentOpsGroupID:     "group-a",
+			AgentOpsClientID:    "client-a",
+			AgentOpsRejectTopic: "group.core.agentops.rejects",
+			KafkaPollTimeoutMS:  1,
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -865,11 +1095,13 @@ func TestRunReturnsCommitError(t *testing.T) {
 func TestRunReplayFailureAndCompletion(t *testing.T) {
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:      true,
-			AgentOpsGroupName:    "core",
-			AgentOpsGroupID:      "group-a",
-			AgentOpsClientID:     "client-a",
-			AgentOpsReplayPrefix: "replay-core",
+			AgentOpsEnabled:       true,
+			AgentOpsGroupName:     "core",
+			AgentOpsGroupID:       "group-a",
+			AgentOpsClientID:      "client-a",
+			AgentOpsReplayPrefix:  "replay-core",
+			AgentOpsReplayEnabled: true,
+			AgentOpsRejectTopic:   "group.core.agentops.rejects",
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -928,10 +1160,12 @@ func TestRunReplayUsesNilFactoryFallbackAndFatalFetchError(t *testing.T) {
 	}
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:   true,
-			AgentOpsGroupName: "core",
-			AgentOpsGroupID:   "group-a",
-			AgentOpsClientID:  "client-a",
+			AgentOpsEnabled:       true,
+			AgentOpsGroupName:     "core",
+			AgentOpsGroupID:       "group-a",
+			AgentOpsClientID:      "client-a",
+			AgentOpsReplayEnabled: true,
+			AgentOpsRejectTopic:   "group.core.agentops.rejects",
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -956,10 +1190,12 @@ func TestRunReplayUsesNilFactoryFallbackAndFatalFetchError(t *testing.T) {
 func TestRunReplayLimitFallbackAndProcessedCap(t *testing.T) {
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:   true,
-			AgentOpsGroupName: "core",
-			AgentOpsGroupID:   "group-a",
-			AgentOpsClientID:  "client-a",
+			AgentOpsEnabled:       true,
+			AgentOpsGroupName:     "core",
+			AgentOpsGroupID:       "group-a",
+			AgentOpsClientID:      "client-a",
+			AgentOpsReplayEnabled: true,
+			AgentOpsRejectTopic:   "group.core.agentops.rejects",
 		},
 		policy: agentcfg.Policy{
 			Version:   1,
@@ -1019,10 +1255,12 @@ func TestStartReplayReturnsUpdateError(t *testing.T) {
 	}
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:   true,
-			AgentOpsGroupName: "core",
-			AgentOpsGroupID:   "group-a",
-			AgentOpsClientID:  "client-a",
+			AgentOpsEnabled:       true,
+			AgentOpsGroupName:     "core",
+			AgentOpsGroupID:       "group-a",
+			AgentOpsClientID:      "client-a",
+			AgentOpsReplayEnabled: true,
+			AgentOpsRejectTopic:   "group.core.agentops.rejects",
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -1052,10 +1290,12 @@ func TestStartReplayReturnsUpdateError(t *testing.T) {
 func TestStartReplayWithoutPrefixAndGlobalReplay(t *testing.T) {
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:   true,
-			AgentOpsGroupName: "core",
-			AgentOpsGroupID:   "group-a",
-			AgentOpsClientID:  "client-a",
+			AgentOpsEnabled:       true,
+			AgentOpsGroupName:     "core",
+			AgentOpsGroupID:       "group-a",
+			AgentOpsClientID:      "client-a",
+			AgentOpsReplayEnabled: true,
+			AgentOpsRejectTopic:   "group.core.agentops.rejects",
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -1098,10 +1338,11 @@ func TestStartReplayTrimsHistoryToTenSessions(t *testing.T) {
 	}
 	svc := &Service{
 		cfg: collectorcfg.Config{
-			AgentOpsEnabled:   true,
-			AgentOpsGroupName: "core",
-			AgentOpsGroupID:   "group-a",
-			AgentOpsClientID:  "client-a",
+			AgentOpsEnabled:       true,
+			AgentOpsReplayEnabled: true,
+			AgentOpsGroupName:     "core",
+			AgentOpsGroupID:       "group-a",
+			AgentOpsClientID:      "client-a",
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
@@ -1129,12 +1370,14 @@ func TestStartReplayTrimsHistoryToTenSessions(t *testing.T) {
 }
 
 type mockAgentOpsClient struct {
-	polls     []kgo.Fetches
-	pollIndex int
-	committed []*kgo.Record
-	commitErr error
-	closed    bool
-	onPoll    func(int)
+	polls      []kgo.Fetches
+	pollIndex  int
+	committed  []*kgo.Record
+	produced   []*kgo.Record
+	commitErr  error
+	produceErr error
+	closed     bool
+	onPoll     func(int)
 }
 
 func (m *mockAgentOpsClient) PollFetches(context.Context) kgo.Fetches {
@@ -1151,6 +1394,11 @@ func (m *mockAgentOpsClient) PollFetches(context.Context) kgo.Fetches {
 func (m *mockAgentOpsClient) CommitRecords(_ context.Context, recs ...*kgo.Record) error {
 	m.committed = append(m.committed, recs...)
 	return m.commitErr
+}
+
+func (m *mockAgentOpsClient) ProduceSync(_ context.Context, rec *kgo.Record) error {
+	m.produced = append(m.produced, rec)
+	return m.produceErr
 }
 
 func (m *mockAgentOpsClient) Close() {

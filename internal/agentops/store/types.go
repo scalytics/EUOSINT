@@ -23,51 +23,60 @@ type Document struct {
 }
 
 type Health struct {
-	Connected        bool           `json:"connected"`
-	EffectiveTopics  []string       `json:"effective_topics"`
-	GroupID          string         `json:"group_id"`
-	AcceptedCount    int            `json:"accepted_count"`
-	RejectedCount    int            `json:"rejected_count"`
-	MirroredCount    int            `json:"mirrored_count"`
-	RejectedByReason map[string]int `json:"rejected_by_reason"`
-	LastReject       string         `json:"last_reject,omitempty"`
-	LastPollAt       string         `json:"last_poll_at,omitempty"`
-	TopicHealth      []TopicHealth  `json:"topic_health"`
+	Connected             bool           `json:"connected"`
+	EffectiveTopics       []string       `json:"effective_topics"`
+	GroupID               string         `json:"group_id"`
+	AcceptedCount         int            `json:"accepted_count"`
+	RejectedCount         int            `json:"rejected_count"`
+	MirroredCount         int            `json:"mirrored_count"`
+	MirrorFailedCount     int            `json:"mirror_failed_count"`
+	RejectedByReason      map[string]int `json:"rejected_by_reason"`
+	LastReject            string         `json:"last_reject,omitempty"`
+	LastMirrorError       string         `json:"last_mirror_error,omitempty"`
+	LastPollAt            string         `json:"last_poll_at,omitempty"`
+	ReplayStatus          string         `json:"replay_status,omitempty"`
+	ReplayActive          int            `json:"replay_active"`
+	ReplayLastError       string         `json:"replay_last_error,omitempty"`
+	ReplayLastFinishedAt  string         `json:"replay_last_finished_at,omitempty"`
+	ReplayLastRecordCount int            `json:"replay_last_record_count"`
+	TopicHealth           []TopicHealth  `json:"topic_health"`
 }
 
 type ReplaySession struct {
-	ID          string `json:"id"`
-	GroupID     string `json:"group_id"`
-	Status      string `json:"status"`
-	StartedAt   string `json:"started_at"`
-	FinishedAt  string `json:"finished_at,omitempty"`
-	MessageCount int   `json:"message_count"`
+	ID           string   `json:"id"`
+	GroupID      string   `json:"group_id"`
+	Status       string   `json:"status"`
+	StartedAt    string   `json:"started_at"`
+	FinishedAt   string   `json:"finished_at,omitempty"`
+	MessageCount int      `json:"message_count"`
+	Topics       []string `json:"topics,omitempty"`
+	LastError    string   `json:"last_error,omitempty"`
 }
 
 type Flow struct {
-	ID              string   `json:"id"`
-	TopicCount      int      `json:"topic_count"`
-	SenderCount     int      `json:"sender_count"`
-	Topics          []string `json:"topics"`
-	Senders         []string `json:"senders"`
-	TraceIDs        []string `json:"trace_ids"`
-	TaskIDs         []string `json:"task_ids"`
-	FirstSeen       string   `json:"first_seen"`
-	LastSeen        string   `json:"last_seen"`
-	LatestStatus    string   `json:"latest_status,omitempty"`
-	MessageCount    int      `json:"message_count"`
-	LatestPreview   string   `json:"latest_preview,omitempty"`
+	ID            string   `json:"id"`
+	TopicCount    int      `json:"topic_count"`
+	SenderCount   int      `json:"sender_count"`
+	Topics        []string `json:"topics"`
+	Senders       []string `json:"senders"`
+	TraceIDs      []string `json:"trace_ids"`
+	TaskIDs       []string `json:"task_ids"`
+	FirstSeen     string   `json:"first_seen"`
+	LastSeen      string   `json:"last_seen"`
+	LatestStatus  string   `json:"latest_status,omitempty"`
+	MessageCount  int      `json:"message_count"`
+	LatestPreview string   `json:"latest_preview,omitempty"`
 }
 
 type Trace struct {
-	ID            string   `json:"id"`
-	SpanCount     int      `json:"span_count"`
-	Agents        []string `json:"agents"`
-	SpanTypes     []string `json:"span_types"`
-	LatestTitle   string   `json:"latest_title,omitempty"`
-	StartedAt     string   `json:"started_at,omitempty"`
-	EndedAt       string   `json:"ended_at,omitempty"`
-	DurationMs    int      `json:"duration_ms,omitempty"`
+	ID          string   `json:"id"`
+	SpanCount   int      `json:"span_count"`
+	Agents      []string `json:"agents"`
+	SpanTypes   []string `json:"span_types"`
+	LatestTitle string   `json:"latest_title,omitempty"`
+	StartedAt   string   `json:"started_at,omitempty"`
+	EndedAt     string   `json:"ended_at,omitempty"`
+	DurationMs  int      `json:"duration_ms,omitempty"`
 }
 
 type Task struct {
@@ -117,6 +126,7 @@ type LFSPointer struct {
 type TopicHealth struct {
 	Topic           string  `json:"topic"`
 	MessagesPerHour float64 `json:"messages_per_hour"`
+	MessageDensity  string  `json:"message_density"`
 	ActiveAgents    int     `json:"active_agents"`
 	IsStale         bool    `json:"is_stale"`
 	LastMessageAt   string  `json:"last_message_at,omitempty"`

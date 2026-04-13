@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	agentcfg "github.com/scalytics/euosint/internal/agentops/config"
 	"github.com/scalytics/euosint/internal/agentops/contract"
@@ -31,18 +32,22 @@ type Service struct {
 	file          *store.FileStore
 	clientFactory func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error)
 	stateMu       sync.Mutex
+	replayMu      sync.Mutex
+	replayCancels map[string]context.CancelFunc
 	internal      state
 }
 
 type agentopsClient interface {
 	PollFetches(context.Context) kgo.Fetches
 	CommitRecords(context.Context, ...*kgo.Record) error
+	ProduceSync(context.Context, *kgo.Record) error
 	Close()
 }
 
 var (
 	currentMu            sync.RWMutex
 	currentService       *Service
+	nowFunc              = time.Now
 	defaultClientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 		return newClient(cfg, topics, groupID, clientID)
 	}
@@ -61,6 +66,26 @@ type topicStat struct {
 	Agents         map[string]struct{}
 	LastMessageAt  string
 	FirstMessageAt string
+}
+
+type kafkaClient struct {
+	inner *kgo.Client
+}
+
+func (c *kafkaClient) PollFetches(ctx context.Context) kgo.Fetches {
+	return c.inner.PollFetches(ctx)
+}
+
+func (c *kafkaClient) CommitRecords(ctx context.Context, records ...*kgo.Record) error {
+	return c.inner.CommitRecords(ctx, records...)
+}
+
+func (c *kafkaClient) ProduceSync(ctx context.Context, record *kgo.Record) error {
+	return c.inner.ProduceSync(ctx, record).FirstErr()
+}
+
+func (c *kafkaClient) Close() {
+	c.inner.Close()
 }
 
 func Start(ctx context.Context, cfg collectorcfg.Config) error {
@@ -94,6 +119,7 @@ func Start(ctx context.Context, cfg collectorcfg.Config) error {
 		topics:        topics,
 		file:          fs,
 		clientFactory: defaultClientFactory,
+		replayCancels: map[string]context.CancelFunc{},
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -154,7 +180,7 @@ func (s *Service) run(ctx context.Context) error {
 		if len(records) == 0 {
 			_ = s.file.Update(func(doc *store.Document) {
 				doc.Health.Connected = true
-				doc.Health.LastPollAt = time.Now().UTC().Format(time.RFC3339)
+				doc.Health.LastPollAt = nowFunc().UTC().Format(time.RFC3339)
 			})
 			continue
 		}
@@ -165,13 +191,25 @@ func (s *Service) run(ctx context.Context) error {
 			reason, ok := s.handleRecord(rec)
 			toCommit = append(toCommit, rec)
 			updated = true
-			if !ok {
+			if ok {
 				_ = s.file.Update(func(doc *store.Document) {
-					doc.Health.RejectedCount++
-					doc.Health.LastReject = reason
-					doc.Health.RejectedByReason[reason]++
+					doc.Health.AcceptedCount++
 				})
+				continue
 			}
+			mirrored, mirrorErr := s.mirrorReject(ctx, client, rec, reason)
+			_ = s.file.Update(func(doc *store.Document) {
+				doc.Health.RejectedCount++
+				doc.Health.LastReject = reason
+				doc.Health.RejectedByReason[reason]++
+				if mirrored {
+					doc.Health.MirroredCount++
+				}
+				if mirrorErr != nil {
+					doc.Health.MirrorFailedCount++
+					doc.Health.LastMirrorError = mirrorErr.Error()
+				}
+			})
 		}
 		if len(toCommit) > 0 {
 			commitCtx, cancelCommit := context.WithTimeout(ctx, 5*time.Second)
@@ -249,6 +287,12 @@ func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {
 
 	env, err := contract.DecodeEnvelope(rec.Value)
 	if err != nil {
+		if msg, ok := rawMessage(recordID, rec, family, now); ok {
+			s.updateFlow(msg)
+			s.updateTopicStats(msg.Topic, msg.SenderID, now)
+			s.internal.msgs[msg.ID] = msg
+			return "", true
+		}
 		return "invalid_envelope", false
 	}
 	msg := store.Message{
@@ -402,11 +446,13 @@ func (s *Service) persist() error {
 	}
 	healthTopics := make([]store.TopicHealth, 0, len(s.internal.topic))
 	for name, item := range s.internal.topic {
+		messagesPerHour := observedMessagesPerHour(item.Count, item.FirstMessageAt, item.LastMessageAt)
 		healthTopics = append(healthTopics, store.TopicHealth{
 			Topic:           name,
-			MessagesPerHour: float64(item.Count),
+			MessagesPerHour: messagesPerHour,
+			MessageDensity:  densityBucket(messagesPerHour),
 			ActiveAgents:    len(item.Agents),
-			IsStale:         len(item.Agents) == 0,
+			IsStale:         topicIsStale(item.LastMessageAt),
 			LastMessageAt:   item.LastMessageAt,
 		})
 	}
@@ -434,8 +480,7 @@ func (s *Service) persist() error {
 		doc.Health.Connected = true
 		doc.Health.GroupID = s.cfg.AgentOpsGroupID
 		doc.Health.EffectiveTopics = append([]string{}, s.topics...)
-		doc.Health.AcceptedCount = len(messages)
-		doc.Health.LastPollAt = time.Now().UTC().Format(time.RFC3339)
+		doc.Health.LastPollAt = nowFunc().UTC().Format(time.RFC3339)
 		doc.Health.TopicHealth = healthTopics
 		if doc.Health.RejectedByReason == nil {
 			doc.Health.RejectedByReason = map[string]int{}
@@ -454,21 +499,42 @@ func StartReplay(ctx context.Context) (store.ReplaySession, error) {
 }
 
 func (s *Service) startReplay(ctx context.Context) (store.ReplaySession, error) {
+	if !s.cfg.AgentOpsReplayEnabled {
+		return store.ReplaySession{}, errors.New("agentops replay disabled")
+	}
+	return s.startReplayWithTopics(ctx, nil)
+}
+
+func (s *Service) startReplayWithTopics(ctx context.Context, topics []string) (store.ReplaySession, error) {
+	if len(topics) == 0 {
+		topics = append([]string{}, s.topics...)
+	}
+	now := nowFunc().UTC()
 	session := store.ReplaySession{
-		ID:        time.Now().UTC().Format("20060102T150405.000000000"),
-		GroupID:   newReplayGroupID(s.cfg.AgentOpsReplayPrefix, time.Now().UTC()),
+		ID:        now.Format("20060102T150405.000000000"),
+		GroupID:   newReplayGroupID(s.cfg.AgentOpsReplayPrefix, now),
 		Status:    "running",
-		StartedAt: time.Now().UTC().Format(time.RFC3339),
+		StartedAt: now.Format(time.RFC3339),
+		Topics:    append([]string{}, topics...),
 	}
 	if err := s.file.Update(func(doc *store.Document) {
 		doc.ReplaySessions = append([]store.ReplaySession{session}, doc.ReplaySessions...)
 		if len(doc.ReplaySessions) > 10 {
 			doc.ReplaySessions = doc.ReplaySessions[:10]
 		}
+		doc.Health.ReplayStatus = "running"
+		doc.Health.ReplayActive++
 	}); err != nil {
 		return store.ReplaySession{}, err
 	}
-	go s.runReplay(context.WithoutCancel(ctx), session)
+	replayCtx, cancel := context.WithCancel(context.Background())
+	s.replayMu.Lock()
+	if s.replayCancels == nil {
+		s.replayCancels = map[string]context.CancelFunc{}
+	}
+	s.replayCancels[session.ID] = cancel
+	s.replayMu.Unlock()
+	go s.runReplay(replayCtx, session)
 	return session, nil
 }
 
@@ -477,7 +543,11 @@ func (s *Service) runReplay(ctx context.Context, session store.ReplaySession) {
 	if clientFactory == nil {
 		clientFactory = defaultClientFactory
 	}
-	client, err := clientFactory(s.cfg, s.topics, session.GroupID, s.cfg.AgentOpsClientID+"-replay")
+	topics := session.Topics
+	if len(topics) == 0 {
+		topics = s.topics
+	}
+	client, err := clientFactory(s.cfg, topics, session.GroupID, s.cfg.AgentOpsClientID+"-replay")
 	if err != nil {
 		s.finishReplay(session.ID, 0, "failed", err.Error())
 		return
@@ -491,10 +561,18 @@ func (s *Service) runReplay(ctx context.Context, session store.ReplaySession) {
 		limit = 5000
 	}
 	for processed < limit {
+		if err := ctx.Err(); err != nil {
+			s.finishReplay(session.ID, processed, "canceled", "")
+			return
+		}
 		pollCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		fetches := client.PollFetches(pollCtx)
 		cancel()
 		if err := firstFatalError(fetches); err != nil {
+			if errors.Is(err, context.Canceled) {
+				s.finishReplay(session.ID, processed, "canceled", "")
+				return
+			}
 			s.finishReplay(session.ID, processed, "failed", err.Error())
 			return
 		}
@@ -526,22 +604,43 @@ func (s *Service) runReplay(ctx context.Context, session store.ReplaySession) {
 }
 
 func (s *Service) finishReplay(id string, count int, status string, lastError string) {
+	s.replayMu.Lock()
+	delete(s.replayCancels, id)
+	active := len(s.replayCancels)
+	s.replayMu.Unlock()
+
 	_ = s.file.Update(func(doc *store.Document) {
 		for i := range doc.ReplaySessions {
 			if doc.ReplaySessions[i].ID == id {
 				doc.ReplaySessions[i].Status = status
 				doc.ReplaySessions[i].MessageCount = count
-				doc.ReplaySessions[i].FinishedAt = time.Now().UTC().Format(time.RFC3339)
+				doc.ReplaySessions[i].FinishedAt = nowFunc().UTC().Format(time.RFC3339)
+				doc.ReplaySessions[i].LastError = lastError
 				break
 			}
 		}
 		if lastError != "" {
 			doc.Health.LastReject = lastError
+			doc.Health.ReplayLastError = lastError
 		}
+		doc.Health.ReplayStatus = status
+		doc.Health.ReplayActive = active
+		doc.Health.ReplayLastFinishedAt = nowFunc().UTC().Format(time.RFC3339)
+		doc.Health.ReplayLastRecordCount = count
 	})
 }
 
-func newClient(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (*kgo.Client, error) {
+func (s *Service) cancelReplay(id string) bool {
+	s.replayMu.Lock()
+	cancel, ok := s.replayCancels[id]
+	s.replayMu.Unlock()
+	if ok {
+		cancel()
+	}
+	return ok
+}
+
+func newClient(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 	if len(cfg.AgentOpsBrokers) == 0 {
 		return nil, errors.New("AGENTOPS_BROKERS is required when AGENTOPS_ENABLED=true")
 	}
@@ -577,7 +676,11 @@ func newClient(cfg collectorcfg.Config, topics []string, groupID string, clientI
 	default:
 		return nil, fmt.Errorf("unsupported AGENTOPS_SECURITY_PROTOCOL %q", cfg.AgentOpsSecurityProtocol)
 	}
-	return kgo.NewClient(opts...)
+	client, err := kgo.NewClient(opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &kafkaClient{inner: client}, nil
 }
 
 func saslMechanism(cfg collectorcfg.Config) (sasl.Mechanism, error) {
@@ -613,9 +716,33 @@ func firstFatalError(fetches kgo.Fetches) error {
 
 func recordTimestamp(rec *kgo.Record) string {
 	if rec.Timestamp.IsZero() {
-		return time.Now().UTC().Format(time.RFC3339)
+		return nowFunc().UTC().Format(time.RFC3339)
 	}
 	return rec.Timestamp.UTC().Format(time.RFC3339)
+}
+
+func rawMessage(recordID string, rec *kgo.Record, family string, now string) (store.Message, bool) {
+	raw := strings.TrimSpace(string(rec.Value))
+	if raw == "" || !utf8.Valid(rec.Value) || json.Valid(rec.Value) {
+		return store.Message{}, false
+	}
+	switch raw[0] {
+	case '{', '[', '"':
+		return store.Message{}, false
+	}
+	msg := store.Message{
+		ID:            recordID,
+		Topic:         rec.Topic,
+		TopicFamily:   family,
+		Partition:     rec.Partition,
+		Offset:        rec.Offset,
+		Timestamp:     now,
+		EnvelopeType:  "raw",
+		CorrelationID: recordID,
+		Preview:       previewForPayload(json.RawMessage(raw)),
+		Content:       raw,
+	}
+	return msg, true
 }
 
 func previewForPayload(payload json.RawMessage) string {
@@ -686,6 +813,68 @@ func newReplayGroupID(prefix string, now time.Time) string {
 		prefix = "euosint-agentops-replay"
 	}
 	return fmt.Sprintf("%s-%s", prefix, now.UTC().Format("20060102t150405"))
+}
+
+func (s *Service) mirrorReject(ctx context.Context, client agentopsClient, rec *kgo.Record, reason string) (bool, error) {
+	if strings.TrimSpace(s.cfg.AgentOpsRejectTopic) == "" {
+		return false, errors.New("agentops reject topic not configured")
+	}
+	payload := map[string]any{
+		"reason":       reason,
+		"source_topic": rec.Topic,
+		"partition":    rec.Partition,
+		"offset":       rec.Offset,
+		"timestamp":    recordTimestamp(rec),
+		"raw_value":    string(rec.Value),
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return false, err
+	}
+	produceCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	err = client.ProduceSync(produceCtx, &kgo.Record{Topic: s.cfg.AgentOpsRejectTopic, Value: data})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func observedMessagesPerHour(count int, first, last string) float64 {
+	if count <= 0 {
+		return 0
+	}
+	firstTime, errFirst := time.Parse(time.RFC3339, first)
+	lastTime, errLast := time.Parse(time.RFC3339, last)
+	if errFirst != nil || errLast != nil || !lastTime.After(firstTime) {
+		return float64(count)
+	}
+	hours := lastTime.Sub(firstTime).Hours()
+	if hours < 1 {
+		hours = 1
+	}
+	return float64(count) / hours
+}
+
+func densityBucket(messagesPerHour float64) string {
+	switch {
+	case messagesPerHour >= 100:
+		return "high"
+	case messagesPerHour >= 10:
+		return "medium"
+	case messagesPerHour > 0:
+		return "low"
+	default:
+		return "idle"
+	}
+}
+
+func topicIsStale(lastMessageAt string) bool {
+	last, err := time.Parse(time.RFC3339, strings.TrimSpace(lastMessageAt))
+	if err != nil {
+		return true
+	}
+	return nowFunc().UTC().Sub(last.UTC()) > 30*time.Minute
 }
 
 func setCurrentService(svc *Service) {

@@ -54,6 +54,16 @@ hybrid:
 	}
 }
 
+func TestLoadPolicyMissingFileFallsBackToDefault(t *testing.T) {
+	policy, err := LoadPolicy(filepath.Join(t.TempDir(), "missing.yaml"), "core")
+	if err != nil {
+		t.Fatalf("expected missing file fallback, got %v", err)
+	}
+	if policy.GroupName != "core" || policy.TopicMode != "auto" {
+		t.Fatalf("unexpected fallback policy %#v", policy)
+	}
+}
+
 func TestValidatePolicyRejectsInvalidTopicMode(t *testing.T) {
 	policy := DefaultPolicy("core")
 	policy.TopicMode = "broken"

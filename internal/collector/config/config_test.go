@@ -44,6 +44,9 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.AgentOpsOutputPath != "public/agentops-state.json" {
 		t.Fatalf("unexpected AgentOps output path default %q", cfg.AgentOpsOutputPath)
 	}
+	if cfg.AgentOpsRejectTopic != "" {
+		t.Fatalf("expected empty AgentOps reject topic without group name, got %q", cfg.AgentOpsRejectTopic)
+	}
 	if cfg.UIMode != "OSINT" || cfg.Profile != "osint-default" {
 		t.Fatalf("unexpected UI defaults mode=%q profile=%q", cfg.UIMode, cfg.Profile)
 	}
@@ -161,6 +164,7 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	t.Setenv("AGENTOPS_POLICY_PATH", "/config/agentops_policy.yaml")
 	t.Setenv("AGENTOPS_REPLAY_ENABLED", "false")
 	t.Setenv("AGENTOPS_REPLAY_PREFIX", "replay-core")
+	t.Setenv("AGENTOPS_REJECT_TOPIC", "group.core.agentops.rejects")
 	t.Setenv("AGENTOPS_OUTPUT_PATH", "/data/agentops-state.json")
 	t.Setenv("UI_MODE", "agentops")
 	t.Setenv("PROFILE", "agentops-default")
@@ -241,8 +245,8 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	if !cfg.AgentOpsTLSInsecureSkipVerify {
 		t.Fatal("expected AGENTOPS_TLS_INSECURE_SKIP_VERIFY override")
 	}
-	if cfg.AgentOpsPolicyPath != "/config/agentops_policy.yaml" || cfg.AgentOpsReplayEnabled || cfg.AgentOpsReplayPrefix != "replay-core" || cfg.AgentOpsOutputPath != "/data/agentops-state.json" {
-		t.Fatalf("unexpected agentops config policy=%q enabled=%v prefix=%q output=%q", cfg.AgentOpsPolicyPath, cfg.AgentOpsReplayEnabled, cfg.AgentOpsReplayPrefix, cfg.AgentOpsOutputPath)
+	if cfg.AgentOpsPolicyPath != "/config/agentops_policy.yaml" || cfg.AgentOpsReplayEnabled || cfg.AgentOpsReplayPrefix != "replay-core" || cfg.AgentOpsRejectTopic != "group.core.agentops.rejects" || cfg.AgentOpsOutputPath != "/data/agentops-state.json" {
+		t.Fatalf("unexpected agentops config policy=%q enabled=%v prefix=%q reject=%q output=%q", cfg.AgentOpsPolicyPath, cfg.AgentOpsReplayEnabled, cfg.AgentOpsReplayPrefix, cfg.AgentOpsRejectTopic, cfg.AgentOpsOutputPath)
 	}
 	if cfg.UIMode != "AGENTOPS" || cfg.Profile != "agentops-default" || cfg.UIPolicyPath != "/config/ui_policy.yaml" {
 		t.Fatalf("unexpected UI config mode=%q profile=%q policy=%q", cfg.UIMode, cfg.Profile, cfg.UIPolicyPath)
@@ -263,5 +267,14 @@ func TestAgentOpsInvalidEnumsFallbackToDefaults(t *testing.T) {
 	}
 	if cfg.Profile != "osint-default" {
 		t.Fatalf("expected invalid profile to fall back to osint-default, got %q", cfg.Profile)
+	}
+}
+
+func TestAgentOpsRejectTopicDefaultsFromGroupName(t *testing.T) {
+	t.Setenv("AGENTOPS_GROUP_NAME", "core")
+
+	cfg := FromEnv()
+	if cfg.AgentOpsRejectTopic != "group.core.agentops.rejects" {
+		t.Fatalf("expected derived reject topic, got %q", cfg.AgentOpsRejectTopic)
 	}
 }

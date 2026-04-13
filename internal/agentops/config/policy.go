@@ -27,14 +27,14 @@ var allowedTopicFamilies = map[string]struct{}{
 }
 
 type Policy struct {
-	Version        int           `yaml:"version"`
-	GroupName      string        `yaml:"group_name"`
-	TopicMode      string        `yaml:"topic_mode"`
-	RequiredTopics []string      `yaml:"required_topics"`
-	OptionalTopics []string      `yaml:"optional_topics"`
-	Grouping       Grouping      `yaml:"grouping"`
-	UI             UIPolicy      `yaml:"ui"`
-	Hybrid         HybridPolicy  `yaml:"hybrid"`
+	Version        int          `yaml:"version"`
+	GroupName      string       `yaml:"group_name"`
+	TopicMode      string       `yaml:"topic_mode"`
+	RequiredTopics []string     `yaml:"required_topics"`
+	OptionalTopics []string     `yaml:"optional_topics"`
+	Grouping       Grouping     `yaml:"grouping"`
+	UI             UIPolicy     `yaml:"ui"`
+	Hybrid         HybridPolicy `yaml:"hybrid"`
 }
 
 type Grouping struct {
@@ -43,8 +43,8 @@ type Grouping struct {
 }
 
 type UIPolicy struct {
-	ShowTopicHealth bool `yaml:"show_topic_health"`
-	ShowMemory      bool `yaml:"show_memory"`
+	ShowTopicHealth  bool `yaml:"show_topic_health"`
+	ShowMemory       bool `yaml:"show_memory"`
 	ShowOrchestrator bool `yaml:"show_orchestrator"`
 }
 
@@ -92,6 +92,10 @@ func LoadPolicy(path string, groupName string) (Policy, error) {
 	}
 	raw, err := os.ReadFile(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			policy := DefaultPolicy(groupName)
+			return policy, ValidatePolicy(policy)
+		}
 		return Policy{}, err
 	}
 	var policy Policy
