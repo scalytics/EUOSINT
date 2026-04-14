@@ -2,8 +2,10 @@ import { useMemo, useState, useTransition } from "react";
 import { Activity, GitBranch, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
 import { EmptyState, MetricCard, Panel, StatusRow, Tag } from "@/agentops/components/Chrome";
 import { MessageCard } from "@/agentops/components/MessageCard";
+import { buildFusionMatches } from "@/agentops/lib/hybrid";
 import { formatTime } from "@/agentops/lib/view";
 import { useAgentOpsOperator } from "@/hooks/useAgentOpsOperator";
+import { useAlerts } from "@/hooks/useAlerts";
 import type { AgentOpsMode, AgentOpsState } from "@/agentops/types";
 
 interface Props {
@@ -13,6 +15,7 @@ interface Props {
 
 export function AgentOpsDesk({ state, mode }: Props) {
   const operator = useAgentOpsOperator(mode !== "OSINT");
+  const { alerts } = useAlerts();
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(state.flows[0]?.id ?? null);
   const [isPending, startTransition] = useTransition();
   const selectedFlow = useMemo(
@@ -33,6 +36,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
     const taskSet = new Set(selectedFlow.task_ids);
     return state.tasks.filter((task) => taskSet.has(task.id)).slice(0, 8);
   }, [selectedFlow, state.tasks]);
+  const fusionMatches = useMemo(() => (mode === "HYBRID" ? buildFusionMatches(selectedFlow, state.messages, alerts) : []), [alerts, mode, selectedFlow, state.messages]);
 
   function triggerReplay() {
     startTransition(() => {
@@ -129,11 +133,29 @@ export function AgentOpsDesk({ state, mode }: Props) {
                     </div>
                   </div>
                   <div className="space-y-3">
-                    {relatedTraces.length === 0 && mode === "HYBRID" ? (
+                    {mode === "HYBRID" && fusionMatches.length === 0 ? (
                       <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4 text-sm text-siem-muted">
-                        External Intel context is policy-driven. This selected flow has no matched OSINT fusion card yet.
+                        No OSINT fusion match for the selected flow. Hybrid stays quiet until an explicit category, geography, sector, vendor/product, CVE, or time-window rule matches.
                       </div>
                     ) : null}
+                    {mode === "HYBRID"
+                      ? fusionMatches.slice(0, 5).map((match) => (
+                          <div key={match.alert_id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="font-semibold">{match.title}</div>
+                                <div className="mt-1 text-xs text-siem-muted">{match.source}</div>
+                              </div>
+                              <Tag>{match.severity}</Tag>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
+                              {match.match_reasons.map((reason) => (
+                                <Tag key={reason}>{reason}</Tag>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      : null}
                     {relatedTraces.map((trace) => (
                       <div key={trace.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -177,6 +199,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
                 <StatusRow label="Accepted" value={String(state.health.accepted_count)} />
                 <StatusRow label="Rejected" value={String(state.health.rejected_count)} />
                 <StatusRow label="Mirrored" value={String(state.health.mirrored_count)} />
+                {mode === "HYBRID" ? <StatusRow label="Fusion matches" value={String(fusionMatches.length)} /> : null}
                 <StatusRow label="Last poll" value={formatTime(state.health.last_poll_at || "")} />
               </div>
             </Panel>

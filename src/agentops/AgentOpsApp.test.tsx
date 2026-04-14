@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { AgentOpsApp } from "@/agentops/AgentOpsApp";
 import type { AgentOpsOperatorState, AgentOpsState } from "@/types/agentops";
+import type { Alert } from "@/types/alert";
 
 const mockedUseAgentOpsOperator = vi.fn<() => AgentOpsOperatorState>(() => ({
   supported: true,
@@ -12,6 +13,18 @@ const mockedUseAgentOpsOperator = vi.fn<() => AgentOpsOperatorState>(() => ({
 
 vi.mock("@/hooks/useAgentOpsOperator", () => ({
   useAgentOpsOperator: () => mockedUseAgentOpsOperator(),
+}));
+
+const mockedUseAlerts = vi.fn<() => { alerts: Alert[]; isLive: boolean; isLoading: boolean; sourceCount: number; refetch: () => void }>(() => ({
+  alerts: [],
+  isLive: false,
+  isLoading: false,
+  sourceCount: 0,
+  refetch: vi.fn(),
+}));
+
+vi.mock("@/hooks/useAlerts", () => ({
+  useAlerts: () => mockedUseAlerts(),
 }));
 
 const baseState: AgentOpsState = {
@@ -130,6 +143,14 @@ beforeEach(() => {
     replay_group_ids: ["replay-1"],
     groups: [{ group_id: "euosint-agentops", state: "Stable", protocol_type: "consumer", protocol: "range", members: [] }],
   });
+  mockedUseAlerts.mockReset();
+  mockedUseAlerts.mockReturnValue({
+    alerts: [],
+    isLive: false,
+    isLoading: false,
+    sourceCount: 0,
+    refetch: vi.fn(),
+  });
 });
 
 test("renders flow desk panels with decoded content and LFS pointer metadata", () => {
@@ -148,12 +169,56 @@ test("renders flow desk panels with decoded content and LFS pointer metadata", (
 });
 
 test("renders hybrid fusion shell without mixing lanes", () => {
-  render(<AgentOpsApp state={{ ...baseState, ui_mode: "HYBRID" }} mode="HYBRID" />);
+  mockedUseAlerts.mockReturnValue({
+    alerts: [
+      {
+        alert_id: "a1",
+        source_id: "cert-ua",
+        source: {
+          source_id: "cert-ua",
+          authority_name: "CERT-UA",
+          country: "Ukraine",
+          country_code: "UA",
+          region: "Europe",
+          authority_type: "cert",
+          base_url: "https://example.test",
+        },
+        title: "Advisory for CVE-2026-12345 affecting energy sector",
+        canonical_url: "https://example.test/a1",
+        first_seen: "2026-04-10T10:00:00Z",
+        last_seen: "2026-04-10T11:00:00Z",
+        status: "active",
+        category: "cyber_advisory",
+        severity: "high",
+        region_tag: "EU",
+        lat: 0,
+        lng: 0,
+        freshness_hours: 1,
+      },
+    ],
+    isLive: true,
+    isLoading: false,
+    sourceCount: 1,
+    refetch: vi.fn(),
+  });
+  const hybridState = {
+    ...baseState,
+    ui_mode: "HYBRID" as const,
+    messages: [
+      {
+        ...baseState.messages[0],
+        content: JSON.stringify({ category: "cyber_advisory", event_country_code: "ua", sector: "energy", cve: "CVE-2026-12345" }),
+      },
+    ],
+  };
+  render(<AgentOpsApp state={hybridState} mode="HYBRID" />);
 
   expect(screen.getByText("Fusion Desk")).toBeTruthy();
   expect(screen.getByText("Agent Flow")).toBeTruthy();
   expect(screen.getByText("Fusion Summary")).toBeTruthy();
   expect(screen.getByText("External Intel Context")).toBeTruthy();
+  expect(screen.getByText("Advisory for CVE-2026-12345 affecting energy sector")).toBeTruthy();
+  expect(screen.getByText("category:cyber_advisory")).toBeTruthy();
 });
 
 test("renders unsupported operator state without exposing unavailable actions", () => {
@@ -169,6 +234,12 @@ test("renders unsupported operator state without exposing unavailable actions", 
 
   expect(screen.getByText("limited")).toBeTruthy();
   expect(screen.getByText("unsupported admin api")).toBeTruthy();
+});
+
+test("renders explicit no-match fallback in hybrid mode", () => {
+  render(<AgentOpsApp state={{ ...baseState, ui_mode: "HYBRID" }} mode="HYBRID" />);
+
+  expect(screen.getByText(/No OSINT fusion match for the selected flow/)).toBeTruthy();
 });
 
 test("triggers replay through the AgentOps API", async () => {
