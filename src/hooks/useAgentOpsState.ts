@@ -1,40 +1,17 @@
 import { useEffect, useState } from "react";
+import { loadPersistedShell, normalizeState, persistShell } from "@/agentops/lib/state";
 import { appURL } from "@/lib/app-url";
-import type { AgentOpsState } from "@/types/agentops";
+import type { AgentOpsState } from "@/agentops/types";
 
 const AGENTOPS_STATE_URL = appURL("agentops-state.json");
 const POLL_MS = 15000;
 
-const FALLBACK_STATE: AgentOpsState = {
-  generated_at: "",
-  enabled: false,
-  ui_mode: "OSINT",
-  profile: "osint-default",
-  group_name: "",
-  topics: [],
-  flow_count: 0,
-  trace_count: 0,
-  task_count: 0,
-  message_count: 0,
-  health: {
-    connected: false,
-    effective_topics: [],
-    group_id: "",
-    accepted_count: 0,
-    rejected_count: 0,
-    mirrored_count: 0,
-    rejected_by_reason: {},
-    topic_health: [],
-  },
-  replay_sessions: [],
-  flows: [],
-  traces: [],
-  tasks: [],
-  messages: [],
-};
+function fallbackState(): AgentOpsState {
+  return normalizeState(loadPersistedShell());
+}
 
 export function useAgentOpsState() {
-  const [state, setState] = useState<AgentOpsState>(FALLBACK_STATE);
+  const [state, setState] = useState<AgentOpsState>(() => fallbackState());
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -46,14 +23,15 @@ export function useAgentOpsState() {
         if (!response.ok) {
           throw new Error(`agentops state fetch failed: ${response.status}`);
         }
-        const data = (await response.json()) as AgentOpsState;
+        const data = normalizeState((await response.json()) as Partial<AgentOpsState>);
         if (!cancelled) {
-          setState({ ...FALLBACK_STATE, ...data });
+          persistShell(data.ui_mode, data.profile);
+          setState(data);
           setIsLoading(false);
         }
       } catch {
         if (!cancelled) {
-          setState(FALLBACK_STATE);
+          setState((current) => normalizeState(current.generated_at ? current : fallbackState()));
           setIsLoading(false);
         }
       }

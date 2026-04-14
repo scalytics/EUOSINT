@@ -21,11 +21,15 @@ const baseState: AgentOpsState = {
     accepted_count: 2,
     rejected_count: 0,
     mirrored_count: 0,
+    mirror_failed_count: 0,
     rejected_by_reason: {},
+    replay_active: 0,
+    replay_last_record_count: 0,
     topic_health: [
       {
         topic: "group.core.requests",
         messages_per_hour: 2,
+        message_density: "low",
         active_agents: 1,
         is_stale: false,
         last_message_at: "2026-04-10T12:00:00Z",
