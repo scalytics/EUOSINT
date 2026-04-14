@@ -53,6 +53,29 @@ type ReplaySession struct {
 	LastError    string   `json:"last_error,omitempty"`
 }
 
+type ConsumerGroupMember struct {
+	MemberID   string `json:"member_id"`
+	ClientID   string `json:"client_id"`
+	ClientHost string `json:"client_host"`
+	InstanceID string `json:"instance_id,omitempty"`
+}
+
+type ConsumerGroup struct {
+	GroupID      string                `json:"group_id"`
+	State        string                `json:"state"`
+	ProtocolType string                `json:"protocol_type"`
+	Protocol     string                `json:"protocol"`
+	Members      []ConsumerGroupMember `json:"members"`
+}
+
+type OperatorState struct {
+	Supported      bool            `json:"supported"`
+	LiveGroupID    string          `json:"live_group_id,omitempty"`
+	ReplayGroupIDs []string        `json:"replay_group_ids"`
+	Groups         []ConsumerGroup `json:"groups"`
+	LastError      string          `json:"last_error,omitempty"`
+}
+
 type Flow struct {
 	ID            string   `json:"id"`
 	TopicCount    int      `json:"topic_count"`

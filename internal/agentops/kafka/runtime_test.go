@@ -1369,6 +1369,63 @@ func TestStartReplayTrimsHistoryToTenSessions(t *testing.T) {
 	}
 }
 
+func TestLoadOperatorStateReturnsGroupsAndReplayIDs(t *testing.T) {
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:   true,
+			AgentOpsGroupName: "core",
+			AgentOpsGroupID:   "group-live",
+			AgentOpsClientID:  "client-a",
+		},
+		file: mustFileStore(t),
+		operatorClientFactory: func(cfg collectorcfg.Config, clientID string) (operatorClient, error) {
+			return &mockOperatorClient{
+				groups: []store.ConsumerGroup{
+					{GroupID: "group-live", State: "Stable", ProtocolType: "consumer", Protocol: "range"},
+					{GroupID: "group-replay", State: "Empty", ProtocolType: "consumer", Protocol: "range"},
+				},
+			}, nil
+		},
+	}
+	if err := svc.file.Update(func(doc *store.Document) {
+		doc.ReplaySessions = []store.ReplaySession{{ID: "replay-1", GroupID: "group-replay", Status: "completed"}}
+	}); err != nil {
+		t.Fatal(err)
+	}
+	state, err := svc.loadOperatorState(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !state.Supported || state.LiveGroupID != "group-live" || len(state.ReplayGroupIDs) != 1 || state.ReplayGroupIDs[0] != "group-replay" {
+		t.Fatalf("unexpected operator state %#v", state)
+	}
+	if len(state.Groups) != 2 {
+		t.Fatalf("expected groups in operator state, got %#v", state.Groups)
+	}
+}
+
+func TestLoadOperatorStateReturnsUnsupportedOnAdminFailure(t *testing.T) {
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:   true,
+			AgentOpsGroupName: "core",
+			AgentOpsGroupID:   "group-live",
+			AgentOpsClientID:  "client-a",
+		},
+		file: mustFileStore(t),
+		operatorClientFactory: func(cfg collectorcfg.Config, clientID string) (operatorClient, error) {
+			return nil, errors.New("unsupported admin api")
+		},
+	}
+	state, err := svc.loadOperatorState(context.Background())
+	if err == nil || err.Error() != "unsupported admin api" {
+		t.Fatalf("expected operator error, got %v", err)
+	}
+	if state.Supported {
+		t.Fatalf("expected unsupported state, got %#v", state)
+	}
+}
+
 type mockAgentOpsClient struct {
 	polls      []kgo.Fetches
 	pollIndex  int
@@ -1378,6 +1435,11 @@ type mockAgentOpsClient struct {
 	produceErr error
 	closed     bool
 	onPoll     func(int)
+}
+
+type mockOperatorClient struct {
+	groups []store.ConsumerGroup
+	err    error
 }
 
 func (m *mockAgentOpsClient) PollFetches(context.Context) kgo.Fetches {
@@ -1404,6 +1466,15 @@ func (m *mockAgentOpsClient) ProduceSync(_ context.Context, rec *kgo.Record) err
 func (m *mockAgentOpsClient) Close() {
 	m.closed = true
 }
+
+func (m *mockOperatorClient) ListGroups(context.Context) ([]store.ConsumerGroup, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.groups, nil
+}
+
+func (m *mockOperatorClient) Close() {}
 
 func fetchesWithRecords(records ...*kgo.Record) kgo.Fetches {
 	return kgo.Fetches{

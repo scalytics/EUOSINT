@@ -3,6 +3,7 @@ import { Activity, GitBranch, PlayCircle, RadioTower, ShieldAlert, TimerReset, W
 import { EmptyState, MetricCard, Panel, StatusRow, Tag } from "@/agentops/components/Chrome";
 import { MessageCard } from "@/agentops/components/MessageCard";
 import { formatTime } from "@/agentops/lib/view";
+import { useAgentOpsOperator } from "@/hooks/useAgentOpsOperator";
 import type { AgentOpsMode, AgentOpsState } from "@/agentops/types";
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function AgentOpsDesk({ state, mode }: Props) {
+  const operator = useAgentOpsOperator(mode !== "OSINT");
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(state.flows[0]?.id ?? null);
   const [isPending, startTransition] = useTransition();
   const selectedFlow = useMemo(
@@ -225,18 +227,28 @@ export function AgentOpsDesk({ state, mode }: Props) {
               {relatedMessages.length === 0 ? <EmptyState text="No decoded messages for the selected flow yet." /> : null}
             </div>
           </Panel>
-          <Panel title={mode === "HYBRID" ? "Internal / External Split" : "Replay Notes"} icon={TimerReset}>
+          <Panel title="Kafscale Operator" icon={TimerReset}>
             <div className="space-y-3 text-sm text-siem-muted">
-              {mode === "HYBRID" ? (
-                <>
-                  <p>Hybrid mode keeps AgentOps telemetry distinct from OSINT context until an explicit fusion rule matches.</p>
-                  <p>The current implementation surfaces the operating split and reserved fusion lane without collapsing both domains into one queue.</p>
-                </>
+              <StatusRow label="Admin surface" value={operator.supported ? "supported" : "limited"} />
+              <StatusRow label="Live group" value={operator.live_group_id || state.health.group_id || "-"} />
+              <StatusRow label="Replay groups" value={String(operator.replay_group_ids.length)} />
+              {operator.last_error ? <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3 text-xs">{operator.last_error}</div> : null}
+              {operator.groups.length === 0 ? (
+                <EmptyState text="No consumer groups returned yet. When Kafscale group visibility is available, live and replay groups appear here." />
               ) : (
-                <>
-                  <p>Replay starts with a dedicated consumer group and reads from `earliest` without mutating the live tracking group.</p>
-                  <p>Normal Kafka messages are decoded directly. LFS-backed entries stay pointer-only and are shown as S3 paths.</p>
-                </>
+                operator.groups.slice(0, 8).map((group) => (
+                  <div key={group.group_id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="font-mono text-xs text-siem-text">{group.group_id}</div>
+                      <Tag>{group.state || "unknown"}</Tag>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-siem-muted">
+                      <Tag>{group.protocol_type || "consumer"}</Tag>
+                      {group.protocol ? <Tag>{group.protocol}</Tag> : null}
+                      <Tag>{group.members.length} members</Tag>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </Panel>

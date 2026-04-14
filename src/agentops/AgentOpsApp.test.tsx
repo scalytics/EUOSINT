@@ -1,7 +1,18 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { AgentOpsApp } from "@/agentops/AgentOpsApp";
-import type { AgentOpsState } from "@/types/agentops";
+import type { AgentOpsOperatorState, AgentOpsState } from "@/types/agentops";
+
+const mockedUseAgentOpsOperator = vi.fn<() => AgentOpsOperatorState>(() => ({
+  supported: true,
+  live_group_id: "euosint-agentops",
+  replay_group_ids: ["replay-1"],
+  groups: [{ group_id: "euosint-agentops", state: "Stable", protocol_type: "consumer", protocol: "range", members: [] }],
+}));
+
+vi.mock("@/hooks/useAgentOpsOperator", () => ({
+  useAgentOpsOperator: () => mockedUseAgentOpsOperator(),
+}));
 
 const baseState: AgentOpsState = {
   generated_at: "2026-04-10T12:00:00Z",
@@ -112,6 +123,13 @@ const baseState: AgentOpsState = {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  mockedUseAgentOpsOperator.mockReset();
+  mockedUseAgentOpsOperator.mockReturnValue({
+    supported: true,
+    live_group_id: "euosint-agentops",
+    replay_group_ids: ["replay-1"],
+    groups: [{ group_id: "euosint-agentops", state: "Stable", protocol_type: "consumer", protocol: "range", members: [] }],
+  });
 });
 
 test("renders flow desk panels with decoded content and LFS pointer metadata", () => {
@@ -123,6 +141,7 @@ test("renders flow desk panels with decoded content and LFS pointer metadata", (
   expect(screen.getByText("Agent Context")).toBeTruthy();
   expect(screen.getByText("Topic Health")).toBeTruthy();
   expect(screen.getByText("Replay Panel")).toBeTruthy();
+  expect(screen.getByText("Kafscale Operator")).toBeTruthy();
   expect(screen.getAllByText("Investigate outage").length).toBeGreaterThan(0);
   expect(screen.getByText("s3://ops/core/requests/2")).toBeTruthy();
   expect(screen.getByText("LFS-backed payload")).toBeTruthy();
@@ -135,6 +154,21 @@ test("renders hybrid fusion shell without mixing lanes", () => {
   expect(screen.getByText("Agent Flow")).toBeTruthy();
   expect(screen.getByText("Fusion Summary")).toBeTruthy();
   expect(screen.getByText("External Intel Context")).toBeTruthy();
+});
+
+test("renders unsupported operator state without exposing unavailable actions", () => {
+  mockedUseAgentOpsOperator.mockReturnValue({
+    supported: false,
+    live_group_id: "euosint-agentops",
+    replay_group_ids: [],
+    groups: [],
+    last_error: "unsupported admin api",
+  });
+
+  render(<AgentOpsApp state={baseState} mode="AGENTOPS" />);
+
+  expect(screen.getByText("limited")).toBeTruthy();
+  expect(screen.getByText("unsupported admin api")).toBeTruthy();
 });
 
 test("triggers replay through the AgentOps API", async () => {

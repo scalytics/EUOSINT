@@ -36,6 +36,7 @@ type Server struct {
 	allowedOrigins []string
 	bearerToken    string
 	startReplay    func(context.Context) (agentopsstore.ReplaySession, error)
+	loadOperator   func(context.Context) (agentopsstore.OperatorState, error)
 }
 
 type ZoneBriefLLMConfig struct {
@@ -57,6 +58,7 @@ func New(db *sourcedb.DB, addr string, stderr io.Writer, allowedOrigins []string
 	mux.HandleFunc("POST /api/noise-feedback", s.handleNoiseFeedbackCreate)
 	mux.HandleFunc("POST /api/zone-brief-llm", s.handleZoneBriefLLM)
 	mux.HandleFunc("POST /api/agentops/replay", s.handleAgentOpsReplay)
+	mux.HandleFunc("GET /api/agentops/groups", s.handleAgentOpsGroups)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	rl := newRateLimiter(30, 5, 10*time.Minute) // 30 requests burst, 5/sec refill
 	s.srv = &http.Server{
@@ -74,6 +76,10 @@ func (s *Server) ConfigureZoneBriefLLM(cfg ZoneBriefLLMConfig) {
 
 func (s *Server) ConfigureAgentOpsReplay(start func(context.Context) (agentopsstore.ReplaySession, error)) {
 	s.startReplay = start
+}
+
+func (s *Server) ConfigureAgentOpsOperator(load func(context.Context) (agentopsstore.OperatorState, error)) {
+	s.loadOperator = load
 }
 
 // Start begins listening in a goroutine. Returns once the listener is bound.
@@ -257,6 +263,26 @@ func (s *Server) handleAgentOpsReplay(w http.ResponseWriter, r *http.Request) {
 		"status":  "started",
 		"session": session,
 	})
+}
+
+func (s *Server) handleAgentOpsGroups(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	if s.loadOperator == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "agentops operator surface not configured"})
+		return
+	}
+	state, err := s.loadOperator(r.Context())
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": err.Error(),
+			"state": state,
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, state)
 }
 
 func (s *Server) handleNoiseFeedbackCreate(w http.ResponseWriter, r *http.Request) {

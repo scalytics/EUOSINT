@@ -20,21 +20,23 @@ import (
 	"github.com/scalytics/euosint/internal/agentops/store"
 	collectorcfg "github.com/scalytics/euosint/internal/collector/config"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/sasl"
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 )
 
 type Service struct {
-	cfg           collectorcfg.Config
-	policy        agentcfg.Policy
-	topics        []string
-	file          *store.FileStore
-	clientFactory func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error)
-	stateMu       sync.Mutex
-	replayMu      sync.Mutex
-	replayCancels map[string]context.CancelFunc
-	internal      state
+	cfg                   collectorcfg.Config
+	policy                agentcfg.Policy
+	topics                []string
+	file                  *store.FileStore
+	clientFactory         func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error)
+	operatorClientFactory func(cfg collectorcfg.Config, clientID string) (operatorClient, error)
+	stateMu               sync.Mutex
+	replayMu              sync.Mutex
+	replayCancels         map[string]context.CancelFunc
+	internal              state
 }
 
 type agentopsClient interface {
@@ -44,12 +46,20 @@ type agentopsClient interface {
 	Close()
 }
 
+type operatorClient interface {
+	ListGroups(context.Context) ([]store.ConsumerGroup, error)
+	Close()
+}
+
 var (
 	currentMu            sync.RWMutex
 	currentService       *Service
 	nowFunc              = time.Now
 	defaultClientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 		return newClient(cfg, topics, groupID, clientID)
+	}
+	defaultOperatorClientFactory = func(cfg collectorcfg.Config, clientID string) (operatorClient, error) {
+		return newOperatorClient(cfg, clientID)
 	}
 )
 
@@ -72,6 +82,10 @@ type kafkaClient struct {
 	inner *kgo.Client
 }
 
+type kafkaOperatorClient struct {
+	inner *kgo.Client
+}
+
 func (c *kafkaClient) PollFetches(ctx context.Context) kgo.Fetches {
 	return c.inner.PollFetches(ctx)
 }
@@ -85,6 +99,69 @@ func (c *kafkaClient) ProduceSync(ctx context.Context, record *kgo.Record) error
 }
 
 func (c *kafkaClient) Close() {
+	c.inner.Close()
+}
+
+func (c *kafkaOperatorClient) ListGroups(ctx context.Context) ([]store.ConsumerGroup, error) {
+	listReq := kmsg.NewPtrListGroupsRequest()
+	listReq.Version = 5
+	listResp, err := listReq.RequestWith(ctx, c.inner)
+	if err != nil {
+		return nil, err
+	}
+	groupIDs := make([]string, 0, len(listResp.Groups))
+	out := make([]store.ConsumerGroup, 0, len(listResp.Groups))
+	for _, item := range listResp.Groups {
+		groupIDs = append(groupIDs, item.Group)
+		out = append(out, store.ConsumerGroup{
+			GroupID:      item.Group,
+			State:        item.GroupState,
+			ProtocolType: item.ProtocolType,
+		})
+	}
+	if len(groupIDs) == 0 {
+		return out, nil
+	}
+	describeReq := kmsg.NewPtrDescribeGroupsRequest()
+	describeReq.Version = 5
+	describeReq.Groups = groupIDs
+	describeResp, err := describeReq.RequestWith(ctx, c.inner)
+	if err != nil {
+		return nil, err
+	}
+	described := make(map[string]store.ConsumerGroup, len(describeResp.Groups))
+	for _, item := range describeResp.Groups {
+		members := make([]store.ConsumerGroupMember, 0, len(item.Members))
+		for _, member := range item.Members {
+			instanceID := ""
+			if member.InstanceID != nil {
+				instanceID = *member.InstanceID
+			}
+			members = append(members, store.ConsumerGroupMember{
+				MemberID:   member.MemberID,
+				ClientID:   member.ClientID,
+				ClientHost: member.ClientHost,
+				InstanceID: instanceID,
+			})
+		}
+		described[item.Group] = store.ConsumerGroup{
+			GroupID:      item.Group,
+			State:        item.State,
+			ProtocolType: item.ProtocolType,
+			Protocol:     item.Protocol,
+			Members:      members,
+		}
+	}
+	for i := range out {
+		if item, ok := described[out[i].GroupID]; ok {
+			out[i] = item
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].GroupID < out[j].GroupID })
+	return out, nil
+}
+
+func (c *kafkaOperatorClient) Close() {
 	c.inner.Close()
 }
 
@@ -114,12 +191,13 @@ func Start(ctx context.Context, cfg collectorcfg.Config) error {
 		return fmt.Errorf("agentops store: %w", err)
 	}
 	svc := &Service{
-		cfg:           cfg,
-		policy:        policy,
-		topics:        topics,
-		file:          fs,
-		clientFactory: defaultClientFactory,
-		replayCancels: map[string]context.CancelFunc{},
+		cfg:                   cfg,
+		policy:                policy,
+		topics:                topics,
+		file:                  fs,
+		clientFactory:         defaultClientFactory,
+		operatorClientFactory: defaultOperatorClientFactory,
+		replayCancels:         map[string]context.CancelFunc{},
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -498,6 +576,16 @@ func StartReplay(ctx context.Context) (store.ReplaySession, error) {
 	return svc.startReplay(ctx)
 }
 
+func LoadOperatorState(ctx context.Context) (store.OperatorState, error) {
+	currentMu.RLock()
+	svc := currentService
+	currentMu.RUnlock()
+	if svc == nil {
+		return store.OperatorState{}, errors.New("agentops runtime not active")
+	}
+	return svc.loadOperatorState(ctx)
+}
+
 func (s *Service) startReplay(ctx context.Context) (store.ReplaySession, error) {
 	if !s.cfg.AgentOpsReplayEnabled {
 		return store.ReplaySession{}, errors.New("agentops replay disabled")
@@ -640,6 +728,28 @@ func (s *Service) cancelReplay(id string) bool {
 	return ok
 }
 
+func (s *Service) loadOperatorState(ctx context.Context) (store.OperatorState, error) {
+	operatorFactory := s.operatorClientFactory
+	if operatorFactory == nil {
+		operatorFactory = defaultOperatorClientFactory
+	}
+	client, err := operatorFactory(s.cfg, s.cfg.AgentOpsClientID+"-ops")
+	if err != nil {
+		return store.OperatorState{Supported: false, LiveGroupID: s.cfg.AgentOpsGroupID, ReplayGroupIDs: replayGroupIDs(s.file.Snapshot())}, err
+	}
+	defer client.Close()
+	groups, err := client.ListGroups(ctx)
+	if err != nil {
+		return store.OperatorState{Supported: false, LiveGroupID: s.cfg.AgentOpsGroupID, ReplayGroupIDs: replayGroupIDs(s.file.Snapshot())}, err
+	}
+	return store.OperatorState{
+		Supported:      true,
+		LiveGroupID:    s.cfg.AgentOpsGroupID,
+		ReplayGroupIDs: replayGroupIDs(s.file.Snapshot()),
+		Groups:         groups,
+	}, nil
+}
+
 func newClient(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 	if len(cfg.AgentOpsBrokers) == 0 {
 		return nil, errors.New("AGENTOPS_BROKERS is required when AGENTOPS_ENABLED=true")
@@ -681,6 +791,37 @@ func newClient(cfg collectorcfg.Config, topics []string, groupID string, clientI
 		return nil, err
 	}
 	return &kafkaClient{inner: client}, nil
+}
+
+func newOperatorClient(cfg collectorcfg.Config, clientID string) (operatorClient, error) {
+	if len(cfg.AgentOpsBrokers) == 0 {
+		return nil, errors.New("AGENTOPS_BROKERS is required when AGENTOPS_ENABLED=true")
+	}
+	opts := []kgo.Opt{kgo.SeedBrokers(cfg.AgentOpsBrokers...)}
+	if strings.TrimSpace(clientID) != "" {
+		opts = append(opts, kgo.ClientID(clientID))
+	}
+	switch strings.ToUpper(strings.TrimSpace(cfg.AgentOpsSecurityProtocol)) {
+	case "", "PLAINTEXT":
+	case "SSL":
+		opts = append(opts, kgo.DialTLSConfig(&tls.Config{InsecureSkipVerify: cfg.AgentOpsTLSInsecureSkipVerify}))
+	case "SASL_SSL":
+		opts = append(opts, kgo.DialTLSConfig(&tls.Config{InsecureSkipVerify: cfg.AgentOpsTLSInsecureSkipVerify}))
+		fallthrough
+	case "SASL_PLAINTEXT":
+		mech, err := saslMechanism(cfg)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, kgo.SASL(mech))
+	default:
+		return nil, fmt.Errorf("unsupported AGENTOPS_SECURITY_PROTOCOL %q", cfg.AgentOpsSecurityProtocol)
+	}
+	client, err := kgo.NewClient(opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &kafkaOperatorClient{inner: client}, nil
 }
 
 func saslMechanism(cfg collectorcfg.Config) (sasl.Mechanism, error) {
@@ -875,6 +1016,17 @@ func topicIsStale(lastMessageAt string) bool {
 		return true
 	}
 	return nowFunc().UTC().Sub(last.UTC()) > 30*time.Minute
+}
+
+func replayGroupIDs(doc store.Document) []string {
+	out := make([]string, 0, len(doc.ReplaySessions))
+	for _, item := range doc.ReplaySessions {
+		if strings.TrimSpace(item.GroupID) != "" {
+			out = append(out, item.GroupID)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func setCurrentService(svc *Service) {
