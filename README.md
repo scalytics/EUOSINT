@@ -108,6 +108,7 @@ AgentOps-specific runtime knobs include:
 - `AGENTOPS_GROUP_ID`
 - `AGENTOPS_POLICY_PATH`
 - `AGENTOPS_REPLAY_ENABLED`
+- `AGENTOPS_REJECT_TOPIC`
 - `AGENTOPS_OUTPUT_PATH`
 - `UI_MODE`
 - `PROFILE`
@@ -115,11 +116,20 @@ AgentOps-specific runtime knobs include:
 
 When AgentOps is enabled, the collector writes `agentops-state.json` into the runtime data volume and the web UI reads that state directly.
 
+Mount contract:
+
+- `/config`: policy and UI steering files
+- `/data`: generated AgentOps state and replay metadata
+
 Content behavior is explicit:
 
 - normal Kafka records are decoded from Kafka values and shown in AgentOps detail views
 - LFS-backed records are shown as pointer metadata only (`s3://bucket/key`)
 - the default product flow does not fetch blob content for LFS-backed records
+- rejected records can be mirrored to `AGENTOPS_REJECT_TOPIC`
+- replay always uses a dedicated consumer group and never mutates the live tracking group
+
+Operator reference and examples live in [docs/agentops-operator-guide.md](https://github.com/scalytics/EUOSINT/blob/main/docs/agentops-operator-guide.md).
 
 ## Operations
 

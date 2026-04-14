@@ -99,6 +99,7 @@ leave these unset and rely on built-in defaults.
 | `AGENTOPS_POLICY_PATH` | `/config/agentops_policy.yaml` |
 | `AGENTOPS_REPLAY_ENABLED` | `true` |
 | `AGENTOPS_REPLAY_PREFIX` | `euosint-agentops-replay` |
+| `AGENTOPS_REJECT_TOPIC` | `group.<group>.agentops.rejects` when `AGENTOPS_GROUP_NAME` is set |
 | `AGENTOPS_OUTPUT_PATH` | `public/agentops-state.json` |
 | `UI_MODE` | `OSINT` |
 | `PROFILE` | `osint-default` |
