@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { AgentOpsApp } from "@/agentops/AgentOpsApp";
 import type { AgentOpsOperatorState, AgentOpsState } from "@/types/agentops";
@@ -250,4 +250,7 @@ test("triggers replay through the AgentOps API", async () => {
   fireEvent.click(screen.getByRole("button", { name: /start from earliest/i }));
 
   expect(fetchMock).toHaveBeenCalledWith("/api/agentops/replay", { method: "POST" });
+  expect(screen.getByText("Replay request queued.")).toBeTruthy();
+  await waitFor(() => expect(screen.getByText("Replay accepted.")).toBeTruthy());
+  expect(screen.getByText("accepted")).toBeTruthy();
 });

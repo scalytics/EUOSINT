@@ -1,5 +1,5 @@
-import { useMemo, useState, useTransition } from "react";
-import { Activity, GitBranch, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { Activity, CheckCircle2, GitBranch, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
 import { EmptyState, MetricCard, Panel, StatusRow, Tag } from "@/agentops/components/Chrome";
 import { agentOpsReplayURL } from "@/agentops/lib/demo";
 import { MessageCard } from "@/agentops/components/MessageCard";
@@ -19,6 +19,21 @@ export function AgentOpsDesk({ state, mode }: Props) {
   const { alerts } = useAlerts();
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(state.flows[0]?.id ?? null);
   const [isPending, startTransition] = useTransition();
+  const [replayNotice, setReplayNotice] = useState<string>("");
+  const [optimisticReplayCount, setOptimisticReplayCount] = useState(0);
+  const [optimisticReplaySessions, setOptimisticReplaySessions] = useState(state.replay_sessions);
+
+  useEffect(() => {
+    setOptimisticReplaySessions(state.replay_sessions);
+  }, [state.replay_sessions]);
+
+  useEffect(() => {
+    if (replayNotice) {
+      const id = window.setTimeout(() => setReplayNotice(""), 3200);
+      return () => window.clearTimeout(id);
+    }
+    return undefined;
+  }, [replayNotice]);
   const selectedFlow = useMemo(
     () => state.flows.find((flow) => flow.id === selectedFlowId) ?? state.flows[0] ?? null,
     [selectedFlowId, state.flows],
@@ -41,13 +56,44 @@ export function AgentOpsDesk({ state, mode }: Props) {
 
   function triggerReplay() {
     startTransition(() => {
-      void fetch(agentOpsReplayURL(), { method: "POST" }).catch(() => undefined);
+      const nextCount = optimisticReplayCount + 1;
+      const sessionId = `demo-replay-${nextCount}`;
+      const groupId = `${state.health.group_id || "agentops"}-replay-${nextCount}`;
+      setOptimisticReplayCount(nextCount);
+      setOptimisticReplaySessions((current) => [
+        {
+          id: sessionId,
+          group_id: groupId,
+          status: "starting",
+          started_at: new Date().toISOString(),
+          message_count: 0,
+          topics: selectedFlow?.topics ?? state.topics,
+        },
+        ...current,
+      ]);
+      setReplayNotice("Replay request queued.");
+      void fetch(agentOpsReplayURL(), { method: "POST" })
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`replay failed: ${response.status}`);
+          }
+          setOptimisticReplaySessions((current) =>
+            current.map((session) => (session.id === sessionId ? { ...session, status: "accepted" } : session)),
+          );
+          setReplayNotice("Replay accepted.");
+        })
+        .catch(() => {
+          setOptimisticReplaySessions((current) =>
+            current.map((session) => (session.id === sessionId ? { ...session, status: "failed", last_error: "replay request failed" } : session)),
+          );
+          setReplayNotice("Replay request failed.");
+        });
     });
   }
 
   return (
-    <main className="min-h-screen bg-siem-bg text-siem-text">
-      <div className="mx-auto flex max-w-[1800px] flex-col gap-5 px-4 py-5 md:px-6">
+    <main className="h-dvh overflow-hidden bg-siem-bg text-siem-text">
+      <div className="mx-auto flex h-full max-w-[1800px] flex-col gap-5 overflow-hidden px-4 py-5 md:px-6">
         <section className="rounded-[28px] border border-siem-border bg-[linear-gradient(135deg,rgba(24,40,53,0.94),rgba(5,10,17,0.96))] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.34)]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
@@ -80,10 +126,16 @@ export function AgentOpsDesk({ state, mode }: Props) {
               </button>
             </div>
           </div>
+          {replayNotice ? (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-siem-accent/30 bg-siem-accent/10 px-3 py-2 text-sm text-siem-text">
+              <CheckCircle2 size={15} className="text-siem-accent" />
+              {replayNotice}
+            </div>
+          ) : null}
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-[1.1fr_1fr_0.95fr]">
-          <Panel title={mode === "HYBRID" ? "Agent Flow" : "Flow Queue"} icon={Activity}>
+        <section className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[1.1fr_1fr_0.95fr]">
+          <Panel title={mode === "HYBRID" ? "Agent Flow" : "Flow Queue"} icon={Activity} bodyClassName="overflow-y-auto pr-1">
             <div className="space-y-3">
               {state.flows.slice(0, 20).map((flow) => {
                 const active = selectedFlow?.id === flow.id;
@@ -112,6 +164,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
                       <Tag>{flow.topic_count} topics</Tag>
                       <Tag>{flow.sender_count} senders</Tag>
                       <Tag>{formatTime(flow.last_seen)}</Tag>
+                      {active ? <Tag>selected</Tag> : null}
                     </div>
                   </button>
                 );
@@ -119,7 +172,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
             </div>
           </Panel>
 
-          <Panel title={mode === "HYBRID" ? "Fusion Summary" : "Trace Graph"} icon={GitBranch}>
+          <Panel title={mode === "HYBRID" ? "Fusion Summary" : "Trace Graph"} icon={GitBranch} bodyClassName="overflow-y-auto pr-1">
             <div className="space-y-4">
               {selectedFlow ? (
                 <>
@@ -192,7 +245,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
             </div>
           </Panel>
 
-          <div className="grid gap-4">
+          <div className="grid min-h-0 gap-4 overflow-hidden">
             <Panel title={mode === "HYBRID" ? "External Intel Context" : "Agent Context"} icon={ShieldAlert}>
               <div className="grid gap-3">
                 <StatusRow label="Tracking group" value={state.health.group_id || "unconfigured"} />
@@ -205,7 +258,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
               </div>
             </Panel>
 
-            <Panel title="Topic Health" icon={RadioTower}>
+            <Panel title="Topic Health" icon={RadioTower} bodyClassName="overflow-y-auto pr-1">
               <div className="space-y-2">
                 {state.health.topic_health.slice(0, 8).map((topic) => (
                   <div key={topic.topic} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
@@ -222,9 +275,12 @@ export function AgentOpsDesk({ state, mode }: Props) {
               </div>
             </Panel>
 
-            <Panel title="Replay Panel" icon={TimerReset}>
+            <Panel title="Replay Panel" icon={TimerReset} bodyClassName="overflow-y-auto pr-1">
               <div className="space-y-2">
-                {(state.replay_sessions.length === 0 ? [{ id: "none", status: "idle", group_id: "", started_at: "", message_count: 0 }] : state.replay_sessions).map((session) => (
+                {(optimisticReplaySessions.length === 0
+                  ? [{ id: "none", status: "idle", group_id: "", started_at: "", message_count: 0 }]
+                  : optimisticReplaySessions
+                ).map((session) => (
                   <div key={session.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-xs font-semibold">{session.id === "none" ? "No replay sessions yet" : session.group_id}</div>
@@ -242,8 +298,8 @@ export function AgentOpsDesk({ state, mode }: Props) {
           </div>
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-[1.1fr_1fr]">
-          <Panel title="Message Detail" icon={RadioTower}>
+        <section className="grid min-h-0 flex-[1.05] gap-4 overflow-hidden xl:grid-cols-[1.1fr_1fr]">
+          <Panel title="Message Detail" icon={RadioTower} bodyClassName="overflow-y-auto pr-1">
             <div className="space-y-3">
               {relatedMessages.map((message) => (
                 <MessageCard key={message.id} message={message} />
@@ -251,7 +307,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
               {relatedMessages.length === 0 ? <EmptyState text="No decoded messages for the selected flow yet." /> : null}
             </div>
           </Panel>
-          <Panel title="Kafscale Operator" icon={TimerReset}>
+          <Panel title="Kafscale Operator" icon={TimerReset} bodyClassName="overflow-y-auto pr-1">
             <div className="space-y-3 text-sm text-siem-muted">
               <StatusRow label="Admin surface" value={operator.supported ? "supported" : "limited"} />
               <StatusRow label="Live group" value={operator.live_group_id || state.health.group_id || "-"} />

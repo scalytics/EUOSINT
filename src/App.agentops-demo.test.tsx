@@ -211,8 +211,10 @@ test("boots the real app into the AgentOps dashboard with demo-backed mocked Kaf
   expect(screen.queryByText("Critical F5 BIG-IP advisory for CVE-2026-12345")).toBeNull();
 
   fireEvent.click(screen.getByRole("button", { name: /start from earliest/i }));
+  expect(screen.getByText("Replay request queued.")).toBeTruthy();
 
   await waitFor(() =>
     expect(fetchMock).toHaveBeenCalledWith("/api/demo/agentops/replay", { method: "POST" }),
   );
+  expect(await screen.findByText("Replay accepted.")).toBeTruthy();
 });

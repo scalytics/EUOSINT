@@ -14,14 +14,26 @@ export function MetricCard({ icon: Icon, label, value, hint }: { icon: typeof Wo
   );
 }
 
-export function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Workflow; children: ReactNode }) {
+export function Panel({
+  title,
+  icon: Icon,
+  children,
+  className = "",
+  bodyClassName = "",
+}: {
+  title: string;
+  icon: typeof Workflow;
+  children: ReactNode;
+  className?: string;
+  bodyClassName?: string;
+}) {
   return (
-    <section className="rounded-[24px] border border-siem-border bg-siem-panel/80 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
+    <section className={`flex min-h-0 flex-col rounded-[24px] border border-siem-border bg-siem-panel/80 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.2)] ${className}`}>
       <div className="mb-4 flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-siem-muted">
         <Icon size={14} className="text-siem-accent" />
         {title}
       </div>
-      {children}
+      <div className={`min-h-0 flex-1 ${bodyClassName}`}>{children}</div>
     </section>
   );
 }
