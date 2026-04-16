@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
+import { agentOpsStateURL } from "@/agentops/lib/demo";
 import { loadPersistedShell, normalizeState, persistShell } from "@/agentops/lib/state";
-import { appURL } from "@/lib/app-url";
 import type { AgentOpsState } from "@/agentops/types";
 
-const AGENTOPS_STATE_URL = appURL("agentops-state.json");
 const POLL_MS = 15000;
 
 function fallbackState(): AgentOpsState {
@@ -19,7 +18,7 @@ export function useAgentOpsState() {
 
     async function load() {
       try {
-        const response = await fetch(`${AGENTOPS_STATE_URL}?t=${Date.now()}`, { cache: "no-store" });
+        const response = await fetch(`${agentOpsStateURL()}?t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) {
           throw new Error(`agentops state fetch failed: ${response.status}`);
         }

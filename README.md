@@ -54,6 +54,14 @@ make dev-restart
 make dev-logs
 ```
 
+For a local AgentOps demo with mocked Kafka-derived traffic and the real dashboard:
+
+```bash
+npm run demo:agentops
+```
+
+This opens the desktop UI directly in `AgentOps` mode via `/?demo=agentops`, serves demo state from `public/demo/*.json`, and mocks the replay endpoint locally.
+
 ## Remote Install (wget bootstrap)
 
 ```bash

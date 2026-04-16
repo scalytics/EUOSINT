@@ -1,0 +1,27 @@
+{
+  "supported": true,
+  "live_group_id": "agentops-core-live",
+  "replay_group_ids": ["agentops-replay-20260416-001"],
+  "groups": [
+    {
+      "group_id": "agentops-core-live",
+      "state": "Stable",
+      "protocol_type": "consumer",
+      "protocol": "range",
+      "members": [
+        {
+          "member_id": "agentops-live-1",
+          "client_id": "euosint-agentops-live",
+          "client_host": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "group_id": "agentops-replay-20260416-001",
+      "state": "Empty",
+      "protocol_type": "consumer",
+      "protocol": "range",
+      "members": []
+    }
+  ]
+}

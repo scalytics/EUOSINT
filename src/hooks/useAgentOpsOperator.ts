@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { agentOpsGroupsURL } from "@/agentops/lib/demo";
 import { EMPTY_OPERATOR_STATE } from "@/agentops/lib/operator";
 import type { AgentOpsOperatorState } from "@/agentops/types";
 
@@ -14,7 +15,7 @@ export function useAgentOpsOperator(enabled: boolean) {
         return;
       }
       try {
-        const response = await fetch("/api/agentops/groups", { cache: "no-store" });
+        const response = await fetch(agentOpsGroupsURL(), { cache: "no-store" });
         if (!response.ok) {
           const data = (await response.json()) as { state?: AgentOpsOperatorState; error?: string };
           if (!cancelled) {

@@ -5,10 +5,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { alertsURL } from "@/agentops/lib/demo";
 import type { Alert } from "@/types/alert";
-import { appURL } from "@/lib/app-url";
-
-const ALERTS_URL = appURL("alerts.json");
 const POLL_MS = 15000;
 
 function normalizeAlerts(data: unknown): Alert[] | null {
@@ -53,7 +51,7 @@ export function useAlerts() {
       if (inFlight) return;
       inFlight = true;
       try {
-        const response = await fetch(`${ALERTS_URL}?t=${Date.now()}`, {
+        const response = await fetch(`${alertsURL()}?t=${Date.now()}`, {
           cache: "no-store",
         });
         if (!response.ok) {

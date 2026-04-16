@@ -1,6 +1,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { Activity, GitBranch, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
 import { EmptyState, MetricCard, Panel, StatusRow, Tag } from "@/agentops/components/Chrome";
+import { agentOpsReplayURL } from "@/agentops/lib/demo";
 import { MessageCard } from "@/agentops/components/MessageCard";
 import { buildFusionMatches } from "@/agentops/lib/hybrid";
 import { formatTime } from "@/agentops/lib/view";
@@ -40,7 +41,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
 
   function triggerReplay() {
     startTransition(() => {
-      void fetch("/api/agentops/replay", { method: "POST" }).catch(() => undefined);
+      void fetch(agentOpsReplayURL(), { method: "POST" }).catch(() => undefined);
     });
   }
 

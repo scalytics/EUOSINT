@@ -8,12 +8,19 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import type { IncomingMessage, ServerResponse } from "http";
 
 function getTagVersionFromRef(ref?: string): string | undefined {
   if (!ref) return undefined;
   const normalized = ref.replace(/^refs\/tags\//, "");
   if (!/^v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(normalized)) return undefined;
   return normalized.replace(/^v/, "");
+}
+
+function writeJSON(res: ServerResponse<IncomingMessage>, status: number, payload: unknown) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.end(JSON.stringify(payload));
 }
 
 const appVersion =
@@ -35,6 +42,16 @@ export default defineConfig({
         server.middlewares.use((req, _res, next) => {
           if (req.url && /^\/mobile(\/(?!index\.html).*)?\/?(\?.*)?$/.test(req.url)) {
             req.url = "/mobile/index.html";
+          }
+          next();
+        });
+        server.middlewares.use((req, res, next) => {
+          if (req.url === "/api/demo/agentops/replay" && req.method === "POST") {
+            writeJSON(res, 202, {
+              status: "accepted",
+              mode: "demo",
+            });
+            return;
           }
           next();
         });

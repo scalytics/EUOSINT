@@ -1,0 +1,298 @@
+{
+  "generated_at": "2026-04-16T10:05:00Z",
+  "enabled": true,
+  "ui_mode": "AGENTOPS",
+  "profile": "agentops-default",
+  "group_name": "agent-runtime-core",
+  "topics": [
+    "group.core.requests",
+    "group.core.responses",
+    "group.core.traces",
+    "group.core.tasks.status",
+    "group.core.observe.audit"
+  ],
+  "flow_count": 2,
+  "trace_count": 2,
+  "task_count": 2,
+  "message_count": 8,
+  "health": {
+    "connected": true,
+    "effective_topics": [
+      "group.core.requests",
+      "group.core.responses",
+      "group.core.traces",
+      "group.core.tasks.status",
+      "group.core.observe.audit"
+    ],
+    "group_id": "agentops-core-live",
+    "accepted_count": 8,
+    "rejected_count": 1,
+    "mirrored_count": 1,
+    "mirror_failed_count": 0,
+    "rejected_by_reason": {
+      "invalid_envelope": 1
+    },
+    "last_reject": "group.core.requests offset=21 invalid_envelope",
+    "last_poll_at": "2026-04-16T10:05:00Z",
+    "replay_status": "idle",
+    "replay_active": 0,
+    "replay_last_finished_at": "2026-04-16T09:58:00Z",
+    "replay_last_record_count": 14,
+    "topic_health": [
+      {
+        "topic": "group.core.requests",
+        "messages_per_hour": 44,
+        "message_density": "high",
+        "active_agents": 3,
+        "is_stale": false,
+        "last_message_at": "2026-04-16T10:04:10Z"
+      },
+      {
+        "topic": "group.core.responses",
+        "messages_per_hour": 36,
+        "message_density": "high",
+        "active_agents": 3,
+        "is_stale": false,
+        "last_message_at": "2026-04-16T10:04:19Z"
+      },
+      {
+        "topic": "group.core.traces",
+        "messages_per_hour": 18,
+        "message_density": "medium",
+        "active_agents": 2,
+        "is_stale": false,
+        "last_message_at": "2026-04-16T10:04:21Z"
+      },
+      {
+        "topic": "group.core.observe.audit",
+        "messages_per_hour": 3,
+        "message_density": "low",
+        "active_agents": 1,
+        "is_stale": false,
+        "last_message_at": "2026-04-16T10:04:32Z"
+      }
+    ]
+  },
+  "replay_sessions": [
+    {
+      "id": "replay-001",
+      "group_id": "agentops-replay-20260416-001",
+      "status": "completed",
+      "started_at": "2026-04-16T09:57:40Z",
+      "finished_at": "2026-04-16T09:58:00Z",
+      "message_count": 14,
+      "topics": ["group.core.requests", "group.core.responses", "group.core.traces"]
+    }
+  ],
+  "flows": [
+    {
+      "id": "corr-grid-anomaly-001",
+      "topic_count": 5,
+      "sender_count": 3,
+      "topics": [
+        "group.core.requests",
+        "group.core.responses",
+        "group.core.traces",
+        "group.core.tasks.status",
+        "group.core.observe.audit"
+      ],
+      "senders": ["orchestrator", "ingest-agent", "risk-agent"],
+      "trace_ids": ["trace-grid-1"],
+      "task_ids": ["task-grid-1"],
+      "first_seen": "2026-04-16T10:00:00Z",
+      "last_seen": "2026-04-16T10:04:10Z",
+      "latest_status": "completed",
+      "message_count": 5,
+      "latest_preview": "Investigate turbine anomaly in Bavaria and return operator-ready summary."
+    },
+    {
+      "id": "corr-cve-002",
+      "topic_count": 3,
+      "sender_count": 2,
+      "topics": ["group.core.requests", "group.core.responses", "group.core.traces"],
+      "senders": ["orchestrator", "cyber-agent"],
+      "trace_ids": ["trace-cve-2"],
+      "task_ids": ["task-cve-2"],
+      "first_seen": "2026-04-16T10:01:00Z",
+      "last_seen": "2026-04-16T10:04:32Z",
+      "latest_status": "in_progress",
+      "message_count": 3,
+      "latest_preview": "Map vulnerable F5 assets against current advisory coverage."
+    }
+  ],
+  "traces": [
+    {
+      "id": "trace-grid-1",
+      "span_count": 3,
+      "agents": ["orchestrator", "ingest-agent", "risk-agent"],
+      "span_types": ["REQUEST", "TRACE", "RESPONSE"],
+      "latest_title": "grid anomaly investigation",
+      "started_at": "2026-04-16T10:00:00Z",
+      "ended_at": "2026-04-16T10:04:10Z",
+      "duration_ms": 250000
+    },
+    {
+      "id": "trace-cve-2",
+      "span_count": 2,
+      "agents": ["orchestrator", "cyber-agent"],
+      "span_types": ["REQUEST", "TRACE"],
+      "latest_title": "F5 asset coverage",
+      "started_at": "2026-04-16T10:01:00Z",
+      "ended_at": "2026-04-16T10:04:32Z",
+      "duration_ms": 212000
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-grid-1",
+      "requester_id": "orchestrator",
+      "responder_id": "risk-agent",
+      "status": "completed",
+      "description": "Investigate turbine anomaly in Bavaria.",
+      "last_summary": "Risk-agent correlated SCADA status with grid telemetry and returned mitigation notes.",
+      "first_seen": "2026-04-16T10:00:00Z",
+      "last_seen": "2026-04-16T10:04:10Z"
+    },
+    {
+      "id": "task-cve-2",
+      "requester_id": "orchestrator",
+      "responder_id": "cyber-agent",
+      "status": "in_progress",
+      "description": "Map vulnerable F5 assets.",
+      "last_summary": "Cyber-agent is correlating F5 inventory with current external advisories.",
+      "first_seen": "2026-04-16T10:01:00Z",
+      "last_seen": "2026-04-16T10:04:32Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-001",
+      "topic": "group.core.requests",
+      "topic_family": "requests",
+      "partition": 0,
+      "offset": 120,
+      "timestamp": "2026-04-16T10:00:00Z",
+      "envelope_type": "request",
+      "sender_id": "orchestrator",
+      "correlation_id": "corr-grid-anomaly-001",
+      "trace_id": "trace-grid-1",
+      "task_id": "task-grid-1",
+      "preview": "Investigate turbine anomaly in Bavaria and return operator-ready summary.",
+      "content": "{\"category\":\"infrastructure_anomaly\",\"event_country_code\":\"DE\",\"site\":\"Bavaria windpark A\",\"request\":\"Investigate turbine anomaly in Bavaria and return operator-ready summary.\"}"
+    },
+    {
+      "id": "msg-002",
+      "topic": "group.core.traces",
+      "topic_family": "traces",
+      "partition": 0,
+      "offset": 121,
+      "timestamp": "2026-04-16T10:01:22Z",
+      "envelope_type": "trace",
+      "sender_id": "ingest-agent",
+      "correlation_id": "corr-grid-anomaly-001",
+      "trace_id": "trace-grid-1",
+      "task_id": "task-grid-1",
+      "preview": "Ingest-agent attached telemetry evidence for SCADA variance.",
+      "content": "{\"trace\":\"SCADA deviation found on turbine cluster 7\",\"serializers\":[\"windpark/telemetry\"],\"evidence_count\":4}"
+    },
+    {
+      "id": "msg-003",
+      "topic": "group.core.responses",
+      "topic_family": "responses",
+      "partition": 0,
+      "offset": 122,
+      "timestamp": "2026-04-16T10:04:10Z",
+      "envelope_type": "response",
+      "sender_id": "risk-agent",
+      "correlation_id": "corr-grid-anomaly-001",
+      "trace_id": "trace-grid-1",
+      "task_id": "task-grid-1",
+      "status": "completed",
+      "preview": "Risk-agent returned mitigation summary for Bavaria windpark A.",
+      "content": "{\"summary\":\"Mitigation summary for Bavaria windpark A\",\"severity\":\"medium\",\"recommended_action\":\"Dispatch local operator and isolate turbine cluster 7.\"}"
+    },
+    {
+      "id": "msg-004",
+      "topic": "group.core.observe.audit",
+      "topic_family": "observe.audit",
+      "partition": 0,
+      "offset": 123,
+      "timestamp": "2026-04-16T10:04:12Z",
+      "envelope_type": "audit",
+      "sender_id": "orchestrator",
+      "correlation_id": "corr-grid-anomaly-001",
+      "trace_id": "trace-grid-1",
+      "task_id": "task-grid-1",
+      "preview": "Audit: mitigation note published to operator queue.",
+      "content": "{\"result\":\"published\",\"target\":\"operator.queue\"}"
+    },
+    {
+      "id": "msg-005",
+      "topic": "group.core.requests",
+      "topic_family": "requests",
+      "partition": 0,
+      "offset": 124,
+      "timestamp": "2026-04-16T10:01:00Z",
+      "envelope_type": "request",
+      "sender_id": "orchestrator",
+      "correlation_id": "corr-cve-002",
+      "trace_id": "trace-cve-2",
+      "task_id": "task-cve-2",
+      "preview": "Map vulnerable F5 assets against current advisory coverage.",
+      "content": "{\"category\":\"cyber_advisory\",\"event_country_code\":\"DE\",\"vendor\":\"F5\",\"product\":\"BIG-IP\",\"cve\":\"CVE-2026-12345\",\"request\":\"Map vulnerable F5 assets against current advisory coverage.\"}"
+    },
+    {
+      "id": "msg-006",
+      "topic": "group.core.traces",
+      "topic_family": "traces",
+      "partition": 0,
+      "offset": 125,
+      "timestamp": "2026-04-16T10:03:22Z",
+      "envelope_type": "trace",
+      "sender_id": "cyber-agent",
+      "correlation_id": "corr-cve-002",
+      "trace_id": "trace-cve-2",
+      "task_id": "task-cve-2",
+      "preview": "Cyber-agent joined inventory feed and current advisory stream.",
+      "content": "{\"inventory_source\":\"kafscale.inventory\",\"matched_assets\":12}"
+    },
+    {
+      "id": "msg-007",
+      "topic": "group.core.tasks.status",
+      "topic_family": "tasks.status",
+      "partition": 0,
+      "offset": 126,
+      "timestamp": "2026-04-16T10:04:32Z",
+      "envelope_type": "task_status",
+      "sender_id": "cyber-agent",
+      "correlation_id": "corr-cve-002",
+      "trace_id": "trace-cve-2",
+      "task_id": "task-cve-2",
+      "status": "in_progress",
+      "preview": "Task remains in progress while inventory enrichment completes.",
+      "content": "{\"status\":\"in_progress\",\"phase\":\"inventory_enrichment\"}"
+    },
+    {
+      "id": "msg-008",
+      "topic": "group.core.responses",
+      "topic_family": "responses",
+      "partition": 0,
+      "offset": 127,
+      "timestamp": "2026-04-16T10:04:40Z",
+      "envelope_type": "response",
+      "sender_id": "cyber-agent",
+      "correlation_id": "corr-cve-002",
+      "trace_id": "trace-cve-2",
+      "task_id": "task-cve-2",
+      "preview": "LFS-backed asset export pointer",
+      "lfs": {
+        "bucket": "agentops",
+        "key": "exports/f5-assets-20260416.ndjson",
+        "size": 19084,
+        "sha256": "8adfe45b",
+        "content_type": "application/x-ndjson",
+        "path": "s3://agentops/exports/f5-assets-20260416.ndjson"
+      }
+    }
+  ]
+}
