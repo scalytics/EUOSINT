@@ -9,12 +9,13 @@
     "group.core.responses",
     "group.core.traces",
     "group.core.tasks.status",
-    "group.core.observe.audit"
+    "group.core.observe.audit",
+    "group.core.skills.geo_mapper"
   ],
-  "flow_count": 2,
-  "trace_count": 2,
-  "task_count": 2,
-  "message_count": 8,
+  "flow_count": 3,
+  "trace_count": 3,
+  "task_count": 4,
+  "message_count": 12,
   "health": {
     "connected": true,
     "effective_topics": [
@@ -25,14 +26,15 @@
       "group.core.observe.audit"
     ],
     "group_id": "agentops-core-live",
-    "accepted_count": 8,
-    "rejected_count": 1,
-    "mirrored_count": 1,
+    "accepted_count": 12,
+    "rejected_count": 2,
+    "mirrored_count": 2,
     "mirror_failed_count": 0,
     "rejected_by_reason": {
-      "invalid_envelope": 1
+      "invalid_envelope": 1,
+      "unknown_topic_family": 1
     },
-    "last_reject": "group.core.requests offset=21 invalid_envelope",
+    "last_reject": "group.core.skills.geo_mapper offset=132 unknown_topic_family",
     "last_poll_at": "2026-04-16T10:05:00Z",
     "replay_status": "idle",
     "replay_active": 0,
@@ -70,6 +72,14 @@
         "active_agents": 1,
         "is_stale": false,
         "last_message_at": "2026-04-16T10:04:32Z"
+      },
+      {
+        "topic": "group.core.skills.geo_mapper",
+        "messages_per_hour": 6,
+        "message_density": "medium",
+        "active_agents": 1,
+        "is_stale": false,
+        "last_message_at": "2026-04-16T10:05:02Z"
       }
     ]
   },
@@ -118,6 +128,25 @@
       "latest_status": "in_progress",
       "message_count": 3,
       "latest_preview": "Map vulnerable F5 assets against current advisory coverage."
+    },
+    {
+      "id": "corr-grid-map-003",
+      "topic_count": 4,
+      "sender_count": 3,
+      "topics": [
+        "group.core.requests",
+        "group.core.traces",
+        "group.core.tasks.status",
+        "group.core.skills.geo_mapper"
+      ],
+      "senders": ["orchestrator", "planner-agent", "geo-mapper"],
+      "trace_ids": ["trace-grid-3"],
+      "task_ids": ["task-plan-3", "task-map-3"],
+      "first_seen": "2026-04-16T10:02:10Z",
+      "last_seen": "2026-04-16T10:05:02Z",
+      "latest_status": "in_progress",
+      "message_count": 4,
+      "latest_preview": "Delegate regional turbine mapping to geo-mapper skill for Lower Saxony."
     }
   ],
   "traces": [
@@ -140,6 +169,16 @@
       "started_at": "2026-04-16T10:01:00Z",
       "ended_at": "2026-04-16T10:04:32Z",
       "duration_ms": 212000
+    },
+    {
+      "id": "trace-grid-3",
+      "span_count": 3,
+      "agents": ["orchestrator", "planner-agent", "geo-mapper"],
+      "span_types": ["REQUEST", "TRACE", "TASK_STATUS"],
+      "latest_title": "regional turbine mapping",
+      "started_at": "2026-04-16T10:02:10Z",
+      "ended_at": "2026-04-16T10:05:02Z",
+      "duration_ms": 172000
     }
   ],
   "tasks": [
@@ -162,6 +201,28 @@
       "last_summary": "Cyber-agent is correlating F5 inventory with current external advisories.",
       "first_seen": "2026-04-16T10:01:00Z",
       "last_seen": "2026-04-16T10:04:32Z"
+    },
+    {
+      "id": "task-plan-3",
+      "requester_id": "orchestrator",
+      "responder_id": "planner-agent",
+      "status": "in_progress",
+      "description": "Build a regional asset map for Lower Saxony.",
+      "last_summary": "Planner-agent delegated shape generation to geo-mapper.",
+      "first_seen": "2026-04-16T10:02:10Z",
+      "last_seen": "2026-04-16T10:03:40Z"
+    },
+    {
+      "id": "task-map-3",
+      "parent_task_id": "task-plan-3",
+      "delegation_depth": 1,
+      "requester_id": "planner-agent",
+      "responder_id": "geo-mapper",
+      "status": "in_progress",
+      "description": "Generate admin2 map overlays for Lower Saxony wind assets.",
+      "last_summary": "Geo-mapper emitted shape fragments but has not returned a final response.",
+      "first_seen": "2026-04-16T10:03:12Z",
+      "last_seen": "2026-04-16T10:05:02Z"
     }
   ],
   "messages": [
@@ -293,6 +354,70 @@
         "content_type": "application/x-ndjson",
         "path": "s3://agentops/exports/f5-assets-20260416.ndjson"
       }
+    },
+    {
+      "id": "msg-009",
+      "topic": "group.core.requests",
+      "topic_family": "requests",
+      "partition": 0,
+      "offset": 128,
+      "timestamp": "2026-04-16T10:02:10Z",
+      "envelope_type": "request",
+      "sender_id": "orchestrator",
+      "correlation_id": "corr-grid-map-003",
+      "trace_id": "trace-grid-3",
+      "task_id": "task-plan-3",
+      "preview": "Build a regional asset map for Lower Saxony.",
+      "content": "{\"category\":\"infrastructure_anomaly\",\"event_country_code\":\"DE\",\"region\":\"Lower Saxony\",\"request\":\"Build a regional asset map for Lower Saxony.\"}"
+    },
+    {
+      "id": "msg-010",
+      "topic": "group.core.traces",
+      "topic_family": "traces",
+      "partition": 0,
+      "offset": 129,
+      "timestamp": "2026-04-16T10:03:12Z",
+      "envelope_type": "trace",
+      "sender_id": "planner-agent",
+      "correlation_id": "corr-grid-map-003",
+      "trace_id": "trace-grid-3",
+      "task_id": "task-plan-3",
+      "parent_task_id": "task-plan-3",
+      "preview": "Planner-agent delegated regional geometry generation to geo-mapper.",
+      "content": "{\"delegated_to\":\"geo-mapper\",\"requested_layer\":\"admin2\",\"region\":\"Lower Saxony\"}"
+    },
+    {
+      "id": "msg-011",
+      "topic": "group.core.tasks.status",
+      "topic_family": "tasks.status",
+      "partition": 0,
+      "offset": 130,
+      "timestamp": "2026-04-16T10:03:40Z",
+      "envelope_type": "task_status",
+      "sender_id": "planner-agent",
+      "correlation_id": "corr-grid-map-003",
+      "trace_id": "trace-grid-3",
+      "task_id": "task-map-3",
+      "parent_task_id": "task-plan-3",
+      "status": "in_progress",
+      "preview": "Delegated mapping task is still running.",
+      "content": "{\"status\":\"in_progress\",\"phase\":\"geometry_generation\"}"
+    },
+    {
+      "id": "msg-012",
+      "topic": "group.core.skills.geo_mapper",
+      "topic_family": "skills.geo_mapper",
+      "partition": 0,
+      "offset": 131,
+      "timestamp": "2026-04-16T10:05:02Z",
+      "envelope_type": "trace",
+      "sender_id": "geo-mapper",
+      "correlation_id": "corr-grid-map-003",
+      "trace_id": "trace-grid-3",
+      "task_id": "task-map-3",
+      "parent_task_id": "task-plan-3",
+      "preview": "Geo-mapper emitted shape fragments for admin2 boundaries but no final response yet.",
+      "content": "{\"shape_fragments\":18,\"layer\":\"admin2\",\"status\":\"partial\"}"
     }
   ]
 }
