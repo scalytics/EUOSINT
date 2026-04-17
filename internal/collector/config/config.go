@@ -279,7 +279,7 @@ func Default() Config {
 		KafkaBrokers:                     nil,
 		KafkaTopics:                      nil,
 		KafkaGroupID:                     "euosint-kafka",
-		KafkaClientID:                    "euosint-collector",
+		KafkaClientID:                    "kafsiem-collector",
 		KafkaSecurityProtocol:            "PLAINTEXT",
 		KafkaSASLMechanism:               "PLAIN",
 		KafkaUsername:                    "",

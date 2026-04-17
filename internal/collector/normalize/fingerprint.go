@@ -13,7 +13,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
 )
 
 // ---------- entity dictionary (loaded once from terror_actor_aliases.json) ----------

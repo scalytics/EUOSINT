@@ -15,19 +15,19 @@ import (
 	"strings"
 	"time"
 
-	agentopskafka "github.com/scalytics/euosint/internal/agentops/kafka"
-	"github.com/scalytics/euosint/internal/collector/api"
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/discover"
-	"github.com/scalytics/euosint/internal/collector/run"
-	"github.com/scalytics/euosint/internal/sourcedb"
+	agentopskafka "github.com/scalytics/kafSIEM/internal/agentops/kafka"
+	"github.com/scalytics/kafSIEM/internal/collector/api"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/discover"
+	"github.com/scalytics/kafSIEM/internal/collector/run"
+	"github.com/scalytics/kafSIEM/internal/sourcedb"
 )
 
 func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer) error {
 	stdout = newTimestampWriter(stdout)
 	stderr = newTimestampWriter(stderr)
 
-	fs := flag.NewFlagSet("euosint-collector", flag.ContinueOnError)
+	fs := flag.NewFlagSet("kafsiem-collector", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 
 	cfg := config.FromEnv()

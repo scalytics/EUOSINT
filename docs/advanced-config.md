@@ -82,7 +82,7 @@ leave these unset and rely on built-in defaults.
 |---|---|
 | `KAFKA_ENABLED` | `false` |
 | `KAFKA_GROUP_ID` | `euosint-kafka` |
-| `KAFKA_CLIENT_ID` | `euosint-collector` |
+| `KAFKA_CLIENT_ID` | `kafsiem-collector` |
 | `KAFKA_SECURITY_PROTOCOL` | `PLAINTEXT` |
 | `KAFKA_SASL_MECHANISM` | `PLAIN` |
 | `KAFKA_TEST_ON_START` | `true` |
@@ -110,7 +110,7 @@ leave these unset and rely on built-in defaults.
 | Variable | Default |
 |---|---|
 | `EUOSINT_WEB_IMAGE` | `ghcr.io/scalytics/euosint-web:latest` |
-| `EUOSINT_COLLECTOR_IMAGE` | `ghcr.io/scalytics/euosint-collector:latest` |
+| `EUOSINT_COLLECTOR_IMAGE` | `ghcr.io/scalytics/kafsiem-collector:latest` |
 | `EUOSINT_BROWSER_IMAGE` | `ghcr.io/browserless/chromium:v2.44.0` |
 | `EUOSINT_HTTP_PORT` | `8080` (derived by installer) |
 | `EUOSINT_HTTPS_PORT` | `8443` (derived by installer) |

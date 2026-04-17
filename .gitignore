@@ -6,7 +6,7 @@ dist/
 dist-ssr/
 coverage/
 .tmp/
-/euosint-collector
+/kafsiem-collector
 cmd/test-*/
 .claude/
 

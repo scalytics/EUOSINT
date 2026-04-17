@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/parse"
+	"github.com/scalytics/kafSIEM/internal/collector/parse"
 )
 
 type UCDPLensState struct {

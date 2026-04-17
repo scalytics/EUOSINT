@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/fetch"
-	"github.com/scalytics/euosint/internal/collector/model"
-	"github.com/scalytics/euosint/internal/collector/vet"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/fetch"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/vet"
 )
 
 func TestDetectFeedTypeRSS(t *testing.T) {

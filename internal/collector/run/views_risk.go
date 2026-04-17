@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
 )
 
 const (

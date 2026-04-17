@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/scalytics/euosint/internal/collector/parse"
+	"github.com/scalytics/kafSIEM/internal/collector/parse"
 )
 
 func openTestDB(t *testing.T) *DB {

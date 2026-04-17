@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
 
   collector:
-    image: "${EUOSINT_COLLECTOR_IMAGE:-ghcr.io/scalytics/euosint-collector:latest}"
+    image: "${EUOSINT_COLLECTOR_IMAGE:-ghcr.io/scalytics/kafsiem-collector:latest}"
     build:
       context: .
       dockerfile: Dockerfile.collector

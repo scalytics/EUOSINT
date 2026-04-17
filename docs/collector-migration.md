@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # Collector Migration
 
-The collector runtime is now fully Go-based. The Node collector has been retired from operational paths, and scheduled feed generation, Docker runtime, and local commands all run through `cmd/euosint-collector`.
+The collector runtime is now fully Go-based. The Node collector has been retired from operational paths, and scheduled feed generation, Docker runtime, and local commands all run through `cmd/kafsiem-collector`.
 
 ## Goals
 
@@ -15,7 +15,7 @@ The collector runtime is now fully Go-based. The Node collector has been retired
 
 ## Initial Go Boundary
 
-- CLI entrypoint: `cmd/euosint-collector`
+- CLI entrypoint: `cmd/kafsiem-collector`
 - Config and runtime wiring: `internal/collector/app`, `internal/collector/config`
 - Domain models: `internal/collector/model`
 - Registry loading and validation: `internal/collector/registry`

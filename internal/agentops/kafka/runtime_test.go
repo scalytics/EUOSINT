@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	agentcfg "github.com/scalytics/euosint/internal/agentops/config"
-	"github.com/scalytics/euosint/internal/agentops/contract"
-	"github.com/scalytics/euosint/internal/agentops/store"
-	collectorcfg "github.com/scalytics/euosint/internal/collector/config"
+	agentcfg "github.com/scalytics/kafSIEM/internal/agentops/config"
+	"github.com/scalytics/kafSIEM/internal/agentops/contract"
+	"github.com/scalytics/kafSIEM/internal/agentops/store"
+	collectorcfg "github.com/scalytics/kafSIEM/internal/collector/config"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 

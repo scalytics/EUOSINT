@@ -8,7 +8,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
 )
 
 // gapTarget defines a country and the minimum categories it should have.

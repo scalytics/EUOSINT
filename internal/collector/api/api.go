@@ -17,13 +17,13 @@ import (
 	"sync"
 	"time"
 
-	agentopsstore "github.com/scalytics/euosint/internal/agentops/store"
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/model"
-	"github.com/scalytics/euosint/internal/collector/trends"
-	"github.com/scalytics/euosint/internal/collector/vet"
-	"github.com/scalytics/euosint/internal/collector/zonebriefllm"
-	"github.com/scalytics/euosint/internal/sourcedb"
+	agentopsstore "github.com/scalytics/kafSIEM/internal/agentops/store"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/trends"
+	"github.com/scalytics/kafSIEM/internal/collector/vet"
+	"github.com/scalytics/kafSIEM/internal/collector/zonebriefllm"
+	"github.com/scalytics/kafSIEM/internal/sourcedb"
 )
 
 // Server serves the search API backed by SQLite FTS5.

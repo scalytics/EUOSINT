@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
 )
 
 func TestAnalyzeGaps_FindsMissing(t *testing.T) {

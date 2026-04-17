@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/scalytics/euosint/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
 )
 
 func TestClientText(t *testing.T) {

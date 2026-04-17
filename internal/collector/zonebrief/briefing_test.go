@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/parse"
+	"github.com/scalytics/kafSIEM/internal/collector/parse"
 )
 
 func TestBuildGeneratesLensBriefings(t *testing.T) {

@@ -160,7 +160,7 @@ SOURCE_VETTING_BASE_URL=https://your-gateway.example/v1
 Run the crawler and vetter once:
 
 ```bash
-go run ./cmd/euosint-collector \
+go run ./cmd/kafsiem-collector \
   --discover \
   --registry registry/sources.db \
   --candidate-queue registry/source_candidates.json \

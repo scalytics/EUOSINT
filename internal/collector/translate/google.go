@@ -11,8 +11,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/scalytics/euosint/internal/collector/fetch"
-	"github.com/scalytics/euosint/internal/collector/parse"
+	"github.com/scalytics/kafSIEM/internal/collector/fetch"
+	"github.com/scalytics/kafSIEM/internal/collector/parse"
 )
 
 // maxTranslateChars is the maximum character count sent to Google Translate

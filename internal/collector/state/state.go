@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
 )
 
 func Read(path string) []model.Alert {

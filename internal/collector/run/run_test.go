@@ -18,15 +18,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/dictionary"
-	"github.com/scalytics/euosint/internal/collector/fetch"
-	"github.com/scalytics/euosint/internal/collector/model"
-	"github.com/scalytics/euosint/internal/collector/noisegate"
-	"github.com/scalytics/euosint/internal/collector/normalize"
-	"github.com/scalytics/euosint/internal/collector/parse"
-	"github.com/scalytics/euosint/internal/collector/zonebrief"
-	"github.com/scalytics/euosint/internal/sourcedb"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/dictionary"
+	"github.com/scalytics/kafSIEM/internal/collector/fetch"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/noisegate"
+	"github.com/scalytics/kafSIEM/internal/collector/normalize"
+	"github.com/scalytics/kafSIEM/internal/collector/parse"
+	"github.com/scalytics/kafSIEM/internal/collector/zonebrief"
+	"github.com/scalytics/kafSIEM/internal/sourcedb"
 )
 
 func TestRunnerRunOnceWritesOutputs(t *testing.T) {
