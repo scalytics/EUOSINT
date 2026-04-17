@@ -76,6 +76,17 @@
 		}
 	}
 
+	handle /agentops-state.json {
+		route {
+			root * /var/lib/euosint
+			file_server {
+				pass_thru
+			}
+			root * /srv
+			file_server
+		}
+	}
+
 	handle /zone-briefings.json {
 		route {
 			root * /var/lib/euosint

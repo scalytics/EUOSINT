@@ -1,0 +1,29 @@
+version: 1
+group_name: core
+topic_mode: auto
+required_topics:
+  - announce
+  - requests
+  - responses
+  - tasks.status
+  - traces
+  - observe.audit
+optional_topics:
+  - control.roster
+  - control.onboarding
+  - memory.shared
+  - memory.context
+  - orchestrator
+  - skills
+grouping:
+  flow_key: correlation_id
+  replay_max_records: 5000
+ui:
+  show_topic_health: true
+  show_memory: false
+  show_orchestrator: true
+hybrid:
+  enabled_categories:
+    - cyber_advisory
+    - public_safety
+    - conflict_monitoring

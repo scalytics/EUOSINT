@@ -138,6 +138,41 @@ type Config struct {
 	CORSAllowedOrigins               []string
 	APIBearerToken                   string
 	ResetZoneBriefLLM                bool
+	KafkaEnabled                     bool
+	KafkaBrokers                     []string
+	KafkaTopics                      []string
+	KafkaGroupID                     string
+	KafkaClientID                    string
+	KafkaSecurityProtocol            string
+	KafkaSASLMechanism               string
+	KafkaUsername                    string
+	KafkaPassword                    string
+	KafkaTLSInsecureSkipVerify       bool
+	KafkaTestOnStart                 bool
+	KafkaMaxRecordBytes              int
+	KafkaMaxPerCycle                 int
+	KafkaPollTimeoutMS               int
+	KafkaMapperPath                  string
+	AgentOpsEnabled                  bool
+	AgentOpsBrokers                  []string
+	AgentOpsGroupName                string
+	AgentOpsGroupID                  string
+	AgentOpsClientID                 string
+	AgentOpsTopicMode                string
+	AgentOpsTopics                   []string
+	AgentOpsSecurityProtocol         string
+	AgentOpsSASLMechanism            string
+	AgentOpsUsername                 string
+	AgentOpsPassword                 string
+	AgentOpsTLSInsecureSkipVerify    bool
+	AgentOpsPolicyPath               string
+	AgentOpsReplayEnabled            bool
+	AgentOpsReplayPrefix             string
+	AgentOpsRejectTopic              string
+	AgentOpsOutputPath               string
+	UIMode                           string
+	Profile                          string
+	UIPolicyPath                     string
 }
 
 func Default() Config {
@@ -240,6 +275,41 @@ func Default() Config {
 		ZoneBriefingACLEDEnabled:         true,
 		CollectorRole:                    "all",
 		XFetchPauseMS:                    1250,
+		KafkaEnabled:                     false,
+		KafkaBrokers:                     nil,
+		KafkaTopics:                      nil,
+		KafkaGroupID:                     "euosint-kafka",
+		KafkaClientID:                    "euosint-collector",
+		KafkaSecurityProtocol:            "PLAINTEXT",
+		KafkaSASLMechanism:               "PLAIN",
+		KafkaUsername:                    "",
+		KafkaPassword:                    "",
+		KafkaTLSInsecureSkipVerify:       false,
+		KafkaTestOnStart:                 true,
+		KafkaMaxRecordBytes:              1 << 20,
+		KafkaMaxPerCycle:                 500,
+		KafkaPollTimeoutMS:               2000,
+		KafkaMapperPath:                  "registry/kafka_mapper.json",
+		AgentOpsEnabled:                  false,
+		AgentOpsBrokers:                  nil,
+		AgentOpsGroupName:                "",
+		AgentOpsGroupID:                  "euosint-agentops",
+		AgentOpsClientID:                 "euosint-agentops",
+		AgentOpsTopicMode:                "auto",
+		AgentOpsTopics:                   nil,
+		AgentOpsSecurityProtocol:         "PLAINTEXT",
+		AgentOpsSASLMechanism:            "PLAIN",
+		AgentOpsUsername:                 "",
+		AgentOpsPassword:                 "",
+		AgentOpsTLSInsecureSkipVerify:    false,
+		AgentOpsPolicyPath:               "/config/agentops_policy.yaml",
+		AgentOpsReplayEnabled:            true,
+		AgentOpsReplayPrefix:             "euosint-agentops-replay",
+		AgentOpsRejectTopic:              "",
+		AgentOpsOutputPath:               "public/agentops-state.json",
+		UIMode:                           "OSINT",
+		Profile:                          "osint-default",
+		UIPolicyPath:                     "/config/ui_policy.yaml",
 	}
 }
 
@@ -353,7 +423,83 @@ func FromEnv() Config {
 	cfg.CORSAllowedOrigins = envCSV("CORS_ALLOWED_ORIGINS", cfg.CORSAllowedOrigins)
 	cfg.APIBearerToken = envString("API_BEARER_TOKEN", cfg.APIBearerToken)
 	cfg.ResetZoneBriefLLM = envBool("RESET_ZONE_BRIEF_LLM", cfg.ResetZoneBriefLLM)
+	cfg.KafkaEnabled = envBool("KAFKA_ENABLED", cfg.KafkaEnabled)
+	cfg.KafkaBrokers = envCSV("KAFKA_BROKERS", cfg.KafkaBrokers)
+	cfg.KafkaTopics = envCSV("KAFKA_TOPICS", cfg.KafkaTopics)
+	cfg.KafkaGroupID = envString("KAFKA_GROUP_ID", cfg.KafkaGroupID)
+	cfg.KafkaClientID = envString("KAFKA_CLIENT_ID", cfg.KafkaClientID)
+	cfg.KafkaSecurityProtocol = strings.ToUpper(strings.TrimSpace(envString("KAFKA_SECURITY_PROTOCOL", cfg.KafkaSecurityProtocol)))
+	cfg.KafkaSASLMechanism = strings.ToUpper(strings.TrimSpace(envString("KAFKA_SASL_MECHANISM", cfg.KafkaSASLMechanism)))
+	cfg.KafkaUsername = envString("KAFKA_USERNAME", cfg.KafkaUsername)
+	cfg.KafkaPassword = envString("KAFKA_PASSWORD", cfg.KafkaPassword)
+	cfg.KafkaTLSInsecureSkipVerify = envBool("KAFKA_TLS_INSECURE_SKIP_VERIFY", cfg.KafkaTLSInsecureSkipVerify)
+	cfg.KafkaTestOnStart = envBool("KAFKA_TEST_ON_START", cfg.KafkaTestOnStart)
+	cfg.KafkaMaxRecordBytes = envInt("KAFKA_MAX_RECORD_BYTES", cfg.KafkaMaxRecordBytes)
+	cfg.KafkaMaxPerCycle = envInt("KAFKA_MAX_PER_CYCLE", cfg.KafkaMaxPerCycle)
+	cfg.KafkaPollTimeoutMS = envInt("KAFKA_POLL_TIMEOUT_MS", cfg.KafkaPollTimeoutMS)
+	cfg.KafkaMapperPath = envString("KAFKA_MAPPER_PATH", cfg.KafkaMapperPath)
+	cfg.AgentOpsEnabled = envBool("AGENTOPS_ENABLED", cfg.AgentOpsEnabled)
+	cfg.AgentOpsBrokers = envCSV("AGENTOPS_BROKERS", cfg.AgentOpsBrokers)
+	cfg.AgentOpsGroupName = envString("AGENTOPS_GROUP_NAME", cfg.AgentOpsGroupName)
+	cfg.AgentOpsGroupID = envString("AGENTOPS_GROUP_ID", cfg.AgentOpsGroupID)
+	cfg.AgentOpsClientID = envString("AGENTOPS_CLIENT_ID", cfg.AgentOpsClientID)
+	cfg.AgentOpsTopicMode = normalizeTopicMode(envString("AGENTOPS_TOPIC_MODE", cfg.AgentOpsTopicMode))
+	cfg.AgentOpsTopics = envCSV("AGENTOPS_TOPICS", cfg.AgentOpsTopics)
+	cfg.AgentOpsSecurityProtocol = strings.ToUpper(strings.TrimSpace(envString("AGENTOPS_SECURITY_PROTOCOL", cfg.AgentOpsSecurityProtocol)))
+	cfg.AgentOpsSASLMechanism = strings.ToUpper(strings.TrimSpace(envString("AGENTOPS_SASL_MECHANISM", cfg.AgentOpsSASLMechanism)))
+	cfg.AgentOpsUsername = envString("AGENTOPS_USERNAME", cfg.AgentOpsUsername)
+	cfg.AgentOpsPassword = envString("AGENTOPS_PASSWORD", cfg.AgentOpsPassword)
+	cfg.AgentOpsTLSInsecureSkipVerify = envBool("AGENTOPS_TLS_INSECURE_SKIP_VERIFY", cfg.AgentOpsTLSInsecureSkipVerify)
+	cfg.AgentOpsPolicyPath = envString("AGENTOPS_POLICY_PATH", cfg.AgentOpsPolicyPath)
+	cfg.AgentOpsReplayEnabled = envBool("AGENTOPS_REPLAY_ENABLED", cfg.AgentOpsReplayEnabled)
+	cfg.AgentOpsReplayPrefix = envString("AGENTOPS_REPLAY_PREFIX", cfg.AgentOpsReplayPrefix)
+	cfg.AgentOpsRejectTopic = envString("AGENTOPS_REJECT_TOPIC", defaultAgentOpsRejectTopic(cfg.AgentOpsGroupName))
+	cfg.AgentOpsOutputPath = envString("AGENTOPS_OUTPUT_PATH", cfg.AgentOpsOutputPath)
+	cfg.UIMode = normalizeUIMode(envString("UI_MODE", cfg.UIMode))
+	cfg.Profile = normalizeProfile(envString("PROFILE", cfg.Profile))
+	cfg.UIPolicyPath = envString("UI_POLICY_PATH", cfg.UIPolicyPath)
 	return cfg
+}
+
+func defaultAgentOpsRejectTopic(groupName string) string {
+	groupName = strings.TrimSpace(groupName)
+	if groupName == "" {
+		return ""
+	}
+	return "group." + groupName + ".agentops.rejects"
+}
+
+func normalizeTopicMode(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "auto":
+		return "auto"
+	case "manual":
+		return "manual"
+	default:
+		return "auto"
+	}
+}
+
+func normalizeUIMode(raw string) string {
+	switch strings.ToUpper(strings.TrimSpace(raw)) {
+	case "", "OSINT":
+		return "OSINT"
+	case "AGENTOPS", "HYBRID":
+		return strings.ToUpper(strings.TrimSpace(raw))
+	default:
+		return "OSINT"
+	}
+}
+
+func normalizeProfile(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "osint-default":
+		return "osint-default"
+	case "agentops-default", "hybrid-ops":
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return "osint-default"
+	}
 }
 
 func envString(key, fallback string) string {

@@ -1,0 +1,423 @@
+{
+  "generated_at": "2026-04-16T10:05:00Z",
+  "enabled": true,
+  "ui_mode": "AGENTOPS",
+  "profile": "agentops-default",
+  "group_name": "agent-runtime-core",
+  "topics": [
+    "group.core.requests",
+    "group.core.responses",
+    "group.core.traces",
+    "group.core.tasks.status",
+    "group.core.observe.audit",
+    "group.core.skills.geo_mapper"
+  ],
+  "flow_count": 3,
+  "trace_count": 3,
+  "task_count": 4,
+  "message_count": 12,
+  "health": {
+    "connected": true,
+    "effective_topics": [
+      "group.core.requests",
+      "group.core.responses",
+      "group.core.traces",
+      "group.core.tasks.status",
+      "group.core.observe.audit"
+    ],
+    "group_id": "agentops-core-live",
+    "accepted_count": 12,
+    "rejected_count": 2,
+    "mirrored_count": 2,
+    "mirror_failed_count": 0,
+    "rejected_by_reason": {
+      "invalid_envelope": 1,
+      "unknown_topic_family": 1
+    },
+    "last_reject": "group.core.skills.geo_mapper offset=132 unknown_topic_family",
+    "last_poll_at": "2026-04-16T10:05:00Z",
+    "replay_status": "idle",
+    "replay_active": 0,
+    "replay_last_finished_at": "2026-04-16T09:58:00Z",
+    "replay_last_record_count": 14,
+    "topic_health": [
+      {
+        "topic": "group.core.requests",
+        "messages_per_hour": 44,
+        "message_density": "high",
+        "active_agents": 3,
+        "is_stale": false,
+        "last_message_at": "2026-04-16T10:04:10Z"
+      },
+      {
+        "topic": "group.core.responses",
+        "messages_per_hour": 36,
+        "message_density": "high",
+        "active_agents": 3,
+        "is_stale": false,
+        "last_message_at": "2026-04-16T10:04:19Z"
+      },
+      {
+        "topic": "group.core.traces",
+        "messages_per_hour": 18,
+        "message_density": "medium",
+        "active_agents": 2,
+        "is_stale": false,
+        "last_message_at": "2026-04-16T10:04:21Z"
+      },
+      {
+        "topic": "group.core.observe.audit",
+        "messages_per_hour": 3,
+        "message_density": "low",
+        "active_agents": 1,
+        "is_stale": false,
+        "last_message_at": "2026-04-16T10:04:32Z"
+      },
+      {
+        "topic": "group.core.skills.geo_mapper",
+        "messages_per_hour": 6,
+        "message_density": "medium",
+        "active_agents": 1,
+        "is_stale": false,
+        "last_message_at": "2026-04-16T10:05:02Z"
+      }
+    ]
+  },
+  "replay_sessions": [
+    {
+      "id": "replay-001",
+      "group_id": "agentops-replay-20260416-001",
+      "status": "completed",
+      "started_at": "2026-04-16T09:57:40Z",
+      "finished_at": "2026-04-16T09:58:00Z",
+      "message_count": 14,
+      "topics": ["group.core.requests", "group.core.responses", "group.core.traces"]
+    }
+  ],
+  "flows": [
+    {
+      "id": "corr-grid-anomaly-001",
+      "topic_count": 5,
+      "sender_count": 3,
+      "topics": [
+        "group.core.requests",
+        "group.core.responses",
+        "group.core.traces",
+        "group.core.tasks.status",
+        "group.core.observe.audit"
+      ],
+      "senders": ["orchestrator", "ingest-agent", "risk-agent"],
+      "trace_ids": ["trace-grid-1"],
+      "task_ids": ["task-grid-1"],
+      "first_seen": "2026-04-16T10:00:00Z",
+      "last_seen": "2026-04-16T10:04:10Z",
+      "latest_status": "completed",
+      "message_count": 5,
+      "latest_preview": "Investigate turbine anomaly in Bavaria and return operator-ready summary."
+    },
+    {
+      "id": "corr-cve-002",
+      "topic_count": 3,
+      "sender_count": 2,
+      "topics": ["group.core.requests", "group.core.responses", "group.core.traces"],
+      "senders": ["orchestrator", "cyber-agent"],
+      "trace_ids": ["trace-cve-2"],
+      "task_ids": ["task-cve-2"],
+      "first_seen": "2026-04-16T10:01:00Z",
+      "last_seen": "2026-04-16T10:04:32Z",
+      "latest_status": "in_progress",
+      "message_count": 3,
+      "latest_preview": "Map vulnerable F5 assets against current advisory coverage."
+    },
+    {
+      "id": "corr-grid-map-003",
+      "topic_count": 4,
+      "sender_count": 3,
+      "topics": [
+        "group.core.requests",
+        "group.core.traces",
+        "group.core.tasks.status",
+        "group.core.skills.geo_mapper"
+      ],
+      "senders": ["orchestrator", "planner-agent", "geo-mapper"],
+      "trace_ids": ["trace-grid-3"],
+      "task_ids": ["task-plan-3", "task-map-3"],
+      "first_seen": "2026-04-16T10:02:10Z",
+      "last_seen": "2026-04-16T10:05:02Z",
+      "latest_status": "in_progress",
+      "message_count": 4,
+      "latest_preview": "Delegate regional turbine mapping to geo-mapper skill for Lower Saxony."
+    }
+  ],
+  "traces": [
+    {
+      "id": "trace-grid-1",
+      "span_count": 3,
+      "agents": ["orchestrator", "ingest-agent", "risk-agent"],
+      "span_types": ["REQUEST", "TRACE", "RESPONSE"],
+      "latest_title": "grid anomaly investigation",
+      "started_at": "2026-04-16T10:00:00Z",
+      "ended_at": "2026-04-16T10:04:10Z",
+      "duration_ms": 250000
+    },
+    {
+      "id": "trace-cve-2",
+      "span_count": 2,
+      "agents": ["orchestrator", "cyber-agent"],
+      "span_types": ["REQUEST", "TRACE"],
+      "latest_title": "F5 asset coverage",
+      "started_at": "2026-04-16T10:01:00Z",
+      "ended_at": "2026-04-16T10:04:32Z",
+      "duration_ms": 212000
+    },
+    {
+      "id": "trace-grid-3",
+      "span_count": 3,
+      "agents": ["orchestrator", "planner-agent", "geo-mapper"],
+      "span_types": ["REQUEST", "TRACE", "TASK_STATUS"],
+      "latest_title": "regional turbine mapping",
+      "started_at": "2026-04-16T10:02:10Z",
+      "ended_at": "2026-04-16T10:05:02Z",
+      "duration_ms": 172000
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-grid-1",
+      "requester_id": "orchestrator",
+      "responder_id": "risk-agent",
+      "status": "completed",
+      "description": "Investigate turbine anomaly in Bavaria.",
+      "last_summary": "Risk-agent correlated SCADA status with grid telemetry and returned mitigation notes.",
+      "first_seen": "2026-04-16T10:00:00Z",
+      "last_seen": "2026-04-16T10:04:10Z"
+    },
+    {
+      "id": "task-cve-2",
+      "requester_id": "orchestrator",
+      "responder_id": "cyber-agent",
+      "status": "in_progress",
+      "description": "Map vulnerable F5 assets.",
+      "last_summary": "Cyber-agent is correlating F5 inventory with current external advisories.",
+      "first_seen": "2026-04-16T10:01:00Z",
+      "last_seen": "2026-04-16T10:04:32Z"
+    },
+    {
+      "id": "task-plan-3",
+      "requester_id": "orchestrator",
+      "responder_id": "planner-agent",
+      "status": "in_progress",
+      "description": "Build a regional asset map for Lower Saxony.",
+      "last_summary": "Planner-agent delegated shape generation to geo-mapper.",
+      "first_seen": "2026-04-16T10:02:10Z",
+      "last_seen": "2026-04-16T10:03:40Z"
+    },
+    {
+      "id": "task-map-3",
+      "parent_task_id": "task-plan-3",
+      "delegation_depth": 1,
+      "requester_id": "planner-agent",
+      "responder_id": "geo-mapper",
+      "status": "in_progress",
+      "description": "Generate admin2 map overlays for Lower Saxony wind assets.",
+      "last_summary": "Geo-mapper emitted shape fragments but has not returned a final response.",
+      "first_seen": "2026-04-16T10:03:12Z",
+      "last_seen": "2026-04-16T10:05:02Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-001",
+      "topic": "group.core.requests",
+      "topic_family": "requests",
+      "partition": 0,
+      "offset": 120,
+      "timestamp": "2026-04-16T10:00:00Z",
+      "envelope_type": "request",
+      "sender_id": "orchestrator",
+      "correlation_id": "corr-grid-anomaly-001",
+      "trace_id": "trace-grid-1",
+      "task_id": "task-grid-1",
+      "preview": "Investigate turbine anomaly in Bavaria and return operator-ready summary.",
+      "content": "{\"category\":\"infrastructure_anomaly\",\"event_country_code\":\"DE\",\"site\":\"Bavaria windpark A\",\"request\":\"Investigate turbine anomaly in Bavaria and return operator-ready summary.\"}"
+    },
+    {
+      "id": "msg-002",
+      "topic": "group.core.traces",
+      "topic_family": "traces",
+      "partition": 0,
+      "offset": 121,
+      "timestamp": "2026-04-16T10:01:22Z",
+      "envelope_type": "trace",
+      "sender_id": "ingest-agent",
+      "correlation_id": "corr-grid-anomaly-001",
+      "trace_id": "trace-grid-1",
+      "task_id": "task-grid-1",
+      "preview": "Ingest-agent attached telemetry evidence for SCADA variance.",
+      "content": "{\"trace\":\"SCADA deviation found on turbine cluster 7\",\"serializers\":[\"windpark/telemetry\"],\"evidence_count\":4}"
+    },
+    {
+      "id": "msg-003",
+      "topic": "group.core.responses",
+      "topic_family": "responses",
+      "partition": 0,
+      "offset": 122,
+      "timestamp": "2026-04-16T10:04:10Z",
+      "envelope_type": "response",
+      "sender_id": "risk-agent",
+      "correlation_id": "corr-grid-anomaly-001",
+      "trace_id": "trace-grid-1",
+      "task_id": "task-grid-1",
+      "status": "completed",
+      "preview": "Risk-agent returned mitigation summary for Bavaria windpark A.",
+      "content": "{\"summary\":\"Mitigation summary for Bavaria windpark A\",\"severity\":\"medium\",\"recommended_action\":\"Dispatch local operator and isolate turbine cluster 7.\"}"
+    },
+    {
+      "id": "msg-004",
+      "topic": "group.core.observe.audit",
+      "topic_family": "observe.audit",
+      "partition": 0,
+      "offset": 123,
+      "timestamp": "2026-04-16T10:04:12Z",
+      "envelope_type": "audit",
+      "sender_id": "orchestrator",
+      "correlation_id": "corr-grid-anomaly-001",
+      "trace_id": "trace-grid-1",
+      "task_id": "task-grid-1",
+      "preview": "Audit: mitigation note published to operator queue.",
+      "content": "{\"result\":\"published\",\"target\":\"operator.queue\"}"
+    },
+    {
+      "id": "msg-005",
+      "topic": "group.core.requests",
+      "topic_family": "requests",
+      "partition": 0,
+      "offset": 124,
+      "timestamp": "2026-04-16T10:01:00Z",
+      "envelope_type": "request",
+      "sender_id": "orchestrator",
+      "correlation_id": "corr-cve-002",
+      "trace_id": "trace-cve-2",
+      "task_id": "task-cve-2",
+      "preview": "Map vulnerable F5 assets against current advisory coverage.",
+      "content": "{\"category\":\"cyber_advisory\",\"event_country_code\":\"DE\",\"vendor\":\"F5\",\"product\":\"BIG-IP\",\"cve\":\"CVE-2026-12345\",\"request\":\"Map vulnerable F5 assets against current advisory coverage.\"}"
+    },
+    {
+      "id": "msg-006",
+      "topic": "group.core.traces",
+      "topic_family": "traces",
+      "partition": 0,
+      "offset": 125,
+      "timestamp": "2026-04-16T10:03:22Z",
+      "envelope_type": "trace",
+      "sender_id": "cyber-agent",
+      "correlation_id": "corr-cve-002",
+      "trace_id": "trace-cve-2",
+      "task_id": "task-cve-2",
+      "preview": "Cyber-agent joined inventory feed and current advisory stream.",
+      "content": "{\"inventory_source\":\"kafscale.inventory\",\"matched_assets\":12}"
+    },
+    {
+      "id": "msg-007",
+      "topic": "group.core.tasks.status",
+      "topic_family": "tasks.status",
+      "partition": 0,
+      "offset": 126,
+      "timestamp": "2026-04-16T10:04:32Z",
+      "envelope_type": "task_status",
+      "sender_id": "cyber-agent",
+      "correlation_id": "corr-cve-002",
+      "trace_id": "trace-cve-2",
+      "task_id": "task-cve-2",
+      "status": "in_progress",
+      "preview": "Task remains in progress while inventory enrichment completes.",
+      "content": "{\"status\":\"in_progress\",\"phase\":\"inventory_enrichment\"}"
+    },
+    {
+      "id": "msg-008",
+      "topic": "group.core.responses",
+      "topic_family": "responses",
+      "partition": 0,
+      "offset": 127,
+      "timestamp": "2026-04-16T10:04:40Z",
+      "envelope_type": "response",
+      "sender_id": "cyber-agent",
+      "correlation_id": "corr-cve-002",
+      "trace_id": "trace-cve-2",
+      "task_id": "task-cve-2",
+      "preview": "LFS-backed asset export pointer",
+      "lfs": {
+        "bucket": "agentops",
+        "key": "exports/f5-assets-20260416.ndjson",
+        "size": 19084,
+        "sha256": "8adfe45b",
+        "content_type": "application/x-ndjson",
+        "path": "s3://agentops/exports/f5-assets-20260416.ndjson"
+      }
+    },
+    {
+      "id": "msg-009",
+      "topic": "group.core.requests",
+      "topic_family": "requests",
+      "partition": 0,
+      "offset": 128,
+      "timestamp": "2026-04-16T10:02:10Z",
+      "envelope_type": "request",
+      "sender_id": "orchestrator",
+      "correlation_id": "corr-grid-map-003",
+      "trace_id": "trace-grid-3",
+      "task_id": "task-plan-3",
+      "preview": "Build a regional asset map for Lower Saxony.",
+      "content": "{\"category\":\"infrastructure_anomaly\",\"event_country_code\":\"DE\",\"region\":\"Lower Saxony\",\"request\":\"Build a regional asset map for Lower Saxony.\"}"
+    },
+    {
+      "id": "msg-010",
+      "topic": "group.core.traces",
+      "topic_family": "traces",
+      "partition": 0,
+      "offset": 129,
+      "timestamp": "2026-04-16T10:03:12Z",
+      "envelope_type": "trace",
+      "sender_id": "planner-agent",
+      "correlation_id": "corr-grid-map-003",
+      "trace_id": "trace-grid-3",
+      "task_id": "task-plan-3",
+      "parent_task_id": "task-plan-3",
+      "preview": "Planner-agent delegated regional geometry generation to geo-mapper.",
+      "content": "{\"delegated_to\":\"geo-mapper\",\"requested_layer\":\"admin2\",\"region\":\"Lower Saxony\"}"
+    },
+    {
+      "id": "msg-011",
+      "topic": "group.core.tasks.status",
+      "topic_family": "tasks.status",
+      "partition": 0,
+      "offset": 130,
+      "timestamp": "2026-04-16T10:03:40Z",
+      "envelope_type": "task_status",
+      "sender_id": "planner-agent",
+      "correlation_id": "corr-grid-map-003",
+      "trace_id": "trace-grid-3",
+      "task_id": "task-map-3",
+      "parent_task_id": "task-plan-3",
+      "status": "in_progress",
+      "preview": "Delegated mapping task is still running.",
+      "content": "{\"status\":\"in_progress\",\"phase\":\"geometry_generation\"}"
+    },
+    {
+      "id": "msg-012",
+      "topic": "group.core.skills.geo_mapper",
+      "topic_family": "skills.geo_mapper",
+      "partition": 0,
+      "offset": 131,
+      "timestamp": "2026-04-16T10:05:02Z",
+      "envelope_type": "trace",
+      "sender_id": "geo-mapper",
+      "correlation_id": "corr-grid-map-003",
+      "trace_id": "trace-grid-3",
+      "task_id": "task-map-3",
+      "parent_task_id": "task-plan-3",
+      "preview": "Geo-mapper emitted shape fragments for admin2 boundaries but no final response yet.",
+      "content": "{\"shape_fragments\":18,\"layer\":\"admin2\",\"status\":\"partial\"}"
+    }
+  ]
+}

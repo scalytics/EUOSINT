@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	agentopsstore "github.com/scalytics/euosint/internal/agentops/store"
 	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/model"
 	"github.com/scalytics/euosint/internal/collector/trends"
@@ -34,6 +35,8 @@ type Server struct {
 	llmCfg         ZoneBriefLLMConfig
 	allowedOrigins []string
 	bearerToken    string
+	startReplay    func(context.Context) (agentopsstore.ReplaySession, error)
+	loadOperator   func(context.Context) (agentopsstore.OperatorState, error)
 }
 
 type ZoneBriefLLMConfig struct {
@@ -54,6 +57,8 @@ func New(db *sourcedb.DB, addr string, stderr io.Writer, allowedOrigins []string
 	mux.HandleFunc("GET /api/noise-feedback/stats", s.handleNoiseFeedbackStats)
 	mux.HandleFunc("POST /api/noise-feedback", s.handleNoiseFeedbackCreate)
 	mux.HandleFunc("POST /api/zone-brief-llm", s.handleZoneBriefLLM)
+	mux.HandleFunc("POST /api/agentops/replay", s.handleAgentOpsReplay)
+	mux.HandleFunc("GET /api/agentops/groups", s.handleAgentOpsGroups)
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	rl := newRateLimiter(30, 5, 10*time.Minute) // 30 requests burst, 5/sec refill
 	s.srv = &http.Server{
@@ -67,6 +72,14 @@ func New(db *sourcedb.DB, addr string, stderr io.Writer, allowedOrigins []string
 
 func (s *Server) ConfigureZoneBriefLLM(cfg ZoneBriefLLMConfig) {
 	s.llmCfg = cfg
+}
+
+func (s *Server) ConfigureAgentOpsReplay(start func(context.Context) (agentopsstore.ReplaySession, error)) {
+	s.startReplay = start
+}
+
+func (s *Server) ConfigureAgentOpsOperator(load func(context.Context) (agentopsstore.OperatorState, error)) {
+	s.loadOperator = load
 }
 
 // Start begins listening in a goroutine. Returns once the listener is bound.
@@ -230,6 +243,46 @@ func isLocalLawEnforcement(a model.Alert) bool {
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (s *Server) handleAgentOpsReplay(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	if s.startReplay == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "agentops replay not configured"})
+		return
+	}
+	session, err := s.startReplay(r.Context())
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]any{
+		"status":  "started",
+		"session": session,
+	})
+}
+
+func (s *Server) handleAgentOpsGroups(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	if s.loadOperator == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "agentops operator surface not configured"})
+		return
+	}
+	state, err := s.loadOperator(r.Context())
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": err.Error(),
+			"state": state,
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, state)
 }
 
 func (s *Server) handleNoiseFeedbackCreate(w http.ResponseWriter, r *http.Request) {

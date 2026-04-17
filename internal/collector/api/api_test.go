@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	agentopsstore "github.com/scalytics/euosint/internal/agentops/store"
 	"github.com/scalytics/euosint/internal/collector/model"
 	"github.com/scalytics/euosint/internal/collector/trends"
 	"github.com/scalytics/euosint/internal/sourcedb"
@@ -541,6 +542,128 @@ func TestRateLimitReturns429(t *testing.T) {
 	}
 	if !hit429 {
 		t.Fatal("expected to hit rate limit (429) within 120 requests")
+	}
+}
+
+func TestAgentOpsReplayRequiresConfiguration(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	srv := New(db, ":0", os.Stderr, nil, "")
+	handler := srv.srv.Handler
+
+	req := httptest.NewRequest("POST", "/api/agentops/replay", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestAgentOpsReplayStartsSession(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	srv := New(db, ":0", os.Stderr, nil, "")
+	srv.ConfigureAgentOpsReplay(func(context.Context) (agentopsstore.ReplaySession, error) {
+		return agentopsstore.ReplaySession{ID: "session-1", GroupID: "replay-1", Status: "running"}, nil
+	})
+	handler := srv.srv.Handler
+
+	req := httptest.NewRequest("POST", "/api/agentops/replay", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusAccepted {
+		t.Fatalf("expected 202, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Status  string                      `json:"status"`
+		Session agentopsstore.ReplaySession `json:"session"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp.Status != "started" || resp.Session.ID != "session-1" {
+		t.Fatalf("unexpected replay response: %#v", resp)
+	}
+}
+
+func TestAgentOpsGroupsRequiresConfiguration(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	srv := New(db, ":0", os.Stderr, nil, "")
+	handler := srv.srv.Handler
+
+	req := httptest.NewRequest("GET", "/api/agentops/groups", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestAgentOpsGroupsReturnsOperatorState(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	srv := New(db, ":0", os.Stderr, nil, "")
+	srv.ConfigureAgentOpsOperator(func(context.Context) (agentopsstore.OperatorState, error) {
+		return agentopsstore.OperatorState{
+			Supported:      true,
+			LiveGroupID:    "group-live",
+			ReplayGroupIDs: []string{"group-replay"},
+			Groups: []agentopsstore.ConsumerGroup{
+				{GroupID: "group-live", State: "Stable", ProtocolType: "consumer", Protocol: "range"},
+			},
+		}, nil
+	})
+	handler := srv.srv.Handler
+
+	req := httptest.NewRequest("GET", "/api/agentops/groups", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp agentopsstore.OperatorState
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if !resp.Supported || resp.LiveGroupID != "group-live" || len(resp.Groups) != 1 {
+		t.Fatalf("unexpected operator response %#v", resp)
+	}
+}
+
+func TestAgentOpsGroupsReturnsUnsupportedStateOnError(t *testing.T) {
+	db := testDB(t)
+	defer db.Close()
+
+	srv := New(db, ":0", os.Stderr, nil, "")
+	srv.ConfigureAgentOpsOperator(func(context.Context) (agentopsstore.OperatorState, error) {
+		return agentopsstore.OperatorState{
+			Supported:   false,
+			LiveGroupID: "group-live",
+			LastError:   "unsupported admin api",
+		}, context.DeadlineExceeded
+	})
+	handler := srv.srv.Handler
+
+	req := httptest.NewRequest("GET", "/api/agentops/groups", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Error string                      `json:"error"`
+		State agentopsstore.OperatorState `json:"state"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp.State.Supported || resp.State.LiveGroupID != "group-live" || resp.Error == "" {
+		t.Fatalf("unexpected operator error response %#v", resp)
 	}
 }
 

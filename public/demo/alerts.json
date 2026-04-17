@@ -1,0 +1,30 @@
+[
+  {
+    "alert_id": "advisory-f5-2026-12345",
+    "source_id": "cert-bund",
+    "source": {
+      "source_id": "cert-bund",
+      "authority_name": "CERT-Bund",
+      "country": "Germany",
+      "country_code": "DE",
+      "region": "Europe",
+      "authority_type": "cert",
+      "base_url": "https://www.bsi.bund.de"
+    },
+    "title": "Critical F5 BIG-IP advisory for CVE-2026-12345",
+    "canonical_url": "https://www.bsi.bund.de/advisory/f5-2026-12345",
+    "first_seen": "2026-04-16T09:30:00Z",
+    "last_seen": "2026-04-16T09:45:00Z",
+    "status": "active",
+    "category": "cyber_advisory",
+    "severity": "high",
+    "region_tag": "EU",
+    "lat": 52.52,
+    "lng": 13.405,
+    "freshness_hours": 1,
+    "triage": {
+      "relevance_score": 0.91,
+      "disposition": "active"
+    }
+  }
+]

@@ -14,6 +14,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "demo:agentops": "vite --open '/?demo=agentops'",
     "fetch:alerts": "go run ./cmd/euosint-collector",
     "fetch:alerts:watch": "go run ./cmd/euosint-collector --watch",
     "collector:run": "go run ./cmd/euosint-collector --watch",

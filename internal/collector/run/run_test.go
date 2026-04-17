@@ -54,6 +54,9 @@ func TestRunnerRunOnceWritesOutputs(t *testing.T) {
 	cfg.MaxAgeDays = 10000
 
 	runner := New(io.Discard, io.Discard)
+	runner.nowFn = func() time.Time {
+		return time.Date(2026, 3, 20, 12, 0, 0, 0, time.UTC)
+	}
 	runner.clientFactory = func(cfg config.Config) *fetch.Client {
 		return fetch.NewWithHTTPClient(cfg, &http.Client{
 			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
@@ -1304,6 +1307,9 @@ func TestWriteZoneBriefingsEndToEnd(t *testing.T) {
 	versionHTML := `<html>Monthly release: <code>26.0.1</code> latest version of the yearly datasets: <code>25.1</code></html>`
 
 	runner := New(io.Discard, io.Discard)
+	runner.nowFn = func() time.Time {
+		return time.Date(2026, 3, 20, 12, 0, 0, 0, time.UTC)
+	}
 	runner.clientFactory = func(cfg config.Config) *fetch.Client {
 		return fetch.NewWithHTTPClient(cfg, &http.Client{
 			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {

@@ -6,13 +6,16 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	agentopskafka "github.com/scalytics/euosint/internal/agentops/kafka"
 	"github.com/scalytics/euosint/internal/collector/api"
 	"github.com/scalytics/euosint/internal/collector/config"
 	"github.com/scalytics/euosint/internal/collector/discover"
@@ -177,11 +180,29 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 			VettingModel:       cfg.VettingModel,
 			VettingTemperature: 0,
 		})
+		srv.ConfigureAgentOpsReplay(agentopskafka.StartReplay)
+		srv.ConfigureAgentOpsOperator(agentopskafka.LoadOperatorState)
 		if err := srv.Start(); err != nil {
 			return err
 		}
 		defer srv.Stop(ctx)
 		fmt.Fprintf(stdout, "Search API listening on %s\n", cfg.APIAddr)
+	}
+
+	if cfg.AgentOpsEnabled {
+		if cfg.Watch {
+			go func() {
+				if err := agentopskafka.Start(ctx, cfg); err != nil && !errors.Is(err, context.Canceled) {
+					fmt.Fprintf(stderr, "AgentOps runtime failed: %v\n", err)
+				}
+			}()
+		} else {
+			inventoryCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			if err := agentopskafka.Start(inventoryCtx, cfg); err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+				fmt.Fprintf(stderr, "WARN AgentOps inventory failed: %v\n", err)
+			}
+			cancel()
+		}
 	}
 
 	if cfg.ResetZoneBriefLLM && strings.HasSuffix(cfg.RegistryPath, ".db") {

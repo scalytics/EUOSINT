@@ -42,11 +42,13 @@ import (
 )
 
 type Runner struct {
-	stdout         io.Writer
-	stderr         io.Writer
-	clientFactory  func(config.Config) *fetch.Client
-	browserFactory func(config.Config) (*fetch.BrowserClient, error)
-	noiseGate      *noisegate.Engine
+	stdout             io.Writer
+	stderr             io.Writer
+	clientFactory      func(config.Config) *fetch.Client
+	browserFactory     func(config.Config) (*fetch.BrowserClient, error)
+	kafkaClientFactory func(config.Config) (kafkaClient, error)
+	noiseGate          *noisegate.Engine
+	nowFn              func() time.Time
 }
 
 type boundaryCollection struct {
@@ -65,6 +67,12 @@ func New(stdout io.Writer, stderr io.Writer) Runner {
 		stdout:        stdout,
 		stderr:        stderr,
 		clientFactory: fetch.New,
+		kafkaClientFactory: func(cfg config.Config) (kafkaClient, error) {
+			return newKafkaClient(cfg)
+		},
+		nowFn: func() time.Time {
+			return time.Now().UTC()
+		},
 		browserFactory: func(cfg config.Config) (*fetch.BrowserClient, error) {
 			return fetch.NewBrowser(fetch.BrowserOptions{
 				TimeoutMS:           cfg.BrowserTimeoutMS,
@@ -168,7 +176,7 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		}
 	}
 
-	now := time.Now().UTC()
+	now := r.now()
 	// Always prefer the newest GED candidate from UCDP docs at runtime.
 	// This avoids pinning event pulls to a stale hardcoded monthly dataset.
 	if versions, err := discoverUCDPVersions(ctx); err != nil {
@@ -510,6 +518,11 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 		}
 	}
 
+	if kafkaAlerts, kafkaHealth := r.collectKafkaAlerts(ctx, cfg, now); kafkaHealth != nil {
+		sourceHealth = append(sourceHealth, *kafkaHealth)
+		alerts = append(alerts, kafkaAlerts...)
+	}
+
 	if err := state.WriteCursors(cfg.CursorsPath, cursors); err != nil {
 		fmt.Fprintf(r.stderr, "WARN failed to save cursors: %v\n", err)
 	}
@@ -605,6 +618,13 @@ func (r Runner) runOnce(ctx context.Context, cfg config.Config) error {
 	}
 	_, err = fmt.Fprintf(r.stdout, "Wrote %d active alerts -> %s (%d filtered in %s)\n", len(currentActive), cfg.OutputPath, len(currentFiltered), cfg.FilteredOutputPath)
 	return err
+}
+
+func (r Runner) now() time.Time {
+	if r.nowFn == nil {
+		return time.Now().UTC()
+	}
+	return r.nowFn().UTC()
 }
 
 func (r Runner) runRegistrySyncLoop(ctx context.Context, cfg config.Config) {
@@ -1844,7 +1864,7 @@ func (r Runner) fetchACLED(ctx context.Context, fetcher fetch.Fetcher, nctx norm
 	var allAlerts []model.Alert
 
 	// Build date range: last 7 days.
-	now := time.Now().UTC()
+	now := r.now()
 	from := now.AddDate(0, 0, -7).Format("2006-01-02")
 	to := now.Format("2006-01-02")
 
@@ -2176,7 +2196,7 @@ func (r Runner) fetchUCDPItems(ctx context.Context, nctx normalize.Context, sour
 
 	// Override version from config so the alert pipeline also uses the latest candidate.
 	// Filter to last 7 days for alerts (briefings use 90d separately).
-	now := time.Now().UTC()
+	now := r.now()
 	startDate := now.AddDate(0, 0, -7).Format("2006-01-02")
 	endDate := now.Format("2006-01-02")
 	feedURL := fmt.Sprintf("https://ucdpapi.pcr.uu.se/api/gedevents/%s?StartDate=%s&EndDate=%s&pagesize=500",
@@ -2245,7 +2265,7 @@ func (r Runner) writeZoneBriefings(ctx context.Context, cfg config.Config, sourc
 		return writeJSONArtifact(filepath.Join(outDir, "ucdp-current-conflicts.json"), []map[string]any{})
 	}
 	headers := map[string]string{"x-ucdp-access-token": token}
-	now := time.Now().UTC()
+	now := r.now()
 	previousCurrentConflicts := readCurrentConflictsArtifact(filepath.Join(outDir, "ucdp-current-conflicts.json"))
 	var zoneDB *sourcedb.DB
 	if isSQLiteRegistryPath(cfg.RegistryPath) {

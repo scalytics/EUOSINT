@@ -1,0 +1,27 @@
+{
+  "topics": {
+    "security-alerts": {
+      "source": {
+        "source_id": "kafka-security-alerts",
+        "authority_name": "Kafka Security Alerts",
+        "country": "International",
+        "country_code": "XX",
+        "region": "International",
+        "authority_type": "enterprise_security",
+        "base_url": "kafka://security-alerts"
+      },
+      "region_tag": "INT",
+      "title_path": "title",
+      "severity_path": "severity",
+      "severity_default": "high",
+      "category_path": "category",
+      "category_default": "cyber_advisory",
+      "canonical_url_path": "link",
+      "published_at_path": "timestamp",
+      "lat_path": "location.lat",
+      "lng_path": "location.lng",
+      "event_country_path": "location.country",
+      "event_country_code_path": "location.country_code"
+    }
+  }
+}
