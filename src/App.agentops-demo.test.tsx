@@ -206,7 +206,7 @@ test("boots the real app into the AgentOps dashboard with demo-backed mocked Kaf
 
   expect(await screen.findByText("Flow Desk")).toBeTruthy();
   expect(await screen.findByText("agent-runtime-core")).toBeTruthy();
-  expect(await screen.findByText("Kafscale Operator")).toBeTruthy();
+  expect(await screen.findByText("Investigation Workspace")).toBeTruthy();
   expect(await screen.findByText("s3://agentops/exports/f5-assets-20260416.ndjson")).toBeTruthy();
   expect(screen.queryByText("Critical F5 BIG-IP advisory for CVE-2026-12345")).toBeNull();
 

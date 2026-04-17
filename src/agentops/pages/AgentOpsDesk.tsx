@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Activity, AlertTriangle, CheckCircle2, GitBranch, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
 import { EmptyState, MetricCard, Panel, StatusRow, Tag } from "@/agentops/components/Chrome";
 import { agentOpsReplayURL } from "@/agentops/lib/demo";
+import { buildFailureBuckets } from "@/agentops/lib/failures";
 import { MessageCard } from "@/agentops/components/MessageCard";
 import { buildFusionMatches } from "@/agentops/lib/hybrid";
 import { buildConversationTimeline, buildRunSummary, groupRunsForQueue, sortFlowsForQueue } from "@/agentops/lib/investigation";
@@ -26,6 +27,9 @@ export function AgentOpsDesk({ state, mode }: Props) {
   const [replayNotice, setReplayNotice] = useState<string>("");
   const [optimisticReplayCount, setOptimisticReplayCount] = useState(0);
   const [optimisticReplaySessions, setOptimisticReplaySessions] = useState(state.replay_sessions);
+  const [workspaceTab, setWorkspaceTab] = useState<"replay" | "failures" | "raw" | "operator">("replay");
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [replayScope, setReplayScope] = useState<"run" | "trace" | "task" | "topics">("run");
 
   useEffect(() => {
     setOptimisticReplaySessions(state.replay_sessions);
@@ -76,6 +80,9 @@ export function AgentOpsDesk({ state, mode }: Props) {
     if (!selectedFlow) return state.messages.slice(0, 16);
     return state.messages.filter((message) => message.correlation_id === selectedFlow.id).slice(0, 24);
   }, [selectedFlow, state.messages]);
+  useEffect(() => {
+    setSelectedMessageId((current) => current ?? relatedMessages[0]?.id ?? null);
+  }, [relatedMessages]);
   const relatedTraces = useMemo(() => {
     if (!selectedFlow) return state.traces.slice(0, 8);
     const traceSet = new Set(selectedFlow.trace_ids);
@@ -88,6 +95,8 @@ export function AgentOpsDesk({ state, mode }: Props) {
   }, [selectedFlow, state.tasks]);
   const runSummary = useMemo(() => buildRunSummary(selectedFlow, relatedMessages, relatedTasks, relatedTraces, state.health), [selectedFlow, relatedMessages, relatedTasks, relatedTraces, state.health]);
   const timeline = useMemo(() => buildConversationTimeline(selectedFlow, relatedMessages, relatedTasks, relatedTraces), [selectedFlow, relatedMessages, relatedTasks, relatedTraces]);
+  const failureBuckets = useMemo(() => buildFailureBuckets(selectedFlow, relatedMessages, relatedTasks, state.health), [selectedFlow, relatedMessages, relatedTasks, state.health]);
+  const selectedMessage = useMemo(() => relatedMessages.find((message) => message.id === selectedMessageId) ?? relatedMessages[0] ?? null, [relatedMessages, selectedMessageId]);
   const fusionMatches = useMemo(() => (mode === "HYBRID" ? buildFusionMatches(selectedFlow, state.messages, alerts) : []), [alerts, mode, selectedFlow, state.messages]);
 
   function triggerReplay() {
@@ -114,7 +123,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
             throw new Error(`replay failed: ${response.status}`);
           }
           setOptimisticReplaySessions((current) =>
-            current.map((session) => (session.id === sessionId ? { ...session, status: "accepted" } : session)),
+            current.map((session) => (session.id === sessionId ? { ...session, status: "accepted", message_count: relatedMessages.length } : session)),
           );
           setReplayNotice("Replay accepted.");
         })
@@ -130,6 +139,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
   function selectFlow(id: string) {
     setSelectedFlowId(id);
     persistSelectedRunId(id);
+    setWorkspaceTab("replay");
   }
 
   function updateQueueFilter(filter: RunQueueFilter) {
@@ -312,7 +322,17 @@ export function AgentOpsDesk({ state, mode }: Props) {
                           </div>
                         </div>
                       ) : (
-                        <div key={item.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            if (item.sourceMessageId) {
+                              setSelectedMessageId(item.sourceMessageId);
+                              setWorkspaceTab("raw");
+                            }
+                          }}
+                          className="block w-full rounded-2xl border border-siem-border bg-siem-panel/55 p-4 text-left"
+                        >
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="font-semibold">{item.title}</div>
@@ -324,8 +344,9 @@ export function AgentOpsDesk({ state, mode }: Props) {
                             <Tag>{formatTime(item.at)}</Tag>
                             {item.sender ? <Tag>{item.sender}</Tag> : null}
                             {item.status ? <Tag>{item.status}</Tag> : null}
+                            {item.sourceMessageId ? <Tag>open raw</Tag> : null}
                           </div>
-                        </div>
+                        </button>
                       ),
                     )}
                   </div>
@@ -445,34 +466,173 @@ export function AgentOpsDesk({ state, mode }: Props) {
           <Panel title="Message Detail" icon={RadioTower} bodyClassName="overflow-y-auto pr-1">
             <div className="space-y-3">
               {relatedMessages.map((message) => (
-                <MessageCard key={message.id} message={message} />
+                <button
+                  key={message.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedMessageId(message.id);
+                    setWorkspaceTab("raw");
+                  }}
+                  className={`block w-full text-left ${selectedMessageId === message.id ? "rounded-[18px] ring-1 ring-siem-accent/45" : ""}`}
+                >
+                  <MessageCard message={message} />
+                </button>
               ))}
               {relatedMessages.length === 0 ? <EmptyState text="No decoded messages for the selected flow yet." /> : null}
             </div>
           </Panel>
-          <Panel title="Kafscale Operator" icon={TimerReset} bodyClassName="overflow-y-auto pr-1">
-            <div className="space-y-3 text-sm text-siem-muted">
-              <StatusRow label="Admin surface" value={operator.supported ? "supported" : "limited"} />
-              <StatusRow label="Live group" value={operator.live_group_id || state.health.group_id || "-"} />
-              <StatusRow label="Replay groups" value={String(operator.replay_group_ids.length)} />
-              {operator.last_error ? <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3 text-xs">{operator.last_error}</div> : null}
-              {operator.groups.length === 0 ? (
-                <EmptyState text="No consumer groups returned yet. When Kafscale group visibility is available, live and replay groups appear here." />
-              ) : (
-                operator.groups.slice(0, 8).map((group) => (
-                  <div key={group.group_id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="font-mono text-xs text-siem-text">{group.group_id}</div>
-                      <Tag>{group.state || "unknown"}</Tag>
+          <Panel title="Investigation Workspace" icon={TimerReset} bodyClassName="overflow-y-auto pr-1">
+            <div className="space-y-4 text-sm text-siem-muted">
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ["replay", "Replay Studio"],
+                  ["failures", "Failure Workbench"],
+                  ["raw", "Raw Messages"],
+                  ["operator", "Operator"],
+                ].map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setWorkspaceTab(id as typeof workspaceTab)}
+                    className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${
+                      workspaceTab === id ? "border-siem-accent/50 bg-siem-accent/14 text-siem-text" : "border-siem-border text-siem-muted"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {workspaceTab === "replay" ? (
+                <div className="space-y-3">
+                  <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Replay Scope</div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {([
+                        ["run", "Full run"],
+                        ["trace", "Selected trace"],
+                        ["task", "Task chain"],
+                        ["topics", "Topic families"],
+                      ] as const).map(([scope, label]) => (
+                        <button
+                          key={scope}
+                          type="button"
+                          onClick={() => setReplayScope(scope)}
+                          className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${
+                            replayScope === scope ? "border-siem-accent/50 bg-siem-accent/14 text-siem-text" : "border-siem-border text-siem-muted"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                      <Tag>{group.protocol_type || "consumer"}</Tag>
-                      {group.protocol ? <Tag>{group.protocol}</Tag> : null}
-                      <Tag>{group.members.length} members</Tag>
+                    <div className="mt-4 grid gap-2">
+                      <StatusRow label="Replay group" value={`${state.health.group_id || "agentops"}-replay-${optimisticReplayCount + 1}`} />
+                      <StatusRow label="Expected records" value={String(relatedMessages.length)} />
+                      <StatusRow label="Scope" value={replayScope} />
+                    </div>
+                    <div className="mt-4 rounded-2xl border border-dashed border-siem-border bg-siem-bg/35 p-3 text-xs">
+                      Replay is isolated from the live tracking group and scoped from the selected run context.
                     </div>
                   </div>
-                ))
-              )}
+                  <div className="space-y-2">
+                    {(optimisticReplaySessions.length === 0
+                      ? [{ id: "none", status: "idle", group_id: "", started_at: "", message_count: 0 }]
+                      : optimisticReplaySessions
+                    ).map((session) => (
+                      <div key={session.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="font-semibold">{session.id === "none" ? "No replay sessions yet" : session.group_id}</div>
+                          <Tag>{session.status}</Tag>
+                        </div>
+                        {session.id !== "none" ? (
+                          <div className="mt-2 text-[11px] text-siem-muted">
+                            {session.message_count} messages · {session.topics?.join(", ") || "all topics"}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {workspaceTab === "failures" ? (
+                <div className="space-y-3">
+                  {failureBuckets.length === 0 ? (
+                    <EmptyState text="No failure buckets for the selected run. Transport and conversation look complete from the current state." />
+                  ) : (
+                    failureBuckets.map((bucket) => (
+                      <div key={bucket.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-semibold">{bucket.title}</div>
+                            <div className="mt-1 text-xs text-siem-muted">{bucket.detail}</div>
+                          </div>
+                          <Tag>{bucket.count}</Tag>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Tag>{bucket.severity}</Tag>
+                          {bucket.messageId ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedMessageId(bucket.messageId || null);
+                                setWorkspaceTab("raw");
+                              }}
+                              className="rounded-full border border-siem-border px-2 py-1 text-[11px]"
+                            >
+                              inspect raw
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : null}
+
+              {workspaceTab === "raw" ? (
+                selectedMessage ? (
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Selected Message</div>
+                      <div className="mt-2 font-mono text-xs text-siem-text">{selectedMessage.id}</div>
+                      <div className="mt-3 text-xs text-siem-muted">
+                        {selectedMessage.topic} · p{selectedMessage.partition} · o{selectedMessage.offset}
+                      </div>
+                    </div>
+                    <MessageCard message={selectedMessage} />
+                  </div>
+                ) : (
+                  <EmptyState text="Select a timeline or message entry to inspect the raw transport artifact." />
+                )
+              ) : null}
+
+              {workspaceTab === "operator" ? (
+                <>
+                  <StatusRow label="Admin surface" value={operator.supported ? "supported" : "limited"} />
+                  <StatusRow label="Live group" value={operator.live_group_id || state.health.group_id || "-"} />
+                  <StatusRow label="Replay groups" value={String(operator.replay_group_ids.length)} />
+                  {operator.last_error ? <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3 text-xs">{operator.last_error}</div> : null}
+                  {operator.groups.length === 0 ? (
+                    <EmptyState text="No consumer groups returned yet. When Kafscale group visibility is available, live and replay groups appear here." />
+                  ) : (
+                    operator.groups.slice(0, 8).map((group) => (
+                      <div key={group.group_id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="font-mono text-xs text-siem-text">{group.group_id}</div>
+                          <Tag>{group.state || "unknown"}</Tag>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-siem-muted">
+                          <Tag>{group.protocol_type || "consumer"}</Tag>
+                          {group.protocol ? <Tag>{group.protocol}</Tag> : null}
+                          <Tag>{group.members.length} members</Tag>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </>
+              ) : null}
             </div>
           </Panel>
         </section>

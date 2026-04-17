@@ -187,7 +187,7 @@ test("renders flow desk panels with decoded content and LFS pointer metadata", (
   expect(screen.getByText("Run Context")).toBeTruthy();
   expect(screen.getByText("Topic Health")).toBeTruthy();
   expect(screen.getByText("Replay Panel")).toBeTruthy();
-  expect(screen.getByText("Kafscale Operator")).toBeTruthy();
+  expect(screen.getByText("Investigation Workspace")).toBeTruthy();
   expect(screen.getAllByText("Investigate outage").length).toBeGreaterThan(0);
   expect(screen.getByText("Missing response")).toBeTruthy();
   expect(screen.getByText("s3://ops/core/requests/2")).toBeTruthy();
@@ -258,6 +258,7 @@ test("renders unsupported operator state without exposing unavailable actions", 
 
   render(<AgentOpsApp state={baseState} mode="AGENTOPS" />);
 
+  fireEvent.click(screen.getByRole("button", { name: /operator/i }));
   expect(screen.getByText("limited")).toBeTruthy();
   expect(screen.getByText("unsupported admin api")).toBeTruthy();
 });
@@ -278,7 +279,7 @@ test("triggers replay through the AgentOps API", async () => {
   expect(fetchMock).toHaveBeenCalledWith("/api/agentops/replay", { method: "POST" });
   expect(screen.getByText("Replay request queued.")).toBeTruthy();
   await waitFor(() => expect(screen.getByText("Replay accepted.")).toBeTruthy());
-  expect(screen.getByText("accepted")).toBeTruthy();
+  expect(screen.getAllByText("accepted").length).toBeGreaterThan(0);
 });
 
 test("applies persisted queue preferences and selected run", () => {
@@ -291,4 +292,15 @@ test("applies persisted queue preferences and selected run", () => {
   expect(screen.getByText("Needs Attention")).toBeTruthy();
   expect(screen.getByText("selected")).toBeTruthy();
   expect(screen.getByRole("button", { name: /anomalies only/i })).toBeTruthy();
+});
+
+test("lets the operator pivot from failures into raw transport details", () => {
+  render(<AgentOpsApp state={baseState} mode="AGENTOPS" />);
+
+  fireEvent.click(screen.getByRole("button", { name: /failure workbench/i }));
+  expect(screen.getByText("Missing response chain")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: /inspect raw/i }));
+
+  expect(screen.getByText("Selected Message")).toBeTruthy();
+  expect(screen.getByText("msg-1")).toBeTruthy();
 });

@@ -36,6 +36,7 @@ export interface TimelineItem {
   sender?: string;
   family?: string;
   status?: string;
+  sourceMessageId?: string;
 }
 
 export function buildRunSummary(
@@ -102,6 +103,7 @@ export function buildConversationTimeline(
     sender: message.sender_id,
     family: message.topic_family,
     status: message.status,
+    sourceMessageId: message.id,
   }));
   const taskItems: TimelineItem[] = tasks
     .filter((task) => taskSet.has(task.id))
