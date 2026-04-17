@@ -4,13 +4,13 @@
 
 set -euo pipefail
 
-BROWSER_CONTAINER="${BROWSER_CONTAINER:-euosint-browser}"
+BROWSER_CONTAINER="${BROWSER_CONTAINER:-kafsiem-browser}"
 COLLECTOR_CONTAINER="${COLLECTOR_CONTAINER:-kafsiem-collector-1}"
 WINDOW_MINUTES="${WINDOW_MINUTES:-10}"
 FAILURE_THRESHOLD="${FAILURE_THRESHOLD:-3}"
 COOLDOWN_SECONDS="${COOLDOWN_SECONDS:-120}"
 FAILURE_PATTERN="${FAILURE_PATTERN:-remote browser unreachable}"
-STATE_FILE="${STATE_FILE:-/tmp/euosint-browser-watchdog.state}"
+STATE_FILE="${STATE_FILE:-/tmp/kafsiem-browser-watchdog.state}"
 
 now_epoch="$(date +%s)"
 last_restart_epoch="0"

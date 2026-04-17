@@ -57,7 +57,7 @@ Important optional environment:
 
 - `AGENTOPS_POLICY_PATH=/config/agentops_policy.yaml`
 - `AGENTOPS_REPLAY_ENABLED=true`
-- `AGENTOPS_REPLAY_PREFIX=euosint-agentops-replay`
+- `AGENTOPS_REPLAY_PREFIX=kafsiem-agentops-replay`
 - `AGENTOPS_REJECT_TOPIC=group.<group>.agentops.rejects`
 - `AGENTOPS_OUTPUT_PATH=/data/agentops-state.json`
 

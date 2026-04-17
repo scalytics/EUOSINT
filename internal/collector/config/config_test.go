@@ -137,8 +137,8 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	t.Setenv("KAFKA_ENABLED", "true")
 	t.Setenv("KAFKA_BROKERS", "kafka-1:9092,kafka-2:9092")
 	t.Setenv("KAFKA_TOPICS", "alerts-a,alerts-b")
-	t.Setenv("KAFKA_GROUP_ID", "euosint-kafka-test")
-	t.Setenv("KAFKA_CLIENT_ID", "euosint-kafka-client")
+	t.Setenv("KAFKA_GROUP_ID", "kafsiem-kafka-test")
+	t.Setenv("KAFKA_CLIENT_ID", "kafsiem-kafka-client")
 	t.Setenv("KAFKA_SECURITY_PROTOCOL", "sasl_ssl")
 	t.Setenv("KAFKA_SASL_MECHANISM", "scram-sha-512")
 	t.Setenv("KAFKA_USERNAME", "alice")
@@ -152,8 +152,8 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	t.Setenv("AGENTOPS_ENABLED", "true")
 	t.Setenv("AGENTOPS_BROKERS", "broker-a:9092,broker-b:9092")
 	t.Setenv("AGENTOPS_GROUP_NAME", "core")
-	t.Setenv("AGENTOPS_GROUP_ID", "euosint-agentops-prod")
-	t.Setenv("AGENTOPS_CLIENT_ID", "euosint-agentops-ui")
+	t.Setenv("AGENTOPS_GROUP_ID", "kafsiem-agentops-prod")
+	t.Setenv("AGENTOPS_CLIENT_ID", "kafsiem-agentops-ui")
 	t.Setenv("AGENTOPS_TOPIC_MODE", "manual")
 	t.Setenv("AGENTOPS_TOPICS", "group.core.requests,group.core.responses")
 	t.Setenv("AGENTOPS_SECURITY_PROTOCOL", "sasl_ssl")
@@ -200,7 +200,7 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	if len(cfg.KafkaTopics) != 2 || cfg.KafkaTopics[1] != "alerts-b" {
 		t.Fatalf("unexpected kafka topics: %#v", cfg.KafkaTopics)
 	}
-	if cfg.KafkaGroupID != "euosint-kafka-test" || cfg.KafkaClientID != "euosint-kafka-client" {
+	if cfg.KafkaGroupID != "kafsiem-kafka-test" || cfg.KafkaClientID != "kafsiem-kafka-client" {
 		t.Fatalf("unexpected kafka ids group=%q client=%q", cfg.KafkaGroupID, cfg.KafkaClientID)
 	}
 	if cfg.KafkaSecurityProtocol != "SASL_SSL" || cfg.KafkaSASLMechanism != "SCRAM-SHA-512" {
@@ -227,7 +227,7 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	if len(cfg.AgentOpsBrokers) != 2 || cfg.AgentOpsBrokers[1] != "broker-b:9092" {
 		t.Fatalf("unexpected agentops brokers: %#v", cfg.AgentOpsBrokers)
 	}
-	if cfg.AgentOpsGroupName != "core" || cfg.AgentOpsGroupID != "euosint-agentops-prod" || cfg.AgentOpsClientID != "euosint-agentops-ui" {
+	if cfg.AgentOpsGroupName != "core" || cfg.AgentOpsGroupID != "kafsiem-agentops-prod" || cfg.AgentOpsClientID != "kafsiem-agentops-ui" {
 		t.Fatalf("unexpected agentops ids name=%q group=%q client=%q", cfg.AgentOpsGroupName, cfg.AgentOpsGroupID, cfg.AgentOpsClientID)
 	}
 	if cfg.AgentOpsTopicMode != "manual" {

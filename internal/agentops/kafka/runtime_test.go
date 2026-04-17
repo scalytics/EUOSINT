@@ -795,7 +795,7 @@ func TestHelperFunctions(t *testing.T) {
 	if got := max(1, 2); got != 2 {
 		t.Fatalf("unexpected max %d", got)
 	}
-	if got := newReplayGroupID("", time.Date(2026, 4, 10, 12, 30, 0, 0, time.UTC)); !strings.HasPrefix(got, "euosint-agentops-replay-") {
+	if got := newReplayGroupID("", time.Date(2026, 4, 10, 12, 30, 0, 0, time.UTC)); !strings.HasPrefix(got, "kafsiem-agentops-replay-") {
 		t.Fatalf("unexpected replay prefix fallback %q", got)
 	}
 }
@@ -1426,7 +1426,7 @@ func TestStartReplayWithoutPrefixAndGlobalReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(session.GroupID, "euosint-agentops-replay-") {
+	if !strings.HasPrefix(session.GroupID, "kafsiem-agentops-replay-") {
 		t.Fatalf("unexpected default replay group id %q", session.GroupID)
 	}
 	waitForReplayStatus(t, svc.file, session.ID, "completed")

@@ -1,7 +1,7 @@
 services:
   browser:
-    container_name: euosint-browser
-    image: "${EUOSINT_BROWSER_IMAGE:-ghcr.io/browserless/chromium:v2.44.0}"
+    container_name: kafsiem-browser
+    image: "${KAFSIEM_BROWSER_IMAGE:-ghcr.io/browserless/chromium:v2.44.0}"
     environment:
       PREBOOT_CHROME: "true"
       MAX_CONCURRENT_SESSIONS: "${BROWSER_MAX_CONCURRENCY:-4}"
@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
 
   collector:
-    image: "${EUOSINT_COLLECTOR_IMAGE:-ghcr.io/scalytics/kafsiem-collector:latest}"
+    image: "${KAFSIEM_COLLECTOR_IMAGE:-ghcr.io/scalytics/kafsiem-collector:latest}"
     build:
       context: .
       dockerfile: Dockerfile.collector
@@ -105,8 +105,8 @@ services:
     init: true
     restart: unless-stopped
 
-  euosint:
-    image: "${EUOSINT_WEB_IMAGE:-ghcr.io/scalytics/euosint-web:latest}"
+  kafsiem:
+    image: "${KAFSIEM_WEB_IMAGE:-ghcr.io/scalytics/kafsiem-web:latest}"
     build:
       context: .
       dockerfile: Dockerfile
@@ -115,12 +115,12 @@ services:
     env_file:
       - .env
     environment:
-      EUOSINT_SITE_ADDRESS: "${EUOSINT_SITE_ADDRESS:-:80}"
+      KAFSIEM_SITE_ADDRESS: "${KAFSIEM_SITE_ADDRESS:-:80}"
     ports:
-      - "${EUOSINT_HTTP_PORT:-8080}:80"
-      - "${EUOSINT_HTTPS_PORT:-8443}:443"
+      - "${KAFSIEM_HTTP_PORT:-8080}:80"
+      - "${KAFSIEM_HTTPS_PORT:-8443}:443"
     volumes:
-      - feed-data:/var/lib/euosint:ro
+      - feed-data:/var/lib/kafsiem:ro
       - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config

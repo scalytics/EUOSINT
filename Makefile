@@ -9,7 +9,7 @@ GO_COVER_REPORT ?= .tmp/go-coverage.txt
 GOCACHE_DIR ?= $(CURDIR)/.tmp/go-build-cache
 GOMODCACHE_DIR ?= $(CURDIR)/.tmp/go-mod-cache
 CODEQL_RAM_MB ?= 4096
-DOCKER_IMAGE ?= euosint
+DOCKER_IMAGE ?= kafsiem
 IMAGE_TAG ?= local
 BUILDER ?= colima
 DOCKER_ARCH ?= $(shell docker info --format '{{.Architecture}}' 2>/dev/null | sed 's/aarch64/arm64/' | sed 's/x86_64/amd64/')
@@ -130,7 +130,7 @@ docker-logs: ## Tail Docker logs
 	$(DOCKER_COMPOSE) logs -f --tail=200
 
 docker-shell: ## Open a shell in the running container
-	$(DOCKER_COMPOSE) exec euosint sh
+	$(DOCKER_COMPOSE) exec kafsiem sh
 
 registry/cities500.txt: ## Download geonames data (one-time)
 	curl -sL https://download.geonames.org/export/dump/cities500.zip -o /tmp/cities500.zip
@@ -146,10 +146,10 @@ dev-ensure-env: ## Ensure local .env contains API_BEARER_TOKEN for local API pro
 
 dev-start: registry/cities500.txt dev-collector-bin dev-ensure-env ## Start the local HTTP dev stack on localhost
 	docker build -f Dockerfile.collector.dev -t kafsiem-collector:dev .
-	$(DOCKER_COMPOSE) build euosint
-	EUOSINT_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
-	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
-	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
+	$(DOCKER_COMPOSE) build kafsiem
+	KAFSIEM_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
+	@echo "EUOSINT available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
+	@open "http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 
 dev-stop: ## Stop the local dev stack, remove volumes, prune dangling images
 	$(DOCKER_COMPOSE) down --remove-orphans -v
@@ -163,20 +163,20 @@ dev-stop-clean: ## Stop stack, remove feed-data volume, and aggressively prune D
 dev-restart: registry/cities500.txt dev-collector-bin dev-ensure-env ## Restart the local dev stack (removes volumes, rebuilds)
 	$(DOCKER_COMPOSE) down --remove-orphans -v
 	docker build -f Dockerfile.collector.dev -t kafsiem-collector:dev .
-	$(DOCKER_COMPOSE) build euosint
-	EUOSINT_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
-	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
-	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
+	$(DOCKER_COMPOSE) build kafsiem
+	KAFSIEM_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
+	@echo "EUOSINT available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
+	@open "http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 
 dev-restart-clean: registry/cities500.txt dev-collector-bin dev-ensure-env ## Restart from scratch (removes volumes, prunes caches)
 	$(DOCKER_COMPOSE) down --remove-orphans -v
 	@docker image prune -af >/dev/null 2>&1 || true
 	@docker builder prune -af >/dev/null 2>&1 || true
 	docker build --no-cache -f Dockerfile.collector.dev -t kafsiem-collector:dev .
-	$(DOCKER_COMPOSE) build --no-cache euosint
-	EUOSINT_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
-	@echo "EUOSINT available at http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
-	@open "http://localhost:$${EUOSINT_HTTP_PORT:-8080}"
+	$(DOCKER_COMPOSE) build --no-cache kafsiem
+	KAFSIEM_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
+	@echo "EUOSINT available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
+	@open "http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 
 dev-sync-registry: ## Merge source_registry.json into the running DB (adds new feeds)
 	$(DOCKER_COMPOSE) exec collector kafsiem-collector --source-db /data/sources.db --curated-seed /app/registry/source_registry.json --source-db-merge-registry

@@ -7,7 +7,7 @@ Description=Run EUOSINT browser watchdog every minute
 [Timer]
 OnBootSec=1min
 OnUnitActiveSec=1min
-Unit=euosint-browser-watchdog.service
+Unit=kafsiem-browser-watchdog.service
 
 [Install]
 WantedBy=timers.target

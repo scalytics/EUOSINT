@@ -71,9 +71,9 @@ wget -qO- https://raw.githubusercontent.com/scalytics/EUOSINT/main/deploy/instal
 The installer will:
 - verify Docker + Compose availability
 - clone or update the repo on the host
-- set GHCR runtime images (`ghcr.io/scalytics/euosint-web` + `ghcr.io/scalytics/kafsiem-collector`)
+- set GHCR runtime images (`ghcr.io/scalytics/kafsiem-web` + `ghcr.io/scalytics/kafsiem-collector`)
 - prompt for install mode (`preserve` or `fresh` volume reset)
-- prompt for domain (`EUOSINT_SITE_ADDRESS`)
+- prompt for domain (`KAFSIEM_SITE_ADDRESS`)
 - when domain mode is enabled, optionally check `ufw`/`firewalld` and validate local 80/443 availability
 - prompt for essential runtime keys only (URL, API credentials, optional LLM toggles)
 - optionally run `docker compose pull` and start with `--no-build`

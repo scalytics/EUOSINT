@@ -951,7 +951,7 @@ func max(a, b int) int {
 func newReplayGroupID(prefix string, now time.Time) string {
 	prefix = strings.TrimSpace(prefix)
 	if prefix == "" {
-		prefix = "euosint-agentops-replay"
+		prefix = "kafsiem-agentops-replay"
 	}
 	return fmt.Sprintf("%s-%s", prefix, now.UTC().Format("20060102t150405"))
 }

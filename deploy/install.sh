@@ -6,23 +6,23 @@
 # Optional environment overrides:
 #   REPO_URL=https://github.com/scalytics/EUOSINT.git
 #   REPO_REF=main
-#   INSTALL_DIR=$HOME/euosint
+#   INSTALL_DIR=$HOME/kafsiem
 #   IMAGE_TAG=latest
 
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/scalytics/EUOSINT.git}"
 REPO_REF="${REPO_REF:-main}"
-INSTALL_DIR="${INSTALL_DIR:-$HOME/euosint}"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/kafsiem}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 INSTALL_MODE="${INSTALL_MODE:-update}"
 TLS_MODE="false"
 REPO_SLUG=""
 RESET_ZONE_BRIEF_REQUESTED="0"
 
-info() { echo "[euosint-install] $*"; }
-warn() { echo "[euosint-install][warn] $*" >&2; }
-fatal() { echo "[euosint-install][error] $*" >&2; exit 1; }
+info() { echo "[kafsiem-install] $*"; }
+warn() { echo "[kafsiem-install][warn] $*" >&2; }
+fatal() { echo "[kafsiem-install][error] $*" >&2; exit 1; }
 
 read_prompt() {
   local prompt_text="$1"
@@ -222,8 +222,8 @@ refresh_registry_files_direct() {
 
 refresh_watchdog_files_direct() {
   local watchdog_script="$INSTALL_DIR/scripts/browser_watchdog.sh"
-  local watchdog_service="$INSTALL_DIR/docs/euosint-browser-watchdog.service"
-  local watchdog_timer="$INSTALL_DIR/docs/euosint-browser-watchdog.timer"
+  local watchdog_service="$INSTALL_DIR/docs/kafsiem-browser-watchdog.service"
+  local watchdog_timer="$INSTALL_DIR/docs/kafsiem-browser-watchdog.timer"
   local tmp_file
 
   mkdir -p "$INSTALL_DIR/scripts" "$INSTALL_DIR/docs"
@@ -234,11 +234,11 @@ refresh_watchdog_files_direct() {
   chmod +x "$watchdog_script"
 
   tmp_file="$(mktemp)"
-  fetch_repo_file "docs/euosint-browser-watchdog.service" "$tmp_file"
+  fetch_repo_file "docs/kafsiem-browser-watchdog.service" "$tmp_file"
   mv "$tmp_file" "$watchdog_service"
 
   tmp_file="$(mktemp)"
-  fetch_repo_file "docs/euosint-browser-watchdog.timer" "$tmp_file"
+  fetch_repo_file "docs/kafsiem-browser-watchdog.timer" "$tmp_file"
   mv "$tmp_file" "$watchdog_timer"
 
   info "Refreshed browser watchdog files from repository ref '$REPO_REF'."
@@ -288,7 +288,7 @@ configure_env() {
 
     # Ports are auto-derived; bearer token is auto-rotated — skip.
     case "$key" in
-      EUOSINT_HTTP_PORT|EUOSINT_HTTPS_PORT|API_BEARER_TOKEN) continue ;;
+      KAFSIEM_HTTP_PORT|KAFSIEM_HTTPS_PORT|API_BEARER_TOKEN) continue ;;
     esac
 
     # Current value from .env if present, otherwise .env.example default.
@@ -317,7 +317,7 @@ configure_env() {
 
     local prompt_label="$key"
     case "$key" in
-      EUOSINT_SITE_ADDRESS) prompt_label="Live URL" ;;
+      KAFSIEM_SITE_ADDRESS) prompt_label="Live URL" ;;
       COLLECTOR_ROLE) prompt_label="Collector Role" ;;
       UCDP_ACCESS_TOKEN) prompt_label="UCDP API Token" ;;
       ACLED_USERNAME) prompt_label="ACLED Username" ;;
@@ -340,17 +340,17 @@ configure_env() {
 
   # Auto-configure ports based on site address.
   local site_addr
-  site_addr="$(grep -E '^EUOSINT_SITE_ADDRESS=' "$env_file" | head -1 | cut -d= -f2-)"
+  site_addr="$(grep -E '^KAFSIEM_SITE_ADDRESS=' "$env_file" | head -1 | cut -d= -f2-)"
   if [[ -n "$site_addr" && "$site_addr" != ":80" && "$site_addr" != ":8080" ]]; then
     TLS_MODE="true"
-    upsert_env "$env_file" "EUOSINT_HTTP_PORT" "80"
-    upsert_env "$env_file" "EUOSINT_HTTPS_PORT" "443"
+    upsert_env "$env_file" "KAFSIEM_HTTP_PORT" "80"
+    upsert_env "$env_file" "KAFSIEM_HTTPS_PORT" "443"
     info "Domain '$site_addr' detected — ports set to 80/443 for automatic TLS."
     warn "Ensure DNS A/AAAA records point to this host and inbound 80/443 are open."
   else
     TLS_MODE="false"
-    upsert_env "$env_file" "EUOSINT_HTTP_PORT" "8080"
-    upsert_env "$env_file" "EUOSINT_HTTPS_PORT" "8443"
+    upsert_env "$env_file" "KAFSIEM_HTTP_PORT" "8080"
+    upsert_env "$env_file" "KAFSIEM_HTTPS_PORT" "8443"
     info "Localhost mode — ports set to 8080/8443."
   fi
 
@@ -369,9 +369,9 @@ print_runtime_summary() {
   local env_file="$INSTALL_DIR/.env"
   local site_addr host_name http_port https_port live_url compose_url watchdog_url
 
-  site_addr="$(grep -E '^EUOSINT_SITE_ADDRESS=' "$env_file" | head -1 | cut -d= -f2- || true)"
-  http_port="$(grep -E '^EUOSINT_HTTP_PORT=' "$env_file" | head -1 | cut -d= -f2- || echo "8080")"
-  https_port="$(grep -E '^EUOSINT_HTTPS_PORT=' "$env_file" | head -1 | cut -d= -f2- || echo "8443")"
+  site_addr="$(grep -E '^KAFSIEM_SITE_ADDRESS=' "$env_file" | head -1 | cut -d= -f2- || true)"
+  http_port="$(grep -E '^KAFSIEM_HTTP_PORT=' "$env_file" | head -1 | cut -d= -f2- || echo "8080")"
+  https_port="$(grep -E '^KAFSIEM_HTTPS_PORT=' "$env_file" | head -1 | cut -d= -f2- || echo "8443")"
   host_name="$(hostname -f 2>/dev/null || hostname)"
 
   if [[ -n "$site_addr" && "$site_addr" != ":80" && "$site_addr" != ":8080" ]]; then
@@ -459,8 +459,8 @@ preflight_tls_checks() {
     run_firewall_checks
   fi
 
-  if [[ "$INSTALL_MODE" == "update" ]] && container_running_for_service "euosint"; then
-    info "Existing euosint service is running; skipping strict local port-collision pre-check."
+  if [[ "$INSTALL_MODE" == "update" ]] && container_running_for_service "kafsiem"; then
+    info "Existing kafsiem service is running; skipping strict local port-collision pre-check."
   else
     info "Validating that ports 80 and 443 are free..."
     validate_tls_ports
@@ -504,8 +504,8 @@ start_stack() {
     (
       cd "$INSTALL_DIR"
       $COMPOSE_CMD down --remove-orphans || true
-      docker volume rm "${COMPOSE_PROJECT_NAME:-euosint}_caddy-data" 2>/dev/null || true
-      docker volume rm "${COMPOSE_PROJECT_NAME:-euosint}_caddy-config" 2>/dev/null || true
+      docker volume rm "${COMPOSE_PROJECT_NAME:-kafsiem}_caddy-data" 2>/dev/null || true
+      docker volume rm "${COMPOSE_PROJECT_NAME:-kafsiem}_caddy-config" 2>/dev/null || true
     )
   fi
 
@@ -529,8 +529,8 @@ start_stack() {
   fi
 
   local site_addr http_port host_name live_url
-  site_addr="$(grep -E '^EUOSINT_SITE_ADDRESS=' "$INSTALL_DIR/.env" | head -1 | cut -d= -f2- || true)"
-  http_port="$(grep -E '^EUOSINT_HTTP_PORT=' "$INSTALL_DIR/.env" | cut -d= -f2 || echo "8080")"
+  site_addr="$(grep -E '^KAFSIEM_SITE_ADDRESS=' "$INSTALL_DIR/.env" | head -1 | cut -d= -f2- || true)"
+  http_port="$(grep -E '^KAFSIEM_HTTP_PORT=' "$INSTALL_DIR/.env" | cut -d= -f2 || echo "8080")"
   host_name="$(hostname -f 2>/dev/null || hostname)"
   if [[ -n "$site_addr" && "$site_addr" != ":80" && "$site_addr" != ":8080" ]]; then
     live_url="https://${site_addr}"
@@ -557,17 +557,17 @@ install_user_watchdog_timer() {
 
   user_unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
   mkdir -p "$user_unit_dir"
-  svc_file="$user_unit_dir/euosint-browser-watchdog.service"
-  timer_file="$user_unit_dir/euosint-browser-watchdog.timer"
+  svc_file="$user_unit_dir/kafsiem-browser-watchdog.service"
+  timer_file="$user_unit_dir/kafsiem-browser-watchdog.timer"
 
-  cp "$INSTALL_DIR/docs/euosint-browser-watchdog.service" "$svc_file"
-  cp "$INSTALL_DIR/docs/euosint-browser-watchdog.timer" "$timer_file"
+  cp "$INSTALL_DIR/docs/kafsiem-browser-watchdog.service" "$svc_file"
+  cp "$INSTALL_DIR/docs/kafsiem-browser-watchdog.timer" "$timer_file"
   sed -i.bak -E "s|^WorkingDirectory=.*$|WorkingDirectory=${INSTALL_DIR}|" "$svc_file"
   sed -i.bak -E "s|^ExecStart=.*$|ExecStart=/bin/bash ${INSTALL_DIR}/scripts/browser_watchdog.sh|" "$svc_file"
 
   systemctl --user daemon-reload
-  systemctl --user enable --now euosint-browser-watchdog.timer
-  info "Enabled user timer: euosint-browser-watchdog.timer"
+  systemctl --user enable --now kafsiem-browser-watchdog.timer
+  info "Enabled user timer: kafsiem-browser-watchdog.timer"
   info "Tip: for boot-time execution without login, run once as root:"
   info "  sudo loginctl enable-linger $USER"
 }

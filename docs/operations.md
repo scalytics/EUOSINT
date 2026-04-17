@@ -42,7 +42,7 @@ docker-compose up --build -d
 Default local behavior:
 
 - HTTP on `http://localhost:8080`
-- HTTPS listener mapped to `https://localhost:8443` but not used unless `EUOSINT_SITE_ADDRESS` is changed to a hostname that enables TLS
+- HTTPS listener mapped to `https://localhost:8443` but not used unless `KAFSIEM_SITE_ADDRESS` is changed to a hostname that enables TLS
 - The collector initializes empty JSON outputs on a fresh shared feed volume, then replaces them with live collector output on the first successful run
 - Advanced tuning variables are documented in [docs/advanced-config.md](/Users/alo/Development/scalytics/EUOSINT/docs/advanced-config.md).
 
@@ -70,9 +70,9 @@ CLI flags (equivalents):
 5. Create a `.env` file in the repo root:
 
 ```dotenv
-EUOSINT_SITE_ADDRESS=alerts.example.com
-EUOSINT_HTTP_PORT=80
-EUOSINT_HTTPS_PORT=443
+KAFSIEM_SITE_ADDRESS=alerts.example.com
+KAFSIEM_HTTP_PORT=80
+KAFSIEM_HTTPS_PORT=443
 ```
 
 6. Start the stack:
@@ -81,7 +81,7 @@ EUOSINT_HTTPS_PORT=443
 docker compose up --build -d
 ```
 
-With a real domain in `EUOSINT_SITE_ADDRESS`, Caddy will request and renew TLS certificates automatically and store them in the `caddy-data` volume.
+With a real domain in `KAFSIEM_SITE_ADDRESS`, Caddy will request and renew TLS certificates automatically and store them in the `caddy-data` volume.
 
 ## VM Service With systemd
 
@@ -99,7 +99,7 @@ If the VM only has `docker-compose`, adjust the unit commands accordingly.
 
 ## Browser Watchdog
 
-Run [scripts/browser_watchdog.sh](/Users/alo/Development/scalytics/EUOSINT/scripts/browser_watchdog.sh) on the host every minute. It restarts `euosint-browser` when either:
+Run [scripts/browser_watchdog.sh](/Users/alo/Development/scalytics/EUOSINT/scripts/browser_watchdog.sh) on the host every minute. It restarts `kafsiem-browser` when either:
 
 - browser health is not healthy/running
 - collector logs show repeated remote websocket fallback warnings
@@ -113,10 +113,10 @@ One-shot run:
 systemd timer install:
 
 ```bash
-sudo cp docs/euosint-browser-watchdog.service /etc/systemd/system/euosint-browser-watchdog.service
-sudo cp docs/euosint-browser-watchdog.timer /etc/systemd/system/euosint-browser-watchdog.timer
+sudo cp docs/kafsiem-browser-watchdog.service /etc/systemd/system/kafsiem-browser-watchdog.service
+sudo cp docs/kafsiem-browser-watchdog.timer /etc/systemd/system/kafsiem-browser-watchdog.timer
 sudo systemctl daemon-reload
-sudo systemctl enable --now euosint-browser-watchdog.timer
+sudo systemctl enable --now kafsiem-browser-watchdog.timer
 ```
 
 ## Operational Notes
