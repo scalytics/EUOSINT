@@ -16,6 +16,33 @@ Use an immutable image plus mounted config and data volumes:
 
 AgentOps treats a missing `/config/agentops_policy.yaml` as "use built-in defaults".
 
+## Local Demo And Dev
+
+For a local AgentOps dashboard demo with mocked Kafka-derived traffic and the real UI shell:
+
+```bash
+npm install
+npm run demo:agentops
+```
+
+This starts Vite, opens `/?demo=agentops`, serves fixture data from `public/demo/*.json`, and mocks the replay POST path locally.
+
+Demo behavior:
+
+- the dashboard boots directly into `AGENTOPS`
+- flow, trace, task, topic-health, and operator panels render from fixture state
+- replay requests are accepted locally so the UI can exercise the full interaction path
+- this is a UI/dev workflow only; it does not require a live Kafka broker
+
+For live local development against the collector output instead of the demo fixtures:
+
+```bash
+npm run fetch:alerts:watch
+npm run dev
+```
+
+In that mode, the desktop app reads generated runtime JSON such as `alerts.json` and `agentops-state.json`.
+
 ## Runtime Surface
 
 Required environment:
