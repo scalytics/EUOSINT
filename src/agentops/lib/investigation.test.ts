@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildConversationTimeline, buildRunSummary, sortFlowsForQueue } from "@/agentops/lib/investigation";
+import { buildConversationTimeline, buildRunSummary, groupRunsForQueue, sortFlowsForQueue } from "@/agentops/lib/investigation";
 import type { AgentOpsFlow, AgentOpsHealth, AgentOpsMessage, AgentOpsTask, AgentOpsTrace } from "@/agentops/types";
 
 const health: AgentOpsHealth = {
@@ -101,5 +101,12 @@ describe("investigation helpers", () => {
     const completed: AgentOpsFlow = { ...flow, id: "corr-2", latest_status: "completed", last_seen: "2026-04-10T12:05:00Z" };
     const ordered = sortFlowsForQueue([completed, flow], messages, tasks, traces, health);
     expect(ordered[0]?.id).toBe("corr-1");
+  });
+
+  test("groupRunsForQueue buckets runs by attention and completion", () => {
+    const completed: AgentOpsFlow = { ...flow, id: "corr-2", latest_status: "completed" };
+    const sections = groupRunsForQueue([flow, completed], messages, tasks, traces, health);
+    expect(sections[0]?.title).toBe("Needs Attention");
+    expect(sections[0]?.flowIds).toContain("corr-1");
   });
 });

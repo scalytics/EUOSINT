@@ -134,8 +134,33 @@ const baseState: AgentOpsState = {
   ],
 };
 
+function resetPrefs() {
+  window.localStorage.clear();
+}
+
+function installStorage() {
+  const store = new Map<string, string>();
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value);
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+      clear: () => {
+        store.clear();
+      },
+    },
+  });
+}
+
 beforeEach(() => {
   vi.restoreAllMocks();
+  installStorage();
+  resetPrefs();
   mockedUseAgentOpsOperator.mockReset();
   mockedUseAgentOpsOperator.mockReturnValue({
     supported: true,
@@ -254,4 +279,16 @@ test("triggers replay through the AgentOps API", async () => {
   expect(screen.getByText("Replay request queued.")).toBeTruthy();
   await waitFor(() => expect(screen.getByText("Replay accepted.")).toBeTruthy());
   expect(screen.getByText("accepted")).toBeTruthy();
+});
+
+test("applies persisted queue preferences and selected run", () => {
+  window.localStorage.setItem("euosint.agentops.queue_filter", "all");
+  window.localStorage.setItem("euosint.agentops.queue_anomalies_only", "true");
+  window.localStorage.setItem("euosint.agentops.selected_run", "corr-1");
+
+  render(<AgentOpsApp state={baseState} mode="AGENTOPS" />);
+
+  expect(screen.getByText("Needs Attention")).toBeTruthy();
+  expect(screen.getByText("selected")).toBeTruthy();
+  expect(screen.getByRole("button", { name: /anomalies only/i })).toBeTruthy();
 });

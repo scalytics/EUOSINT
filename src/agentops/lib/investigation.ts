@@ -21,6 +21,12 @@ export interface RunSummary {
   anomalies: RunAnomaly[];
 }
 
+export interface QueueSection {
+  key: string;
+  title: string;
+  flowIds: string[];
+}
+
 export interface TimelineItem {
   id: string;
   kind: "event" | "gap";
@@ -162,6 +168,31 @@ export function sortFlowsForQueue(
       Date.parse(right.last_seen) - Date.parse(left.last_seen)
     );
   });
+}
+
+export function groupRunsForQueue(
+  flows: AgentOpsFlow[],
+  messages: AgentOpsMessage[],
+  tasks: AgentOpsTask[],
+  traces: AgentOpsTrace[],
+  health: AgentOpsHealth,
+): QueueSection[] {
+  const sections: QueueSection[] = [
+    { key: "attention", title: "Needs Attention", flowIds: [] },
+    { key: "active", title: "Active", flowIds: [] },
+    { key: "completed", title: "Completed", flowIds: [] },
+  ];
+  for (const flow of flows) {
+    const summary = buildRunSummary(flow, relatedMessages(flow, messages), tasks, traces, health);
+    const bucket =
+      summary.anomalyCount > 0
+        ? sections[0]
+        : /completed|done/i.test(flow.latest_status || "")
+          ? sections[2]
+          : sections[1];
+    bucket.flowIds.push(flow.id);
+  }
+  return sections.filter((section) => section.flowIds.length > 0);
 }
 
 function relatedMessages(flow: AgentOpsFlow, messages: AgentOpsMessage[]): AgentOpsMessage[] {

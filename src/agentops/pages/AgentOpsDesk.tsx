@@ -4,7 +4,8 @@ import { EmptyState, MetricCard, Panel, StatusRow, Tag } from "@/agentops/compon
 import { agentOpsReplayURL } from "@/agentops/lib/demo";
 import { MessageCard } from "@/agentops/components/MessageCard";
 import { buildFusionMatches } from "@/agentops/lib/hybrid";
-import { buildConversationTimeline, buildRunSummary, sortFlowsForQueue } from "@/agentops/lib/investigation";
+import { buildConversationTimeline, buildRunSummary, groupRunsForQueue, sortFlowsForQueue } from "@/agentops/lib/investigation";
+import { loadAnomaliesOnly, loadQueueFilter, loadSelectedRunId, persistAnomaliesOnly, persistQueueFilter, persistSelectedRunId, type RunQueueFilter } from "@/agentops/lib/preferences";
 import { formatTime } from "@/agentops/lib/view";
 import { useAgentOpsOperator } from "@/hooks/useAgentOpsOperator";
 import { useAlerts } from "@/hooks/useAlerts";
@@ -18,7 +19,9 @@ interface Props {
 export function AgentOpsDesk({ state, mode }: Props) {
   const operator = useAgentOpsOperator(mode !== "OSINT");
   const { alerts } = useAlerts();
-  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(state.flows[0]?.id ?? null);
+  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(() => loadSelectedRunId() ?? state.flows[0]?.id ?? null);
+  const [queueFilter, setQueueFilter] = useState<RunQueueFilter>(() => loadQueueFilter());
+  const [anomaliesOnly, setAnomaliesOnly] = useState<boolean>(() => loadAnomaliesOnly());
   const [isPending, startTransition] = useTransition();
   const [replayNotice, setReplayNotice] = useState<string>("");
   const [optimisticReplayCount, setOptimisticReplayCount] = useState(0);
@@ -27,6 +30,14 @@ export function AgentOpsDesk({ state, mode }: Props) {
   useEffect(() => {
     setOptimisticReplaySessions(state.replay_sessions);
   }, [state.replay_sessions]);
+
+  useEffect(() => {
+    if (!state.flows.some((flow) => flow.id === selectedFlowId)) {
+      const next = sortFlowsForQueue(state.flows, state.messages, state.tasks, state.traces, state.health)[0]?.id ?? null;
+      setSelectedFlowId(next);
+      persistSelectedRunId(next);
+    }
+  }, [selectedFlowId, state.flows, state.messages, state.tasks, state.traces, state.health]);
 
   useEffect(() => {
     if (replayNotice) {
@@ -40,6 +51,27 @@ export function AgentOpsDesk({ state, mode }: Props) {
     [selectedFlowId, state.flows],
   );
   const queueFlows = useMemo(() => sortFlowsForQueue(state.flows, state.messages, state.tasks, state.traces, state.health), [state.flows, state.messages, state.tasks, state.traces, state.health]);
+  const queueSections = useMemo(() => {
+    const filtered = queueFlows.filter((flow) => {
+      const flowMessages = state.messages.filter((message) => message.correlation_id === flow.id);
+      const flowTasks = state.tasks.filter((task) => flow.task_ids.includes(task.id));
+      const flowTraces = state.traces.filter((trace) => flow.trace_ids.includes(trace.id));
+      const summary = buildRunSummary(flow, flowMessages, flowTasks, flowTraces, state.health);
+      if (anomaliesOnly && summary.anomalyCount === 0) return false;
+      switch (queueFilter) {
+        case "active":
+          return !/completed|done/i.test(flow.latest_status || "");
+        case "completed":
+          return /completed|done/i.test(flow.latest_status || "");
+        case "attention":
+          return summary.anomalyCount > 0;
+        case "all":
+        default:
+          return true;
+      }
+    });
+    return groupRunsForQueue(filtered, state.messages, state.tasks, state.traces, state.health);
+  }, [anomaliesOnly, queueFilter, queueFlows, state.health, state.messages, state.tasks, state.traces]);
   const relatedMessages = useMemo(() => {
     if (!selectedFlow) return state.messages.slice(0, 16);
     return state.messages.filter((message) => message.correlation_id === selectedFlow.id).slice(0, 24);
@@ -95,6 +127,24 @@ export function AgentOpsDesk({ state, mode }: Props) {
     });
   }
 
+  function selectFlow(id: string) {
+    setSelectedFlowId(id);
+    persistSelectedRunId(id);
+  }
+
+  function updateQueueFilter(filter: RunQueueFilter) {
+    setQueueFilter(filter);
+    persistQueueFilter(filter);
+  }
+
+  function toggleAnomaliesOnly() {
+    setAnomaliesOnly((current) => {
+      const next = !current;
+      persistAnomaliesOnly(next);
+      return next;
+    });
+  }
+
   return (
     <main className="h-dvh overflow-hidden bg-siem-bg text-siem-text">
       <div className="mx-auto flex h-full max-w-[1800px] flex-col gap-5 overflow-hidden px-4 py-5 md:px-6">
@@ -140,8 +190,37 @@ export function AgentOpsDesk({ state, mode }: Props) {
 
         <section className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[1.1fr_1fr_0.95fr]">
           <Panel title={mode === "HYBRID" ? "Agent Flow" : "Run Queue"} icon={Activity} bodyClassName="overflow-y-auto pr-1">
-            <div className="space-y-3">
-              {queueFlows.slice(0, 20).map((flow) => {
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {(["attention", "active", "completed", "all"] as RunQueueFilter[]).map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => updateQueueFilter(filter)}
+                    className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${
+                      queueFilter === filter ? "border-siem-accent/50 bg-siem-accent/14 text-siem-text" : "border-siem-border text-siem-muted"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={toggleAnomaliesOnly}
+                  className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${
+                    anomaliesOnly ? "border-siem-accent/50 bg-siem-accent/14 text-siem-text" : "border-siem-border text-siem-muted"
+                  }`}
+                >
+                  anomalies only
+                </button>
+              </div>
+              {queueSections.length === 0 ? <EmptyState text="No runs match the current queue filter." /> : null}
+              {queueSections.map((section) => (
+                <div key={section.key} className="space-y-3">
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-siem-muted">{section.title}</div>
+                  {section.flowIds.map((flowId) => {
+                    const flow = queueFlows.find((entry) => entry.id === flowId);
+                    if (!flow) return null;
                 const active = selectedFlow?.id === flow.id;
                 const flowMessages = state.messages.filter((message) => message.correlation_id === flow.id);
                 const flowTasks = state.tasks.filter((task) => flow.task_ids.includes(task.id));
@@ -151,7 +230,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
                   <button
                     key={flow.id}
                     type="button"
-                    onClick={() => setSelectedFlowId(flow.id)}
+                    onClick={() => selectFlow(flow.id)}
                     className={`w-full rounded-2xl border p-3 text-left transition ${
                       active
                         ? "border-siem-accent/45 bg-siem-accent/12"
@@ -179,7 +258,9 @@ export function AgentOpsDesk({ state, mode }: Props) {
                     </div>
                   </button>
                 );
-              })}
+                  })}
+                </div>
+              ))}
             </div>
           </Panel>
 
