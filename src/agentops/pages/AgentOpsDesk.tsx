@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Activity, CheckCircle2, GitBranch, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, GitBranch, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
 import { EmptyState, MetricCard, Panel, StatusRow, Tag } from "@/agentops/components/Chrome";
 import { agentOpsReplayURL } from "@/agentops/lib/demo";
 import { MessageCard } from "@/agentops/components/MessageCard";
 import { buildFusionMatches } from "@/agentops/lib/hybrid";
+import { buildConversationTimeline, buildRunSummary, sortFlowsForQueue } from "@/agentops/lib/investigation";
 import { formatTime } from "@/agentops/lib/view";
 import { useAgentOpsOperator } from "@/hooks/useAgentOpsOperator";
 import { useAlerts } from "@/hooks/useAlerts";
@@ -38,6 +39,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
     () => state.flows.find((flow) => flow.id === selectedFlowId) ?? state.flows[0] ?? null,
     [selectedFlowId, state.flows],
   );
+  const queueFlows = useMemo(() => sortFlowsForQueue(state.flows, state.messages, state.tasks, state.traces, state.health), [state.flows, state.messages, state.tasks, state.traces, state.health]);
   const relatedMessages = useMemo(() => {
     if (!selectedFlow) return state.messages.slice(0, 16);
     return state.messages.filter((message) => message.correlation_id === selectedFlow.id).slice(0, 24);
@@ -52,6 +54,8 @@ export function AgentOpsDesk({ state, mode }: Props) {
     const taskSet = new Set(selectedFlow.task_ids);
     return state.tasks.filter((task) => taskSet.has(task.id)).slice(0, 8);
   }, [selectedFlow, state.tasks]);
+  const runSummary = useMemo(() => buildRunSummary(selectedFlow, relatedMessages, relatedTasks, relatedTraces, state.health), [selectedFlow, relatedMessages, relatedTasks, relatedTraces, state.health]);
+  const timeline = useMemo(() => buildConversationTimeline(selectedFlow, relatedMessages, relatedTasks, relatedTraces), [selectedFlow, relatedMessages, relatedTasks, relatedTraces]);
   const fusionMatches = useMemo(() => (mode === "HYBRID" ? buildFusionMatches(selectedFlow, state.messages, alerts) : []), [alerts, mode, selectedFlow, state.messages]);
 
   function triggerReplay() {
@@ -135,10 +139,14 @@ export function AgentOpsDesk({ state, mode }: Props) {
         </section>
 
         <section className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[1.1fr_1fr_0.95fr]">
-          <Panel title={mode === "HYBRID" ? "Agent Flow" : "Flow Queue"} icon={Activity} bodyClassName="overflow-y-auto pr-1">
+          <Panel title={mode === "HYBRID" ? "Agent Flow" : "Run Queue"} icon={Activity} bodyClassName="overflow-y-auto pr-1">
             <div className="space-y-3">
-              {state.flows.slice(0, 20).map((flow) => {
+              {queueFlows.slice(0, 20).map((flow) => {
                 const active = selectedFlow?.id === flow.id;
+                const flowMessages = state.messages.filter((message) => message.correlation_id === flow.id);
+                const flowTasks = state.tasks.filter((task) => flow.task_ids.includes(task.id));
+                const flowTraces = state.traces.filter((trace) => flow.trace_ids.includes(trace.id));
+                const summary = buildRunSummary(flow, flowMessages, flowTasks, flowTraces, state.health);
                 return (
                   <button
                     key={flow.id}
@@ -152,18 +160,21 @@ export function AgentOpsDesk({ state, mode }: Props) {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="truncate font-semibold">{flow.id}</div>
-                        <div className="mt-1 text-xs text-siem-muted">{flow.latest_preview || "No decoded preview available"}</div>
+                        <div className="truncate font-semibold">{summary.title}</div>
+                        <div className="mt-1 font-mono text-[11px] text-siem-muted">{flow.id}</div>
+                        <div className="mt-2 text-xs text-siem-muted">{flow.latest_preview || "No decoded preview available"}</div>
                       </div>
                       <span className="rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-siem-muted">
                         {flow.latest_status || "active"}
                       </span>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                      <Tag>{flow.message_count} msgs</Tag>
-                      <Tag>{flow.topic_count} topics</Tag>
-                      <Tag>{flow.sender_count} senders</Tag>
+                      <Tag>{summary.participantCount} participants</Tag>
+                      <Tag>{summary.durationLabel}</Tag>
+                      <Tag>{summary.requestCount}/{summary.responseCount} req/resp</Tag>
+                      <Tag>{summary.confidence}</Tag>
                       <Tag>{formatTime(flow.last_seen)}</Tag>
+                      {summary.anomalyCount > 0 ? <Tag>{summary.anomalyCount} anomalies</Tag> : null}
                       {active ? <Tag>selected</Tag> : null}
                     </div>
                   </button>
@@ -172,18 +183,19 @@ export function AgentOpsDesk({ state, mode }: Props) {
             </div>
           </Panel>
 
-          <Panel title={mode === "HYBRID" ? "Fusion Summary" : "Trace Graph"} icon={GitBranch} bodyClassName="overflow-y-auto pr-1">
+          <Panel title={mode === "HYBRID" ? "Fusion Timeline" : "Conversation Timeline"} icon={GitBranch} bodyClassName="overflow-y-auto pr-1">
             <div className="space-y-4">
               {selectedFlow ? (
                 <>
                   <div className="rounded-2xl border border-siem-border bg-siem-panel/60 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Selected flow</div>
-                    <div className="mt-2 text-lg font-semibold">{selectedFlow.id}</div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Selected run</div>
+                    <div className="mt-2 text-lg font-semibold">{runSummary.title}</div>
+                    <div className="mt-1 font-mono text-xs text-siem-muted">{selectedFlow.id}</div>
                     <div className="mt-2 grid gap-2 text-sm text-siem-muted">
                       <div>First seen: {formatTime(selectedFlow.first_seen)}</div>
                       <div>Last seen: {formatTime(selectedFlow.last_seen)}</div>
-                      <div>Topics: {selectedFlow.topics.join(", ") || "none"}</div>
-                      <div>Senders: {selectedFlow.senders.join(", ") || "none"}</div>
+                      <div>Participants: {selectedFlow.senders.join(", ") || "none"}</div>
+                      <div>Confidence: {runSummary.confidence}</div>
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -210,33 +222,31 @@ export function AgentOpsDesk({ state, mode }: Props) {
                           </div>
                         ))
                       : null}
-                    {relatedTraces.map((trace) => (
-                      <div key={trace.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="font-semibold">{trace.id}</div>
-                            <div className="mt-1 text-xs text-siem-muted">{trace.latest_title || "trace span chain"}</div>
+                    {timeline.map((item) =>
+                      item.kind === "gap" ? (
+                        <div key={item.id} className="rounded-2xl border border-dashed border-siem-border bg-siem-bg/30 px-4 py-3 text-sm text-siem-muted">
+                          <div className="inline-flex items-center gap-2">
+                            <AlertTriangle size={14} className="text-siem-accent" />
+                            {item.detail}
                           </div>
-                          <Tag>{trace.span_count} spans</Tag>
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                          {trace.span_types.map((type) => (
-                            <Tag key={type}>{type}</Tag>
-                          ))}
+                      ) : (
+                        <div key={item.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="font-semibold">{item.title}</div>
+                              <div className="mt-1 text-xs text-siem-muted">{item.detail}</div>
+                            </div>
+                            <Tag>{item.family || "event"}</Tag>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
+                            <Tag>{formatTime(item.at)}</Tag>
+                            {item.sender ? <Tag>{item.sender}</Tag> : null}
+                            {item.status ? <Tag>{item.status}</Tag> : null}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    {relatedTasks.map((task) => (
-                      <div key={task.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
-                        <div className="font-semibold">{task.id}</div>
-                        <div className="mt-1 text-xs text-siem-muted">{task.description || task.last_summary || "task record"}</div>
-                        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                          <Tag>{task.status || "unknown"}</Tag>
-                          {task.requester_id ? <Tag>from {task.requester_id}</Tag> : null}
-                          {task.responder_id ? <Tag>to {task.responder_id}</Tag> : null}
-                        </div>
-                      </div>
-                    ))}
+                      ),
+                    )}
                   </div>
                 </>
               ) : (
@@ -246,15 +256,67 @@ export function AgentOpsDesk({ state, mode }: Props) {
           </Panel>
 
           <div className="grid min-h-0 gap-4 overflow-hidden">
-            <Panel title={mode === "HYBRID" ? "External Intel Context" : "Agent Context"} icon={ShieldAlert}>
-              <div className="grid gap-3">
-                <StatusRow label="Tracking group" value={state.health.group_id || "unconfigured"} />
-                <StatusRow label="Connected" value={state.health.connected ? "yes" : "no"} />
-                <StatusRow label="Accepted" value={String(state.health.accepted_count)} />
-                <StatusRow label="Rejected" value={String(state.health.rejected_count)} />
-                <StatusRow label="Mirrored" value={String(state.health.mirrored_count)} />
-                {mode === "HYBRID" ? <StatusRow label="Fusion matches" value={String(fusionMatches.length)} /> : null}
-                <StatusRow label="Last poll" value={formatTime(state.health.last_poll_at || "")} />
+            <Panel title={mode === "HYBRID" ? "External Intel Context" : "Run Context"} icon={ShieldAlert} bodyClassName="overflow-y-auto pr-1">
+              <div className="grid gap-4">
+                <div className="grid gap-3">
+                  <StatusRow label="Tracking group" value={state.health.group_id || "unconfigured"} />
+                  <StatusRow label="Connected" value={state.health.connected ? "yes" : "no"} />
+                  <StatusRow label="Accepted" value={String(state.health.accepted_count)} />
+                  <StatusRow label="Rejected" value={String(state.health.rejected_count)} />
+                  <StatusRow label="Mirrored" value={String(state.health.mirrored_count)} />
+                  {mode === "HYBRID" ? <StatusRow label="Fusion matches" value={String(fusionMatches.length)} /> : null}
+                  <StatusRow label="Last poll" value={formatTime(state.health.last_poll_at || "")} />
+                </div>
+                {selectedFlow ? (
+                  <>
+                    <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Run Summary</div>
+                      <div className="mt-3 grid gap-2 text-sm text-siem-muted">
+                        <div>Replayable: {runSummary.replayable ? "yes" : "no"}</div>
+                        <div>Duration: {runSummary.durationLabel}</div>
+                        <div>Participants: {runSummary.participantCount}</div>
+                        <div>Requests / Responses: {runSummary.requestCount} / {runSummary.responseCount}</div>
+                        <div>Confidence: {runSummary.confidence}</div>
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Participants</div>
+                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
+                        {selectedFlow.senders.map((sender) => (
+                          <Tag key={sender}>{sender}</Tag>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Anomalies</div>
+                      <div className="mt-3 space-y-2">
+                        {runSummary.anomalies.length === 0 ? (
+                          <EmptyState text="No run anomalies detected. This run looks complete from the current tracker state." />
+                        ) : (
+                          runSummary.anomalies.map((anomaly) => (
+                            <div key={anomaly.id} className="rounded-2xl border border-siem-border bg-siem-bg/45 p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="font-semibold">{anomaly.label}</div>
+                                  <div className="mt-1 text-xs text-siem-muted">{anomaly.detail}</div>
+                                </div>
+                                <Tag>{anomaly.severity}</Tag>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Replay Scope</div>
+                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
+                        {selectedFlow.topics.map((topic) => (
+                          <Tag key={topic}>{topic}</Tag>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : null}
               </div>
             </Panel>
 

@@ -157,15 +157,16 @@ test("renders flow desk panels with decoded content and LFS pointer metadata", (
   render(<AgentOpsApp state={baseState} mode="AGENTOPS" />);
 
   expect(screen.getByText("Flow Desk")).toBeTruthy();
-  expect(screen.getByText("Flow Queue")).toBeTruthy();
-  expect(screen.getByText("Trace Graph")).toBeTruthy();
-  expect(screen.getByText("Agent Context")).toBeTruthy();
+  expect(screen.getByText("Run Queue")).toBeTruthy();
+  expect(screen.getByText("Conversation Timeline")).toBeTruthy();
+  expect(screen.getByText("Run Context")).toBeTruthy();
   expect(screen.getByText("Topic Health")).toBeTruthy();
   expect(screen.getByText("Replay Panel")).toBeTruthy();
   expect(screen.getByText("Kafscale Operator")).toBeTruthy();
   expect(screen.getAllByText("Investigate outage").length).toBeGreaterThan(0);
+  expect(screen.getByText("Missing response")).toBeTruthy();
   expect(screen.getByText("s3://ops/core/requests/2")).toBeTruthy();
-  expect(screen.getByText("LFS-backed payload")).toBeTruthy();
+  expect(screen.getAllByText("LFS-backed payload").length).toBeGreaterThan(0);
 });
 
 test("renders hybrid fusion shell without mixing lanes", () => {
@@ -215,7 +216,7 @@ test("renders hybrid fusion shell without mixing lanes", () => {
 
   expect(screen.getByText("Fusion Desk")).toBeTruthy();
   expect(screen.getByText("Agent Flow")).toBeTruthy();
-  expect(screen.getByText("Fusion Summary")).toBeTruthy();
+  expect(screen.getByText("Fusion Timeline")).toBeTruthy();
   expect(screen.getByText("External Intel Context")).toBeTruthy();
   expect(screen.getByText("Advisory for CVE-2026-12345 affecting energy sector")).toBeTruthy();
   expect(screen.getByText("category:cyber_advisory")).toBeTruthy();
