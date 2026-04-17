@@ -67,3 +67,6 @@ __pycache__/
 
 # Local architecture notes
 arch/
+# Local collector binaries
+/euosint-collector
+/kafsiem-collector
