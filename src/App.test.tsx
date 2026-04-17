@@ -29,6 +29,7 @@ test("renders the OSINT app when ui_mode is OSINT", () => {
   render(<App />);
 
   expect(screen.getByText("OSINT APP")).toBeTruthy();
+  expect(document.title).toBe("OSINT");
 });
 
 test("renders the AgentOps app when ui_mode is AGENTOPS", () => {
@@ -40,6 +41,7 @@ test("renders the AgentOps app when ui_mode is AGENTOPS", () => {
   render(<App />);
 
   expect(screen.getByText("AGENTOPS APP AGENTOPS")).toBeTruthy();
+  expect(document.title).toBe("Agent Flow Desk");
 });
 
 test("renders the AgentOps app when ui_mode is HYBRID", () => {
@@ -51,4 +53,5 @@ test("renders the AgentOps app when ui_mode is HYBRID", () => {
   render(<App />);
 
   expect(screen.getByText("AGENTOPS APP HYBRID")).toBeTruthy();
+  expect(document.title).toBe("Hybrid Flow Desk");
 });
