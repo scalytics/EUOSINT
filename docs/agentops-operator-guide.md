@@ -61,6 +61,17 @@ Important optional environment:
 - `AGENTOPS_REJECT_TOPIC=group.<group>.agentops.rejects`
 - `AGENTOPS_OUTPUT_PATH=/data/agentops-state.json`
 
+Installer guidance:
+
+- choose `AGENTOPS` if you want the Agent Flow Desk only
+  - the installer asks for the common site setting plus the AgentOps Kafka settings
+  - it writes `UI_MODE=AGENTOPS` and `PROFILE=agentops-default`
+- choose `HYBRID` if you want AgentOps plus OSINT context
+  - the installer asks both the AgentOps Kafka settings and the OSINT credentials
+  - it writes `UI_MODE=HYBRID` and `PROFILE=hybrid-ops`
+
+The guided install flow intentionally leaves advanced knobs such as `AGENTOPS_REPLAY_PREFIX`, policy paths, TLS overrides, and poll/record limits out of the prompt set.
+
 ## KafClaw Topic Model
 
 AgentOps derives or accepts KafClaw group topics for:

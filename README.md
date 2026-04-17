@@ -71,11 +71,12 @@ wget -qO- https://raw.githubusercontent.com/scalytics/kafSIEM/main/deploy/instal
 The installer will:
 - verify Docker + Compose availability
 - clone or update the repo on the host
+- ask for the operating profile (`OSINT`, `AGENTOPS`, or `HYBRID`)
 - set GHCR runtime images (`ghcr.io/scalytics/kafsiem-web` + `ghcr.io/scalytics/kafsiem-collector`)
 - prompt for install mode (`preserve` or `fresh` volume reset)
-- prompt for domain (`KAFSIEM_SITE_ADDRESS`)
+- prompt for the common site setting (`KAFSIEM_SITE_ADDRESS`)
 - when domain mode is enabled, optionally check `ufw`/`firewalld` and validate local 80/443 availability
-- prompt for essential runtime keys only (URL, API credentials, optional LLM toggles)
+- prompt only for the profile-relevant runtime keys
 - optionally run `docker compose pull` and start with `--no-build`
 
 - The release pipeline builds two images: a web image and a Go collector image.
@@ -107,6 +108,24 @@ INTERVAL_MS=120000 RECENT_WINDOW_PER_SOURCE=20 ALERT_STALE_DAYS=14 npm run colle
 
 Minimal required runtime variables are in [.env.example](https://github.com/scalytics/kafSIEM/blob/main/.env.example).
 Advanced tuning variables and defaults are documented in [docs/advanced-config.md](https://github.com/scalytics/kafSIEM/blob/main/docs/advanced-config.md).
+
+## Installer Profiles
+
+The installer is profile-driven and only asks for the settings that matter for the selected operating mode.
+
+- `OSINT`
+  - prompts for `KAFSIEM_SITE_ADDRESS`
+  - prompts for OSINT credentials and optional LLM toggles
+  - writes `UI_MODE=OSINT` and `PROFILE=osint-default`
+- `AGENTOPS`
+  - prompts for `KAFSIEM_SITE_ADDRESS`
+  - prompts for AgentOps Kafka brokers, auth mode, group identifiers, topic mode, replay, and optional reject mirroring
+  - writes `UI_MODE=AGENTOPS` and `PROFILE=agentops-default`
+- `HYBRID`
+  - prompts for both the OSINT and AgentOps settings above
+  - writes `UI_MODE=HYBRID` and `PROFILE=hybrid-ops`
+
+Advanced settings such as replay prefixes, policy file paths, Kafka poll limits, and TLS overrides stay in `.env` or mounted config files and are not part of the guided install flow.
 
 AgentOps-specific runtime knobs include:
 

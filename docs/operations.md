@@ -46,6 +46,24 @@ Default local behavior:
 - The collector initializes empty JSON outputs on a fresh shared feed volume, then replaces them with live collector output on the first successful run
 - Advanced tuning variables are documented in [docs/advanced-config.md](/Users/alo/Development/scalytics/kafSIEM/docs/advanced-config.md).
 
+## Guided Installer Profiles
+
+`deploy/install.sh` is profile-driven. It asks for the install mode first, then the operating profile:
+
+- `OSINT`
+  - prompts for `KAFSIEM_SITE_ADDRESS`
+  - prompts for OSINT credentials and optional LLM toggles
+  - writes `UI_MODE=OSINT` and `PROFILE=osint-default`
+- `AGENTOPS`
+  - prompts for `KAFSIEM_SITE_ADDRESS`
+  - prompts for AgentOps Kafka brokers, auth mode, group identifiers, topic mode, replay, and optional reject mirroring
+  - writes `UI_MODE=AGENTOPS` and `PROFILE=agentops-default`
+- `HYBRID`
+  - prompts for both the OSINT and AgentOps settings above
+  - writes `UI_MODE=HYBRID` and `PROFILE=hybrid-ops`
+
+The guided flow intentionally skips advanced settings such as replay prefixes, policy file paths, TLS skip-verify, and poll/record limits. Those stay in `.env` or mounted config files.
+
 ## Parallel Collector Roles
 
 Use role workers to isolate rate limits and failure domains. Keep one primary
