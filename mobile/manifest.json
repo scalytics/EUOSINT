@@ -1,6 +1,6 @@
 {
-  "name": "EUOSINT",
-  "short_name": "EUOSINT",
+  "name": "kafSIEM",
+  "short_name": "kafSIEM",
   "description": "Open-Source Intelligence Monitor",
   "start_url": "/m/",
   "display": "standalone",

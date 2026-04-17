@@ -69,4 +69,3 @@ __pycache__/
 arch/
 # Local collector binaries
 /euosint-collector
-/kafsiem-collector

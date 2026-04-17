@@ -148,7 +148,7 @@ dev-start: registry/cities500.txt dev-collector-bin dev-ensure-env ## Start the 
 	docker build -f Dockerfile.collector.dev -t kafsiem-collector:dev .
 	$(DOCKER_COMPOSE) build kafsiem
 	KAFSIEM_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
-	@echo "EUOSINT available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
+	@echo "kafSIEM available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 	@open "http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 
 dev-stop: ## Stop the local dev stack, remove volumes, prune dangling images
@@ -165,7 +165,7 @@ dev-restart: registry/cities500.txt dev-collector-bin dev-ensure-env ## Restart 
 	docker build -f Dockerfile.collector.dev -t kafsiem-collector:dev .
 	$(DOCKER_COMPOSE) build kafsiem
 	KAFSIEM_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
-	@echo "EUOSINT available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
+	@echo "kafSIEM available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 	@open "http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 
 dev-restart-clean: registry/cities500.txt dev-collector-bin dev-ensure-env ## Restart from scratch (removes volumes, prunes caches)
@@ -175,7 +175,7 @@ dev-restart-clean: registry/cities500.txt dev-collector-bin dev-ensure-env ## Re
 	docker build --no-cache -f Dockerfile.collector.dev -t kafsiem-collector:dev .
 	$(DOCKER_COMPOSE) build --no-cache kafsiem
 	KAFSIEM_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
-	@echo "EUOSINT available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
+	@echo "kafSIEM available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 	@open "http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 
 dev-sync-registry: ## Merge source_registry.json into the running DB (adds new feeds)

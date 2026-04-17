@@ -1,8 +1,8 @@
-# EUOSINT User Guide
+# kafSIEM User Guide
 
 ## Alert Categories
 
-EUOSINT classifies every alert into one of the following categories. Each category groups a specific type of intelligence and is sourced from relevant official feeds.
+kafSIEM classifies every alert into one of the following categories. Each category groups a specific type of intelligence and is sourced from relevant official feeds.
 
 Each alert also carries a derived `subcategory` (for example `piracy`, `airstrike`, `money_laundering`, `earthquake`, `policy_update`) to improve clustering and analyst triage without expanding the left-panel primary category filters.
 
@@ -106,7 +106,7 @@ Keyword matching supports English and German (e.g., "Kritische Schwachstelle" = 
 
 ## Interpol Notices
 
-EUOSINT pulls the **newest 160 Red Notices** (wanted suspects) and **newest 160 Yellow Notices** (missing persons) from the Interpol public API per collector run. This limit is intentional to avoid data overflow and excessive API load.
+kafSIEM pulls the **newest 160 Red Notices** (wanted suspects) and **newest 160 Yellow Notices** (missing persons) from the Interpol public API per collector run. This limit is intentional to avoid data overflow and excessive API load.
 
 - Red Notices: ~6,400 active notices globally
 - Yellow Notices: ~4,000 active notices globally
@@ -139,7 +139,7 @@ Removed alerts (e.g., a resolved Interpol notice) are retained in state for 14 d
 
 ## Stop Words (Global Noise Filter)
 
-EUOSINT ships a global stop-word list at `registry/stop_words.json` that automatically excludes off-topic content from all feeds. Any alert whose title, summary, or tags contain a stop word is dropped before relevance scoring.
+kafSIEM ships a global stop-word list at `registry/stop_words.json` that automatically excludes off-topic content from all feeds. Any alert whose title, summary, or tags contain a stop word is dropped before relevance scoring.
 
 The default list filters out sports (football, basketball, cricket, FIFA, UEFA, etc.), entertainment (celebrity, Hollywood, Grammy, Oscar, etc.), lifestyle (recipes, horoscopes, astrology), and other non-OSINT noise.
 

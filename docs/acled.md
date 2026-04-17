@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # ACLED Conflict Data Integration
 
-EUOSINT integrates with the [Armed Conflict Location & Event Data](https://acleddata.com/) (ACLED) project to provide structured, geo-located conflict event data covering battles, explosions, violence against civilians, protests, riots, and strategic military developments worldwide.
+kafSIEM integrates with the [Armed Conflict Location & Event Data](https://acleddata.com/) (ACLED) project to provide structured, geo-located conflict event data covering battles, explosions, violence against civilians, protests, riots, and strategic military developments worldwide.
 
 ## Setup
 
@@ -64,7 +64,7 @@ ACLED API (/api/acled/read)
 
 ## Event Type Mapping
 
-| ACLED Event Type             | EUOSINT Category       | Default Severity |
+| ACLED Event Type             | kafSIEM Category       | Default Severity |
 |------------------------------|------------------------|------------------|
 | Battles                      | conflict_monitoring    | high             |
 | Explosions/Remote violence   | conflict_monitoring    | high             |

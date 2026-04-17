@@ -1,8 +1,8 @@
 export type RunQueueFilter = "all" | "attention" | "active" | "completed";
 
-const SELECTED_RUN_KEY = "euosint.agentops.selected_run";
-const FILTER_KEY = "euosint.agentops.queue_filter";
-const ANOMALIES_ONLY_KEY = "euosint.agentops.queue_anomalies_only";
+const SELECTED_RUN_KEY = "kafsiem.agentops.selected_run";
+const FILTER_KEY = "kafsiem.agentops.queue_filter";
+const ANOMALIES_ONLY_KEY = "kafsiem.agentops.queue_anomalies_only";
 
 export function loadSelectedRunId(): string | null {
   const storage = safeStorage();

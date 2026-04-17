@@ -283,9 +283,9 @@ test("triggers replay through the AgentOps API", async () => {
 });
 
 test("applies persisted queue preferences and selected run", () => {
-  window.localStorage.setItem("euosint.agentops.queue_filter", "all");
-  window.localStorage.setItem("euosint.agentops.queue_anomalies_only", "true");
-  window.localStorage.setItem("euosint.agentops.selected_run", "corr-1");
+  window.localStorage.setItem("kafsiem.agentops.queue_filter", "all");
+  window.localStorage.setItem("kafsiem.agentops.queue_anomalies_only", "true");
+  window.localStorage.setItem("kafsiem.agentops.selected_run", "corr-1");
 
   render(<AgentOpsApp state={baseState} mode="AGENTOPS" />);
 

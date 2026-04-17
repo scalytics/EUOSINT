@@ -1,5 +1,5 @@
 /*
- * EUOSINT — Activity spike detection
+ * kafSIEM — Activity spike detection
  * Compares recent alert velocity (last 24h) against 14-day baseline
  * to surface countries/regions with unusual activity.
  */

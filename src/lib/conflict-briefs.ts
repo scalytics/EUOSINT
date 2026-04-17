@@ -173,7 +173,7 @@ export function buildConflictBrief(alerts: Alert[], lens: ConflictLens | null): 
     lens,
     alerts: lensAlerts,
     asOf: latestAlert?.last_seen ?? null,
-    sourceLabel: "EUOSINT derived context",
+    sourceLabel: "kafSIEM derived context",
     sourceURL: undefined,
     countryIDs: [],
     countryLabels: [],

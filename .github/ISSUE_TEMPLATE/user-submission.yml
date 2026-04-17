@@ -78,4 +78,4 @@ body:
     attributes:
       value: |
         ---
-        _Your submission will be reviewed by maintainers. If validated, it will be categorized under `private_sector` in the EUOSINT feed._
+        _Your submission will be reviewed by maintainers. If validated, it will be categorized under `private_sector` in the kafSIEM feed._

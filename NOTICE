@@ -1,4 +1,4 @@
-EUOSINT
+kafSIEM
 Copyright 2026 Scalytics
 
 This repository is a hard fork based on:
@@ -11,11 +11,11 @@ This repository is a hard fork based on:
 
 Acknowledgement:
 This project is based on the work published in cyberdude88/osint-siem and the
-subsequent novatechflow/osint-siem fork. EUOSINT carries that work forward as
+subsequent novatechflow/osint-siem fork. kafSIEM carries that work forward as
 an EU-focused derivative with Docker packaging and local modifications.
 
 Provenance and licensing note:
 The repository root LICENSE covers repository-local licensing terms for
-materials and modifications added in EUOSINT. Upstream licensing and reuse
+materials and modifications added in kafSIEM. Upstream licensing and reuse
 conditions for inherited code should be validated against the upstream
 repositories and their maintainers' stated terms.

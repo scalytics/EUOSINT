@@ -59,7 +59,7 @@ func NewNominatimClient(baseURL string, userAgent string) *NominatimClient {
 		baseURL = "https://nominatim.openstreetmap.org"
 	}
 	if userAgent == "" {
-		userAgent = "EUOSINTBot/1.0 (https://www.scalytics.io; ops@scalytics.io)"
+		userAgent = "kafSIEMBot/1.0 (https://www.scalytics.io; ops@scalytics.io)"
 	}
 	return &NominatimClient{
 		baseURL:   strings.TrimRight(baseURL, "/"),

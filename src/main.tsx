@@ -1,5 +1,5 @@
 /*
- * EUOSINT
+ * kafSIEM
  * Portions derived from novatechflow/osint-siem and cyberdude88/osint-siem.
  * See NOTICE for provenance and LICENSE for repository-local terms.
  */
@@ -15,7 +15,7 @@ if (
   /Android|iPhone|iPod/.test(navigator.userAgent) &&
   window.innerWidth < 768 &&
   !new URLSearchParams(location.search).has("desktop") &&
-  !document.cookie.includes("euosint_prefer_desktop")
+  !document.cookie.includes("kafsiem_prefer_desktop")
 ) {
   location.replace("/m/");
 }

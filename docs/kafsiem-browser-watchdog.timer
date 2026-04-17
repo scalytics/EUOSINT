@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [Unit]
-Description=Run EUOSINT browser watchdog every minute
+Description=Run kafSIEM browser watchdog every minute
 
 [Timer]
 OnBootSec=1min

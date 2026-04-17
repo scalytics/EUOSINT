@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# EUOSINT remote installer
+# kafSIEM remote installer
 # Usage:
-#   wget -qO- https://raw.githubusercontent.com/scalytics/EUOSINT/main/deploy/install.sh | bash
+#   wget -qO- https://raw.githubusercontent.com/scalytics/kafSIEM/main/deploy/install.sh | bash
 #
 # Optional environment overrides:
-#   REPO_URL=https://github.com/scalytics/EUOSINT.git
+#   REPO_URL=https://github.com/scalytics/kafSIEM.git
 #   REPO_REF=main
 #   INSTALL_DIR=$HOME/kafsiem
 #   IMAGE_TAG=latest
 
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/scalytics/EUOSINT.git}"
+REPO_URL="${REPO_URL:-https://github.com/scalytics/kafSIEM.git}"
 REPO_REF="${REPO_REF:-main}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/kafsiem}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
@@ -384,7 +384,7 @@ print_runtime_summary() {
   watchdog_url="$(raw_repo_url "scripts/browser_watchdog.sh")"
 
   echo ""
-  echo "================ EUOSINT Setup Summary ================"
+  echo "================ kafSIEM Setup Summary ================"
   echo "Install Mode : ${INSTALL_MODE}"
   echo "Install Dir  : ${INSTALL_DIR}"
   echo "Live URL     : ${live_url}"
@@ -489,7 +489,7 @@ prompt_reset_zone_briefs() {
 
 start_stack() {
   local start_choice
-  start_choice="$(read_prompt "Start/restart EUOSINT now? [yes]: ")"
+  start_choice="$(read_prompt "Start/restart kafSIEM now? [yes]: ")"
   start_choice="${start_choice:-yes}"
   start_choice="$(echo "$start_choice" | tr '[:upper:]' '[:lower:]')"
   if [[ "$start_choice" != "yes" && "$start_choice" != "y" ]]; then
@@ -537,7 +537,7 @@ start_stack() {
   else
     live_url="http://${host_name}:${http_port}"
   fi
-  info "EUOSINT started. Live URL: ${live_url}"
+  info "kafSIEM started. Live URL: ${live_url}"
 }
 
 install_user_watchdog_timer() {

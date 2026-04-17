@@ -79,7 +79,7 @@ func (c *Client) Complete(ctx context.Context, messages []Message) (string, erro
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	}
 	if c.provider != "" {
-		req.Header.Set("X-EUOSINT-Provider", c.provider)
+		req.Header.Set("X-KAFSIEM-Provider", c.provider)
 	}
 
 	res, err := c.httpClient.Do(req)

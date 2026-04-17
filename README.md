@@ -1,6 +1,6 @@
-# EUOSINT
+# kafSIEM
 
-EUOSINT is the open-source edition of our OSINT pipeline, used across multiple installations and packaged for local and server deployment.
+kafSIEM is the open-source edition of our OSINT pipeline, used across multiple installations and packaged for local and server deployment.
 
 It now ships with two distinct operating surfaces:
 
@@ -65,7 +65,7 @@ This opens the desktop UI directly in `AgentOps` mode via `/?demo=agentops`, ser
 ## Remote Install (wget bootstrap)
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/scalytics/EUOSINT/main/deploy/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/scalytics/kafSIEM/main/deploy/install.sh | bash
 ```
 
 The installer will:
@@ -105,8 +105,8 @@ INTERVAL_MS=120000 MAX_PER_SOURCE=80 npm run collector:run
 INTERVAL_MS=120000 RECENT_WINDOW_PER_SOURCE=20 ALERT_STALE_DAYS=14 npm run collector:run
 ```
 
-Minimal required runtime variables are in [.env.example](https://github.com/scalytics/EUOSINT/blob/main/.env.example).
-Advanced tuning variables and defaults are documented in [docs/advanced-config.md](https://github.com/scalytics/EUOSINT/blob/main/docs/advanced-config.md).
+Minimal required runtime variables are in [.env.example](https://github.com/scalytics/kafSIEM/blob/main/.env.example).
+Advanced tuning variables and defaults are documented in [docs/advanced-config.md](https://github.com/scalytics/kafSIEM/blob/main/docs/advanced-config.md).
 
 AgentOps-specific runtime knobs include:
 
@@ -137,7 +137,7 @@ Content behavior is explicit:
 - rejected records can be mirrored to `AGENTOPS_REJECT_TOPIC`
 - replay always uses a dedicated consumer group and never mutates the live tracking group
 
-Operator reference and examples live in [docs/agentops-operator-guide.md](https://github.com/scalytics/EUOSINT/blob/main/docs/agentops-operator-guide.md).
+Operator reference and examples live in [docs/agentops-operator-guide.md](https://github.com/scalytics/kafSIEM/blob/main/docs/agentops-operator-guide.md).
 
 ## Operations
 
@@ -152,8 +152,8 @@ make docker-build
 - Docker validation runs through `buildx`, and release images publish to GHCR on semver tags.
 - Release images are published as `ghcr.io/<owner>/<repo>-web` and `ghcr.io/<owner>/<repo>-collector`.
 - `docker-compose up --build` or `docker compose up --build` runs the Go collector as a background refresh service and serves generated JSON through the Caddy web container.
-- VM/domain deployment instructions live in [docs/operations.md](https://github.com/scalytics/EUOSINT/blob/main/docs/operations.md).
-- Noise gate, search defaults, analyst feedback endpoints, and metrics output are documented in [docs/operations.md](https://github.com/scalytics/EUOSINT/blob/main/docs/operations.md#noise-gate-global-noise--contextual-triage).
+- VM/domain deployment instructions live in [docs/operations.md](https://github.com/scalytics/kafSIEM/blob/main/docs/operations.md).
+- Noise gate, search defaults, analyst feedback endpoints, and metrics output are documented in [docs/operations.md](https://github.com/scalytics/kafSIEM/blob/main/docs/operations.md#noise-gate-global-noise--contextual-triage).
 
 ## Notes
 

@@ -1,5 +1,5 @@
 /*
- * EUOSINT
+ * kafSIEM
  * Portions derived from novatechflow/osint-siem and cyberdude88/osint-siem.
  * See NOTICE for provenance and LICENSE for repository-local terms.
  */

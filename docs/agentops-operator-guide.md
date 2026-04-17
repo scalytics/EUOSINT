@@ -113,7 +113,7 @@ Offset reset or destructive replay mutation is intentionally not exposed.
 1. Run Kafscale and expose Kafka brokers.
 2. Configure AgentOps with the KafClaw group name.
 3. Mount `/config/agentops_policy.yaml`.
-4. Start EUOSINT with `UI_MODE=AGENTOPS`.
+4. Start kafSIEM with `UI_MODE=AGENTOPS`.
 5. Open the Flow Desk and inspect live group plus replay groups.
 
 ## Example: Dedicated Replay Group

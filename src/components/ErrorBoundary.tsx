@@ -17,7 +17,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[EUOSINT] Uncaught render error:", error, info.componentStack);
+    console.error("[kafSIEM] Uncaught render error:", error, info.componentStack);
   }
 
   render() {

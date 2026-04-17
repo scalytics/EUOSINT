@@ -1,5 +1,5 @@
 /*
- * EUOSINT
+ * kafSIEM
  * Portions derived from novatechflow/osint-siem and cyberdude88/osint-siem.
  * See NOTICE for provenance and LICENSE for repository-local terms.
  */
@@ -18,7 +18,7 @@ import type { AlertCategory } from "@/types/alert";
 
 type SeverityFilter = "critical" | "high" | null;
 
-const SOURCE_SELECTION_COOKIE = "euosint_selected_sources";
+const SOURCE_SELECTION_COOKIE = "kafsiem_selected_sources";
 const GlobeView = lazy(() => import("@/components/GlobeView").then((mod) => ({ default: mod.GlobeView })));
 const AlertFeed = lazy(() => import("@/components/AlertFeed").then((mod) => ({ default: mod.AlertFeed })));
 const AlertDetail = lazy(() => import("@/components/AlertDetail").then((mod) => ({ default: mod.AlertDetail })));
@@ -506,12 +506,12 @@ export default function App() {
 
       <div className="flex items-center justify-between border-t border-siem-border bg-siem-panel/85 px-4 py-2 text-2xs uppercase tracking-[0.18em] text-siem-muted">
         <span>
-          <a href="https://www.scalytics.io/streamingintelligence?utm_source=euosint&utm_medium=footer&utm_campaign=osint_console" target="_blank" rel="noopener" className="hover:text-siem-accent transition-colors">Scalytics OSINT</a>
+          <a href="https://www.scalytics.io/streamingintelligence?utm_source=kafsiem&utm_medium=footer&utm_campaign=osint_console" target="_blank" rel="noopener" className="hover:text-siem-accent transition-colors">Scalytics OSINT</a>
           {" // Live 48h + History"}          
         </span>
         <span className="font-mono tabular-nums text-siem-muted">{utcTime}</span>
         <span className="hidden md:inline">
-          <a href="https://www.scalytics.io/contact?utm_source=euosint&utm_medium=footer&utm_campaign=osint_console" target="_blank" rel="noopener" className="hover:text-siem-accent transition-colors">Build your own intelligence pipeline — Contact us</a>
+          <a href="https://www.scalytics.io/contact?utm_source=kafsiem&utm_medium=footer&utm_campaign=osint_console" target="_blank" rel="noopener" className="hover:text-siem-accent transition-colors">Build your own intelligence pipeline — Contact us</a>
         </span>
       </div>
     </div>

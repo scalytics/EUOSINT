@@ -79,8 +79,8 @@ test("derives profile defaults from ui_mode when profile is missing", async () =
 
 test("preserves persisted mode and profile on fetch failure", async () => {
   const store = new Map<string, string>([
-    ["euosint.ui_mode", "AGENTOPS"],
-    ["euosint.profile", "agentops-default"],
+    ["kafsiem.ui_mode", "AGENTOPS"],
+    ["kafsiem.profile", "agentops-default"],
   ]);
   vi.stubGlobal("window", {
     ...window,

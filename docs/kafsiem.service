@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [Unit]
-Description=EUOSINT Docker Compose Stack
+Description=kafSIEM Docker Compose Stack
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/euosint
+WorkingDirectory=/opt/kafsiem
 RemainAfterExit=yes
 ExecStart=/usr/bin/docker compose up -d --build
 ExecStop=/usr/bin/docker compose down --remove-orphans
