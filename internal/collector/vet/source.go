@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/parse"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/parse"
 )
 
 type Sample struct {

@@ -22,23 +22,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/dictionary"
-	"github.com/scalytics/euosint/internal/collector/discover"
-	"github.com/scalytics/euosint/internal/collector/fetch"
-	"github.com/scalytics/euosint/internal/collector/model"
-	"github.com/scalytics/euosint/internal/collector/noisegate"
-	"github.com/scalytics/euosint/internal/collector/normalize"
-	"github.com/scalytics/euosint/internal/collector/output"
-	"github.com/scalytics/euosint/internal/collector/parse"
-	"github.com/scalytics/euosint/internal/collector/registry"
-	"github.com/scalytics/euosint/internal/collector/state"
-	"github.com/scalytics/euosint/internal/collector/translate"
-	"github.com/scalytics/euosint/internal/collector/trends"
-	"github.com/scalytics/euosint/internal/collector/vet"
-	"github.com/scalytics/euosint/internal/collector/zonebrief"
-	"github.com/scalytics/euosint/internal/collector/zonebriefllm"
-	"github.com/scalytics/euosint/internal/sourcedb"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/dictionary"
+	"github.com/scalytics/kafSIEM/internal/collector/discover"
+	"github.com/scalytics/kafSIEM/internal/collector/fetch"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/noisegate"
+	"github.com/scalytics/kafSIEM/internal/collector/normalize"
+	"github.com/scalytics/kafSIEM/internal/collector/output"
+	"github.com/scalytics/kafSIEM/internal/collector/parse"
+	"github.com/scalytics/kafSIEM/internal/collector/registry"
+	"github.com/scalytics/kafSIEM/internal/collector/state"
+	"github.com/scalytics/kafSIEM/internal/collector/translate"
+	"github.com/scalytics/kafSIEM/internal/collector/trends"
+	"github.com/scalytics/kafSIEM/internal/collector/vet"
+	"github.com/scalytics/kafSIEM/internal/collector/zonebrief"
+	"github.com/scalytics/kafSIEM/internal/collector/zonebriefllm"
+	"github.com/scalytics/kafSIEM/internal/sourcedb"
 )
 
 type Runner struct {
@@ -2701,7 +2701,7 @@ func terrorRegionFeatures(regions []terrorRegion) []any {
 				"status":           "active",
 				"type":             "elevated",
 				"threat":           "Weekly terrorism region sync",
-				"source":           "EUOSINT weekly sync",
+				"source":           "kafSIEM weekly sync",
 				"source_timeframe": "weekly",
 			},
 			"geometry": terrorRegionPolygon(region.Lat, region.Lng, 2.4),
@@ -2820,10 +2820,10 @@ func buildDynamicTerrorZonesFromAlerts(boundariesPath string, statePath string, 
 				"lens_id":          "terror-" + strings.ToLower(code),
 				"status":           status,
 				"type":             zoneType,
-				"threat":           "EUOSINT terror signal aggregation",
+				"threat":           "kafSIEM terror signal aggregation",
 				"country_code":     code,
 				"country_role":     "primary",
-				"source":           "EUOSINT live terror aggregation",
+				"source":           "kafSIEM live terror aggregation",
 				"events_365d":      count365,
 				"events_90d":       countByCode90d[code],
 				"source_timeframe": "365d",
@@ -2875,10 +2875,10 @@ func buildDynamicTerrorZonesFromAlerts(boundariesPath string, statePath string, 
 					"lens_id":          lensID,
 					"status":           status,
 					"type":             zoneType,
-					"threat":           "EUOSINT terror signal aggregation",
+					"threat":           "kafSIEM terror signal aggregation",
 					"country_code":     code,
 					"country_role":     "primary",
-					"source":           "EUOSINT live terror aggregation",
+					"source":           "kafSIEM live terror aggregation",
 					"events_365d":      countByCode365d[code],
 					"events_90d":       countByCode90d[code],
 					"source_timeframe": "365d",

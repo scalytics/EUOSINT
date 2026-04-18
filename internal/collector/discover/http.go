@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/fetch"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/fetch"
 )
 
 func fetchTextWithRetry(ctx context.Context, client *fetch.Client, url string, accept string) ([]byte, error) {

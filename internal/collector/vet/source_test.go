@@ -6,7 +6,7 @@ package vet
 import (
 	"testing"
 
-	"github.com/scalytics/euosint/internal/collector/parse"
+	"github.com/scalytics/kafSIEM/internal/collector/parse"
 )
 
 func TestDecodeVerdictExtractsJSONBlock(t *testing.T) {

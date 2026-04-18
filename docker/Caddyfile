@@ -5,7 +5,7 @@
 	admin off
 }
 
-{$EUOSINT_SITE_ADDRESS::80} {
+{$KAFSIEM_SITE_ADDRESS::80} {
 	root * /srv
 	encode zstd gzip
 
@@ -34,7 +34,7 @@
 
 	handle /alerts.json {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}
@@ -45,7 +45,7 @@
 
 	handle /alerts-filtered.json {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}
@@ -56,7 +56,7 @@
 
 	handle /alerts-state.json {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}
@@ -67,7 +67,7 @@
 
 	handle /source-health.json {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}
@@ -78,7 +78,7 @@
 
 	handle /agentops-state.json {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}
@@ -89,7 +89,7 @@
 
 	handle /zone-briefings.json {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}
@@ -100,7 +100,7 @@
 
 	handle /ucdp-current-conflicts.json {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}
@@ -111,7 +111,7 @@
 
 	handle /ucdp-conflict-stats.json {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}
@@ -123,7 +123,7 @@
 	@runtime_geo path /geo/conflict-zones*.geojson /geo/conflict-footprints*.geojson /geo/terrorism-zones*.geojson
 	handle @runtime_geo {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}
@@ -134,7 +134,7 @@
 
 	handle /views-risk.json {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}
@@ -145,7 +145,7 @@
 
 	handle /geo/views-risk-grid.json {
 		route {
-			root * /var/lib/euosint
+			root * /var/lib/kafsiem
 			file_server {
 				pass_thru
 			}

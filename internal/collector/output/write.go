@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
 )
 
 func Write(cfg config.Config, active []model.Alert, filtered []model.Alert, state []model.Alert, sourceHealth []model.SourceHealthEntry, duplicateAudit model.DuplicateAudit, replacementQueue []model.SourceReplacementCandidate) error {

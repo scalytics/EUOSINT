@@ -1,5 +1,5 @@
 /*
- * EUOSINT
+ * kafSIEM
  * Open-source OSINT pipeline distribution.
  * See LICENSE for repository-local terms.
  */
@@ -36,8 +36,8 @@ const REGIONS = [
   "all",
 ];
 
-const SEARCH_HISTORY_COOKIE = "euosint_search_history";
-const REPO_URL = "https://github.com/scalytics/EUOSINT";
+const SEARCH_HISTORY_COOKIE = "kafsiem_search_history";
+const REPO_URL = "https://github.com/scalytics/kafSIEM";
 
 function readSearchHistory(): string[] {
   if (typeof document === "undefined") return [];

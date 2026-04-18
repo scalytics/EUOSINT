@@ -57,9 +57,20 @@ Important optional environment:
 
 - `AGENTOPS_POLICY_PATH=/config/agentops_policy.yaml`
 - `AGENTOPS_REPLAY_ENABLED=true`
-- `AGENTOPS_REPLAY_PREFIX=euosint-agentops-replay`
+- `AGENTOPS_REPLAY_PREFIX=kafsiem-agentops-replay`
 - `AGENTOPS_REJECT_TOPIC=group.<group>.agentops.rejects`
 - `AGENTOPS_OUTPUT_PATH=/data/agentops-state.json`
+
+Installer guidance:
+
+- choose `AGENTOPS` if you want the Agent Flow Desk only
+  - the installer asks for the common site setting plus the AgentOps Kafka settings
+  - it writes `UI_MODE=AGENTOPS` and `PROFILE=agentops-default`
+- choose `HYBRID` if you want AgentOps plus OSINT context
+  - the installer asks both the AgentOps Kafka settings and the OSINT credentials
+  - it writes `UI_MODE=HYBRID` and `PROFILE=hybrid-ops`
+
+The guided install flow intentionally leaves advanced knobs such as `AGENTOPS_REPLAY_PREFIX`, policy paths, TLS overrides, and poll/record limits out of the prompt set.
 
 ## KafClaw Topic Model
 
@@ -113,7 +124,7 @@ Offset reset or destructive replay mutation is intentionally not exposed.
 1. Run Kafscale and expose Kafka brokers.
 2. Configure AgentOps with the KafClaw group name.
 3. Mount `/config/agentops_policy.yaml`.
-4. Start EUOSINT with `UI_MODE=AGENTOPS`.
+4. Start kafSIEM with `UI_MODE=AGENTOPS`.
 5. Open the Flow Desk and inspect live group plus replay groups.
 
 ## Example: Dedicated Replay Group

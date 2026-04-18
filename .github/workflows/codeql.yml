@@ -46,7 +46,7 @@ jobs:
         run: npm run build
 
       - name: Build collector
-        run: go build ./cmd/euosint-collector
+        run: go build ./cmd/kafsiem-collector
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3

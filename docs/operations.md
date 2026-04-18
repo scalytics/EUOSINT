@@ -11,7 +11,7 @@ The production stack has three containers:
 
 - `browser`: always-on headless browser bridge (Chrome DevTools websocket)
 - `collector`: the Go collector running in watch mode and writing refreshed JSON feeds into a shared Docker volume
-- `euosint`: the React bundle served by Caddy, reading the shared JSON volume and serving the UI plus feed files
+- `kafsiem`: the React bundle served by Caddy, reading the shared JSON volume and serving the UI plus feed files
 
 The collector can also run in parallel worker roles using role filters:
 
@@ -42,9 +42,27 @@ docker-compose up --build -d
 Default local behavior:
 
 - HTTP on `http://localhost:8080`
-- HTTPS listener mapped to `https://localhost:8443` but not used unless `EUOSINT_SITE_ADDRESS` is changed to a hostname that enables TLS
+- HTTPS listener mapped to `https://localhost:8443` but not used unless `KAFSIEM_SITE_ADDRESS` is changed to a hostname that enables TLS
 - The collector initializes empty JSON outputs on a fresh shared feed volume, then replaces them with live collector output on the first successful run
-- Advanced tuning variables are documented in [docs/advanced-config.md](/Users/alo/Development/scalytics/EUOSINT/docs/advanced-config.md).
+- Advanced tuning variables are documented in [docs/advanced-config.md](/Users/alo/Development/scalytics/kafSIEM/docs/advanced-config.md).
+
+## Guided Installer Profiles
+
+`deploy/install.sh` is profile-driven. It asks for the install mode first, then the operating profile:
+
+- `OSINT`
+  - prompts for `KAFSIEM_SITE_ADDRESS`
+  - prompts for OSINT credentials and optional LLM toggles
+  - writes `UI_MODE=OSINT` and `PROFILE=osint-default`
+- `AGENTOPS`
+  - prompts for `KAFSIEM_SITE_ADDRESS`
+  - prompts for AgentOps Kafka brokers, auth mode, group identifiers, topic mode, replay, and optional reject mirroring
+  - writes `UI_MODE=AGENTOPS` and `PROFILE=agentops-default`
+- `HYBRID`
+  - prompts for both the OSINT and AgentOps settings above
+  - writes `UI_MODE=HYBRID` and `PROFILE=hybrid-ops`
+
+The guided flow intentionally skips advanced settings such as replay prefixes, policy file paths, TLS skip-verify, and poll/record limits. Those stay in `.env` or mounted config files.
 
 ## Parallel Collector Roles
 
@@ -70,9 +88,9 @@ CLI flags (equivalents):
 5. Create a `.env` file in the repo root:
 
 ```dotenv
-EUOSINT_SITE_ADDRESS=alerts.example.com
-EUOSINT_HTTP_PORT=80
-EUOSINT_HTTPS_PORT=443
+KAFSIEM_SITE_ADDRESS=alerts.example.com
+KAFSIEM_HTTP_PORT=80
+KAFSIEM_HTTPS_PORT=443
 ```
 
 6. Start the stack:
@@ -81,25 +99,25 @@ EUOSINT_HTTPS_PORT=443
 docker compose up --build -d
 ```
 
-With a real domain in `EUOSINT_SITE_ADDRESS`, Caddy will request and renew TLS certificates automatically and store them in the `caddy-data` volume.
+With a real domain in `KAFSIEM_SITE_ADDRESS`, Caddy will request and renew TLS certificates automatically and store them in the `caddy-data` volume.
 
 ## VM Service With systemd
 
-Use the checked-in unit at [docs/euosint.service](/Users/alo/Development/scalytics/EUOSINT/docs/euosint.service) so the stack comes back after host reboots:
+Use the checked-in unit at [docs/kafsiem.service](/Users/alo/Development/scalytics/kafSIEM/docs/kafsiem.service) so the stack comes back after host reboots:
 
 Install it on the VM:
 
 ```bash
-sudo cp docs/euosint.service /etc/systemd/system/euosint.service
+sudo cp docs/kafsiem.service /etc/systemd/system/kafsiem.service
 sudo systemctl daemon-reload
-sudo systemctl enable --now euosint.service
+sudo systemctl enable --now kafsiem.service
 ```
 
 If the VM only has `docker-compose`, adjust the unit commands accordingly.
 
 ## Browser Watchdog
 
-Run [scripts/browser_watchdog.sh](/Users/alo/Development/scalytics/EUOSINT/scripts/browser_watchdog.sh) on the host every minute. It restarts `euosint-browser` when either:
+Run [scripts/browser_watchdog.sh](/Users/alo/Development/scalytics/kafSIEM/scripts/browser_watchdog.sh) on the host every minute. It restarts `kafsiem-browser` when either:
 
 - browser health is not healthy/running
 - collector logs show repeated remote websocket fallback warnings
@@ -113,20 +131,20 @@ One-shot run:
 systemd timer install:
 
 ```bash
-sudo cp docs/euosint-browser-watchdog.service /etc/systemd/system/euosint-browser-watchdog.service
-sudo cp docs/euosint-browser-watchdog.timer /etc/systemd/system/euosint-browser-watchdog.timer
+sudo cp docs/kafsiem-browser-watchdog.service /etc/systemd/system/kafsiem-browser-watchdog.service
+sudo cp docs/kafsiem-browser-watchdog.timer /etc/systemd/system/kafsiem-browser-watchdog.timer
 sudo systemctl daemon-reload
-sudo systemctl enable --now euosint-browser-watchdog.timer
+sudo systemctl enable --now kafsiem-browser-watchdog.timer
 ```
 
 ## Operational Notes
 
 - The collector writes feed output into the `feed-data` volume shared with the web container.
 - The UI footer freshness line is derived from `source-health.json.generated_at` and shows the age of the current collector snapshot. It is normal below 20 minutes, warning from 20 to 60 minutes, and stale above 60 minutes.
-- Discovery intake lives in [registry/source_candidates.json](/Users/alo/Development/scalytics/EUOSINT/registry/source_candidates.json).
+- Discovery intake lives in [registry/source_candidates.json](/Users/alo/Development/scalytics/kafSIEM/registry/source_candidates.json).
 - Dead sources are written to the terminal DLQ in `source_dead_letter.json` and are not crawled again.
-- LLM-assisted source vetting is documented in [docs/source-vetting.md](/Users/alo/Development/scalytics/EUOSINT/docs/source-vetting.md).
-- ACLED conflict data integration is documented in [docs/acled.md](/Users/alo/Development/scalytics/EUOSINT/docs/acled.md).
+- LLM-assisted source vetting is documented in [docs/source-vetting.md](/Users/alo/Development/scalytics/kafSIEM/docs/source-vetting.md).
+- ACLED conflict data integration is documented in [docs/acled.md](/Users/alo/Development/scalytics/kafSIEM/docs/acled.md).
 - TLS state and certificates persist in the `caddy-data` volume.
 - Caddy runtime state persists in the `caddy-config` volume.
 - Scheduled refreshes, Docker runtime, and local collection commands all run through the Go collector.

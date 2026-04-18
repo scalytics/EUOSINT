@@ -219,7 +219,7 @@ func ACLEDISO2(iso3 string) string {
 	return iso3toISO2[strings.ToUpper(strings.TrimSpace(iso3))]
 }
 
-// ACLEDEventCategory maps ACLED event types to EUOSINT categories.
+// ACLEDEventCategory maps ACLED event types to kafSIEM categories.
 func ACLEDEventCategory(eventType string) string {
 	switch strings.ToLower(strings.TrimSpace(eventType)) {
 	case "battles":

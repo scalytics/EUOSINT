@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
 )
 
 // categorySearchTemplates maps alert categories to the kind of source the

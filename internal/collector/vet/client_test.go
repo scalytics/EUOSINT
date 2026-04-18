@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/scalytics/euosint/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
 )
 
 func TestClientCompleteUsesOpenAICompatibleEndpoint(t *testing.T) {

@@ -1,7 +1,7 @@
 import type { AgentOpsHealth, AgentOpsMode, AgentOpsState } from "@/agentops/types";
 
-const MODE_KEY = "euosint.ui_mode";
-const PROFILE_KEY = "euosint.profile";
+const MODE_KEY = "kafsiem.ui_mode";
+const PROFILE_KEY = "kafsiem.profile";
 
 export function profileForMode(mode: AgentOpsMode): string {
   switch (mode) {

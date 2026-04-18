@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	agentopsstore "github.com/scalytics/euosint/internal/agentops/store"
-	"github.com/scalytics/euosint/internal/collector/model"
-	"github.com/scalytics/euosint/internal/collector/trends"
-	"github.com/scalytics/euosint/internal/sourcedb"
+	agentopsstore "github.com/scalytics/kafSIEM/internal/agentops/store"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/trends"
+	"github.com/scalytics/kafSIEM/internal/sourcedb"
 )
 
 func testDB(t *testing.T) *sourcedb.DB {

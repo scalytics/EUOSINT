@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/vet"
+	"github.com/scalytics/kafSIEM/internal/collector/vet"
 )
 
 const (

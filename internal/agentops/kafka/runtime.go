@@ -15,10 +15,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	agentcfg "github.com/scalytics/euosint/internal/agentops/config"
-	"github.com/scalytics/euosint/internal/agentops/contract"
-	"github.com/scalytics/euosint/internal/agentops/store"
-	collectorcfg "github.com/scalytics/euosint/internal/collector/config"
+	agentcfg "github.com/scalytics/kafSIEM/internal/agentops/config"
+	"github.com/scalytics/kafSIEM/internal/agentops/contract"
+	"github.com/scalytics/kafSIEM/internal/agentops/store"
+	collectorcfg "github.com/scalytics/kafSIEM/internal/collector/config"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/sasl"
@@ -951,7 +951,7 @@ func max(a, b int) int {
 func newReplayGroupID(prefix string, now time.Time) string {
 	prefix = strings.TrimSpace(prefix)
 	if prefix == "" {
-		prefix = "euosint-agentops-replay"
+		prefix = "kafsiem-agentops-replay"
 	}
 	return fmt.Sprintf("%s-%s", prefix, now.UTC().Format("20060102t150405"))
 }

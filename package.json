@@ -1,5 +1,5 @@
 {
-  "name": "euosint",
+  "name": "kafsiem",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -15,9 +15,9 @@
   "scripts": {
     "dev": "vite",
     "demo:agentops": "vite --open '/?demo=agentops'",
-    "fetch:alerts": "go run ./cmd/euosint-collector",
-    "fetch:alerts:watch": "go run ./cmd/euosint-collector --watch",
-    "collector:run": "go run ./cmd/euosint-collector --watch",
+    "fetch:alerts": "go run ./cmd/kafsiem-collector",
+    "fetch:alerts:watch": "go run ./cmd/kafsiem-collector --watch",
+    "collector:run": "go run ./cmd/kafsiem-collector --watch",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "test:watch": "vitest",

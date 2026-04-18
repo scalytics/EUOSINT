@@ -3,7 +3,7 @@ package normalize
 import (
 	"testing"
 
-	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
 )
 
 func TestTokenize(t *testing.T) {

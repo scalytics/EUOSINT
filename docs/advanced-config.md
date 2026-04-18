@@ -81,8 +81,8 @@ leave these unset and rely on built-in defaults.
 | Variable | Default |
 |---|---|
 | `KAFKA_ENABLED` | `false` |
-| `KAFKA_GROUP_ID` | `euosint-kafka` |
-| `KAFKA_CLIENT_ID` | `euosint-collector` |
+| `KAFKA_GROUP_ID` | `kafsiem-kafka` |
+| `KAFKA_CLIENT_ID` | `kafsiem-collector` |
 | `KAFKA_SECURITY_PROTOCOL` | `PLAINTEXT` |
 | `KAFKA_SASL_MECHANISM` | `PLAIN` |
 | `KAFKA_TEST_ON_START` | `true` |
@@ -91,14 +91,14 @@ leave these unset and rely on built-in defaults.
 | `KAFKA_POLL_TIMEOUT_MS` | `2000` |
 | `KAFKA_MAPPER_PATH` | `registry/kafka_mapper.json` |
 | `AGENTOPS_ENABLED` | `false` |
-| `AGENTOPS_GROUP_ID` | `euosint-agentops` |
-| `AGENTOPS_CLIENT_ID` | `euosint-agentops` |
+| `AGENTOPS_GROUP_ID` | `kafsiem-agentops` |
+| `AGENTOPS_CLIENT_ID` | `kafsiem-agentops` |
 | `AGENTOPS_TOPIC_MODE` | `auto` |
 | `AGENTOPS_SECURITY_PROTOCOL` | `PLAINTEXT` |
 | `AGENTOPS_SASL_MECHANISM` | `PLAIN` |
 | `AGENTOPS_POLICY_PATH` | `/config/agentops_policy.yaml` |
 | `AGENTOPS_REPLAY_ENABLED` | `true` |
-| `AGENTOPS_REPLAY_PREFIX` | `euosint-agentops-replay` |
+| `AGENTOPS_REPLAY_PREFIX` | `kafsiem-agentops-replay` |
 | `AGENTOPS_REJECT_TOPIC` | `group.<group>.agentops.rejects` when `AGENTOPS_GROUP_NAME` is set |
 | `AGENTOPS_OUTPUT_PATH` | `public/agentops-state.json` |
 | `UI_MODE` | `OSINT` |
@@ -109,8 +109,8 @@ leave these unset and rely on built-in defaults.
 
 | Variable | Default |
 |---|---|
-| `EUOSINT_WEB_IMAGE` | `ghcr.io/scalytics/euosint-web:latest` |
-| `EUOSINT_COLLECTOR_IMAGE` | `ghcr.io/scalytics/euosint-collector:latest` |
-| `EUOSINT_BROWSER_IMAGE` | `ghcr.io/browserless/chromium:v2.44.0` |
-| `EUOSINT_HTTP_PORT` | `8080` (derived by installer) |
-| `EUOSINT_HTTPS_PORT` | `8443` (derived by installer) |
+| `KAFSIEM_WEB_IMAGE` | `ghcr.io/scalytics/kafsiem-web:latest` |
+| `KAFSIEM_COLLECTOR_IMAGE` | `ghcr.io/scalytics/kafsiem-collector:latest` |
+| `KAFSIEM_BROWSER_IMAGE` | `ghcr.io/browserless/chromium:v2.44.0` |
+| `KAFSIEM_HTTP_PORT` | `8080` (derived by installer) |
+| `KAFSIEM_HTTPS_PORT` | `8443` (derived by installer) |

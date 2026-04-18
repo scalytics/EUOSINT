@@ -15,13 +15,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/fetch"
-	"github.com/scalytics/euosint/internal/collector/model"
-	"github.com/scalytics/euosint/internal/collector/parse"
-	"github.com/scalytics/euosint/internal/collector/registry"
-	"github.com/scalytics/euosint/internal/collector/vet"
-	"github.com/scalytics/euosint/internal/sourcedb"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/fetch"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/parse"
+	"github.com/scalytics/kafSIEM/internal/collector/registry"
+	"github.com/scalytics/kafSIEM/internal/collector/vet"
+	"github.com/scalytics/kafSIEM/internal/sourcedb"
 )
 
 // DiscoveredSource represents a newly discovered OSINT feed candidate.

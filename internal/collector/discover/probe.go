@@ -7,7 +7,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/scalytics/euosint/internal/collector/fetch"
+	"github.com/scalytics/kafSIEM/internal/collector/fetch"
 )
 
 // Common RSS/Atom feed path suffixes to probe on a website.

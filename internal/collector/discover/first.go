@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/fetch"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/fetch"
 )
 
 const firstAPIBase = "https://api.first.org/data/v1/teams"

@@ -37,10 +37,10 @@ if [ ! -f /data/sources.db ]; then
     cp /app/registry/sources.seed.db /data/sources.db
     echo "Seeded sources.db from pre-built snapshot"
   else
-    euosint-collector --source-db /data/sources.db --source-db-init
-    euosint-collector --source-db /data/sources.db --registry /app/registry/source_registry.json --source-db-import-registry
+    kafsiem-collector --source-db /data/sources.db --source-db-init
+    kafsiem-collector --source-db /data/sources.db --registry /app/registry/source_registry.json --source-db-import-registry
     if [ -f /app/registry/curated_agencies.seed.json ]; then
-      euosint-collector --source-db /data/sources.db --curated-seed /app/registry/curated_agencies.seed.json --source-db-merge-registry
+      kafsiem-collector --source-db /data/sources.db --curated-seed /app/registry/curated_agencies.seed.json --source-db-merge-registry
     fi
   fi
 fi
@@ -50,6 +50,6 @@ fi
 # ones but never deletes discovered or runtime-added sources.
 # This ensures new feeds (FBI API, travel warnings, etc.) from image
 # updates are picked up without manual intervention.
-euosint-collector --source-db /data/sources.db --curated-seed /app/registry/source_registry.json --source-db-merge-registry
+kafsiem-collector --source-db /data/sources.db --curated-seed /app/registry/source_registry.json --source-db-merge-registry
 
-exec euosint-collector "$@"
+exec kafsiem-collector "$@"

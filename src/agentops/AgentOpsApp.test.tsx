@@ -6,9 +6,9 @@ import type { Alert } from "@/types/alert";
 
 const mockedUseAgentOpsOperator = vi.fn<() => AgentOpsOperatorState>(() => ({
   supported: true,
-  live_group_id: "euosint-agentops",
+  live_group_id: "kafsiem-agentops",
   replay_group_ids: ["replay-1"],
-  groups: [{ group_id: "euosint-agentops", state: "Stable", protocol_type: "consumer", protocol: "range", members: [] }],
+  groups: [{ group_id: "kafsiem-agentops", state: "Stable", protocol_type: "consumer", protocol: "range", members: [] }],
 }));
 
 vi.mock("@/hooks/useAgentOpsOperator", () => ({
@@ -41,7 +41,7 @@ const baseState: AgentOpsState = {
   health: {
     connected: true,
     effective_topics: ["group.core.requests"],
-    group_id: "euosint-agentops",
+    group_id: "kafsiem-agentops",
     accepted_count: 2,
     rejected_count: 0,
     mirrored_count: 0,
@@ -164,9 +164,9 @@ beforeEach(() => {
   mockedUseAgentOpsOperator.mockReset();
   mockedUseAgentOpsOperator.mockReturnValue({
     supported: true,
-    live_group_id: "euosint-agentops",
+    live_group_id: "kafsiem-agentops",
     replay_group_ids: ["replay-1"],
-    groups: [{ group_id: "euosint-agentops", state: "Stable", protocol_type: "consumer", protocol: "range", members: [] }],
+    groups: [{ group_id: "kafsiem-agentops", state: "Stable", protocol_type: "consumer", protocol: "range", members: [] }],
   });
   mockedUseAlerts.mockReset();
   mockedUseAlerts.mockReturnValue({
@@ -250,7 +250,7 @@ test("renders hybrid fusion shell without mixing lanes", () => {
 test("renders unsupported operator state without exposing unavailable actions", () => {
   mockedUseAgentOpsOperator.mockReturnValue({
     supported: false,
-    live_group_id: "euosint-agentops",
+    live_group_id: "kafsiem-agentops",
     replay_group_ids: [],
     groups: [],
     last_error: "unsupported admin api",
@@ -283,9 +283,9 @@ test("triggers replay through the AgentOps API", async () => {
 });
 
 test("applies persisted queue preferences and selected run", () => {
-  window.localStorage.setItem("euosint.agentops.queue_filter", "all");
-  window.localStorage.setItem("euosint.agentops.queue_anomalies_only", "true");
-  window.localStorage.setItem("euosint.agentops.selected_run", "corr-1");
+  window.localStorage.setItem("kafsiem.agentops.queue_filter", "all");
+  window.localStorage.setItem("kafsiem.agentops.queue_anomalies_only", "true");
+  window.localStorage.setItem("kafsiem.agentops.selected_run", "corr-1");
 
   render(<AgentOpsApp state={baseState} mode="AGENTOPS" />);
 

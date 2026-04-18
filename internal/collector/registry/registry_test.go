@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/scalytics/euosint/internal/sourcedb"
+	"github.com/scalytics/kafSIEM/internal/sourcedb"
 )
 
 func TestLoadRegistryDeduplicatesAndNormalizes(t *testing.T) {

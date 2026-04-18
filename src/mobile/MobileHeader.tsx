@@ -67,7 +67,7 @@ export function MobileHeader({
     <>
       <div className="mobile-header">
         <Shield size={18} className="text-sky-400 flex-shrink-0" />
-        <span className="text-xs font-bold tracking-wide text-slate-300">EUOSINT</span>
+        <span className="text-xs font-bold tracking-wide text-slate-300">kafSIEM</span>
 
         <div className="flex items-center gap-1 ml-auto">
           {/* Category pill */}

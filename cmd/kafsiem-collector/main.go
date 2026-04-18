@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/scalytics/euosint/internal/collector/app"
+	"github.com/scalytics/kafSIEM/internal/collector/app"
 )
 
 func main() {

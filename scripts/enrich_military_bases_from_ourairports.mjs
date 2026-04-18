@@ -104,7 +104,7 @@ if (!fs.existsSync(inputPath)) {
   throw new Error(`Input not found: ${inputPath}`);
 }
 const existing = JSON.parse(fs.readFileSync(inputPath, "utf8"));
-const response = await fetch(airportsCSVURL, { headers: { "user-agent": "EUOSINT/1.0" } });
+const response = await fetch(airportsCSVURL, { headers: { "user-agent": "kafSIEM/1.0" } });
 if (!response.ok) {
   throw new Error(`Fetch failed (${response.status}) from ${airportsCSVURL}`);
 }

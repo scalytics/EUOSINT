@@ -6,7 +6,7 @@ package discover
 import (
 	"testing"
 
-	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
 )
 
 func TestExtractDDGURLs(t *testing.T) {

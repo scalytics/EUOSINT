@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
 )
 
 type Entry struct {

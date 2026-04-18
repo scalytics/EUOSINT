@@ -7,9 +7,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/parse"
-	"github.com/scalytics/euosint/internal/collector/vet"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/parse"
+	"github.com/scalytics/kafSIEM/internal/collector/vet"
 )
 
 type fakeCompleter struct {

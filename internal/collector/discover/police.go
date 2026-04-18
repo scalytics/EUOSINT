@@ -11,8 +11,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/scalytics/euosint/internal/collector/config"
-	"github.com/scalytics/euosint/internal/collector/fetch"
+	"github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/collector/fetch"
 )
 
 const wikidataSPARQL = "https://query.wikidata.org/sparql"

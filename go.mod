@@ -1,7 +1,7 @@
 // Copyright 2024 ff, Scalytics, Inc. - https://www.scalytics.io
 // SPDX-License-Identifier: Apache-2.0
 
-module github.com/scalytics/euosint
+module github.com/scalytics/kafSIEM
 
 go 1.25.0
 

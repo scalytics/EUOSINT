@@ -16,7 +16,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/scalytics/euosint/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
 )
 
 // Spike represents a significant increase in term frequency compared to

@@ -11,7 +11,7 @@
       "members": [
         {
           "member_id": "agentops-live-1",
-          "client_id": "euosint-agentops-live",
+          "client_id": "kafsiem-agentops-live",
           "client_host": "127.0.0.1"
         }
       ]

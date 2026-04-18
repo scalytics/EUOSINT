@@ -12,8 +12,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/scalytics/euosint/internal/collector/model"
-	"github.com/scalytics/euosint/internal/sourcedb"
+	"github.com/scalytics/kafSIEM/internal/collector/model"
+	"github.com/scalytics/kafSIEM/internal/sourcedb"
 )
 
 var knownDeadFeedURLs = map[string]struct{}{

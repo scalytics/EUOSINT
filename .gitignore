@@ -6,7 +6,7 @@ dist/
 dist-ssr/
 coverage/
 .tmp/
-/euosint-collector
+/kafsiem-collector
 cmd/test-*/
 .claude/
 
@@ -67,3 +67,5 @@ __pycache__/
 
 # Local architecture notes
 arch/
+# Local collector binaries
+/euosint-collector

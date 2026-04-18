@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [Unit]
-Description=EUOSINT browser watchdog
+Description=kafSIEM browser watchdog
 After=docker.service
 Requires=docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/euosint
-ExecStart=/bin/bash /opt/euosint/scripts/browser_watchdog.sh
+WorkingDirectory=/opt/kafsiem
+ExecStart=/bin/bash /opt/kafsiem/scripts/browser_watchdog.sh
