@@ -1,0 +1,17 @@
+apiVersion: v2
+name: kafsiem
+description: >
+  kafSIEM / EUOSINT — OSINT + AgentOps + Hybrid observability web UI.
+  Deploys the Caddy-served static frontend. For the Go collector, use the
+  `kafsiem-collector` chart (roadmap).
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Scalytics Platform Team
+keywords:
+  - siem
+  - osint
+  - agentops
+  - observability
+  - scalytics

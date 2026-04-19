@@ -1,0 +1,36 @@
+image:
+  repository: ghcr.io/scalytics/kafsiem
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 8500
+  targetPort: 80
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+probes:
+  liveness:
+    httpGet: { path: /, port: 80 }
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  readiness:
+    httpGet: { path: /, port: 80 }
+    initialDelaySeconds: 2
+    periodSeconds: 5
+
+serviceAccount:
+  create: true
+  name: ""
+
+labels:
+  app.kubernetes.io/part-of: ops-foundation
