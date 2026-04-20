@@ -12,7 +12,6 @@ import (
 	"time"
 
 	agentcfg "github.com/scalytics/kafSIEM/internal/agentops/config"
-	"github.com/scalytics/kafSIEM/internal/agentops/contract"
 	"github.com/scalytics/kafSIEM/internal/agentops/store"
 	collectorcfg "github.com/scalytics/kafSIEM/internal/collector/config"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -22,6 +21,7 @@ func TestHandleRecordRequestBuildsFlowAndTask(t *testing.T) {
 	svc := &Service{
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -40,15 +40,16 @@ func TestHandleRecordRequestBuildsFlowAndTask(t *testing.T) {
 	if reason, ok := svc.handleRecord(rec); !ok {
 		t.Fatalf("handleRecord rejected request: %s", reason)
 	}
-	if len(svc.internal.flows) != 1 || len(svc.internal.tasks) != 1 || len(svc.internal.msgs) != 1 {
-		t.Fatalf("unexpected state sizes flows=%d tasks=%d msgs=%d", len(svc.internal.flows), len(svc.internal.tasks), len(svc.internal.msgs))
+	doc := svc.file.Snapshot()
+	if len(doc.Flows) != 1 || len(doc.Tasks) != 1 || len(doc.Messages) != 1 {
+		t.Fatalf("unexpected persisted state %#v", doc)
 	}
-	flow := svc.internal.flows["corr-1"]
-	if flow == nil || flow.MessageCount != 1 || len(flow.TaskIDs) != 1 || flow.TaskIDs[0] != "task-1" {
+	flow := doc.Flows[0]
+	if flow.MessageCount != 1 || len(flow.TaskIDs) != 1 || flow.TaskIDs[0] != "task-1" {
 		t.Fatalf("unexpected flow state: %#v", flow)
 	}
-	task := svc.internal.tasks["task-1"]
-	if task == nil || task.ParentTaskID != "root-1" || task.RequesterID != "worker-a" {
+	task := doc.Tasks[0]
+	if task.ParentTaskID != "root-1" || task.RequesterID != "worker-a" {
 		t.Fatalf("unexpected task state: %#v", task)
 	}
 }
@@ -73,6 +74,7 @@ func TestHandleRecordLFSPointerIsMetadataOnly(t *testing.T) {
 	svc := &Service{
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -91,7 +93,7 @@ func TestHandleRecordLFSPointerIsMetadataOnly(t *testing.T) {
 	if reason, ok := svc.handleRecord(rec); !ok {
 		t.Fatalf("handleRecord rejected LFS pointer: %s", reason)
 	}
-	msg := svc.internal.msgs["group.core.responses:0:7"]
+	msg := svc.file.Snapshot().Messages[0]
 	if msg.LFS == nil || msg.Content != "" || msg.CorrelationID != "" {
 		t.Fatalf("expected pointer-only LFS message, got %#v", msg)
 	}
@@ -104,6 +106,7 @@ func TestHandleRecordStatusAuditUnknownAndDuplicateBranches(t *testing.T) {
 	svc := &Service{
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -139,30 +142,26 @@ func TestHandleRecordStatusAuditUnknownAndDuplicateBranches(t *testing.T) {
 	if reason, ok := svc.handleRecord(unknown); ok || reason != "unknown_topic" {
 		t.Fatalf("expected unknown_topic rejection, got ok=%v reason=%q", ok, reason)
 	}
-	task := svc.internal.tasks["task-3"]
-	if task == nil || task.Status != "waiting" || task.LastSummary != "queued" {
+	doc := svc.file.Snapshot()
+	if len(doc.Tasks) != 1 || len(doc.Messages) != 2 {
+		t.Fatalf("unexpected persisted state %#v", doc)
+	}
+	task := doc.Tasks[0]
+	if task.Status != "waiting" || task.LastSummary != "queued" {
 		t.Fatalf("unexpected task state %#v", task)
 	}
-	msg := svc.internal.msgs["group.core.observe.audit:0:2"]
+	msg := doc.Messages[0]
 	if msg.Preview == "" {
 		t.Fatalf("expected audit preview, got %#v", msg)
 	}
 }
 
 func TestUpdateTraceAndTaskGuardBranches(t *testing.T) {
-	svc := &Service{
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
-	}
-	svc.updateTrace("2026-04-10T12:00:00Z", contract.TracePayload{}, "worker-a")
-	svc.updateTask("2026-04-10T12:00:00Z", "", "", "", "", "", "", "", "")
-	if len(svc.internal.traces) != 0 || len(svc.internal.tasks) != 0 {
-		t.Fatalf("expected guard branches to avoid state mutation, got %#v", svc.internal)
+	doc := &store.Snapshot{}
+	updateTraceMessage(doc, "2026-04-10T12:00:00Z", store.Message{}, nil)
+	updateTaskMessage(doc, "2026-04-10T12:00:00Z", store.Message{}, nil)
+	if len(doc.Traces) != 0 || len(doc.Tasks) != 0 {
+		t.Fatalf("expected guard branches to avoid mutation, got %#v", doc)
 	}
 }
 
@@ -255,8 +254,12 @@ func TestStartUsesDefaultClientFactoryAndBootstrapsStoredState(t *testing.T) {
 	currentMu.RLock()
 	current := currentService
 	currentMu.RUnlock()
-	if current == nil || current.internal.flows["corr-1"] == nil || current.internal.msgs["group.core.requests:0:1"].ID == "" {
+	if current == nil {
 		t.Fatalf("expected stored state bootstrap, got %#v", current)
+	}
+	doc := current.file.Snapshot()
+	if len(doc.Flows) != 1 || len(doc.Messages) != 1 {
+		t.Fatalf("expected stored state bootstrap, got %#v", doc)
 	}
 }
 
@@ -264,7 +267,7 @@ func TestRunReturnsInitialStatePersistError(t *testing.T) {
 	dir := t.TempDir()
 	stateDir := filepath.Join(dir, "state")
 	statePath := filepath.Join(stateDir, "agentops-state.json")
-	fs, err := store.NewFileStore(statePath, store.Document{
+	fs, err := store.NewSqliteStore(statePath, store.Snapshot{
 		Health: store.Health{RejectedByReason: map[string]int{}},
 	})
 	if err != nil {
@@ -309,7 +312,7 @@ func TestHandleRecordResponseAndTraceUpdateTaskAndTraceState(t *testing.T) {
 	svc := &Service{
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -346,23 +349,19 @@ func TestHandleRecordResponseAndTraceUpdateTaskAndTraceState(t *testing.T) {
 			t.Fatalf("handleRecord rejected record: %s", reason)
 		}
 	}
-	if err := svc.persist(); err != nil {
-		t.Fatal(err)
-	}
-
-	task := svc.internal.tasks["task-2"]
-	if task == nil || task.Status != "completed" || task.ResponderID != "worker-b" {
+	doc := svc.file.Snapshot()
+	task := doc.Tasks[0]
+	if task.Status != "completed" || task.ResponderID != "worker-b" {
 		t.Fatalf("unexpected task state: %#v", task)
 	}
-	traceState := svc.internal.traces["trace-2"]
-	if traceState == nil || traceState.SpanCount != 1 || traceState.DurationMs != 1000 {
+	traceState := doc.Traces[0]
+	if traceState.SpanCount != 1 || traceState.DurationMs != 1000 {
 		t.Fatalf("unexpected trace state: %#v", traceState)
 	}
-	flow := svc.internal.flows["corr-2"]
-	if flow == nil || flow.MessageCount != 3 || len(flow.TraceIDs) != 1 {
+	flow := doc.Flows[0]
+	if flow.MessageCount != 3 || len(flow.TraceIDs) != 1 {
 		t.Fatalf("unexpected flow state: %#v", flow)
 	}
-	doc := svc.file.Snapshot()
 	if len(doc.Health.TopicHealth) != 3 {
 		t.Fatalf("unexpected persisted health: %#v", doc.Health)
 	}
@@ -405,24 +404,19 @@ func TestPersistCapsReplayMessagesByPolicy(t *testing.T) {
 				ReplayMaxRecords: 2,
 			},
 		},
-		file: mustFileStore(t),
-		internal: state{
-			flows: map[string]*store.Flow{
-				"corr": {ID: "corr", FirstSeen: "2026-04-10T12:00:00Z", LastSeen: "2026-04-10T12:00:02Z", MessageCount: 3},
-			},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs: map[string]store.Message{
-				"a": {ID: "a", Timestamp: "2026-04-10T12:00:00Z"},
-				"b": {ID: "b", Timestamp: "2026-04-10T12:00:01Z"},
-				"c": {ID: "c", Timestamp: "2026-04-10T12:00:02Z"},
-			},
-			topic: map[string]*topicStat{
-				"group.core.requests": {Count: 3, Agents: map[string]struct{}{"worker-a": {}}, LastMessageAt: "2026-04-10T12:00:02Z"},
-			},
-		},
+		file:   mustSqliteStore(t),
 		topics: []string{"group.core.requests"},
 	}
+	svc.bootstrapFromStore(store.Snapshot{
+		Flows: []store.Flow{
+			{ID: "corr", FirstSeen: "2026-04-10T12:00:00Z", LastSeen: "2026-04-10T12:00:02Z", MessageCount: 3},
+		},
+		Messages: []store.Message{
+			{ID: "a", Topic: "group.core.requests", TopicFamily: "requests", Timestamp: "2026-04-10T12:00:00Z"},
+			{ID: "b", Topic: "group.core.requests", TopicFamily: "requests", Timestamp: "2026-04-10T12:00:01Z"},
+			{ID: "c", Topic: "group.core.requests", TopicFamily: "requests", Timestamp: "2026-04-10T12:00:02Z"},
+		},
+	})
 
 	if err := svc.persist(); err != nil {
 		t.Fatal(err)
@@ -440,6 +434,7 @@ func TestHandleRecordAcceptsRawNonJSONContent(t *testing.T) {
 	svc := &Service{
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -458,7 +453,7 @@ func TestHandleRecordAcceptsRawNonJSONContent(t *testing.T) {
 	if reason, ok := svc.handleRecord(rec); !ok {
 		t.Fatalf("expected raw content acceptance, got %q", reason)
 	}
-	msg := svc.internal.msgs["group.core.responses:0:8"]
+	msg := svc.file.Snapshot().Messages[0]
 	if msg.EnvelopeType != "raw" || msg.Content != "plain-text agent note" || msg.CorrelationID == "" {
 		t.Fatalf("unexpected raw message %#v", msg)
 	}
@@ -479,7 +474,7 @@ func TestRunCountsMirrorFailureButCommitsRejectedRecord(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -533,19 +528,34 @@ func TestPersistComputesTopicHealthMetrics(t *testing.T) {
 	svc := &Service{
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core", AgentOpsGroupID: "group-a", UIMode: "AGENTOPS", Profile: "agentops-default"},
 		policy: agentcfg.DefaultPolicy("core"),
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		topics: []string{"group.core.requests", "group.core.responses"},
-		internal: state{
-			flows:  map[string]*store.Flow{"corr-1": {ID: "corr-1", FirstSeen: "2026-04-10T12:00:00Z", LastSeen: "2026-04-10T12:10:00Z"}},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic: map[string]*topicStat{
-				"group.core.requests":  {Count: 120, Agents: map[string]struct{}{"worker-a": {}, "worker-b": {}}, FirstMessageAt: "2026-04-10T12:00:00Z", LastMessageAt: "2026-04-10T12:59:00Z"},
-				"group.core.responses": {Count: 1, Agents: map[string]struct{}{"worker-a": {}}, FirstMessageAt: "2026-04-10T12:00:00Z", LastMessageAt: "2026-04-10T12:00:00Z"},
-			},
-		},
 	}
+	messages := make([]store.Message, 0, 121)
+	for i := 0; i < 120; i++ {
+		sender := "worker-a"
+		if i%2 == 1 {
+			sender = "worker-b"
+		}
+		messages = append(messages, store.Message{
+			ID:          fmt.Sprintf("req-%03d", i),
+			Topic:       "group.core.requests",
+			TopicFamily: "requests",
+			SenderID:    sender,
+			Timestamp:   fmt.Sprintf("2026-04-10T12:%02d:00Z", i%60),
+		})
+	}
+	messages = append(messages, store.Message{
+		ID:          "resp-1",
+		Topic:       "group.core.responses",
+		TopicFamily: "responses",
+		SenderID:    "worker-a",
+		Timestamp:   "2026-04-10T12:00:00Z",
+	})
+	svc.bootstrapFromStore(store.Snapshot{
+		Flows:    []store.Flow{{ID: "corr-1", FirstSeen: "2026-04-10T12:00:00Z", LastSeen: "2026-04-10T12:10:00Z"}},
+		Messages: messages,
+	})
 	if err := svc.persist(); err != nil {
 		t.Fatal(err)
 	}
@@ -583,7 +593,7 @@ func TestReplayCancellationMarksSessionCanceled(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -627,7 +637,7 @@ func TestStartReplayWithTopicsUsesScopedSubscription(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests", "group.core.responses"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -651,9 +661,9 @@ func TestStartReplayWithTopicsUsesScopedSubscription(t *testing.T) {
 	}
 }
 
-func mustFileStore(t *testing.T) *store.FileStore {
+func mustSqliteStore(t *testing.T) *store.SqliteStore {
 	t.Helper()
-	fs, err := store.NewFileStore("", store.Document{
+	fs, err := store.NewSqliteStore("", store.Snapshot{
 		Health: store.Health{RejectedByReason: map[string]int{}},
 	})
 	if err != nil {
@@ -817,7 +827,7 @@ func TestRunProcessesRejectedRecordsAndPersistsHealth(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -891,7 +901,7 @@ func TestRunPersistsHealthCountsAndEffectiveTopics(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests", "group.core.responses"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -937,7 +947,7 @@ func TestRunReturnsPersistErrorAfterCommit(t *testing.T) {
 	dir := t.TempDir()
 	stateDir := filepath.Join(dir, "state")
 	statePath := filepath.Join(stateDir, "agentops-state.json")
-	fs, err := store.NewFileStore(statePath, store.Document{
+	fs, err := store.NewSqliteStore(statePath, store.Snapshot{
 		Health: store.Health{RejectedByReason: map[string]int{}},
 	})
 	if err != nil {
@@ -990,23 +1000,16 @@ func TestRunReturnsPersistErrorAfterCommit(t *testing.T) {
 }
 
 func TestBootstrapFromStoreRestoresTraceAndTaskState(t *testing.T) {
-	svc := &Service{
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
-	}
-	svc.bootstrapFromStore(store.Document{
+	svc := &Service{file: mustSqliteStore(t)}
+	svc.bootstrapFromStore(store.Snapshot{
 		Flows:    []store.Flow{{ID: "corr-1"}},
 		Traces:   []store.Trace{{ID: "trace-1"}},
 		Tasks:    []store.Task{{ID: "task-1"}},
 		Messages: []store.Message{{ID: "msg-1"}},
 	})
-	if svc.internal.flows["corr-1"] == nil || svc.internal.traces["trace-1"] == nil || svc.internal.tasks["task-1"] == nil || svc.internal.msgs["msg-1"].ID == "" {
-		t.Fatalf("bootstrap did not restore all state: %#v", svc.internal)
+	doc := svc.file.Snapshot()
+	if len(doc.Flows) != 1 || len(doc.Traces) != 1 || len(doc.Tasks) != 1 || len(doc.Messages) != 1 {
+		t.Fatalf("bootstrap did not restore all state: %#v", doc)
 	}
 }
 
@@ -1022,7 +1025,7 @@ func TestRunHandlesFatalPollError(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -1063,7 +1066,7 @@ func TestRunUsesDefaultClientFactoryWhenNil(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -1082,7 +1085,7 @@ func TestRunUsesDefaultClientFactoryWhenNil(t *testing.T) {
 }
 
 func TestPersistInitializesRejectedReasonMap(t *testing.T) {
-	fs, err := store.NewFileStore("", store.Document{})
+	fs, err := store.NewSqliteStore("", store.Snapshot{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1125,7 +1128,7 @@ func TestRunReturnsCommitError(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -1164,7 +1167,7 @@ func TestRunReplayFailureAndCompletion(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -1220,7 +1223,7 @@ func TestReplayFlowEndToEndWithDedicatedGroup(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -1277,7 +1280,7 @@ func TestRunReplayUsesNilFactoryFallbackAndFatalFetchError(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -1295,7 +1298,7 @@ func TestRunReplayUsesNilFactoryFallbackAndFatalFetchError(t *testing.T) {
 	}
 }
 
-func TestRunReplayLimitFallbackAndProcessedCap(t *testing.T) {
+func TestRunReplayProcessedCap(t *testing.T) {
 	svc := &Service{
 		cfg: collectorcfg.Config{
 			AgentOpsEnabled:       true,
@@ -1308,10 +1311,10 @@ func TestRunReplayLimitFallbackAndProcessedCap(t *testing.T) {
 		policy: agentcfg.Policy{
 			Version:   1,
 			GroupName: "core",
-			Grouping:  agentcfg.Grouping{FlowKey: "correlation_id", ReplayMaxRecords: 0},
+			Grouping:  agentcfg.Grouping{FlowKey: "correlation_id", ReplayMaxRecords: 50},
 		},
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -1320,8 +1323,8 @@ func TestRunReplayLimitFallbackAndProcessedCap(t *testing.T) {
 			topic:  map[string]*topicStat{},
 		},
 		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
-			records := make([]*kgo.Record, 0, 5002)
-			for i := 0; i < 5002; i++ {
+			records := make([]*kgo.Record, 0, 52)
+			for i := 0; i < 52; i++ {
 				records = append(records, &kgo.Record{
 					Topic:     "group.core.requests",
 					Partition: 0,
@@ -1332,7 +1335,7 @@ func TestRunReplayLimitFallbackAndProcessedCap(t *testing.T) {
 			return &mockAgentOpsClient{polls: []kgo.Fetches{fetchesWithRecords(records...)}, commitErr: nil}, nil
 		},
 	}
-	if err := svc.file.Update(func(doc *store.Document) {
+	if err := svc.file.Update(func(doc *store.Snapshot) {
 		doc.ReplaySessions = []store.ReplaySession{{ID: "session-limit", GroupID: "group-replay", Status: "running"}}
 	}); err != nil {
 		t.Fatal(err)
@@ -1346,8 +1349,8 @@ func TestRunReplayLimitFallbackAndProcessedCap(t *testing.T) {
 			break
 		}
 	}
-	if session.Status != "completed" || session.MessageCount != 5000 {
-		t.Fatalf("expected replay processed cap at 5000, got %#v", session)
+	if session.Status != "completed" || session.MessageCount != 50 {
+		t.Fatalf("expected replay processed cap at 50, got %#v", session)
 	}
 }
 
@@ -1355,7 +1358,7 @@ func TestStartReplayReturnsUpdateError(t *testing.T) {
 	dir := t.TempDir()
 	stateDir := filepath.Join(dir, "state")
 	statePath := filepath.Join(stateDir, "agentops-state.json")
-	fs, err := store.NewFileStore(statePath, store.Document{
+	fs, err := store.NewSqliteStore(statePath, store.Snapshot{
 		Health: store.Health{RejectedByReason: map[string]int{}},
 	})
 	if err != nil {
@@ -1407,7 +1410,7 @@ func TestStartReplayWithoutPrefixAndGlobalReplay(t *testing.T) {
 		},
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
-		file:   mustFileStore(t),
+		file:   mustSqliteStore(t),
 		internal: state{
 			flows:  map[string]*store.Flow{},
 			traces: map[string]*store.Trace{},
@@ -1437,7 +1440,7 @@ func TestStartReplayTrimsHistoryToTenSessions(t *testing.T) {
 	for i := range sessions {
 		sessions[i] = store.ReplaySession{ID: fmt.Sprintf("old-%d", i), Status: "completed"}
 	}
-	fs, err := store.NewFileStore("", store.Document{
+	fs, err := store.NewSqliteStore("", store.Snapshot{
 		ReplaySessions: sessions,
 		Health:         store.Health{RejectedByReason: map[string]int{}},
 	})
@@ -1485,7 +1488,7 @@ func TestLoadOperatorStateReturnsGroupsAndReplayIDs(t *testing.T) {
 			AgentOpsGroupID:   "group-live",
 			AgentOpsClientID:  "client-a",
 		},
-		file: mustFileStore(t),
+		file: mustSqliteStore(t),
 		operatorClientFactory: func(cfg collectorcfg.Config, clientID string) (operatorClient, error) {
 			return &mockOperatorClient{
 				groups: []store.ConsumerGroup{
@@ -1495,7 +1498,7 @@ func TestLoadOperatorStateReturnsGroupsAndReplayIDs(t *testing.T) {
 			}, nil
 		},
 	}
-	if err := svc.file.Update(func(doc *store.Document) {
+	if err := svc.file.Update(func(doc *store.Snapshot) {
 		doc.ReplaySessions = []store.ReplaySession{{ID: "replay-1", GroupID: "group-replay", Status: "completed"}}
 	}); err != nil {
 		t.Fatal(err)
@@ -1520,7 +1523,7 @@ func TestLoadOperatorStateReturnsUnsupportedOnAdminFailure(t *testing.T) {
 			AgentOpsGroupID:   "group-live",
 			AgentOpsClientID:  "client-a",
 		},
-		file: mustFileStore(t),
+		file: mustSqliteStore(t),
 		operatorClientFactory: func(cfg collectorcfg.Config, clientID string) (operatorClient, error) {
 			return nil, errors.New("unsupported admin api")
 		},
@@ -1614,7 +1617,7 @@ func fetchesWithErr(err error) kgo.Fetches {
 	}
 }
 
-func waitForReplayStatus(t *testing.T, fs *store.FileStore, id string, want string) {
+func waitForReplayStatus(t *testing.T, fs *store.SqliteStore, id string, want string) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {

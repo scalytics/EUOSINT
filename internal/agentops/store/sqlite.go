@@ -8,6 +8,6 @@ package store
 // transition away from the old JSON-store naming.
 type SqliteStore = FileStore
 
-func NewSqliteStore(path string, initial Document) (*SqliteStore, error) {
+func NewSqliteStore(path string, initial Snapshot) (*SqliteStore, error) {
 	return NewFileStore(path, initial)
 }

@@ -2,6 +2,7 @@ package schema
 
 import (
 	"database/sql"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -48,6 +49,30 @@ func TestApplyIsIdempotent(t *testing.T) {
 
 	if err := Apply(db); err != nil {
 		t.Fatalf("second Apply() error = %v", err)
+	}
+}
+
+func TestOpenFailsWhenCreateDirFails(t *testing.T) {
+	dir := t.TempDir()
+	blocker := filepath.Join(dir, "blocker")
+	if err := os.WriteFile(blocker, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Open(filepath.Join(blocker, "child.db")); err == nil {
+		t.Fatal("expected create dir failure")
+	}
+}
+
+func TestApplyFailsOnClosedDB(t *testing.T) {
+	db, err := Open("")
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+	if err := Apply(db); err == nil {
+		t.Fatal("expected Apply on closed DB to fail")
 	}
 }
 

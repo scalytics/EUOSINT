@@ -9,7 +9,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,10 +22,10 @@ type FileStore struct {
 	dbPath string
 	db     *sql.DB
 	mu     sync.Mutex
-	doc    Document
+	doc    Snapshot
 }
 
-func NewFileStore(path string, initial Document) (*FileStore, error) {
+func NewFileStore(path string, initial Snapshot) (*FileStore, error) {
 	dbPath := sqlitePath(path)
 	db, err := schema.Open(dbPath)
 	if err != nil {
@@ -71,20 +70,19 @@ func NewFileStore(path string, initial Document) (*FileStore, error) {
 	return fs, nil
 }
 
-func (s *FileStore) Snapshot() Document {
+func (s *FileStore) Snapshot() Snapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return cloneDocument(s.doc)
 }
 
-func (s *FileStore) Update(apply func(*Document)) error {
+func (s *FileStore) Update(apply func(*Snapshot)) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	doc := cloneDocument(s.doc)
 	apply(&doc)
 	doc.GeneratedAt = time.Now().UTC().Format(time.RFC3339)
-	sortDocument(&doc)
 
 	if err := s.replaceWithDocument(doc); err != nil {
 		return err
@@ -112,7 +110,7 @@ func (s *FileStore) reload() error {
 	return nil
 }
 
-func (s *FileStore) replaceWithDocument(doc Document) error {
+func (s *FileStore) replaceWithDocument(doc Snapshot) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -188,8 +186,8 @@ func (s *FileStore) isEmpty() (bool, error) {
 	return count == 0, nil
 }
 
-func (s *FileStore) readDocument() (Document, error) {
-	doc := Document{
+func (s *FileStore) readDocument() (Snapshot, error) {
+	doc := Snapshot{
 		Health: Health{
 			RejectedByReason: map[string]int{},
 		},
@@ -197,22 +195,22 @@ func (s *FileStore) readDocument() (Document, error) {
 
 	var err error
 	if doc.Messages, err = readMessages(s.db); err != nil {
-		return Document{}, err
+		return Snapshot{}, err
 	}
 	if doc.Flows, err = readFlows(s.db); err != nil {
-		return Document{}, err
+		return Snapshot{}, err
 	}
 	if doc.Traces, err = readTraces(s.db); err != nil {
-		return Document{}, err
+		return Snapshot{}, err
 	}
 	if doc.Tasks, err = readTasks(s.db); err != nil {
-		return Document{}, err
+		return Snapshot{}, err
 	}
 	if doc.ReplaySessions, err = readReplaySessions(s.db); err != nil {
-		return Document{}, err
+		return Snapshot{}, err
 	}
 	if doc.Health, err = readHealth(s.db); err != nil {
-		return Document{}, err
+		return Snapshot{}, err
 	}
 
 	doc.FlowCount = len(doc.Flows)
@@ -223,25 +221,25 @@ func (s *FileStore) readDocument() (Document, error) {
 	return doc, nil
 }
 
-func loadLegacySnapshot(path string) (Document, bool, error) {
+func loadLegacySnapshot(path string) (Snapshot, bool, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return Document{}, false, nil
+			return Snapshot{}, false, nil
 		}
-		return Document{}, false, err
+		return Snapshot{}, false, err
 	}
 	if len(raw) == 0 {
-		return Document{}, false, nil
+		return Snapshot{}, false, nil
 	}
-	var doc Document
+	var doc Snapshot
 	if err := json.Unmarshal(raw, &doc); err != nil {
-		return Document{}, false, err
+		return Snapshot{}, false, err
 	}
 	return doc, doc.GeneratedAt != "" || len(doc.Messages) > 0 || len(doc.Flows) > 0, nil
 }
 
-func exportSnapshot(path string, doc Document) error {
+func exportSnapshot(path string, doc Snapshot) error {
 	if strings.TrimSpace(path) == "" {
 		return nil
 	}
@@ -256,7 +254,7 @@ func exportSnapshot(path string, doc Document) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
-func hasDocumentData(doc Document) bool {
+func hasDocumentData(doc Snapshot) bool {
 	return doc.GeneratedAt != "" ||
 		doc.Enabled ||
 		doc.UIMode != "" ||
@@ -483,7 +481,7 @@ func insertReplaySessions(tx *sql.Tx, sessions []ReplaySession) error {
 	return nil
 }
 
-func insertHealthSnapshot(tx *sql.Tx, doc Document) error {
+func insertHealthSnapshot(tx *sql.Tx, doc Snapshot) error {
 	rejectedJSON, err := json.Marshal(doc.Health.RejectedByReason)
 	if err != nil {
 		return err
@@ -802,19 +800,11 @@ func readHealth(db *sql.DB) (Health, error) {
 	return health, topics.Err()
 }
 
-func cloneDocument(doc Document) Document {
+func cloneDocument(doc Snapshot) Snapshot {
 	raw, _ := json.Marshal(doc)
-	var out Document
+	var out Snapshot
 	_ = json.Unmarshal(raw, &out)
 	return out
-}
-
-func sortDocument(doc *Document) {
-	sort.Slice(doc.Flows, func(i, j int) bool { return doc.Flows[i].LastSeen > doc.Flows[j].LastSeen })
-	sort.Slice(doc.Traces, func(i, j int) bool { return doc.Traces[i].StartedAt > doc.Traces[j].StartedAt })
-	sort.Slice(doc.Tasks, func(i, j int) bool { return doc.Tasks[i].LastSeen > doc.Tasks[j].LastSeen })
-	sort.Slice(doc.Messages, func(i, j int) bool { return doc.Messages[i].Timestamp > doc.Messages[j].Timestamp })
-	sort.Slice(doc.Health.TopicHealth, func(i, j int) bool { return doc.Health.TopicHealth[i].Topic < doc.Health.TopicHealth[j].Topic })
 }
 
 func firstNonEmpty(values ...string) string {

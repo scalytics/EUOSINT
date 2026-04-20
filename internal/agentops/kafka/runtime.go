@@ -33,7 +33,6 @@ type Service struct {
 	file                  *store.SqliteStore
 	clientFactory         func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error)
 	operatorClientFactory func(cfg collectorcfg.Config, clientID string) (operatorClient, error)
-	stateMu               sync.Mutex
 	replayMu              sync.Mutex
 	replayCancels         map[string]context.CancelFunc
 	internal              state
@@ -51,18 +50,8 @@ type operatorClient interface {
 	Close()
 }
 
-var (
-	currentMu            sync.RWMutex
-	currentService       *Service
-	nowFunc              = time.Now
-	defaultClientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
-		return newClient(cfg, topics, groupID, clientID)
-	}
-	defaultOperatorClientFactory = func(cfg collectorcfg.Config, clientID string) (operatorClient, error) {
-		return newOperatorClient(cfg, clientID)
-	}
-)
-
+// Deprecated compatibility cache while runtime tests move to store-backed assertions.
+// The operational state now lives in the store.
 type state struct {
 	flows  map[string]*store.Flow
 	traces map[string]*store.Trace
@@ -77,6 +66,18 @@ type topicStat struct {
 	LastMessageAt  string
 	FirstMessageAt string
 }
+
+var (
+	currentMu            sync.RWMutex
+	currentService       *Service
+	nowFunc              = time.Now
+	defaultClientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
+		return newClient(cfg, topics, groupID, clientID)
+	}
+	defaultOperatorClientFactory = func(cfg collectorcfg.Config, clientID string) (operatorClient, error) {
+		return newOperatorClient(cfg, clientID)
+	}
+)
 
 type kafkaClient struct {
 	inner *kgo.Client
@@ -174,7 +175,7 @@ func Start(ctx context.Context, cfg collectorcfg.Config) error {
 		return fmt.Errorf("agentops policy: %w", err)
 	}
 	topics := contract.DeriveTopics(cfg.AgentOpsGroupName, policy.RequiredTopics, policy.OptionalTopics, cfg.AgentOpsTopics, cfg.AgentOpsTopicMode)
-	doc := store.Document{
+	doc := store.Snapshot{
 		Enabled:   true,
 		UIMode:    cfg.UIMode,
 		Profile:   cfg.Profile,
@@ -198,15 +199,7 @@ func Start(ctx context.Context, cfg collectorcfg.Config) error {
 		clientFactory:         defaultClientFactory,
 		operatorClientFactory: defaultOperatorClientFactory,
 		replayCancels:         map[string]context.CancelFunc{},
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
-	svc.bootstrapFromStore(fs.Snapshot())
 	setCurrentService(svc)
 	return svc.run(ctx)
 }
@@ -222,7 +215,7 @@ func (s *Service) run(ctx context.Context) error {
 	}
 	defer client.Close()
 
-	if err := s.file.Update(func(doc *store.Document) {
+	if err := s.file.Update(func(doc *store.Snapshot) {
 		doc.Enabled = true
 		doc.UIMode = s.cfg.UIMode
 		doc.Profile = s.cfg.Profile
@@ -245,7 +238,7 @@ func (s *Service) run(ctx context.Context) error {
 		fetches := client.PollFetches(pollCtx)
 		cancel()
 		if err := firstFatalError(fetches); err != nil {
-			_ = s.file.Update(func(doc *store.Document) {
+			_ = s.file.Update(func(doc *store.Snapshot) {
 				doc.Health.Connected = false
 				doc.Health.LastReject = err.Error()
 			})
@@ -256,7 +249,7 @@ func (s *Service) run(ctx context.Context) error {
 			records = append(records, rec)
 		})
 		if len(records) == 0 {
-			_ = s.file.Update(func(doc *store.Document) {
+			_ = s.file.Update(func(doc *store.Snapshot) {
 				doc.Health.Connected = true
 				doc.Health.LastPollAt = nowFunc().UTC().Format(time.RFC3339)
 			})
@@ -264,19 +257,14 @@ func (s *Service) run(ctx context.Context) error {
 		}
 
 		toCommit := make([]*kgo.Record, 0, len(records))
-		updated := false
 		for _, rec := range records {
 			reason, ok := s.handleRecord(rec)
 			toCommit = append(toCommit, rec)
-			updated = true
 			if ok {
-				_ = s.file.Update(func(doc *store.Document) {
-					doc.Health.AcceptedCount++
-				})
 				continue
 			}
 			mirrored, mirrorErr := s.mirrorReject(ctx, client, rec, reason)
-			_ = s.file.Update(func(doc *store.Document) {
+			_ = s.file.Update(func(doc *store.Snapshot) {
 				doc.Health.RejectedCount++
 				doc.Health.LastReject = reason
 				doc.Health.RejectedByReason[reason]++
@@ -297,41 +285,11 @@ func (s *Service) run(ctx context.Context) error {
 				return err
 			}
 		}
-		if updated {
-			if err := s.persist(); err != nil {
-				return err
-			}
-		}
-	}
-}
-
-func (s *Service) bootstrapFromStore(doc store.Document) {
-	for i := range doc.Flows {
-		item := doc.Flows[i]
-		s.internal.flows[item.ID] = &item
-	}
-	for i := range doc.Traces {
-		item := doc.Traces[i]
-		s.internal.traces[item.ID] = &item
-	}
-	for i := range doc.Tasks {
-		item := doc.Tasks[i]
-		s.internal.tasks[item.ID] = &item
-	}
-	for _, item := range doc.Messages {
-		s.internal.msgs[item.ID] = item
 	}
 }
 
 func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {
-	s.stateMu.Lock()
-	defer s.stateMu.Unlock()
-
 	recordID := fmt.Sprintf("%s:%d:%d", rec.Topic, rec.Partition, rec.Offset)
-	if _, exists := s.internal.msgs[recordID]; exists {
-		return "", true
-	}
-
 	now := recordTimestamp(rec)
 	family := contract.ClassifyTopic(rec.Topic, s.cfg.AgentOpsGroupName)
 	if family == "" {
@@ -358,18 +316,19 @@ func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {
 				Path:        fmt.Sprintf("s3://%s/%s", ptr.Bucket, ptr.Key),
 			},
 		}
-		s.internal.msgs[msg.ID] = msg
-		s.updateTopicStats(msg.Topic, "", now)
-		return "", true
+		return s.acceptMessage(msg, func(doc *store.Snapshot) {
+			updateFlow(doc, msg)
+			doc.Health.AcceptedCount++
+		})
 	}
 
 	env, err := contract.DecodeEnvelope(rec.Value)
 	if err != nil {
 		if msg, ok := rawMessage(recordID, rec, family, now); ok {
-			s.updateFlow(msg)
-			s.updateTopicStats(msg.Topic, msg.SenderID, now)
-			s.internal.msgs[msg.ID] = msg
-			return "", true
+			return s.acceptMessage(msg, func(doc *store.Snapshot) {
+				updateFlow(doc, msg)
+				doc.Health.AcceptedCount++
+			})
 		}
 		return "invalid_envelope", false
 	}
@@ -394,7 +353,6 @@ func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {
 			msg.TaskID = payload.TaskID
 			msg.ParentTaskID = payload.ParentTaskID
 			msg.Preview = firstNonEmpty(payload.Description, payload.Content, msg.Preview)
-			s.updateTask(now, payload.TaskID, payload.ParentTaskID, payload.RequesterID, "", payload.OriginalRequesterID, "", payload.Description, "")
 		}
 	case "responses":
 		var payload contract.TaskResponsePayload
@@ -402,7 +360,6 @@ func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {
 			msg.TaskID = payload.TaskID
 			msg.Status = payload.Status
 			msg.Preview = firstNonEmpty(payload.Content, msg.Preview)
-			s.updateTask(now, payload.TaskID, "", "", payload.ResponderID, "", payload.Status, "", payload.Content)
 		}
 	case "tasks.status":
 		var payload contract.TaskStatusPayload
@@ -410,31 +367,107 @@ func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {
 			msg.TaskID = payload.TaskID
 			msg.Status = payload.Status
 			msg.Preview = firstNonEmpty(payload.Summary, payload.Status, msg.Preview)
-			s.updateTask(now, payload.TaskID, "", "", payload.ResponderID, "", payload.Status, "", payload.Summary)
 		}
 	case "traces":
 		var payload contract.TracePayload
 		if json.Unmarshal(env.Payload, &payload) == nil {
 			msg.TraceID = payload.TraceID
 			msg.Preview = firstNonEmpty(payload.Title, payload.Content, msg.Preview)
-			s.updateTrace(now, payload, env.SenderID)
 		}
 	case "observe.audit":
 		msg.Preview = firstNonEmpty(previewForPayload(env.Payload), "audit event")
 	}
 
-	s.updateFlow(msg)
-	s.updateTopicStats(msg.Topic, msg.SenderID, now)
-	s.internal.msgs[msg.ID] = msg
+	return s.acceptMessage(msg, func(doc *store.Snapshot) {
+		updateFlow(doc, msg)
+		updateTraceMessage(doc, now, msg, env.Payload)
+		updateTaskMessage(doc, now, msg, env.Payload)
+		doc.Health.AcceptedCount++
+	})
+}
+
+func (s *Service) acceptMessage(msg store.Message, mutate func(*store.Snapshot)) (string, bool) {
+	err := s.file.Update(func(doc *store.Snapshot) {
+		if messageExists(doc.Messages, msg.ID) {
+			return
+		}
+		if mutate != nil {
+			mutate(doc)
+		}
+		doc.Messages = append(doc.Messages, msg)
+		sort.Slice(doc.Messages, func(i, j int) bool { return doc.Messages[i].Timestamp > doc.Messages[j].Timestamp })
+		if limit := s.policy.Grouping.ReplayMaxRecords; limit > 0 && len(doc.Messages) > limit {
+			doc.Messages = doc.Messages[:limit]
+		}
+		doc.MessageCount = len(doc.Messages)
+		doc.FlowCount = len(doc.Flows)
+		doc.TraceCount = len(doc.Traces)
+		doc.TaskCount = len(doc.Tasks)
+		doc.Health.Connected = true
+		doc.Health.GroupID = s.cfg.AgentOpsGroupID
+		doc.Health.EffectiveTopics = append([]string{}, s.topics...)
+		doc.Health.LastPollAt = nowFunc().UTC().Format(time.RFC3339)
+		doc.Health.TopicHealth = rebuildTopicHealth(doc.Messages)
+		if doc.Health.RejectedByReason == nil {
+			doc.Health.RejectedByReason = map[string]int{}
+		}
+	})
+	if err != nil {
+		return "store_update_failed", false
+	}
 	return "", true
 }
 
-func (s *Service) updateFlow(msg store.Message) {
+func (s *Service) bootstrapFromStore(doc store.Snapshot) {
+	if s.file == nil {
+		return
+	}
+	_ = s.file.Update(func(current *store.Snapshot) {
+		*current = doc
+		current.Health.TopicHealth = rebuildTopicHealth(current.Messages)
+		current.FlowCount = len(current.Flows)
+		current.TraceCount = len(current.Traces)
+		current.TaskCount = len(current.Tasks)
+		current.MessageCount = len(current.Messages)
+		if current.Health.RejectedByReason == nil {
+			current.Health.RejectedByReason = map[string]int{}
+		}
+	})
+}
+
+func (s *Service) persist() error {
+	if s.file == nil {
+		return nil
+	}
+	return s.file.Update(func(doc *store.Snapshot) {
+		sort.Slice(doc.Messages, func(i, j int) bool { return doc.Messages[i].Timestamp > doc.Messages[j].Timestamp })
+		if limit := s.policy.Grouping.ReplayMaxRecords; limit > 0 && len(doc.Messages) > limit {
+			doc.Messages = doc.Messages[:limit]
+		}
+		sort.Slice(doc.Flows, func(i, j int) bool { return doc.Flows[i].LastSeen > doc.Flows[j].LastSeen })
+		sort.Slice(doc.Traces, func(i, j int) bool { return doc.Traces[i].StartedAt > doc.Traces[j].StartedAt })
+		sort.Slice(doc.Tasks, func(i, j int) bool { return doc.Tasks[i].LastSeen > doc.Tasks[j].LastSeen })
+		doc.FlowCount = len(doc.Flows)
+		doc.TraceCount = len(doc.Traces)
+		doc.TaskCount = len(doc.Tasks)
+		doc.MessageCount = len(doc.Messages)
+		doc.Health.Connected = true
+		doc.Health.GroupID = s.cfg.AgentOpsGroupID
+		doc.Health.EffectiveTopics = append([]string{}, s.topics...)
+		doc.Health.LastPollAt = nowFunc().UTC().Format(time.RFC3339)
+		doc.Health.TopicHealth = rebuildTopicHealth(doc.Messages)
+		if doc.Health.RejectedByReason == nil {
+			doc.Health.RejectedByReason = map[string]int{}
+		}
+	})
+}
+
+func updateFlow(doc *store.Snapshot, msg store.Message) {
 	flowID := fallbackID(msg.CorrelationID, msg.ID)
-	item, ok := s.internal.flows[flowID]
-	if !ok {
-		item = &store.Flow{ID: flowID, FirstSeen: msg.Timestamp}
-		s.internal.flows[flowID] = item
+	item := findFlow(doc.Flows, flowID)
+	if item == nil {
+		doc.Flows = append(doc.Flows, store.Flow{ID: flowID, FirstSeen: msg.Timestamp, LastSeen: msg.Timestamp})
+		item = &doc.Flows[len(doc.Flows)-1]
 	}
 	item.LastSeen = msg.Timestamp
 	item.MessageCount++
@@ -446,124 +479,73 @@ func (s *Service) updateFlow(msg store.Message) {
 	item.TaskIDs = appendUnique(item.TaskIDs, msg.TaskID)
 	item.TopicCount = len(item.Topics)
 	item.SenderCount = len(item.Senders)
+	sort.Slice(doc.Flows, func(i, j int) bool { return doc.Flows[i].LastSeen > doc.Flows[j].LastSeen })
 }
 
-func (s *Service) updateTrace(now string, payload contract.TracePayload, senderID string) {
-	if strings.TrimSpace(payload.TraceID) == "" {
+func updateTraceMessage(doc *store.Snapshot, now string, msg store.Message, payload json.RawMessage) {
+	if strings.TrimSpace(msg.TraceID) == "" {
 		return
 	}
-	item, ok := s.internal.traces[payload.TraceID]
-	if !ok {
-		item = &store.Trace{ID: payload.TraceID, StartedAt: now}
-		s.internal.traces[payload.TraceID] = item
+	var tracePayload contract.TracePayload
+	if json.Unmarshal(payload, &tracePayload) != nil || strings.TrimSpace(tracePayload.TraceID) == "" {
+		return
+	}
+	item := findTrace(doc.Traces, tracePayload.TraceID)
+	if item == nil {
+		doc.Traces = append(doc.Traces, store.Trace{ID: tracePayload.TraceID, StartedAt: now})
+		item = &doc.Traces[len(doc.Traces)-1]
 	}
 	item.SpanCount++
-	item.Agents = appendUnique(item.Agents, senderID)
-	item.SpanTypes = appendUnique(item.SpanTypes, payload.SpanType)
-	item.LatestTitle = firstNonEmpty(payload.Title, item.LatestTitle)
-	if payload.StartedAt != "" {
-		item.StartedAt = payload.StartedAt
+	item.Agents = appendUnique(item.Agents, msg.SenderID)
+	item.SpanTypes = appendUnique(item.SpanTypes, tracePayload.SpanType)
+	item.LatestTitle = firstNonEmpty(tracePayload.Title, item.LatestTitle)
+	if tracePayload.StartedAt != "" {
+		item.StartedAt = tracePayload.StartedAt
 	}
-	if payload.EndedAt != "" {
-		item.EndedAt = payload.EndedAt
+	if tracePayload.EndedAt != "" {
+		item.EndedAt = tracePayload.EndedAt
 	}
-	if payload.DurationMs > 0 {
-		item.DurationMs = payload.DurationMs
+	if tracePayload.DurationMs > 0 {
+		item.DurationMs = tracePayload.DurationMs
 	}
+	sort.Slice(doc.Traces, func(i, j int) bool { return doc.Traces[i].StartedAt > doc.Traces[j].StartedAt })
 }
 
-func (s *Service) updateTask(now, taskID, parentID, requesterID, responderID, originalRequesterID, status, description, summary string) {
-	if strings.TrimSpace(taskID) == "" {
+func updateTaskMessage(doc *store.Snapshot, now string, msg store.Message, payload json.RawMessage) {
+	if strings.TrimSpace(msg.TaskID) == "" {
 		return
 	}
-	item, ok := s.internal.tasks[taskID]
-	if !ok {
-		item = &store.Task{ID: taskID, FirstSeen: now}
-		s.internal.tasks[taskID] = item
+	item := findTask(doc.Tasks, msg.TaskID)
+	if item == nil {
+		doc.Tasks = append(doc.Tasks, store.Task{ID: msg.TaskID, FirstSeen: now})
+		item = &doc.Tasks[len(doc.Tasks)-1]
 	}
 	item.LastSeen = now
-	item.ParentTaskID = firstNonEmpty(parentID, item.ParentTaskID)
-	item.RequesterID = firstNonEmpty(requesterID, item.RequesterID)
-	item.ResponderID = firstNonEmpty(responderID, item.ResponderID)
-	item.OriginalRequesterID = firstNonEmpty(originalRequesterID, item.OriginalRequesterID)
-	item.Status = firstNonEmpty(status, item.Status)
-	item.Description = firstNonEmpty(description, item.Description)
-	item.LastSummary = firstNonEmpty(summary, item.LastSummary)
-}
-
-func (s *Service) updateTopicStats(topic, senderID, timestamp string) {
-	item, ok := s.internal.topic[topic]
-	if !ok {
-		item = &topicStat{Agents: map[string]struct{}{}, FirstMessageAt: timestamp}
-		s.internal.topic[topic] = item
-	}
-	item.Count++
-	if senderID != "" {
-		item.Agents[senderID] = struct{}{}
-	}
-	item.LastMessageAt = timestamp
-}
-
-func (s *Service) persist() error {
-	s.stateMu.Lock()
-	flows := make([]store.Flow, 0, len(s.internal.flows))
-	for _, item := range s.internal.flows {
-		flows = append(flows, *item)
-	}
-	traces := make([]store.Trace, 0, len(s.internal.traces))
-	for _, item := range s.internal.traces {
-		traces = append(traces, *item)
-	}
-	tasks := make([]store.Task, 0, len(s.internal.tasks))
-	for _, item := range s.internal.tasks {
-		tasks = append(tasks, *item)
-	}
-	messages := make([]store.Message, 0, len(s.internal.msgs))
-	for _, item := range s.internal.msgs {
-		messages = append(messages, item)
-	}
-	healthTopics := make([]store.TopicHealth, 0, len(s.internal.topic))
-	for name, item := range s.internal.topic {
-		messagesPerHour := observedMessagesPerHour(item.Count, item.FirstMessageAt, item.LastMessageAt)
-		healthTopics = append(healthTopics, store.TopicHealth{
-			Topic:           name,
-			MessagesPerHour: messagesPerHour,
-			MessageDensity:  densityBucket(messagesPerHour),
-			ActiveAgents:    len(item.Agents),
-			IsStale:         topicIsStale(item.LastMessageAt),
-			LastMessageAt:   item.LastMessageAt,
-		})
-	}
-	s.stateMu.Unlock()
-
-	sort.Slice(messages, func(i, j int) bool { return messages[i].Timestamp > messages[j].Timestamp })
-	if limit := s.policy.Grouping.ReplayMaxRecords; limit > 0 && len(messages) > limit {
-		messages = messages[:limit]
-	}
-
-	return s.file.Update(func(doc *store.Document) {
-		doc.Enabled = true
-		doc.UIMode = s.cfg.UIMode
-		doc.Profile = s.cfg.Profile
-		doc.GroupName = s.cfg.AgentOpsGroupName
-		doc.Topics = append([]string{}, s.topics...)
-		doc.Flows = flows
-		doc.Traces = traces
-		doc.Tasks = tasks
-		doc.Messages = messages
-		doc.FlowCount = len(flows)
-		doc.TraceCount = len(traces)
-		doc.TaskCount = len(tasks)
-		doc.MessageCount = len(messages)
-		doc.Health.Connected = true
-		doc.Health.GroupID = s.cfg.AgentOpsGroupID
-		doc.Health.EffectiveTopics = append([]string{}, s.topics...)
-		doc.Health.LastPollAt = nowFunc().UTC().Format(time.RFC3339)
-		doc.Health.TopicHealth = healthTopics
-		if doc.Health.RejectedByReason == nil {
-			doc.Health.RejectedByReason = map[string]int{}
+	switch msg.TopicFamily {
+	case "requests":
+		var taskPayload contract.TaskRequestPayload
+		if json.Unmarshal(payload, &taskPayload) == nil {
+			item.ParentTaskID = firstNonEmpty(taskPayload.ParentTaskID, item.ParentTaskID)
+			item.RequesterID = firstNonEmpty(taskPayload.RequesterID, item.RequesterID)
+			item.OriginalRequesterID = firstNonEmpty(taskPayload.OriginalRequesterID, item.OriginalRequesterID)
+			item.Description = firstNonEmpty(taskPayload.Description, item.Description)
 		}
-	})
+	case "responses":
+		var taskPayload contract.TaskResponsePayload
+		if json.Unmarshal(payload, &taskPayload) == nil {
+			item.ResponderID = firstNonEmpty(taskPayload.ResponderID, item.ResponderID)
+			item.Status = firstNonEmpty(taskPayload.Status, item.Status)
+			item.LastSummary = firstNonEmpty(taskPayload.Content, item.LastSummary)
+		}
+	case "tasks.status":
+		var taskPayload contract.TaskStatusPayload
+		if json.Unmarshal(payload, &taskPayload) == nil {
+			item.ResponderID = firstNonEmpty(taskPayload.ResponderID, item.ResponderID)
+			item.Status = firstNonEmpty(taskPayload.Status, item.Status)
+			item.LastSummary = firstNonEmpty(taskPayload.Summary, item.LastSummary)
+		}
+	}
+	sort.Slice(doc.Tasks, func(i, j int) bool { return doc.Tasks[i].LastSeen > doc.Tasks[j].LastSeen })
 }
 
 func StartReplay(ctx context.Context) (store.ReplaySession, error) {
@@ -605,7 +587,7 @@ func (s *Service) startReplayWithTopics(ctx context.Context, topics []string) (s
 		StartedAt: now.Format(time.RFC3339),
 		Topics:    append([]string{}, topics...),
 	}
-	if err := s.file.Update(func(doc *store.Document) {
+	if err := s.file.Update(func(doc *store.Snapshot) {
 		doc.ReplaySessions = append([]store.ReplaySession{session}, doc.ReplaySessions...)
 		if len(doc.ReplaySessions) > 10 {
 			doc.ReplaySessions = doc.ReplaySessions[:10]
@@ -686,7 +668,6 @@ func (s *Service) runReplay(ctx context.Context, session store.ReplaySession) {
 		commitCtx, cancelCommit := context.WithTimeout(ctx, 5*time.Second)
 		_ = client.CommitRecords(commitCtx, batch...)
 		cancelCommit()
-		_ = s.persist()
 	}
 	s.finishReplay(session.ID, processed, "completed", "")
 }
@@ -697,7 +678,7 @@ func (s *Service) finishReplay(id string, count int, status string, lastError st
 	active := len(s.replayCancels)
 	s.replayMu.Unlock()
 
-	_ = s.file.Update(func(doc *store.Document) {
+	_ = s.file.Update(func(doc *store.Snapshot) {
 		for i := range doc.ReplaySessions {
 			if doc.ReplaySessions[i].ID == id {
 				doc.ReplaySessions[i].Status = status
@@ -1018,7 +999,7 @@ func topicIsStale(lastMessageAt string) bool {
 	return nowFunc().UTC().Sub(last.UTC()) > 30*time.Minute
 }
 
-func replayGroupIDs(doc store.Document) []string {
+func replayGroupIDs(doc store.Snapshot) []string {
 	out := make([]string, 0, len(doc.ReplaySessions))
 	for _, item := range doc.ReplaySessions {
 		if strings.TrimSpace(item.GroupID) != "" {
@@ -1026,6 +1007,83 @@ func replayGroupIDs(doc store.Document) []string {
 		}
 	}
 	sort.Strings(out)
+	return out
+}
+
+func messageExists(messages []store.Message, id string) bool {
+	for _, item := range messages {
+		if item.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func findFlow(flows []store.Flow, id string) *store.Flow {
+	for i := range flows {
+		if flows[i].ID == id {
+			return &flows[i]
+		}
+	}
+	return nil
+}
+
+func findTrace(traces []store.Trace, id string) *store.Trace {
+	for i := range traces {
+		if traces[i].ID == id {
+			return &traces[i]
+		}
+	}
+	return nil
+}
+
+func findTask(tasks []store.Task, id string) *store.Task {
+	for i := range tasks {
+		if tasks[i].ID == id {
+			return &tasks[i]
+		}
+	}
+	return nil
+}
+
+func rebuildTopicHealth(messages []store.Message) []store.TopicHealth {
+	type topicState struct {
+		count     int
+		firstSeen string
+		lastSeen  string
+		agents    map[string]struct{}
+	}
+	stats := map[string]*topicState{}
+	for _, msg := range messages {
+		item, ok := stats[msg.Topic]
+		if !ok {
+			item = &topicState{firstSeen: msg.Timestamp, lastSeen: msg.Timestamp, agents: map[string]struct{}{}}
+			stats[msg.Topic] = item
+		}
+		item.count++
+		if item.firstSeen == "" || msg.Timestamp < item.firstSeen {
+			item.firstSeen = msg.Timestamp
+		}
+		if item.lastSeen == "" || msg.Timestamp > item.lastSeen {
+			item.lastSeen = msg.Timestamp
+		}
+		if strings.TrimSpace(msg.SenderID) != "" {
+			item.agents[msg.SenderID] = struct{}{}
+		}
+	}
+	out := make([]store.TopicHealth, 0, len(stats))
+	for topic, item := range stats {
+		messagesPerHour := observedMessagesPerHour(item.count, item.firstSeen, item.lastSeen)
+		out = append(out, store.TopicHealth{
+			Topic:           topic,
+			MessagesPerHour: messagesPerHour,
+			MessageDensity:  densityBucket(messagesPerHour),
+			ActiveAgents:    len(item.agents),
+			IsStale:         topicIsStale(item.lastSeen),
+			LastMessageAt:   item.lastSeen,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Topic < out[j].Topic })
 	return out
 }
 

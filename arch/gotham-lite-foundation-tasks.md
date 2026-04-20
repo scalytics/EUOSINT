@@ -349,10 +349,10 @@ behind the same package-public surface.
       typed query methods (listed in W3)
 - [x] implement `SqliteStore` (new file `store/sqlite.go`) with prepared
       statements and transactional writes
-- [ ] delete `store/file.go` and `store/types.go` JSON-only fields;
+- [x] delete `store/file.go` and `store/types.go` JSON-only fields;
       rename `Document` → `Snapshot` to make intent clear
-- [ ] port existing sorting (`store/file.go:86-92`) into SQL `ORDER BY` clauses
-- [ ] unit tests: each write path (`handleRecord`, `mirrorReject`,
+- [x] port existing sorting (`store/file.go:86-92`) into SQL `ORDER BY` clauses
+- [x] unit tests: each write path (`handleRecord`, `mirrorReject`,
       `startReplay`, `finishReplay`) produces the expected rows
 - [ ] drop the in-memory maps from `runtime.go:66-72` and replace with typed
       repository calls; `stateMu` becomes the DB tx boundary

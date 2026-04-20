@@ -8,8 +8,8 @@ package store
 // snapshot document. W1 will replace the backing implementation; later
 // workstreams can split this into read/write surfaces and typed queries.
 type Store interface {
-	Snapshot() Document
-	Update(func(*Document)) error
+	Snapshot() Snapshot
+	Update(func(*Snapshot)) error
 }
 
 var _ Store = (*FileStore)(nil)

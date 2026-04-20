@@ -3,7 +3,7 @@
 
 package store
 
-type Document struct {
+type Snapshot struct {
 	GeneratedAt    string          `json:"generated_at"`
 	Enabled        bool            `json:"enabled"`
 	UIMode         string          `json:"ui_mode"`
@@ -21,6 +21,9 @@ type Document struct {
 	Tasks          []Task          `json:"tasks"`
 	Messages       []Message       `json:"messages"`
 }
+
+// Document is a temporary compatibility alias during the W1 store rename.
+type Document = Snapshot
 
 type Health struct {
 	Connected             bool           `json:"connected"`
