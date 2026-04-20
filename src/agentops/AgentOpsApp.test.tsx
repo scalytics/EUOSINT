@@ -181,8 +181,8 @@ beforeEach(() => {
 test("renders flow desk panels with decoded content and LFS pointer metadata", () => {
   render(<AgentOpsApp state={baseState} mode="AGENTOPS" />);
 
-  expect(screen.getByText("Flow Desk")).toBeTruthy();
-  expect(screen.getByText("Run Queue")).toBeTruthy();
+  expect(screen.getByText("Operations Desk")).toBeTruthy();
+  expect(screen.getByText("Operations Queue")).toBeTruthy();
   expect(screen.getByText("Conversation Timeline")).toBeTruthy();
   expect(screen.getByText("Run Context")).toBeTruthy();
   expect(screen.getByText("Topic Health")).toBeTruthy();
@@ -240,7 +240,7 @@ test("renders hybrid fusion shell without mixing lanes", () => {
   render(<AgentOpsApp state={hybridState} mode="HYBRID" />);
 
   expect(screen.getByText("Fusion Desk")).toBeTruthy();
-  expect(screen.getByText("Agent Flow")).toBeTruthy();
+  expect(screen.getByText("Fusion Queue")).toBeTruthy();
   expect(screen.getByText("Fusion Timeline")).toBeTruthy();
   expect(screen.getByText("External Intel Context")).toBeTruthy();
   expect(screen.getByText("Advisory for CVE-2026-12345 affecting energy sector")).toBeTruthy();

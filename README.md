@@ -2,11 +2,11 @@
 
 kafSIEM is the open-source edition of our OSINT pipeline, used across multiple installations and packaged for local and server deployment.
 
-It now ships with two distinct operating surfaces:
+It now ships with three operating modes:
 
 - `OSINT`: the existing globe-first external intelligence workflow
-- `AgentOps`: Kafka-backed flow tracking for KafClaw agent communication
-- `HYBRID`: AgentOps plus selective external OSINT context
+- `Operations`: Kafka-backed flow tracking and internal operational workflows
+- `Fusion`: operations plus selective external OSINT context
 
 This repository has been prepared for public use by removing non-public, internal, and protected source integrations while keeping the operational pipeline structure intact.
 
@@ -23,8 +23,12 @@ This repository has been prepared for public use by removing non-public, interna
 The runtime mode is driven by environment and mounted policy files.
 
 - `UI_MODE=OSINT` keeps the existing OSINT product behavior.
-- `UI_MODE=AGENTOPS` switches the desktop UI to the AgentOps flow desk.
-- `UI_MODE=HYBRID` keeps AgentOps primary and adds selective external-intel context.
+- `UI_MODE=AGENTOPS` switches the desktop UI to the Operations desk.
+- `UI_MODE=HYBRID` switches the desktop UI to Fusion mode with selective external-intel context.
+
+Current runtime values remain `OSINT`, `AGENTOPS`, and `HYBRID` for
+compatibility. User-facing product naming is `OSINT`, `Operations`, and
+`Fusion`.
 
 AgentOps is a separate bounded domain in the codebase:
 
@@ -60,7 +64,7 @@ For a local AgentOps demo with mocked Kafka-derived traffic and the real dashboa
 npm run demo:agentops
 ```
 
-This opens the desktop UI directly in `AgentOps` mode via `/?demo=agentops`, serves demo state from `public/demo/*.json`, and mocks the replay endpoint locally.
+This opens the desktop UI directly in Operations mode via `/?demo=agentops`, serves demo state from `public/demo/*.json`, and mocks the replay endpoint locally.
 
 ## Remote Install (wget bootstrap)
 
@@ -71,7 +75,7 @@ wget -qO- https://raw.githubusercontent.com/scalytics/kafSIEM/main/deploy/instal
 The installer will:
 - verify Docker + Compose availability
 - clone or update the repo on the host
-- ask for the operating profile (`OSINT`, `AGENTOPS`, or `HYBRID`)
+- ask for the operating profile (`OSINT`, `Operations`, or `Fusion`)
 - set GHCR runtime images (`ghcr.io/scalytics/kafsiem-web` + `ghcr.io/scalytics/kafsiem-collector`)
 - prompt for install mode (`preserve` or `fresh` volume reset)
 - prompt for the common site setting (`KAFSIEM_SITE_ADDRESS`)
@@ -117,11 +121,11 @@ The installer is profile-driven and only asks for the settings that matter for t
   - prompts for `KAFSIEM_SITE_ADDRESS`
   - prompts for OSINT credentials and optional LLM toggles
   - writes `UI_MODE=OSINT` and `PROFILE=osint-default`
-- `AGENTOPS`
+- `Operations`
   - prompts for `KAFSIEM_SITE_ADDRESS`
   - prompts for AgentOps Kafka brokers, auth mode, group identifiers, topic mode, replay, and optional reject mirroring
   - writes `UI_MODE=AGENTOPS` and `PROFILE=agentops-default`
-- `HYBRID`
+- `Fusion`
   - prompts for both the OSINT and AgentOps settings above
   - writes `UI_MODE=HYBRID` and `PROFILE=hybrid-ops`
 

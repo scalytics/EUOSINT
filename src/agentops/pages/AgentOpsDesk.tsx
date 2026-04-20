@@ -7,6 +7,7 @@ import { MessageCard } from "@/agentops/components/MessageCard";
 import { buildFusionMatches } from "@/agentops/lib/hybrid";
 import { buildConversationTimeline, buildRunSummary, groupRunsForQueue, sortFlowsForQueue } from "@/agentops/lib/investigation";
 import { loadAnomaliesOnly, loadQueueFilter, loadSelectedRunId, persistAnomaliesOnly, persistQueueFilter, persistSelectedRunId, type RunQueueFilter } from "@/agentops/lib/preferences";
+import { displayModeName } from "@/agentops/lib/state";
 import { formatTime } from "@/agentops/lib/view";
 import { useAgentOpsOperator } from "@/hooks/useAgentOpsOperator";
 import { useAlerts } from "@/hooks/useAlerts";
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function AgentOpsDesk({ state, mode }: Props) {
+  const modeName = displayModeName(mode);
   const operator = useAgentOpsOperator(mode !== "OSINT");
   const { alerts } = useAlerts();
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(() => loadSelectedRunId() ?? state.flows[0]?.id ?? null);
@@ -163,13 +165,13 @@ export function AgentOpsDesk({ state, mode }: Props) {
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-siem-accent/30 bg-siem-accent/10 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-siem-accent">
                 <Workflow size={12} />
-                {mode === "HYBRID" ? "Fusion Desk" : "Flow Desk"}
+                {mode === "HYBRID" ? "Fusion Desk" : "Operations Desk"}
               </div>
               <div>
                 <h1 className="text-3xl font-semibold tracking-[0.04em]">{state.group_name || "AgentOps"}</h1>
                 <p className="mt-2 max-w-3xl text-sm text-siem-muted">
-                  Kafka-backed agent flow tracking over KafClaw topics. Normal messages are decoded from Kafka values.
-                  LFS-backed records stay pointer-only and are surfaced as S3 paths.
+                  {modeName}-mode workflow over KafClaw topics. Normal messages are decoded from Kafka values. LFS-backed
+                  records stay pointer-only and are surfaced as S3 paths.
                 </p>
               </div>
             </div>
@@ -199,7 +201,7 @@ export function AgentOpsDesk({ state, mode }: Props) {
         </section>
 
         <section className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[1.1fr_1fr_0.95fr]">
-          <Panel title={mode === "HYBRID" ? "Agent Flow" : "Run Queue"} icon={Activity} bodyClassName="overflow-y-auto pr-1">
+          <Panel title={mode === "HYBRID" ? "Fusion Queue" : "Operations Queue"} icon={Activity} bodyClassName="overflow-y-auto pr-1">
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 {(["attention", "active", "completed", "all"] as RunQueueFilter[]).map((filter) => (

@@ -29,7 +29,7 @@ This starts Vite, opens `/?demo=agentops`, serves fixture data from `public/demo
 
 Demo behavior:
 
-- the dashboard boots directly into `AGENTOPS`
+- the dashboard boots directly into `Operations`
 - flow, trace, task, topic-health, and operator panels render from fixture state
 - replay requests are accepted locally so the UI can exercise the full interaction path
 - this is a UI/dev workflow only; it does not require a live Kafka broker
@@ -53,6 +53,9 @@ Required environment:
 - `AGENTOPS_GROUP_ID=<live tracking group>`
 - `UI_MODE=AGENTOPS` or `UI_MODE=HYBRID`
 
+Current runtime values remain `AGENTOPS` and `HYBRID` for compatibility. The
+user-facing product names are `Operations` and `Fusion`.
+
 Important optional environment:
 
 - `AGENTOPS_POLICY_PATH=/config/agentops_policy.yaml`
@@ -63,10 +66,10 @@ Important optional environment:
 
 Installer guidance:
 
-- choose `AGENTOPS` if you want the Agent Flow Desk only
+- choose `Operations` if you want the operations desk only
   - the installer asks for the common site setting plus the AgentOps Kafka settings
   - it writes `UI_MODE=AGENTOPS` and `PROFILE=agentops-default`
-- choose `HYBRID` if you want AgentOps plus OSINT context
+- choose `Fusion` if you want operations plus OSINT context
   - the installer asks both the AgentOps Kafka settings and the OSINT credentials
   - it writes `UI_MODE=HYBRID` and `PROFILE=hybrid-ops`
 
@@ -125,11 +128,11 @@ Offset reset or destructive replay mutation is intentionally not exposed.
 2. Configure AgentOps with the KafClaw group name.
 3. Mount `/config/agentops_policy.yaml`.
 4. Start kafSIEM with `UI_MODE=AGENTOPS`.
-5. Open the Flow Desk and inspect live group plus replay groups.
+5. Open the Operations Desk and inspect live group plus replay groups.
 
 ## Example: Dedicated Replay Group
 
-1. Open AgentOps.
+1. Open the Operations Desk.
 2. Trigger replay.
 3. Verify the replay group ID uses the configured replay prefix.
 4. Confirm the live tracking group remains unchanged.
