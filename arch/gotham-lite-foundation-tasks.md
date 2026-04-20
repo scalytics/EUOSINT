@@ -428,11 +428,11 @@ CREATE INDEX idx_provenance_subject ON provenance(subject_kind, subject_id);
 
 Tasks:
 
-- [ ] write `internal/graph/schema/schema.sql`
-- [ ] helper for opaque `entity_id` construction (`agent:alice`,
+- [x] write `internal/graph/schema/schema.sql`
+- [x] helper for opaque `entity_id` construction (`agent:alice`,
       `task:<uuid>`, `trace:<uuid>`, `topic:group.core.requests`,
       `correlation:<uuid>`); pack-declared types add to the prefix set
-- [ ] indexes audited with `EXPLAIN QUERY PLAN` on realistic loads
+- [x] indexes audited with `EXPLAIN QUERY PLAN` on realistic loads
 
 ### W2.2 Edge Writer Hooks (Core Types Only)
 
@@ -450,16 +450,16 @@ edge writers come in W6 / W7.
 
 Tasks:
 
-- [ ] `internal/graph/writer.go` with `UpsertEntity(tx, Entity)`,
+- [x] `internal/graph/writer.go` with `UpsertEntity(tx, Entity)`,
       `AppendEdge(tx, Edge)`; both idempotent on unique `(type, canonical)`
       keys
-- [ ] extend each `handleRecord` branch in `internal/agentops/kafka` to
+- [x] extend each `handleRecord` branch in `internal/agentops/kafka` to
       emit edges after the existing message upsert; `evidence_msg` = the new
       `record_id`
 - [ ] `valid_to` is set when a contradicting observation arrives (e.g. task
       reassigned). First pass: leave `valid_to` NULL; flip only on explicit
       terminal states (`completed`, `failed`, `cancelled`)
-- [ ] provenance row per edge insert with `stage='graph'`, `reasons` = the
+- [x] provenance row per edge insert with `stage='graph'`, `reasons` = the
       handler branch name (Red Line #4)
 
 ### W2.3 Acceptance

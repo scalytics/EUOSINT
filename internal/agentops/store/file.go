@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/scalytics/kafSIEM/internal/agentops/schema"
+	graphschema "github.com/scalytics/kafSIEM/internal/graph/schema"
 )
 
 type FileStore struct {
@@ -29,6 +30,10 @@ func NewFileStore(path string, initial Snapshot) (*FileStore, error) {
 	dbPath := sqlitePath(path)
 	db, err := schema.Open(dbPath)
 	if err != nil {
+		return nil, err
+	}
+	if err := graphschema.Apply(db); err != nil {
+		_ = db.Close()
 		return nil, err
 	}
 
@@ -91,6 +96,28 @@ func (s *FileStore) Update(apply func(*Snapshot)) error {
 	return nil
 }
 
+func (s *FileStore) Apply(apply func(*sql.Tx) error) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+	if err = apply(tx); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return s.reload()
+}
+
 func (s *FileStore) reload() error {
 	doc, err := s.readDocument()
 	if err != nil {
@@ -105,6 +132,9 @@ func (s *FileStore) reload() error {
 	doc.GroupName = firstNonEmpty(doc.GroupName, s.doc.GroupName)
 	if len(doc.Topics) == 0 {
 		doc.Topics = append([]string{}, s.doc.Topics...)
+	}
+	if len(doc.Health.EffectiveTopics) == 0 {
+		doc.Health.EffectiveTopics = append([]string{}, s.doc.Health.EffectiveTopics...)
 	}
 	s.doc = doc
 	return nil

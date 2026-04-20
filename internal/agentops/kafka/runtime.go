@@ -6,6 +6,7 @@ package kafka
 import (
 	"context"
 	"crypto/tls"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"github.com/scalytics/kafSIEM/internal/agentops/contract"
 	"github.com/scalytics/kafSIEM/internal/agentops/store"
 	collectorcfg "github.com/scalytics/kafSIEM/internal/collector/config"
+	"github.com/scalytics/kafSIEM/internal/graph"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/sasl"
@@ -316,7 +318,7 @@ func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {
 				Path:        fmt.Sprintf("s3://%s/%s", ptr.Bucket, ptr.Key),
 			},
 		}
-		return s.acceptMessage(msg, func(doc *store.Snapshot) {
+		return s.acceptMessage("lfs", msg, nil, func(doc *store.Snapshot) {
 			updateFlow(doc, msg)
 			doc.Health.AcceptedCount++
 		})
@@ -325,7 +327,7 @@ func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {
 	env, err := contract.DecodeEnvelope(rec.Value)
 	if err != nil {
 		if msg, ok := rawMessage(recordID, rec, family, now); ok {
-			return s.acceptMessage(msg, func(doc *store.Snapshot) {
+			return s.acceptMessage("raw", msg, nil, func(doc *store.Snapshot) {
 				updateFlow(doc, msg)
 				doc.Health.AcceptedCount++
 			})
@@ -378,7 +380,7 @@ func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {
 		msg.Preview = firstNonEmpty(previewForPayload(env.Payload), "audit event")
 	}
 
-	return s.acceptMessage(msg, func(doc *store.Snapshot) {
+	return s.acceptMessage(family, msg, env.Payload, func(doc *store.Snapshot) {
 		updateFlow(doc, msg)
 		updateTraceMessage(doc, now, msg, env.Payload)
 		updateTaskMessage(doc, now, msg, env.Payload)
@@ -386,7 +388,7 @@ func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {
 	})
 }
 
-func (s *Service) acceptMessage(msg store.Message, mutate func(*store.Snapshot)) (string, bool) {
+func (s *Service) acceptMessage(branch string, msg store.Message, payload json.RawMessage, mutate func(*store.Snapshot)) (string, bool) {
 	err := s.file.Update(func(doc *store.Snapshot) {
 		if messageExists(doc.Messages, msg.ID) {
 			return
@@ -414,6 +416,9 @@ func (s *Service) acceptMessage(msg store.Message, mutate func(*store.Snapshot))
 	})
 	if err != nil {
 		return "store_update_failed", false
+	}
+	if err := s.appendGraph(branch, msg, payload); err != nil {
+		return "graph_write_failed", false
 	}
 	return "", true
 }
@@ -1008,6 +1013,227 @@ func replayGroupIDs(doc store.Snapshot) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func (s *Service) appendGraph(branch string, msg store.Message, payload json.RawMessage) error {
+	return s.file.Apply(func(tx *sql.Tx) error {
+		topicID := graph.EntityID("topic", msg.Topic)
+		if err := graph.UpsertEntity(tx, graph.Entity{
+			ID:          topicID,
+			Type:        "topic",
+			CanonicalID: msg.Topic,
+			DisplayName: msg.Topic,
+			FirstSeen:   msg.Timestamp,
+			LastSeen:    msg.Timestamp,
+			Attrs:       map[string]any{"family": msg.TopicFamily},
+		}); err != nil {
+			return err
+		}
+		correlationID := graph.EntityID("correlation", fallbackID(msg.CorrelationID, msg.ID))
+		if err := graph.UpsertEntity(tx, graph.Entity{
+			ID:          correlationID,
+			Type:        "correlation",
+			CanonicalID: fallbackID(msg.CorrelationID, msg.ID),
+			DisplayName: fallbackID(msg.CorrelationID, msg.ID),
+			FirstSeen:   msg.Timestamp,
+			LastSeen:    msg.Timestamp,
+		}); err != nil {
+			return err
+		}
+		if err := s.appendGraphEdge(tx, branch, msg.Timestamp, msg.ID, "mentions", correlationID, topicID); err != nil {
+			return err
+		}
+		if strings.TrimSpace(msg.SenderID) != "" {
+			agentID := graph.EntityID("agent", msg.SenderID)
+			if err := graph.UpsertEntity(tx, graph.Entity{
+				ID:          agentID,
+				Type:        "agent",
+				CanonicalID: msg.SenderID,
+				DisplayName: msg.SenderID,
+				FirstSeen:   msg.Timestamp,
+				LastSeen:    msg.Timestamp,
+			}); err != nil {
+				return err
+			}
+			if err := s.appendGraphEdge(tx, branch, msg.Timestamp, msg.ID, "member_of", agentID, correlationID); err != nil {
+				return err
+			}
+		}
+		switch branch {
+		case "requests":
+			return s.appendRequestGraph(tx, branch, msg, payload)
+		case "responses":
+			return s.appendResponseGraph(tx, branch, msg, payload)
+		case "traces":
+			return s.appendTraceGraph(tx, branch, msg, payload)
+		case "tasks.status":
+			return s.appendTaskStatusGraph(tx, branch, msg, payload)
+		default:
+			return nil
+		}
+	})
+}
+
+func (s *Service) appendRequestGraph(tx *sql.Tx, branch string, msg store.Message, payload json.RawMessage) error {
+	var taskPayload contract.TaskRequestPayload
+	if json.Unmarshal(payload, &taskPayload) != nil || strings.TrimSpace(taskPayload.TaskID) == "" {
+		return nil
+	}
+	taskID := graph.EntityID("task", taskPayload.TaskID)
+	if err := graph.UpsertEntity(tx, graph.Entity{
+		ID:          taskID,
+		Type:        "task",
+		CanonicalID: taskPayload.TaskID,
+		DisplayName: firstNonEmpty(taskPayload.Description, taskPayload.TaskID),
+		FirstSeen:   msg.Timestamp,
+		LastSeen:    msg.Timestamp,
+	}); err != nil {
+		return err
+	}
+	requester := firstNonEmpty(taskPayload.RequesterID, msg.SenderID)
+	if requester != "" {
+		agentID := graph.EntityID("agent", requester)
+		if err := graph.UpsertEntity(tx, graph.Entity{
+			ID:          agentID,
+			Type:        "agent",
+			CanonicalID: requester,
+			DisplayName: requester,
+			FirstSeen:   msg.Timestamp,
+			LastSeen:    msg.Timestamp,
+		}); err != nil {
+			return err
+		}
+		if err := s.appendGraphEdge(tx, branch, msg.Timestamp, msg.ID, "sent", agentID, taskID); err != nil {
+			return err
+		}
+	}
+	if strings.TrimSpace(taskPayload.ParentTaskID) != "" {
+		parentID := graph.EntityID("task", taskPayload.ParentTaskID)
+		if err := graph.UpsertEntity(tx, graph.Entity{
+			ID:          parentID,
+			Type:        "task",
+			CanonicalID: taskPayload.ParentTaskID,
+			DisplayName: taskPayload.ParentTaskID,
+			FirstSeen:   msg.Timestamp,
+			LastSeen:    msg.Timestamp,
+		}); err != nil {
+			return err
+		}
+		if err := s.appendGraphEdge(tx, branch, msg.Timestamp, msg.ID, "delegated_to", parentID, taskID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) appendResponseGraph(tx *sql.Tx, branch string, msg store.Message, payload json.RawMessage) error {
+	var taskPayload contract.TaskResponsePayload
+	if json.Unmarshal(payload, &taskPayload) != nil || strings.TrimSpace(taskPayload.TaskID) == "" {
+		return nil
+	}
+	taskID := graph.EntityID("task", taskPayload.TaskID)
+	if err := graph.UpsertEntity(tx, graph.Entity{
+		ID:          taskID,
+		Type:        "task",
+		CanonicalID: taskPayload.TaskID,
+		DisplayName: taskPayload.TaskID,
+		FirstSeen:   msg.Timestamp,
+		LastSeen:    msg.Timestamp,
+		Attrs:       map[string]any{"status": taskPayload.Status},
+	}); err != nil {
+		return err
+	}
+	responder := firstNonEmpty(taskPayload.ResponderID, msg.SenderID)
+	if responder == "" {
+		return nil
+	}
+	agentID := graph.EntityID("agent", responder)
+	if err := graph.UpsertEntity(tx, graph.Entity{
+		ID:          agentID,
+		Type:        "agent",
+		CanonicalID: responder,
+		DisplayName: responder,
+		FirstSeen:   msg.Timestamp,
+		LastSeen:    msg.Timestamp,
+	}); err != nil {
+		return err
+	}
+	return s.appendGraphEdge(tx, branch, msg.Timestamp, msg.ID, "responded", agentID, taskID)
+}
+
+func (s *Service) appendTraceGraph(tx *sql.Tx, branch string, msg store.Message, payload json.RawMessage) error {
+	var tracePayload contract.TracePayload
+	if json.Unmarshal(payload, &tracePayload) != nil || strings.TrimSpace(tracePayload.TraceID) == "" || strings.TrimSpace(msg.SenderID) == "" {
+		return nil
+	}
+	traceID := graph.EntityID("trace", tracePayload.TraceID)
+	if err := graph.UpsertEntity(tx, graph.Entity{
+		ID:          traceID,
+		Type:        "trace",
+		CanonicalID: tracePayload.TraceID,
+		DisplayName: firstNonEmpty(tracePayload.Title, tracePayload.TraceID),
+		FirstSeen:   msg.Timestamp,
+		LastSeen:    msg.Timestamp,
+		Attrs:       map[string]any{"span_type": tracePayload.SpanType},
+	}); err != nil {
+		return err
+	}
+	agentID := graph.EntityID("agent", msg.SenderID)
+	if err := graph.UpsertEntity(tx, graph.Entity{
+		ID:          agentID,
+		Type:        "agent",
+		CanonicalID: msg.SenderID,
+		DisplayName: msg.SenderID,
+		FirstSeen:   msg.Timestamp,
+		LastSeen:    msg.Timestamp,
+	}); err != nil {
+		return err
+	}
+	return s.appendGraphEdge(tx, branch, msg.Timestamp, msg.ID, "spans", agentID, traceID)
+}
+
+func (s *Service) appendTaskStatusGraph(tx *sql.Tx, branch string, msg store.Message, payload json.RawMessage) error {
+	var taskPayload contract.TaskStatusPayload
+	if json.Unmarshal(payload, &taskPayload) != nil || strings.TrimSpace(taskPayload.TaskID) == "" {
+		return nil
+	}
+	taskID := graph.EntityID("task", taskPayload.TaskID)
+	return graph.UpsertEntity(tx, graph.Entity{
+		ID:          taskID,
+		Type:        "task",
+		CanonicalID: taskPayload.TaskID,
+		DisplayName: taskPayload.TaskID,
+		FirstSeen:   msg.Timestamp,
+		LastSeen:    msg.Timestamp,
+		Attrs:       map[string]any{"status": taskPayload.Status, "summary": taskPayload.Summary},
+	})
+}
+
+func (s *Service) appendGraphEdge(tx *sql.Tx, branch, producedAt, evidenceMsg, edgeType, srcID, dstID string) error {
+	edgeID, inserted, err := graph.AppendEdge(tx, graph.Edge{
+		SrcID:       srcID,
+		DstID:       dstID,
+		Type:        edgeType,
+		ValidFrom:   producedAt,
+		EvidenceMsg: evidenceMsg,
+	})
+	if err != nil {
+		return err
+	}
+	decision := "existing"
+	if inserted {
+		decision = "inserted"
+	}
+	return graph.AppendProvenance(tx, graph.Provenance{
+		SubjectKind: "edge",
+		SubjectID:   fmt.Sprintf("%d", edgeID),
+		Stage:       "graph",
+		PolicyVer:   fmt.Sprintf("%d", s.policy.Version),
+		Inputs:      map[string]any{"evidence_msg": evidenceMsg, "src_id": srcID, "dst_id": dstID, "type": edgeType},
+		Decision:    decision,
+		Reasons:     []string{branch},
+		ProducedAt:  producedAt,
+	})
 }
 
 func messageExists(messages []store.Message, id string) bool {

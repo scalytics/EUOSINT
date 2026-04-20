@@ -3,6 +3,8 @@
 
 package store
 
+import "database/sql"
+
 // Store is the current persistence contract used by the AgentOps runtime.
 // It intentionally stays narrow while the runtime still mutates a whole
 // snapshot document. W1 will replace the backing implementation; later
@@ -10,6 +12,7 @@ package store
 type Store interface {
 	Snapshot() Snapshot
 	Update(func(*Snapshot)) error
+	Apply(func(*sql.Tx) error) error
 }
 
 var _ Store = (*FileStore)(nil)

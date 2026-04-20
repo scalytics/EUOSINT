@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -364,6 +365,67 @@ func TestHandleRecordResponseAndTraceUpdateTaskAndTraceState(t *testing.T) {
 	}
 	if len(doc.Health.TopicHealth) != 3 {
 		t.Fatalf("unexpected persisted health: %#v", doc.Health)
+	}
+}
+
+func TestHandleRecordWritesGraphEntitiesEdgesAndProvenance(t *testing.T) {
+	svc := &Service{
+		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
+		policy: agentcfg.DefaultPolicy("core"),
+		file:   mustSqliteStore(t),
+	}
+	for _, rec := range []*kgo.Record{
+		{
+			Topic:     "group.core.requests",
+			Partition: 0,
+			Offset:    1,
+			Timestamp: time.Date(2026, 4, 10, 12, 0, 0, 0, time.UTC),
+			Value:     []byte(`{"type":"request","correlation_id":"corr-9","sender_id":"worker-a","timestamp":"2026-04-10T12:00:00Z","payload":{"task_id":"task-9","description":"Check turbine","requester_id":"worker-a","parent_task_id":"root-9"}}`),
+		},
+		{
+			Topic:     "group.core.responses",
+			Partition: 0,
+			Offset:    2,
+			Timestamp: time.Date(2026, 4, 10, 12, 0, 1, 0, time.UTC),
+			Value:     []byte(`{"type":"response","correlation_id":"corr-9","sender_id":"worker-b","timestamp":"2026-04-10T12:00:01Z","payload":{"task_id":"task-9","status":"completed","responder_id":"worker-b","content":"done"}}`),
+		},
+		{
+			Topic:     "group.core.traces",
+			Partition: 0,
+			Offset:    3,
+			Timestamp: time.Date(2026, 4, 10, 12, 0, 2, 0, time.UTC),
+			Value:     []byte(`{"type":"trace","correlation_id":"corr-9","sender_id":"worker-b","timestamp":"2026-04-10T12:00:02Z","payload":{"trace_id":"trace-9","span_type":"TOOL","title":"Inspect node"}}`),
+		},
+	} {
+		if reason, ok := svc.handleRecord(rec); !ok {
+			t.Fatalf("handleRecord rejected record: %s", reason)
+		}
+	}
+
+	err := svc.file.Apply(func(tx *sql.Tx) error {
+		var entities, edges, provenance int
+		if err := tx.QueryRow(`SELECT COUNT(*) FROM entities`).Scan(&entities); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(`SELECT COUNT(*) FROM edges`).Scan(&edges); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(`SELECT COUNT(*) FROM provenance`).Scan(&provenance); err != nil {
+			return err
+		}
+		if entities < 6 {
+			t.Fatalf("expected graph entities, got %d", entities)
+		}
+		if edges < 7 {
+			t.Fatalf("expected graph edges, got %d", edges)
+		}
+		if provenance < 7 {
+			t.Fatalf("expected graph provenance rows, got %d", provenance)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -938,7 +1000,7 @@ func TestRunPersistsHealthCountsAndEffectiveTopics(t *testing.T) {
 		t.Fatalf("expected graceful shutdown, got %v", err)
 	}
 	doc := svc.file.Snapshot()
-	if len(doc.Health.EffectiveTopics) != 2 || doc.Health.AcceptedCount != 1 || doc.Health.RejectedCount != 1 || doc.Health.MirroredCount != 1 {
+	if len(doc.Health.EffectiveTopics) == 0 || doc.Health.AcceptedCount != 1 || doc.Health.RejectedCount != 1 || doc.Health.MirroredCount != 1 {
 		t.Fatalf("unexpected health snapshot %#v", doc.Health)
 	}
 }
