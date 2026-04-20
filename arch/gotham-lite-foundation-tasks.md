@@ -347,7 +347,7 @@ behind the same package-public surface.
 - [x] define `Store` interface in `internal/agentops/store/store.go`:
       `Apply(func(tx Tx) error) error`, `Snapshot(...) (Document, error)`,
       typed query methods (listed in W3)
-- [ ] implement `SqliteStore` (new file `store/sqlite.go`) with prepared
+- [x] implement `SqliteStore` (new file `store/sqlite.go`) with prepared
       statements and transactional writes
 - [ ] delete `store/file.go` and `store/types.go` JSON-only fields;
       rename `Document` → `Snapshot` to make intent clear
