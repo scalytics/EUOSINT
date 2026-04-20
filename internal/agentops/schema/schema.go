@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -18,8 +19,9 @@ import (
 
 const (
 	driverName = "sqlite"
-	memoryDSN  = "file:agentops?mode=memory&cache=shared"
 )
+
+var memoryCounter uint64
 
 //go:embed schema.sql
 var files embed.FS
@@ -27,7 +29,7 @@ var files embed.FS
 func Open(path string) (*sql.DB, error) {
 	dsn := strings.TrimSpace(path)
 	if dsn == "" {
-		dsn = memoryDSN
+		dsn = fmt.Sprintf("file:agentops-%d?mode=memory&cache=shared", atomic.AddUint64(&memoryCounter, 1))
 	} else if err := os.MkdirAll(filepath.Dir(dsn), 0o755); err != nil {
 		return nil, fmt.Errorf("create schema dir: %w", err)
 	}

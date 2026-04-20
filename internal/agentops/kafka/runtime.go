@@ -30,7 +30,7 @@ type Service struct {
 	cfg                   collectorcfg.Config
 	policy                agentcfg.Policy
 	topics                []string
-	file                  *store.FileStore
+	file                  *store.SqliteStore
 	clientFactory         func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error)
 	operatorClientFactory func(cfg collectorcfg.Config, clientID string) (operatorClient, error)
 	stateMu               sync.Mutex
@@ -186,7 +186,7 @@ func Start(ctx context.Context, cfg collectorcfg.Config) error {
 			RejectedByReason: map[string]int{},
 		},
 	}
-	fs, err := store.NewFileStore(cfg.AgentOpsOutputPath, doc)
+	fs, err := store.NewSqliteStore(cfg.AgentOpsOutputPath, doc)
 	if err != nil {
 		return fmt.Errorf("agentops store: %w", err)
 	}
