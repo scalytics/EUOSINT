@@ -456,7 +456,7 @@ Tasks:
 - [x] extend each `handleRecord` branch in `internal/agentops/kafka` to
       emit edges after the existing message upsert; `evidence_msg` = the new
       `record_id`
-- [ ] `valid_to` is set when a contradicting observation arrives (e.g. task
+- [x] `valid_to` is set when a contradicting observation arrives (e.g. task
       reassigned). First pass: leave `valid_to` NULL; flip only on explicit
       terminal states (`completed`, `failed`, `cancelled`)
 - [x] provenance row per edge insert with `stage='graph'`, `reasons` = the

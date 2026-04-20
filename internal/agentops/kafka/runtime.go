@@ -1158,7 +1158,13 @@ func (s *Service) appendResponseGraph(tx *sql.Tx, branch string, msg store.Messa
 	}); err != nil {
 		return err
 	}
-	return s.appendGraphEdge(tx, branch, msg.Timestamp, msg.ID, "responded", agentID, taskID)
+	if err := s.appendGraphEdge(tx, branch, msg.Timestamp, msg.ID, "responded", agentID, taskID); err != nil {
+		return err
+	}
+	if isTerminalTaskStatus(taskPayload.Status) {
+		return graph.CloseOpenEdges(tx, taskID, []string{"sent", "responded", "delegated_to"}, msg.Timestamp)
+	}
+	return nil
 }
 
 func (s *Service) appendTraceGraph(tx *sql.Tx, branch string, msg store.Message, payload json.RawMessage) error {
@@ -1198,7 +1204,7 @@ func (s *Service) appendTaskStatusGraph(tx *sql.Tx, branch string, msg store.Mes
 		return nil
 	}
 	taskID := graph.EntityID("task", taskPayload.TaskID)
-	return graph.UpsertEntity(tx, graph.Entity{
+	if err := graph.UpsertEntity(tx, graph.Entity{
 		ID:          taskID,
 		Type:        "task",
 		CanonicalID: taskPayload.TaskID,
@@ -1206,7 +1212,13 @@ func (s *Service) appendTaskStatusGraph(tx *sql.Tx, branch string, msg store.Mes
 		FirstSeen:   msg.Timestamp,
 		LastSeen:    msg.Timestamp,
 		Attrs:       map[string]any{"status": taskPayload.Status, "summary": taskPayload.Summary},
-	})
+	}); err != nil {
+		return err
+	}
+	if isTerminalTaskStatus(taskPayload.Status) {
+		return graph.CloseOpenEdges(tx, taskID, []string{"sent", "responded", "delegated_to"}, msg.Timestamp)
+	}
+	return nil
 }
 
 func (s *Service) appendGraphEdge(tx *sql.Tx, branch, producedAt, evidenceMsg, edgeType, srcID, dstID string) error {
@@ -1234,6 +1246,15 @@ func (s *Service) appendGraphEdge(tx *sql.Tx, branch, producedAt, evidenceMsg, e
 		Reasons:     []string{branch},
 		ProducedAt:  producedAt,
 	})
+}
+
+func isTerminalTaskStatus(status string) bool {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "completed", "failed", "cancelled", "canceled":
+		return true
+	default:
+		return false
+	}
 }
 
 func messageExists(messages []store.Message, id string) bool {

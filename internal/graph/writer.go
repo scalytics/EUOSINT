@@ -108,6 +108,25 @@ func AppendProvenance(tx *sql.Tx, provenance Provenance) error {
 	return err
 }
 
+func CloseOpenEdges(tx *sql.Tx, dstID string, edgeTypes []string, validTo string) error {
+	if len(edgeTypes) == 0 {
+		return nil
+	}
+	args := make([]any, 0, len(edgeTypes)+2)
+	query := `UPDATE edges SET valid_to = ? WHERE dst_id = ? AND valid_to IS NULL AND type IN (`
+	args = append(args, validTo, dstID)
+	for i, edgeType := range edgeTypes {
+		if i > 0 {
+			query += ","
+		}
+		query += "?"
+		args = append(args, edgeType)
+	}
+	query += ")"
+	_, err := tx.Exec(query, args...)
+	return err
+}
+
 func marshalJSON(v any) (string, error) {
 	if v == nil {
 		return "{}", nil
