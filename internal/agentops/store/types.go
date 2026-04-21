@@ -3,6 +3,20 @@
 
 package store
 
+type Cursor string
+
+type Pagination struct {
+	Limit int    `json:"limit"`
+	After Cursor `json:"after,omitempty"`
+}
+
+type FlowFilter struct {
+	Topic  string `json:"topic,omitempty"`
+	Sender string `json:"sender,omitempty"`
+	Status string `json:"status,omitempty"`
+	Text   string `json:"text,omitempty"`
+}
+
 type Snapshot struct {
 	GeneratedAt    string          `json:"generated_at"`
 	Enabled        bool            `json:"enabled"`

@@ -3,17 +3,28 @@
 
 package store
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+)
 
-// Store is the current persistence contract used by the AgentOps runtime.
-// It intentionally stays narrow while the runtime still mutates a whole
-// snapshot document. W1 will replace the backing implementation; later
-// workstreams can split this into read/write surfaces and typed queries.
 type Store interface {
-	Snapshot() Snapshot
-	Update(func(*Snapshot)) error
-	Apply(func(*sql.Tx) error) error
+	ListFlows(context.Context, FlowFilter, Pagination) ([]Flow, Cursor, error)
+	GetFlow(context.Context, string) (Flow, error)
+	ListMessagesForFlow(context.Context, string, Pagination) ([]Message, Cursor, error)
+	ListTracesForFlow(context.Context, string) ([]Trace, error)
+	ListTasksForFlow(context.Context, string) ([]Task, error)
+	TopicHealth(context.Context) ([]TopicHealth, error)
+	RecentReplays(context.Context, int) ([]ReplaySession, error)
+	LatestHealth(context.Context) (Health, error)
 	Close() error
 }
 
-var _ Store = (*SqliteStore)(nil)
+type WriteStore interface {
+	Store
+	Snapshot() Snapshot
+	Update(func(*Snapshot)) error
+	Apply(func(*sql.Tx) error) error
+}
+
+var _ WriteStore = (*SqliteStore)(nil)

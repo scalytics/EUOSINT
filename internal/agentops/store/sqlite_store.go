@@ -4,6 +4,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -502,38 +503,9 @@ func readMessages(db *sql.DB) ([]Message, error) {
 
 	var out []Message
 	for rows.Next() {
-		var msg Message
-		var envelopeType, senderID, correlationID, traceID, taskID, parentTaskID, status, preview, content sql.NullString
-		var lfsBucket, lfsKey, lfsSHA, lfsContentType, lfsCreatedAt, lfsProxyID sql.NullString
-		var lfsSize sql.NullInt64
-		if err := rows.Scan(
-			&msg.ID, &msg.Topic, &msg.TopicFamily, &msg.Partition, &msg.Offset, &msg.Timestamp,
-			&envelopeType, &senderID, &correlationID, &traceID, &taskID, &parentTaskID,
-			&status, &preview, &content, &lfsBucket, &lfsKey, &lfsSize, &lfsSHA,
-			&lfsContentType, &lfsCreatedAt, &lfsProxyID,
-		); err != nil {
+		msg, err := scanMessageRow(rows)
+		if err != nil {
 			return nil, err
-		}
-		msg.EnvelopeType = envelopeType.String
-		msg.SenderID = senderID.String
-		msg.CorrelationID = correlationID.String
-		msg.TraceID = traceID.String
-		msg.TaskID = taskID.String
-		msg.ParentTaskID = parentTaskID.String
-		msg.Status = status.String
-		msg.Preview = preview.String
-		msg.Content = content.String
-		if lfsBucket.Valid || lfsKey.Valid {
-			msg.LFS = &LFSPointer{
-				Bucket:      lfsBucket.String,
-				Key:         lfsKey.String,
-				Size:        lfsSize.Int64,
-				SHA256:      lfsSHA.String,
-				ContentType: lfsContentType.String,
-				CreatedAt:   lfsCreatedAt.String,
-				ProxyID:     lfsProxyID.String,
-				Path:        "s3://" + lfsBucket.String + "/" + lfsKey.String,
-			}
 		}
 		out = append(out, msg)
 	}
@@ -676,21 +648,10 @@ func readTasks(db *sql.DB) ([]Task, error) {
 
 	var out []Task
 	for rows.Next() {
-		var task Task
-		var parentTaskID, requesterID, responderID, originalRequesterID, status, description, lastSummary sql.NullString
-		if err := rows.Scan(
-			&task.ID, &parentTaskID, &task.DelegationDepth, &requesterID, &responderID,
-			&originalRequesterID, &status, &description, &lastSummary, &task.FirstSeen, &task.LastSeen,
-		); err != nil {
+		task, err := scanTaskRow(rows)
+		if err != nil {
 			return nil, err
 		}
-		task.ParentTaskID = parentTaskID.String
-		task.RequesterID = requesterID.String
-		task.ResponderID = responderID.String
-		task.OriginalRequesterID = originalRequesterID.String
-		task.Status = status.String
-		task.Description = description.String
-		task.LastSummary = lastSummary.String
 		out = append(out, task)
 	}
 	return out, rows.Err()
@@ -721,10 +682,14 @@ func readReplaySessions(db *sql.DB) ([]ReplaySession, error) {
 }
 
 func readHealth(db *sql.DB) (Health, error) {
+	return readHealthContext(context.Background(), db)
+}
+
+func readHealthContext(ctx context.Context, db *sql.DB) (Health, error) {
 	health := Health{
 		RejectedByReason: map[string]int{},
 	}
-	row := db.QueryRow(`
+	row := db.QueryRowContext(ctx, `
 		SELECT connected, group_id, accepted_count, rejected_count, mirrored_count,
 		       mirror_failed_count, last_reject, last_mirror_error, last_poll_at,
 		       replay_status, replay_active, replay_last_error, replay_last_finished,
@@ -759,18 +724,19 @@ func readHealth(db *sql.DB) (Health, error) {
 		}
 	}
 
-	topics, err := db.Query(`SELECT topic, active_agents, last_message_at FROM topic_stats ORDER BY topic`)
+	topics, err := db.QueryContext(ctx, `SELECT topic, message_count, active_agents, last_message_at FROM topic_stats ORDER BY topic`)
 	if err != nil {
 		return Health{}, err
 	}
 	defer topics.Close()
 	for topics.Next() {
 		var item TopicHealth
-		var activeAgents int
+		var activeAgents, messageCount int
 		var lastMessageAt sql.NullString
-		if err := topics.Scan(&item.Topic, &activeAgents, &lastMessageAt); err != nil {
+		if err := topics.Scan(&item.Topic, &messageCount, &activeAgents, &lastMessageAt); err != nil {
 			return Health{}, err
 		}
+		item.MessagesPerHour = float64(messageCount)
 		item.ActiveAgents = activeAgents
 		item.LastMessageAt = lastMessageAt.String
 		item.IsStale = storeTopicIsStale(item.LastMessageAt)

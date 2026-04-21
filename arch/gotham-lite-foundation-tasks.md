@@ -514,16 +514,16 @@ No HTTP is added in W3.
 
 Tasks on `internal/agentops/store`:
 
-- [ ] `ListFlows(ctx, filter FlowFilter, page Pagination) ([]Flow, Cursor)`,
+- [x] `ListFlows(ctx, filter FlowFilter, page Pagination) ([]Flow, Cursor)`,
       `GetFlow(ctx, id) (Flow, error)`, `ListMessagesForFlow(ctx, id, page)`,
       `ListTracesForFlow(ctx, id)`, `ListTasksForFlow(ctx, id)`,
       `TopicHealth(ctx) ([]TopicHealth)`, `RecentReplays(ctx, limit)`,
       `LatestHealth(ctx) (Health, error)`
-- [ ] cursor-based pagination, never offset; opaque cursor is base64-encoded
+- [x] cursor-based pagination, never offset; opaque cursor is base64-encoded
       `{last_seen, id}`
-- [ ] every method takes `context.Context`; cancellation propagates to
+- [x] every method takes `context.Context`; cancellation propagates to
       `database/sql`
-- [ ] `Store` (read) and `WriteStore` (collector-only) are separate Go
+- [x] `Store` (read) and `WriteStore` (collector-only) are separate Go
       interfaces; the API binary compiles against `Store` alone
 
 Tasks on `internal/graph/query.go`:
