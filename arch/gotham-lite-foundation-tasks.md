@@ -555,51 +555,51 @@ analyst traffic and breaking-change protection on `/api/v1/` starts counting.
 
 ### W4.1 Binary and Runtime
 
-- [ ] new binary `cmd/kafsiem-api/main.go`; one `func main` that builds the
+- [x] new binary `cmd/kafsiem-api/main.go`; one `func main` that builds the
       router, opens the DB read-only, loads packs, calls `http.ListenAndServe`
-- [ ] DB opened with
+- [x] DB opened with
       `file:/data/agentops.db?mode=ro&_busy_timeout=5000&_journal_mode=WAL`
       (the file is the same SQLite DB that the collector writes; agentops
       tables from W1 and graph tables from W2 coexist in it)
-- [ ] `go-chi/chi/v5` router; middleware: `RequestID`, `RealIP`,
+- [x] `go-chi/chi/v5` router; middleware: `RequestID`, `RealIP`,
       `Recoverer`, structured access log
-- [ ] bind `:8081` by default; `--listen` flag and `KAFSIEM_API_LISTEN` env
-- [ ] `/healthz` returns 200 if the DB opens; `/readyz` returns 200 only if
+- [x] bind `:8081` by default; `--listen` flag and `KAFSIEM_API_LISTEN` env
+- [x] `/healthz` returns 200 if the DB opens; `/readyz` returns 200 only if
       the most recent `health_snapshots` row is under 60s old
-- [ ] graceful shutdown on SIGTERM
+- [x] graceful shutdown on SIGTERM
 
 ### W4.2 URL Scheme (Entity-Centric, Pack-Aware)
 
-- [ ] `GET /api/v1/entities/{type}/{id}` — entity profile (W3
+- [x] `GET /api/v1/entities/{type}/{id}` — entity profile (W3
       `EntityProfile`)
-- [ ] `GET /api/v1/entities/{type}/{id}/neighborhood?depth=2&types=...&window=24h`
+- [x] `GET /api/v1/entities/{type}/{id}/neighborhood?depth=2&types=...&window=24h`
       — k-hop graph
-- [ ] `GET /api/v1/entities/{type}/{id}/provenance` — provenance chain for
+- [x] `GET /api/v1/entities/{type}/{id}/provenance` — provenance chain for
       the subject
-- [ ] `GET /api/v1/entities/{type}/{id}/geometry` — GeoJSON geometry +
+- [x] `GET /api/v1/entities/{type}/{id}/geometry` — GeoJSON geometry +
       bbox metadata for the entity, if present
-- [ ] `GET /api/v1/entities/{type}/{id}/timeline?after=&limit=` — paginated
+- [x] `GET /api/v1/entities/{type}/{id}/timeline?after=&limit=` — paginated
       events in which this entity participates
-- [ ] `GET /api/v1/graph/path?src=<entity_id>&dst=<entity_id>&max=3`
-- [ ] `GET /api/v1/map/features?bbox=<minLon,minLat,maxLon,maxLat>&types=...&window=...`
+- [x] `GET /api/v1/graph/path?src=<entity_id>&dst=<entity_id>&max=3`
+- [x] `GET /api/v1/map/features?bbox=<minLon,minLat,maxLon,maxLat>&types=...&window=...`
       — pack-aware feature query for the shared map surface
-- [ ] `GET /api/v1/map/layers` — active basemap / overlay definitions from
+- [x] `GET /api/v1/map/layers` — active basemap / overlay definitions from
       core + packs
-- [ ] `GET /api/v1/flows`, `/api/v1/flows/{id}`,
+- [x] `GET /api/v1/flows`, `/api/v1/flows/{id}`,
       `/api/v1/flows/{id}/messages`, `/api/v1/flows/{id}/timeline`
-- [ ] `GET /api/v1/topic-health`, `/api/v1/health`, `/api/v1/replays`
+- [x] `GET /api/v1/topic-health`, `/api/v1/health`, `/api/v1/replays`
 - [ ] `POST /api/v1/replays` — writes a `replay_request` row; the collector
       picks it up on its next poll (collector remains sole writer, Red Line
       #2)
-- [ ] `GET /api/v1/search?q=...` (frontend consumes in W10 Command Bar)
-- [ ] `GET /api/v1/ontology/types` — returns the active entity-type and
+- [x] `GET /api/v1/search?q=...` (frontend consumes in W10 Command Bar)
+- [x] `GET /api/v1/ontology/types` — returns the active entity-type and
       edge-type whitelist, with provenance per type (`source: core` or
       `source: pack/<name>`); this is the discovery endpoint that lets a
       beside-Palantir adapter or an auditor enumerate the deployment
-- [ ] `GET /api/v1/ontology/packs` — returns the loaded packs, their
+- [x] `GET /api/v1/ontology/packs` — returns the loaded packs, their
       versions, and their declared content (entity types, edge types,
       detector ids, view ids, query template ids)
-- [ ] `{type}` whitelist enforced at the router: core types
+- [x] `{type}` whitelist enforced at the router: core types
       (`agent|task|trace|topic|correlation`) plus all pack-declared types
       from active packs; unknown types return 404 not 500
 
@@ -625,12 +625,12 @@ analyst traffic and breaking-change protection on `/api/v1/` starts counting.
 
 ### W4.4 Request / Response Discipline
 
-- [ ] all list endpoints return `{items: [...], next: <cursor>|null}`
-- [ ] `application/json` only
+- [x] all list endpoints return `{items: [...], next: <cursor>|null}`
+- [x] `application/json` only
 - [ ] timestamps are RFC3339 UTC
 - [ ] entity IDs are opaque strings on the wire (`agent:alice`,
       `platform:auv-07`, `device:plc-12.bravo`); clients echo, never compose
-- [ ] spatial wire format is GeoJSON only; clients may render with
+- [x] spatial wire format is GeoJSON only; clients may render with
       OpenStreetMap, OpenFreeMap, or self-hosted vector/raster tiles, but
       the API does not emit provider-specific map objects
 
