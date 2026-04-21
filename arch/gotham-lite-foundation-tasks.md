@@ -528,22 +528,22 @@ Tasks on `internal/agentops/store`:
 
 Tasks on `internal/graph/query.go`:
 
-- [ ] `Neighborhood(ctx, entityID, depth int, typeFilter []string,
+- [x] `Neighborhood(ctx, entityID, depth int, typeFilter []string,
       window TimeRange) ([]Entity, []Edge)` via recursive CTE; depth
       capped at 3
-- [ ] `Path(ctx, src, dst, maxDepth int, window TimeRange) ([]Edge, bool)`
-- [ ] `EntityProfile(ctx, entityID) (Profile)` returning counts by edge
+- [x] `Path(ctx, src, dst, maxDepth int, window TimeRange) ([]Edge, bool)`
+- [x] `EntityProfile(ctx, entityID) (Profile)` returning counts by edge
       type, first/last seen, top neighbors by edge weight
-- [ ] `Geometry(ctx, entityID) (Geometry, error)`, `WithinBBox(ctx, bbox,
+- [x] `Geometry(ctx, entityID) (Geometry, error)`, `WithinBBox(ctx, bbox,
       typeFilter, window) ([]Entity, []Geometry)`, `Intersects(ctx, entityID,
       areaID, window) (bool, error)`, `Nearby(ctx, point, radiusMeters,
       typeFilter, window) ([]Entity, []Geometry)`
-- [ ] bbox-prefiltered spatial search in SQLite using stored min/max bounds;
+- [x] bbox-prefiltered spatial search in SQLite using stored min/max bounds;
       exact intersects / contains checks happen in Go on GeoJSON, not via
       SpatiaLite
 - [ ] benchmarks for each on a 100k-edge synthetic DB; p99 < 100 ms for
       `depth=2`
-- [ ] table tests per query method against a fixture DB
+- [x] table tests per query method against a fixture DB
 
 ---
 
