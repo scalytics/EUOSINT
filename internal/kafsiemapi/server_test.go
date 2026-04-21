@@ -53,7 +53,7 @@ func TestServerRoutes(t *testing.T) {
 		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
 			t.Fatal(err)
 		}
-		if payload["FirstSeen"] == nil {
+		if payload["first_seen"] == nil {
 			t.Fatalf("unexpected payload %#v", payload)
 		}
 	})
@@ -141,7 +141,7 @@ func TestServerRoutes(t *testing.T) {
 	t.Run("replays-post", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/replays", nil))
-		if rec.Code != http.StatusNotImplemented {
+		if rec.Code != http.StatusAccepted {
 			t.Fatalf("replays post code=%d body=%s", rec.Code, rec.Body.String())
 		}
 	})

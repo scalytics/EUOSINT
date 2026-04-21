@@ -25,6 +25,7 @@ func TestOpenAppliesSchemaAndPragmas(t *testing.T) {
 		"topic_stats",
 		"topic_agents",
 		"replay_sessions",
+		"replay_requests",
 		"health_snapshots",
 	} {
 		if !tableExists(t, db, table) {

@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	agentopsschema "github.com/scalytics/kafSIEM/internal/agentops/schema"
 	"github.com/scalytics/kafSIEM/internal/agentops/store"
 	"github.com/scalytics/kafSIEM/internal/graph"
 	"github.com/scalytics/kafSIEM/internal/packs"
@@ -32,6 +33,7 @@ type Config struct {
 type Server struct {
 	cfg      Config
 	db       *sql.DB
+	writeDB  *sql.DB
 	store    store.Store
 	graph    *graph.Reader
 	registry packs.Registry
@@ -51,14 +53,21 @@ func New(cfg Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	writeDB, err := agentopsschema.Open(storePathForWrite(cfg.DBPath))
+	if err != nil {
+		_ = readStore.Close()
+		return nil, err
+	}
 	registry, err := packs.LoadDir(cfg.PacksDir)
 	if err != nil {
 		_ = readStore.Close()
+		_ = writeDB.Close()
 		return nil, err
 	}
 	s := &Server{
 		cfg:      cfg,
 		db:       readStore.DB(),
+		writeDB:  writeDB,
 		store:    readStore,
 		graph:    graph.NewReader(readStore.DB()),
 		registry: registry,
@@ -68,7 +77,11 @@ func New(cfg Config) (*Server, error) {
 }
 
 func (s *Server) Close() error {
-	return s.store.Close()
+	err := s.store.Close()
+	if s.writeDB != nil {
+		_ = s.writeDB.Close()
+	}
+	return err
 }
 
 func (s *Server) Handler() http.Handler {
@@ -426,7 +439,28 @@ func (s *Server) handleReplays(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleReplayRequest(w http.ResponseWriter, r *http.Request) {
-	writeProblem(w, r, http.StatusNotImplemented, "read-only-api", "replay requests are not writable yet in the standalone read-only API")
+	var body struct {
+		Topics []string `json:"topics"`
+	}
+	if r.Body != nil {
+		defer r.Body.Close()
+		_ = json.NewDecoder(r.Body).Decode(&body)
+	}
+	topicsJSON, _ := json.Marshal(body.Topics)
+	id := time.Now().UTC().Format("20060102T150405.000000000")
+	if _, err := s.writeDB.ExecContext(r.Context(), `
+		INSERT INTO replay_requests (id, requested_at, status, topics_json)
+		VALUES (?, ?, 'pending', ?)
+	`, id, time.Now().UTC().Format(time.RFC3339), string(topicsJSON)); err != nil {
+		s.writeSQLError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]any{
+		"id":           id,
+		"status":       "pending",
+		"requested_at": time.Now().UTC().Format(time.RFC3339),
+		"topics":       body.Topics,
+	})
 }
 
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
@@ -651,4 +685,12 @@ func envString(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func storePathForWrite(path string) string {
+	path = strings.TrimSpace(path)
+	if strings.HasSuffix(strings.ToLower(path), ".json") {
+		return strings.TrimSuffix(path, ".json") + ".db"
+	}
+	return path
 }

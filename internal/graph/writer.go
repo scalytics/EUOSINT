@@ -9,50 +9,50 @@ import (
 )
 
 type Entity struct {
-	ID          string
-	Type        string
-	CanonicalID string
-	DisplayName string
-	FirstSeen   string
-	LastSeen    string
-	Attrs       map[string]any
+	ID          string         `json:"id"`
+	Type        string         `json:"type"`
+	CanonicalID string         `json:"canonical_id"`
+	DisplayName string         `json:"display_name,omitempty"`
+	FirstSeen   string         `json:"first_seen"`
+	LastSeen    string         `json:"last_seen"`
+	Attrs       map[string]any `json:"attrs,omitempty"`
 }
 
 type Edge struct {
-	SrcID       string
-	DstID       string
-	Type        string
-	ValidFrom   string
-	ValidTo     string
-	EvidenceMsg string
-	Weight      float64
-	Attrs       map[string]any
+	SrcID       string         `json:"src_id"`
+	DstID       string         `json:"dst_id"`
+	Type        string         `json:"type"`
+	ValidFrom   string         `json:"valid_from"`
+	ValidTo     string         `json:"valid_to,omitempty"`
+	EvidenceMsg string         `json:"evidence_msg,omitempty"`
+	Weight      float64        `json:"weight"`
+	Attrs       map[string]any `json:"attrs,omitempty"`
 }
 
 type Provenance struct {
-	SubjectKind string
-	SubjectID   string
-	Stage       string
-	PolicyVer   string
-	Inputs      map[string]any
-	Decision    string
-	Reasons     []string
-	ProducedAt  string
+	SubjectKind string         `json:"subject_kind"`
+	SubjectID   string         `json:"subject_id"`
+	Stage       string         `json:"stage"`
+	PolicyVer   string         `json:"policy_ver,omitempty"`
+	Inputs      map[string]any `json:"inputs,omitempty"`
+	Decision    string         `json:"decision,omitempty"`
+	Reasons     []string       `json:"reasons,omitempty"`
+	ProducedAt  string         `json:"produced_at"`
 }
 
 type Geometry struct {
-	EntityID     string
-	GeometryType string
-	GeoJSON      json.RawMessage
-	SRID         int
-	MinLat       float64
-	MinLon       float64
-	MaxLat       float64
-	MaxLon       float64
-	ZMin         *float64
-	ZMax         *float64
-	ObservedAt   string
-	ValidTo      string
+	EntityID     string          `json:"entity_id"`
+	GeometryType string          `json:"geometry_type"`
+	GeoJSON      json.RawMessage `json:"geojson"`
+	SRID         int             `json:"srid"`
+	MinLat       float64         `json:"min_lat"`
+	MinLon       float64         `json:"min_lon"`
+	MaxLat       float64         `json:"max_lat"`
+	MaxLon       float64         `json:"max_lon"`
+	ZMin         *float64        `json:"z_min,omitempty"`
+	ZMax         *float64        `json:"z_max,omitempty"`
+	ObservedAt   string          `json:"observed_at"`
+	ValidTo      string          `json:"valid_to,omitempty"`
 }
 
 func UpsertEntity(tx *sql.Tx, entity Entity) error {

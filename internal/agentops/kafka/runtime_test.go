@@ -648,6 +648,45 @@ func TestStartReplayWithTopicsUsesScopedSubscription(t *testing.T) {
 	}
 }
 
+func TestProcessReplayRequestsClaimsAndStartsReplay(t *testing.T) {
+	svc := &Service{
+		cfg: collectorcfg.Config{
+			AgentOpsEnabled:       true,
+			AgentOpsReplayEnabled: true,
+			AgentOpsGroupName:     "core",
+		},
+		policy: agentcfg.DefaultPolicy("core"),
+		topics: []string{"group.core.requests"},
+		file:   mustSqliteStore(t),
+	}
+	if err := svc.file.Apply(func(tx *sql.Tx) error {
+		_, err := tx.Exec(`INSERT INTO replay_requests (id, requested_at, status, topics_json) VALUES ('req-1', '2026-04-20T10:00:00Z', 'pending', '["group.core.responses"]')`)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var gotTopics []string
+	svc.replayStarter = func(ctx context.Context, topics []string) (store.ReplaySession, error) {
+		gotTopics = append([]string{}, topics...)
+		return store.ReplaySession{ID: "session-1", GroupID: "group-replay", Status: "running", StartedAt: "2026-04-20T10:00:01Z", Topics: topics}, nil
+	}
+	if err := svc.processReplayRequests(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(gotTopics) != 1 || gotTopics[0] != "group.core.responses" {
+		t.Fatalf("unexpected replay topics %#v", gotTopics)
+	}
+	var status, startedSessionID string
+	if err := svc.file.Apply(func(tx *sql.Tx) error {
+		return tx.QueryRow(`SELECT status, COALESCE(started_session_id, '') FROM replay_requests WHERE id = 'req-1'`).Scan(&status, &startedSessionID)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if status != "accepted" || startedSessionID != "session-1" {
+		t.Fatalf("unexpected replay request state status=%q session=%q", status, startedSessionID)
+	}
+}
+
 func mustSqliteStore(t *testing.T) *store.SqliteStore {
 	t.Helper()
 	fs, err := store.NewSqliteStore("", store.Snapshot{

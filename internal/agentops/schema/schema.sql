@@ -108,6 +108,17 @@ CREATE TABLE IF NOT EXISTS replay_sessions (
   last_error           TEXT
 );
 
+CREATE TABLE IF NOT EXISTS replay_requests (
+  id                   TEXT PRIMARY KEY,
+  requested_at         TEXT NOT NULL,
+  status               TEXT NOT NULL DEFAULT 'pending',
+  topics_json          TEXT,
+  started_session_id   TEXT,
+  last_error           TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_replay_requests_status_requested_at
+  ON replay_requests(status, requested_at);
+
 CREATE TABLE IF NOT EXISTS health_snapshots (
   taken_at               TEXT PRIMARY KEY,
   connected              INTEGER NOT NULL,

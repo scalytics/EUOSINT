@@ -35,6 +35,7 @@ type Service struct {
 	file                  *store.SqliteStore
 	clientFactory         func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error)
 	operatorClientFactory func(cfg collectorcfg.Config, clientID string) (operatorClient, error)
+	replayStarter         func(context.Context, []string) (store.ReplaySession, error)
 	replayMu              sync.Mutex
 	replayCancels         map[string]context.CancelFunc
 }
@@ -182,6 +183,7 @@ func Start(ctx context.Context, cfg collectorcfg.Config) error {
 		file:                  fs,
 		clientFactory:         defaultClientFactory,
 		operatorClientFactory: defaultOperatorClientFactory,
+		replayStarter:         nil,
 		replayCancels:         map[string]context.CancelFunc{},
 	}
 	setCurrentService(svc)
@@ -216,6 +218,12 @@ func (s *Service) run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		default:
+		}
+
+		if err := s.processReplayRequests(ctx); err != nil {
+			_ = s.file.Update(func(doc *store.Snapshot) {
+				doc.Health.LastReject = err.Error()
+			})
 		}
 
 		pollCtx, cancel := context.WithTimeout(ctx, time.Duration(max(250, s.cfg.KafkaPollTimeoutMS))*time.Millisecond)
@@ -270,6 +278,55 @@ func (s *Service) run(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func (s *Service) processReplayRequests(ctx context.Context) error {
+	type request struct {
+		id     string
+		topics []string
+	}
+	var next request
+	if err := s.file.Apply(func(tx *sql.Tx) error {
+		var id, topicsJSON string
+		err := tx.QueryRow(`
+			SELECT id, COALESCE(topics_json, '[]')
+			  FROM replay_requests
+			 WHERE status = 'pending'
+			 ORDER BY requested_at ASC, id ASC
+			 LIMIT 1
+		`).Scan(&id, &topicsJSON)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		next.id = id
+		_ = json.Unmarshal([]byte(topicsJSON), &next.topics)
+		_, err = tx.Exec(`UPDATE replay_requests SET status = 'claimed', last_error = NULL WHERE id = ?`, id)
+		return err
+	}); err != nil {
+		return err
+	}
+	if next.id == "" {
+		return nil
+	}
+	starter := s.replayStarter
+	if starter == nil {
+		starter = s.startReplayWithTopics
+	}
+	session, err := starter(ctx, next.topics)
+	if err != nil {
+		_ = s.file.Apply(func(tx *sql.Tx) error {
+			_, execErr := tx.Exec(`UPDATE replay_requests SET status = 'failed', last_error = ? WHERE id = ?`, err.Error(), next.id)
+			return execErr
+		})
+		return err
+	}
+	return s.file.Apply(func(tx *sql.Tx) error {
+		_, execErr := tx.Exec(`UPDATE replay_requests SET status = 'accepted', started_session_id = ?, last_error = NULL WHERE id = ?`, session.ID, next.id)
+		return execErr
+	})
 }
 
 func (s *Service) handleRecord(rec *kgo.Record) (string, bool) {

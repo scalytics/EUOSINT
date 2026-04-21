@@ -10,22 +10,22 @@ import (
 )
 
 type TimeRange struct {
-	Start string
-	End   string
+	Start string `json:"start,omitempty"`
+	End   string `json:"end,omitempty"`
 }
 
 type Profile struct {
-	Entity       Entity
-	FirstSeen    string
-	LastSeen     string
-	EdgeCounts   map[string]int
-	TopNeighbors []Neighbor
+	Entity       Entity         `json:"entity"`
+	FirstSeen    string         `json:"first_seen"`
+	LastSeen     string         `json:"last_seen"`
+	EdgeCounts   map[string]int `json:"edge_counts"`
+	TopNeighbors []Neighbor     `json:"top_neighbors"`
 }
 
 type Neighbor struct {
-	EntityID   string
-	EntityType string
-	Weight     float64
+	EntityID   string  `json:"entity_id"`
+	EntityType string  `json:"entity_type"`
+	Weight     float64 `json:"weight"`
 }
 
 type Reader struct {

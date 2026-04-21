@@ -1,0 +1,669 @@
+openapi: 3.1.0
+info:
+  title: kafSIEM Analyst API
+  version: 0.1.0
+servers:
+  - url: /api/v1
+paths:
+  /entities/{type}/{id}:
+    get:
+      operationId: getEntity
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema: { type: string }
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Entity profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /entities/{type}/{id}/neighborhood:
+    get:
+      operationId: getEntityNeighborhood
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema: { type: string }
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: depth
+          schema: { type: integer, minimum: 1, maximum: 3, default: 2 }
+        - in: query
+          name: types
+          schema: { type: string }
+        - in: query
+          name: window
+          schema: { type: string }
+      responses:
+        '200':
+          description: Entity neighborhood
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [entities, edges]
+                properties:
+                  entities:
+                    type: array
+                    items: { $ref: '#/components/schemas/Entity' }
+                  edges:
+                    type: array
+                    items: { $ref: '#/components/schemas/Edge' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /entities/{type}/{id}/provenance:
+    get:
+      operationId: listEntityProvenance
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema: { type: string }
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Provenance chain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListProvenanceResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+  /entities/{type}/{id}/geometry:
+    get:
+      operationId: getEntityGeometry
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema: { type: string }
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Geometry
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Geometry' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /entities/{type}/{id}/timeline:
+    get:
+      operationId: listEntityTimeline
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema: { type: string }
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: after
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+      responses:
+        '200':
+          description: Timeline
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListMessageResponse' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /graph/path:
+    get:
+      operationId: getGraphPath
+      parameters:
+        - in: query
+          name: src
+          required: true
+          schema: { type: string }
+        - in: query
+          name: dst
+          required: true
+          schema: { type: string }
+        - in: query
+          name: max
+          schema: { type: integer, minimum: 1, maximum: 3, default: 3 }
+      responses:
+        '200':
+          description: Path result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [found, edges]
+                properties:
+                  found: { type: boolean }
+                  edges:
+                    type: array
+                    items: { $ref: '#/components/schemas/Edge' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /map/features:
+    get:
+      operationId: listMapFeatures
+      parameters:
+        - in: query
+          name: bbox
+          required: true
+          schema: { type: string, example: '14.40,35.80,14.60,36.00' }
+        - in: query
+          name: types
+          schema: { type: string }
+        - in: query
+          name: window
+          schema: { type: string }
+      responses:
+        '200':
+          description: GeoJSON feature collection
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeatureCollection' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /map/layers:
+    get:
+      operationId: listMapLayers
+      responses:
+        '200':
+          description: Map layers
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListMapLayerResponse' }
+  /flows:
+    get:
+      operationId: listFlows
+      parameters:
+        - in: query
+          name: after
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+        - in: query
+          name: topic
+          schema: { type: string }
+        - in: query
+          name: sender
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        '200':
+          description: Flows
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListFlowResponse' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /flows/{id}:
+    get:
+      operationId: getFlow
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Flow
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Flow' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /flows/{id}/messages:
+    get:
+      operationId: listFlowMessages
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: after
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+      responses:
+        '200':
+          description: Flow messages
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListMessageResponse' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /flows/{id}/timeline:
+    get:
+      operationId: listFlowTimeline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: after
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+      responses:
+        '200':
+          description: Flow timeline
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListMessageResponse' }
+  /topic-health:
+    get:
+      operationId: listTopicHealth
+      responses:
+        '200':
+          description: Topic health
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListTopicHealthResponse' }
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        '200':
+          description: Latest health
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /replays:
+    get:
+      operationId: listReplays
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Replay sessions
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListReplayResponse' }
+    post:
+      operationId: createReplayRequest
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topics:
+                  type: array
+                  items: { type: string }
+      responses:
+        '202':
+          description: Replay request accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReplayRequest' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /search:
+    get:
+      operationId: searchEntities
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  next:
+                    type: [string, 'null']
+  /ontology/types:
+    get:
+      operationId: getOntologyTypes
+      responses:
+        '200':
+          description: Active ontology types
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [entity_types, edge_types]
+                properties:
+                  entity_types:
+                    type: array
+                    items: { $ref: '#/components/schemas/TypeSpec' }
+                  edge_types:
+                    type: array
+                    items: { $ref: '#/components/schemas/TypeSpec' }
+  /ontology/packs:
+    get:
+      operationId: getOntologyPacks
+      responses:
+        '200':
+          description: Loaded packs
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListPackResponse' }
+components:
+  responses:
+    Problem:
+      description: RFC 9457 problem details
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    Entity:
+      type: object
+      required: [id, type, canonical_id, first_seen, last_seen]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        canonical_id: { type: string }
+        display_name: { type: string }
+        first_seen: { type: string, format: date-time }
+        last_seen: { type: string, format: date-time }
+        attrs:
+          type: object
+          additionalProperties: true
+    Edge:
+      type: object
+      required: [src_id, dst_id, type, valid_from, weight]
+      properties:
+        src_id: { type: string }
+        dst_id: { type: string }
+        type: { type: string }
+        valid_from: { type: string, format: date-time }
+        valid_to: { type: string, format: date-time }
+        evidence_msg: { type: string }
+        weight: { type: number }
+        attrs:
+          type: object
+          additionalProperties: true
+    Provenance:
+      type: object
+      required: [subject_kind, subject_id, stage, produced_at]
+      properties:
+        subject_kind: { type: string }
+        subject_id: { type: string }
+        stage: { type: string }
+        policy_ver: { type: string }
+        inputs:
+          type: object
+          additionalProperties: true
+        decision: { type: string }
+        reasons:
+          type: array
+          items: { type: string }
+        produced_at: { type: string, format: date-time }
+    Geometry:
+      type: object
+      required: [entity_id, geometry_type, geojson, srid, min_lat, min_lon, max_lat, max_lon, observed_at]
+      properties:
+        entity_id: { type: string }
+        geometry_type: { type: string }
+        geojson:
+          description: RFC 7946 geometry
+        srid: { type: integer }
+        min_lat: { type: number }
+        min_lon: { type: number }
+        max_lat: { type: number }
+        max_lon: { type: number }
+        z_min: { type: number }
+        z_max: { type: number }
+        observed_at: { type: string, format: date-time }
+        valid_to: { type: string, format: date-time }
+    Neighbor:
+      type: object
+      required: [entity_id, entity_type, weight]
+      properties:
+        entity_id: { type: string }
+        entity_type: { type: string }
+        weight: { type: number }
+    Profile:
+      type: object
+      required: [entity, first_seen, last_seen, edge_counts, top_neighbors]
+      properties:
+        entity: { $ref: '#/components/schemas/Entity' }
+        first_seen: { type: string, format: date-time }
+        last_seen: { type: string, format: date-time }
+        edge_counts:
+          type: object
+          additionalProperties: { type: integer }
+        top_neighbors:
+          type: array
+          items: { $ref: '#/components/schemas/Neighbor' }
+    Pointer:
+      type: object
+      required: [bucket, key, size, sha256, path]
+      properties:
+        bucket: { type: string }
+        key: { type: string }
+        size: { type: integer }
+        sha256: { type: string }
+        content_type: { type: string }
+        created_at: { type: string, format: date-time }
+        proxy_id: { type: string }
+        path: { type: string }
+    Message:
+      type: object
+      required: [id, topic, topic_family, partition, offset, timestamp]
+      properties:
+        id: { type: string }
+        topic: { type: string }
+        topic_family: { type: string }
+        partition: { type: integer }
+        offset: { type: integer }
+        timestamp: { type: string, format: date-time }
+        envelope_type: { type: string }
+        sender_id: { type: string }
+        correlation_id: { type: string }
+        trace_id: { type: string }
+        task_id: { type: string }
+        parent_task_id: { type: string }
+        status: { type: string }
+        preview: { type: string }
+        content: { type: string }
+        lfs: { $ref: '#/components/schemas/Pointer' }
+    Flow:
+      type: object
+      required: [id, topic_count, sender_count, topics, senders, trace_ids, task_ids, first_seen, last_seen, message_count]
+      properties:
+        id: { type: string }
+        topic_count: { type: integer }
+        sender_count: { type: integer }
+        topics: { type: array, items: { type: string } }
+        senders: { type: array, items: { type: string } }
+        trace_ids: { type: array, items: { type: string } }
+        task_ids: { type: array, items: { type: string } }
+        first_seen: { type: string, format: date-time }
+        last_seen: { type: string, format: date-time }
+        latest_status: { type: string }
+        message_count: { type: integer }
+        latest_preview: { type: string }
+    TopicHealth:
+      type: object
+      required: [topic, messages_per_hour, message_density, active_agents, is_stale]
+      properties:
+        topic: { type: string }
+        messages_per_hour: { type: number }
+        message_density: { type: string }
+        active_agents: { type: integer }
+        is_stale: { type: boolean }
+        last_message_at: { type: string, format: date-time }
+    Health:
+      type: object
+      required: [connected, effective_topics, group_id, accepted_count, rejected_count, mirrored_count, mirror_failed_count, rejected_by_reason, replay_active, replay_last_record_count, topic_health]
+      properties:
+        connected: { type: boolean }
+        effective_topics: { type: array, items: { type: string } }
+        group_id: { type: string }
+        accepted_count: { type: integer }
+        rejected_count: { type: integer }
+        mirrored_count: { type: integer }
+        mirror_failed_count: { type: integer }
+        rejected_by_reason:
+          type: object
+          additionalProperties: { type: integer }
+        last_reject: { type: string }
+        last_mirror_error: { type: string }
+        last_poll_at: { type: string, format: date-time }
+        replay_status: { type: string }
+        replay_active: { type: integer }
+        replay_last_error: { type: string }
+        replay_last_finished_at: { type: string, format: date-time }
+        replay_last_record_count: { type: integer }
+        topic_health:
+          type: array
+          items: { $ref: '#/components/schemas/TopicHealth' }
+    ReplaySession:
+      type: object
+      required: [id, group_id, status, started_at, message_count]
+      properties:
+        id: { type: string }
+        group_id: { type: string }
+        status: { type: string }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time }
+        message_count: { type: integer }
+        topics: { type: array, items: { type: string } }
+        last_error: { type: string }
+    ReplayRequest:
+      type: object
+      required: [id, status, requested_at, topics]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        requested_at: { type: string, format: date-time }
+        topics: { type: array, items: { type: string } }
+    TypeSpec:
+      type: object
+      required: [name, source]
+      properties:
+        name: { type: string }
+        source: { type: string }
+    MapLayer:
+      type: object
+      required: [id, name, kind, source]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        kind: { type: string }
+        url: { type: string }
+        attribution: { type: string }
+        source: { type: string }
+    Pack:
+      type: object
+      required: [name, version]
+      properties:
+        name: { type: string }
+        version: { type: string }
+        description: { type: string }
+        owner: { type: string }
+        entity_types: { type: array, items: { type: string } }
+        edge_types: { type: array, items: { type: string } }
+        map_layers: { type: array, items: { $ref: '#/components/schemas/MapLayer' } }
+    Feature:
+      type: object
+      required: [type, geometry, properties]
+      properties:
+        type: { type: string, const: Feature }
+        geometry: {}
+        properties:
+          type: object
+          additionalProperties: true
+    FeatureCollection:
+      type: object
+      required: [type, features]
+      properties:
+        type: { type: string, const: FeatureCollection }
+        features:
+          type: array
+          items: { $ref: '#/components/schemas/Feature' }
+    ListFlowResponse:
+      type: object
+      required: [items, next]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Flow' } }
+        next: { type: [string, 'null'] }
+    ListMessageResponse:
+      type: object
+      required: [items, next]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Message' } }
+        next: { type: [string, 'null'] }
+    ListReplayResponse:
+      type: object
+      required: [items, next]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/ReplaySession' } }
+        next: { type: [string, 'null'] }
+    ListTopicHealthResponse:
+      type: object
+      required: [items, next]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/TopicHealth' } }
+        next: { type: [string, 'null'] }
+    ListProvenanceResponse:
+      type: object
+      required: [items, next]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Provenance' } }
+        next: { type: [string, 'null'] }
+    ListMapLayerResponse:
+      type: object
+      required: [items, next]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/MapLayer' } }
+        next: { type: [string, 'null'] }
+    ListPackResponse:
+      type: object
+      required: [items, next]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Pack' } }
+        next: { type: [string, 'null'] }

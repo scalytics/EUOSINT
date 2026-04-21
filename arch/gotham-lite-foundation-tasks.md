@@ -588,7 +588,7 @@ analyst traffic and breaking-change protection on `/api/v1/` starts counting.
 - [x] `GET /api/v1/flows`, `/api/v1/flows/{id}`,
       `/api/v1/flows/{id}/messages`, `/api/v1/flows/{id}/timeline`
 - [x] `GET /api/v1/topic-health`, `/api/v1/health`, `/api/v1/replays`
-- [ ] `POST /api/v1/replays` — writes a `replay_request` row; the collector
+- [x] `POST /api/v1/replays` — writes a `replay_request` row; the collector
       picks it up on its next poll (collector remains sole writer, Red Line
       #2)
 - [x] `GET /api/v1/search?q=...` (frontend consumes in W10 Command Bar)
@@ -608,17 +608,17 @@ analyst traffic and breaking-change protection on `/api/v1/` starts counting.
 - [ ] OpenAPI 3.1 is the source of truth for schemas. Tool choice between
       `oapi-codegen` and `ogen-go/ogen` happens in the W4 kickoff PR; once
       picked, the other is off the table
-- [ ] spec lives at `api/openapi.yaml`, generated from Go via `go generate
+- [x] spec lives at `api/openapi.yaml`, generated from Go via `go generate
       ./api/...`; CI fails if the regenerated spec differs from the
       checked-in copy
-- [ ] same spec drives a generated TypeScript client at
+- [x] same spec drives a generated TypeScript client at
       `src/agentops/lib/api-client/`; frontend imports typed
       request/response shapes; no hand-rolled DTOs remain in
       `src/agentops/types/index.ts`
 - [ ] versioning rule: `/api/v1` never ships a breaking change. Renames,
       removals, or changed semantics bump to `/api/v2`; `v1` is deprecated
       for one release, then removed
-- [ ] errors follow RFC 9457 Problem Details; every 4xx/5xx carries a
+- [x] errors follow RFC 9457 Problem Details; every 4xx/5xx carries a
       `type` URI pointing at `docs/agentops-api-errors.md`
 - [ ] pack-declared response shapes (entity attrs, view templates) are
       documented in OpenAPI as `oneOf` discriminated by entity `type`
@@ -627,8 +627,8 @@ analyst traffic and breaking-change protection on `/api/v1/` starts counting.
 
 - [x] all list endpoints return `{items: [...], next: <cursor>|null}`
 - [x] `application/json` only
-- [ ] timestamps are RFC3339 UTC
-- [ ] entity IDs are opaque strings on the wire (`agent:alice`,
+- [x] timestamps are RFC3339 UTC
+- [x] entity IDs are opaque strings on the wire (`agent:alice`,
       `platform:auv-07`, `device:plc-12.bravo`); clients echo, never compose
 - [x] spatial wire format is GeoJSON only; clients may render with
       OpenStreetMap, OpenFreeMap, or self-hosted vector/raster tiles, but
