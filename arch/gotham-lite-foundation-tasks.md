@@ -541,7 +541,7 @@ Tasks on `internal/graph/query.go`:
 - [x] bbox-prefiltered spatial search in SQLite using stored min/max bounds;
       exact intersects / contains checks happen in Go on GeoJSON, not via
       SpatiaLite
-- [ ] benchmarks for each on a 100k-edge synthetic DB; p99 < 100 ms for
+- [x] benchmarks for each on a 100k-edge synthetic DB; p99 < 100 ms for
       `depth=2`
 - [x] table tests per query method against a fixture DB
 
