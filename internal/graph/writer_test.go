@@ -1,7 +1,10 @@
 package graph
 
 import (
+	"database/sql"
+	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	agentopschema "github.com/scalytics/kafSIEM/internal/agentops/schema"
@@ -11,6 +14,12 @@ import (
 func TestEntityID(t *testing.T) {
 	if got := EntityID("agent", "alice"); got != "agent:alice" {
 		t.Fatalf("EntityID() = %q", got)
+	}
+	if got := EntityID(CoreTypeLocation, "malta-hq"); got != "location:malta-hq" {
+		t.Fatalf("location EntityID() = %q", got)
+	}
+	if got := EntityID(CoreTypeArea, "ao-1"); got != "area:ao-1" {
+		t.Fatalf("area EntityID() = %q", got)
 	}
 	if got := EntityID("", "alice"); got != "" {
 		t.Fatalf("expected empty entity id, got %q", got)
@@ -135,5 +144,57 @@ func TestCloseOpenEdges(t *testing.T) {
 	}
 	if validTo != "2026-04-20T10:30:00Z" {
 		t.Fatalf("expected edge close-out, got %q", validTo)
+	}
+}
+
+func TestUpsertGeometry(t *testing.T) {
+	db, err := agentopschema.Open(filepath.Join(t.TempDir(), "agentops.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := schema.Apply(db); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO entities (id, type, canonical_id, first_seen, last_seen) VALUES ('location:pt-1', 'location', 'pt-1', '2026-04-20T10:00:00Z', '2026-04-20T10:00:00Z')`); err != nil {
+		t.Fatal(err)
+	}
+	zMin, zMax := 5.0, 12.0
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := UpsertGeometry(tx, Geometry{
+		EntityID:     "location:pt-1",
+		GeometryType: "point",
+		GeoJSON:      json.RawMessage(`{"type":"Point","coordinates":[14.5146,35.8989,8.0]}`),
+		MinLat:       35.8989,
+		MinLon:       14.5146,
+		MaxLat:       35.8989,
+		MaxLon:       14.5146,
+		ZMin:         &zMin,
+		ZMax:         &zMax,
+		ObservedAt:   "2026-04-20T10:00:00Z",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	var geometryType, geojson string
+	var srid int
+	var minLat, minLon, maxLat, maxLon float64
+	var gotZMin, gotZMax sql.NullFloat64
+	if err := db.QueryRow(`SELECT geometry_type, geojson, srid, min_lat, min_lon, max_lat, max_lon, z_min, z_max FROM entity_geometry WHERE entity_id = 'location:pt-1'`).Scan(&geometryType, &geojson, &srid, &minLat, &minLon, &maxLat, &maxLon, &gotZMin, &gotZMax); err != nil {
+		t.Fatal(err)
+	}
+	if geometryType != "point" || srid != 4326 || !strings.Contains(geojson, `"Point"`) {
+		t.Fatalf("unexpected geometry row type=%q srid=%d geojson=%q", geometryType, srid, geojson)
+	}
+	if minLat != 35.8989 || minLon != 14.5146 || maxLat != 35.8989 || maxLon != 14.5146 {
+		t.Fatalf("unexpected bbox values %f %f %f %f", minLat, minLon, maxLat, maxLon)
+	}
+	if !gotZMin.Valid || !gotZMax.Valid || gotZMin.Float64 != 5.0 || gotZMax.Float64 != 12.0 {
+		t.Fatalf("unexpected z values %#v %#v", gotZMin, gotZMax)
 	}
 }

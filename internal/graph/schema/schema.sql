@@ -39,3 +39,20 @@ CREATE TABLE IF NOT EXISTS provenance (
   produced_at   TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_provenance_subject ON provenance(subject_kind, subject_id);
+
+CREATE TABLE IF NOT EXISTS entity_geometry (
+  entity_id      TEXT PRIMARY KEY REFERENCES entities(id) ON DELETE CASCADE,
+  geometry_type  TEXT NOT NULL,
+  geojson        TEXT NOT NULL,
+  srid           INTEGER NOT NULL DEFAULT 4326,
+  min_lat        REAL,
+  min_lon        REAL,
+  max_lat        REAL,
+  max_lon        REAL,
+  z_min          REAL,
+  z_max          REAL,
+  observed_at    TEXT NOT NULL,
+  valid_to       TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_entity_geometry_bbox
+  ON entity_geometry(min_lat, min_lon, max_lat, max_lon);

@@ -40,6 +40,21 @@ type Provenance struct {
 	ProducedAt  string
 }
 
+type Geometry struct {
+	EntityID     string
+	GeometryType string
+	GeoJSON      json.RawMessage
+	SRID         int
+	MinLat       float64
+	MinLon       float64
+	MaxLat       float64
+	MaxLon       float64
+	ZMin         *float64
+	ZMax         *float64
+	ObservedAt   string
+	ValidTo      string
+}
+
 func UpsertEntity(tx *sql.Tx, entity Entity) error {
 	attrs, err := marshalJSON(entity.Attrs)
 	if err != nil {
@@ -127,6 +142,34 @@ func CloseOpenEdges(tx *sql.Tx, dstID string, edgeTypes []string, validTo string
 	return err
 }
 
+func UpsertGeometry(tx *sql.Tx, geometry Geometry) error {
+	srid := geometry.SRID
+	if srid == 0 {
+		srid = 4326
+	}
+	_, err := tx.Exec(`
+		INSERT INTO entity_geometry (
+			entity_id, geometry_type, geojson, srid, min_lat, min_lon, max_lat, max_lon,
+			z_min, z_max, observed_at, valid_to
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''))
+		ON CONFLICT(entity_id) DO UPDATE SET
+			geometry_type = excluded.geometry_type,
+			geojson = excluded.geojson,
+			srid = excluded.srid,
+			min_lat = excluded.min_lat,
+			min_lon = excluded.min_lon,
+			max_lat = excluded.max_lat,
+			max_lon = excluded.max_lon,
+			z_min = excluded.z_min,
+			z_max = excluded.z_max,
+			observed_at = excluded.observed_at,
+			valid_to = excluded.valid_to
+	`, geometry.EntityID, geometry.GeometryType, string(geometry.GeoJSON), srid,
+		geometry.MinLat, geometry.MinLon, geometry.MaxLat, geometry.MaxLon,
+		nilableFloat(geometry.ZMin), nilableFloat(geometry.ZMax), geometry.ObservedAt, geometry.ValidTo)
+	return err
+}
+
 func marshalJSON(v any) (string, error) {
 	if v == nil {
 		return "{}", nil
@@ -136,4 +179,11 @@ func marshalJSON(v any) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func nilableFloat(v *float64) any {
+	if v == nil {
+		return nil
+	}
+	return *v
 }

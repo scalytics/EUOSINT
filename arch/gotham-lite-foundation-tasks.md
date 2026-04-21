@@ -185,7 +185,9 @@ Tasks:
       collector packages exactly as they are — no renames
 - [x] one PR, no behavior change, green CI
 
-Acceptance:
+Acceptance Criteria:
+
+Validated in W12, not during the middle of the refactor.
 
 - `go build ./...` and `go test ./...` pass
 - the AgentOps demo (`npm run demo:agentops`) still renders
@@ -363,7 +365,9 @@ behind the same package-public surface.
 - [x] drop the in-memory maps from `runtime.go:66-72` and replace with typed
       repository calls; `stateMu` becomes the DB tx boundary
 
-### W1.3 Acceptance
+### W1.3 Acceptance Criteria
+
+Validated in W12, not during the middle of the refactor.
 
 - the AgentOps demo (`npm run demo:agentops`) still renders the Flow Desk
 - a synthetic load test of 10k messages across 500 flows completes without
@@ -455,9 +459,9 @@ Tasks:
       `task:<uuid>`, `trace:<uuid>`, `topic:group.core.requests`,
       `correlation:<uuid>`); pack-declared types add to the prefix set
 - [x] indexes audited with `EXPLAIN QUERY PLAN` on realistic loads
-- [ ] add shared geometry storage for points, tracks, polygons, and bboxes;
+- [x] add shared geometry storage for points, tracks, polygons, and bboxes;
       RFC 7946 GeoJSON on the wire, WGS84 (`SRID 4326`) at rest
-- [ ] first-class core spatial types available to every pack:
+- [x] first-class core spatial types available to every pack:
       `location`, `area`; packs may add `site`, `zone`, `track`, `contact`
       etc. on top
 
@@ -489,7 +493,9 @@ Tasks:
 - [x] provenance row per edge insert with `stage='graph'`, `reasons` = the
       handler branch name (Red Line #4)
 
-### W2.3 Acceptance
+### W2.3 Acceptance Criteria
+
+Validated in W12, not during the middle of the refactor.
 
 - consuming any KafClaw flow produces a connected component in `entities` +
   `edges` reachable from the correlation entity
@@ -813,7 +819,9 @@ Declared edge types (selection):
 - report templates: validation report, no-go decision memo, post-incident
   engineering review
 
-### W7.4 Acceptance
+### W7.4 Acceptance Criteria
+
+Validated in W12, not during the middle of the refactor.
 
 - `packs/drones/pack.yaml` validates and loads under W6
 - all v1 detectors execute against a fixture DB in CI
@@ -874,7 +882,9 @@ Declared edge types (selection):
   (NERC CIP / NIS2 / 21 CFR Part 11 variants), post-incident engineering
   review, compliance evidence bundle
 
-### W8.4 Acceptance
+### W8.4 Acceptance Criteria
+
+Validated in W12, not during the middle of the refactor.
 
 - `packs/scada/pack.yaml` validates and loads under W6
 - all v1 detectors execute against a fixture DB in CI
@@ -1002,7 +1012,9 @@ Saved investigations (minimal):
 - a new design system (stay inside `Chrome.tsx`)
 - a Palantir-Workshop clone
 
-### W10.5 Acceptance
+### W10.5 Acceptance Criteria
+
+Validated in W12, not during the middle of the refactor.
 
 - from a selected run, two clicks reach the 2-hop neighborhood of its
   correlation entity rendered in the graph canvas
@@ -1038,7 +1050,9 @@ production and customer or auditor self-service.
 - [ ] `README.md` top-level — refreshed with the Gotham-lite framing, the
       two ICPs, and a link to the foundation tasks
 
-Acceptance:
+Acceptance Criteria:
+
+Validated in W12, not during the middle of the refactor.
 
 - a new operator can stand up the dev environment from `README.md` alone
 - a new contributor can write a new detector for an existing pack from
@@ -1046,6 +1060,60 @@ Acceptance:
 - a customer auditor can answer "what entity types and edges does this
   deployment recognize" from `/api/v1/ontology/types` plus
   `docs/packs/`
+
+---
+
+## Workstream W12 — Consolidated Acceptance, Coverage, And Performance
+
+This is the final gate after the refactor work is done. During implementation
+we keep targeted correctness checks green. We do not treat every sub-step as a
+full acceptance pass. The expensive demo, UI, load, coverage, and performance
+verification is centralized here.
+
+### W12.1 Full Test Sweep
+
+- [ ] `go test ./...`
+- [ ] frontend test sweep for the active analyst surfaces
+- [ ] production build passes (`npm run build`)
+- [ ] generated artifacts are clean (`git diff --exit-code` after codegen)
+
+### W12.2 Coverage Gate
+
+- [ ] consolidated Go coverage report produced for the touched workstreams:
+      `internal/agentops/`, `internal/graph/`, `internal/packs/`
+- [ ] remaining low-coverage hotspots are called out explicitly before merge
+- [ ] coverage delta is recorded in the task log before merge
+
+### W12.3 Demo And UI Smoke
+
+- [ ] AgentOps demo (`npm run demo:agentops`) renders the Flow Desk
+- [ ] pack-aware UI smoke: flow view, graph view, map view, provenance walk,
+      replay controls
+- [ ] GIS smoke: shared map surface renders GeoJSON features, basemap loads,
+      at least one drones overlay and one SCADA overlay render correctly
+
+### W12.4 Operational And Performance Checks
+
+- [ ] synthetic load test of 10k messages across 500 flows completes without
+      the collector process exceeding 150 MB RSS or writing more than the
+      message rate × ~4 KB to disk per record
+- [ ] `handleRecord` latency at steady state stays under 5 ms p99 on the
+      demo box
+- [ ] graph neighborhood / path queries meet the W3 latency targets on the
+      synthetic DB
+- [ ] API readiness and health endpoints behave correctly against the
+      collector-written SQLite DB
+
+### W12.5 Final Acceptance Gate
+
+- [ ] the JSON snapshot file is no longer written; `store/file.go` is gone
+- [ ] consuming any KafClaw flow produces a connected component in
+      `entities` + `edges` reachable from the correlation entity
+- [ ] every edge has a matching `provenance` row
+- [ ] exactly two packs ship and load cleanly: drones and SCADA
+- [ ] operator and contributor docs are sufficient for a fresh setup and a
+      new detector / view addition
+- [ ] final merge only happens after W12 is green
 
 ---
 
@@ -1070,8 +1138,9 @@ would cross more, it is split before it lands.
    contract on `/data/agentops.db`.
 10. **W10.** Pack-aware UI: entity view, graph pane, command bar,
     provenance walk.
-11. **W11.** Documentation pass; final acceptance gate before any
-    customer demo.
+11. **W11.** Documentation pass.
+12. **W12.** Consolidated acceptance, coverage, demo, and performance
+    gate before any customer demo or merge-to-main candidate.
 
 Rough effort estimate (single engineer, dense weeks): W0 = 0.5w, W1 =
 1w, W2 = 1w, W3 = 0.5w, W4 = 2w (OpenAPI bootstrap), W5 = 0.5w, W6 =

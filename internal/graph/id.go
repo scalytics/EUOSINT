@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+const (
+	CoreTypeLocation = "location"
+	CoreTypeArea     = "area"
+)
+
 func EntityID(typ, canonicalID string) string {
 	typ = strings.TrimSpace(strings.ToLower(typ))
 	canonicalID = strings.TrimSpace(canonicalID)
