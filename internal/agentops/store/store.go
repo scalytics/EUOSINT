@@ -13,6 +13,7 @@ type Store interface {
 	Snapshot() Snapshot
 	Update(func(*Snapshot)) error
 	Apply(func(*sql.Tx) error) error
+	Close() error
 }
 
-var _ Store = (*FileStore)(nil)
+var _ Store = (*SqliteStore)(nil)

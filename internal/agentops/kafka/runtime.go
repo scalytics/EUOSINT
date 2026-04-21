@@ -37,7 +37,6 @@ type Service struct {
 	operatorClientFactory func(cfg collectorcfg.Config, clientID string) (operatorClient, error)
 	replayMu              sync.Mutex
 	replayCancels         map[string]context.CancelFunc
-	internal              state
 }
 
 type agentopsClient interface {
@@ -50,23 +49,6 @@ type agentopsClient interface {
 type operatorClient interface {
 	ListGroups(context.Context) ([]store.ConsumerGroup, error)
 	Close()
-}
-
-// Deprecated compatibility cache while runtime tests move to store-backed assertions.
-// The operational state now lives in the store.
-type state struct {
-	flows  map[string]*store.Flow
-	traces map[string]*store.Trace
-	tasks  map[string]*store.Task
-	msgs   map[string]store.Message
-	topic  map[string]*topicStat
-}
-
-type topicStat struct {
-	Count          int
-	Agents         map[string]struct{}
-	LastMessageAt  string
-	FirstMessageAt string
 }
 
 var (

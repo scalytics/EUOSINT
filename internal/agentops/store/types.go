@@ -22,9 +22,6 @@ type Snapshot struct {
 	Messages       []Message       `json:"messages"`
 }
 
-// Document is a temporary compatibility alias during the W1 store rename.
-type Document = Snapshot
-
 type Health struct {
 	Connected             bool           `json:"connected"`
 	EffectiveTopics       []string       `json:"effective_topics"`

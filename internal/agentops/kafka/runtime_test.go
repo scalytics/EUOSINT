@@ -23,13 +23,6 @@ func TestHandleRecordRequestBuildsFlowAndTask(t *testing.T) {
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	rec := &kgo.Record{
 		Topic:     "group.core.requests",
@@ -76,13 +69,6 @@ func TestHandleRecordLFSPointerIsMetadataOnly(t *testing.T) {
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	rec := &kgo.Record{
 		Topic:     "group.core.responses",
@@ -108,13 +94,6 @@ func TestHandleRecordStatusAuditUnknownAndDuplicateBranches(t *testing.T) {
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	statusRec := &kgo.Record{
 		Topic:     "group.core.tasks.status",
@@ -184,8 +163,8 @@ func TestStartValidatesPolicyAndStore(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	outputPath := filepath.Join(dir, "agentops-state.json")
-	if err := os.WriteFile(outputPath, []byte(`{`), 0o644); err != nil {
+	blocker := filepath.Join(dir, "blocker")
+	if err := os.WriteFile(blocker, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	cfg = collectorcfg.Config{
@@ -194,7 +173,7 @@ func TestStartValidatesPolicyAndStore(t *testing.T) {
 		AgentOpsGroupID:     "group-a",
 		AgentOpsBrokers:     []string{"localhost:9092"},
 		AgentOpsRejectTopic: "group.core.agentops.rejects",
-		AgentOpsOutputPath:  outputPath,
+		AgentOpsOutputPath:  filepath.Join(blocker, "agentops.db"),
 	}
 	if err := Start(context.Background(), cfg); err == nil || !strings.Contains(err.Error(), "agentops store") {
 		t.Fatalf("expected store error, got %v", err)
@@ -203,13 +182,17 @@ func TestStartValidatesPolicyAndStore(t *testing.T) {
 
 func TestStartUsesDefaultClientFactoryAndBootstrapsStoredState(t *testing.T) {
 	dir := t.TempDir()
-	outputPath := filepath.Join(dir, "agentops-state.json")
-	initial := `{
-	  "generated_at":"2026-04-10T12:00:00Z",
-	  "flows":[{"id":"corr-1","first_seen":"2026-04-10T12:00:00Z","last_seen":"2026-04-10T12:00:00Z","message_count":1}],
-	  "messages":[{"id":"group.core.requests:0:1","topic":"group.core.requests","topic_family":"requests","partition":0,"offset":1,"timestamp":"2026-04-10T12:00:00Z"}]
-	}`
-	if err := os.WriteFile(outputPath, []byte(initial), 0o644); err != nil {
+	outputPath := filepath.Join(dir, "agentops-state.db")
+	fs, err := store.NewSqliteStore(outputPath, store.Snapshot{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := fs.Update(func(doc *store.Snapshot) {
+		doc.Flows = []store.Flow{{ID: "corr-1", FirstSeen: "2026-04-10T12:00:00Z", LastSeen: "2026-04-10T12:00:00Z", MessageCount: 1}}
+		doc.Messages = []store.Message{{ID: "group.core.requests:0:1", Topic: "group.core.requests", TopicFamily: "requests", Partition: 0, Offset: 1, Timestamp: "2026-04-10T12:00:00Z"}}
+		doc.FlowCount = 1
+		doc.MessageCount = 1
+	}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -264,23 +247,14 @@ func TestStartUsesDefaultClientFactoryAndBootstrapsStoredState(t *testing.T) {
 	}
 }
 
-func TestRunReturnsInitialStatePersistError(t *testing.T) {
-	dir := t.TempDir()
-	stateDir := filepath.Join(dir, "state")
-	statePath := filepath.Join(stateDir, "agentops-state.json")
-	fs, err := store.NewSqliteStore(statePath, store.Snapshot{
+func TestRunReturnsInitialStateStoreError(t *testing.T) {
+	fs, err := store.NewSqliteStore("", store.Snapshot{
 		Health: store.Health{RejectedByReason: map[string]int{}},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(stateDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.RemoveAll(stateDir); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(stateDir, []byte("x"), 0o644); err != nil {
+	if err := fs.Close(); err != nil {
 		t.Fatal(err)
 	}
 	svc := &Service{
@@ -296,16 +270,9 @@ func TestRunReturnsInitialStatePersistError(t *testing.T) {
 		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 			return &mockAgentOpsClient{}, nil
 		},
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	if err := svc.run(context.Background()); err == nil {
-		t.Fatal("expected initial persist failure")
+		t.Fatal("expected initial store update failure")
 	}
 }
 
@@ -314,13 +281,6 @@ func TestHandleRecordResponseAndTraceUpdateTaskAndTraceState(t *testing.T) {
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 
 	request := &kgo.Record{
@@ -433,13 +393,6 @@ func TestHandleRecordRejectsInvalidEnvelope(t *testing.T) {
 	svc := &Service{
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 
 	rec := &kgo.Record{
@@ -497,13 +450,6 @@ func TestHandleRecordAcceptsRawNonJSONContent(t *testing.T) {
 		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	rec := &kgo.Record{
 		Topic:     "group.core.responses",
@@ -537,13 +483,6 @@ func TestRunCountsMirrorFailureButCommitsRejectedRecord(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	mock := &mockAgentOpsClient{
 		polls: []kgo.Fetches{
@@ -656,13 +595,6 @@ func TestReplayCancellationMarksSessionCanceled(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	svc.clientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 		return &mockAgentOpsClient{
@@ -700,13 +632,6 @@ func TestStartReplayWithTopicsUsesScopedSubscription(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests", "group.core.responses"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	var gotTopics []string
 	svc.clientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
@@ -890,13 +815,6 @@ func TestRunProcessesRejectedRecordsAndPersistsHealth(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	mock := &mockAgentOpsClient{
 		polls: []kgo.Fetches{
@@ -964,13 +882,6 @@ func TestRunPersistsHealthCountsAndEffectiveTopics(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests", "group.core.responses"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	mock := &mockAgentOpsClient{
 		polls: []kgo.Fetches{
@@ -1005,59 +916,29 @@ func TestRunPersistsHealthCountsAndEffectiveTopics(t *testing.T) {
 	}
 }
 
-func TestRunReturnsPersistErrorAfterCommit(t *testing.T) {
-	dir := t.TempDir()
-	stateDir := filepath.Join(dir, "state")
-	statePath := filepath.Join(stateDir, "agentops-state.json")
-	fs, err := store.NewSqliteStore(statePath, store.Snapshot{
+func TestHandleRecordReturnsStoreErrorWhenDBClosed(t *testing.T) {
+	fs, err := store.NewSqliteStore("", store.Snapshot{
 		Health: store.Health{RejectedByReason: map[string]int{}},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := fs.Close(); err != nil {
+		t.Fatal(err)
+	}
 	svc := &Service{
-		cfg: collectorcfg.Config{
-			AgentOpsEnabled:     true,
-			AgentOpsGroupName:   "core",
-			AgentOpsGroupID:     "group-a",
-			AgentOpsClientID:    "client-a",
-			AgentOpsRejectTopic: "group.core.agentops.rejects",
-			KafkaPollTimeoutMS:  1,
-			UIMode:              "AGENTOPS",
-			Profile:             "agentops-default",
-		},
+		cfg:    collectorcfg.Config{AgentOpsGroupName: "core"},
 		policy: agentcfg.DefaultPolicy("core"),
-		topics: []string{"group.core.requests"},
 		file:   fs,
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
-		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
-			return &mockAgentOpsClient{
-				polls: []kgo.Fetches{fetchesWithRecords(&kgo.Record{
-					Topic:     "group.core.requests",
-					Partition: 0,
-					Offset:    1,
-					Value:     []byte(`{"type":"request","correlation_id":"corr-1","sender_id":"worker-a","payload":{"task_id":"task-1","description":"Investigate"}}`),
-				})},
-			}, nil
-		},
 	}
-	if err := os.MkdirAll(stateDir, 0o755); err != nil {
-		t.Fatal(err)
+	rec := &kgo.Record{
+		Topic:     "group.core.requests",
+		Partition: 0,
+		Offset:    1,
+		Value:     []byte(`{"type":"request","correlation_id":"corr-1","sender_id":"worker-a","payload":{"task_id":"task-1","description":"Investigate"}}`),
 	}
-	if err := os.RemoveAll(stateDir); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(stateDir, []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := svc.run(context.Background()); err == nil {
-		t.Fatal("expected persist error after processing")
+	if reason, ok := svc.handleRecord(rec); ok || reason != "store_update_failed" {
+		t.Fatalf("expected store_update_failed, got ok=%v reason=%q", ok, reason)
 	}
 }
 
@@ -1088,13 +969,6 @@ func TestRunHandlesFatalPollError(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 			return &mockAgentOpsClient{polls: []kgo.Fetches{fetchesWithErr(errors.New("poll failed"))}}, nil
 		},
@@ -1126,16 +1000,9 @@ func TestRunUsesDefaultClientFactoryWhenNil(t *testing.T) {
 			AgentOpsClientID:    "client-a",
 			AgentOpsRejectTopic: "group.core.agentops.rejects",
 		},
-		policy: agentcfg.DefaultPolicy("core"),
-		topics: []string{"group.core.requests"},
-		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
+		policy:        agentcfg.DefaultPolicy("core"),
+		topics:        []string{"group.core.requests"},
+		file:          mustSqliteStore(t),
 		clientFactory: nil,
 	}
 	if err := svc.run(context.Background()); err == nil || err.Error() != "default factory used" {
@@ -1162,13 +1029,6 @@ func TestPersistInitializesRejectedReasonMap(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   fs,
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	if err := svc.persist(); err != nil {
 		t.Fatal(err)
@@ -1191,13 +1051,6 @@ func TestRunReturnsCommitError(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 			return &mockAgentOpsClient{
 				polls: []kgo.Fetches{fetchesWithRecords(&kgo.Record{
@@ -1230,13 +1083,6 @@ func TestRunReplayFailureAndCompletion(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	svc.clientFactory = func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 		if strings.HasSuffix(clientID, "-replay") {
@@ -1286,13 +1132,6 @@ func TestReplayFlowEndToEndWithDedicatedGroup(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 			return &mockAgentOpsClient{
 				polls: []kgo.Fetches{
@@ -1343,13 +1182,6 @@ func TestRunReplayUsesNilFactoryFallbackAndFatalFetchError(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 	}
 	svc.runReplay(context.Background(), store.ReplaySession{ID: "session-1", GroupID: "group-replay"})
 	if !defaultFactoryCalled {
@@ -1377,13 +1209,6 @@ func TestRunReplayProcessedCap(t *testing.T) {
 		},
 		topics: []string{"group.core.requests"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 			records := make([]*kgo.Record, 0, 52)
 			for i := 0; i < 52; i++ {
@@ -1417,13 +1242,13 @@ func TestRunReplayProcessedCap(t *testing.T) {
 }
 
 func TestStartReplayReturnsUpdateError(t *testing.T) {
-	dir := t.TempDir()
-	stateDir := filepath.Join(dir, "state")
-	statePath := filepath.Join(stateDir, "agentops-state.json")
-	fs, err := store.NewSqliteStore(statePath, store.Snapshot{
+	fs, err := store.NewSqliteStore("", store.Snapshot{
 		Health: store.Health{RejectedByReason: map[string]int{}},
 	})
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := fs.Close(); err != nil {
 		t.Fatal(err)
 	}
 	svc := &Service{
@@ -1438,22 +1263,6 @@ func TestStartReplayReturnsUpdateError(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   fs,
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
-	}
-	if err := os.MkdirAll(stateDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.RemoveAll(stateDir); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(stateDir, []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
 	}
 	if _, err := svc.startReplay(context.Background()); err == nil {
 		t.Fatal("expected replay session update error")
@@ -1473,13 +1282,6 @@ func TestStartReplayWithoutPrefixAndGlobalReplay(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   mustSqliteStore(t),
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 			return &mockAgentOpsClient{polls: []kgo.Fetches{nil, nil, nil}}, nil
 		},
@@ -1520,13 +1322,6 @@ func TestStartReplayTrimsHistoryToTenSessions(t *testing.T) {
 		policy: agentcfg.DefaultPolicy("core"),
 		topics: []string{"group.core.requests"},
 		file:   fs,
-		internal: state{
-			flows:  map[string]*store.Flow{},
-			traces: map[string]*store.Trace{},
-			tasks:  map[string]*store.Task{},
-			msgs:   map[string]store.Message{},
-			topic:  map[string]*topicStat{},
-		},
 		clientFactory: func(cfg collectorcfg.Config, topics []string, groupID string, clientID string) (agentopsClient, error) {
 			return &mockAgentOpsClient{polls: []kgo.Fetches{nil, nil, nil}}, nil
 		},

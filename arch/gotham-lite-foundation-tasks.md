@@ -34,6 +34,8 @@ part of the product:
 The entity / edge / provenance graph that makes kafSIEM a link-analysis
 surface lives inside this repo as a new `internal/graph/` package. Two packs
 (drones, SCADA) live under `packs/` as constrained domain interfaces.
+Geospatial support is core, not pack-local: every pack can project entities,
+areas, tracks, and overlays onto the shared map surface.
 
 The product has three user-facing operating modes:
 
@@ -156,6 +158,10 @@ two named verticals, and mid-market ops ergonomics.
 14. **The three mode names are fixed early: `OSINT`, `Operations`,
     `Fusion`.** Pack design, UI navigation, docs, and API wording use those
     names consistently. We do not rename modes late in the build.
+15. **Geospatial is a first-class primitive across all modes and packs.**
+    Core owns geometry storage, map query primitives, and GeoJSON wire
+    format. Packs declare spatial types and views; they do not invent their
+    own map stack.
 
 ---
 
@@ -347,14 +353,14 @@ behind the same package-public surface.
 - [x] define `Store` interface in `internal/agentops/store/store.go`:
       `Apply(func(tx Tx) error) error`, `Snapshot(...) (Document, error)`,
       typed query methods (listed in W3)
-- [x] implement `SqliteStore` (new file `store/sqlite.go`) with prepared
+- [x] implement `SqliteStore` (new file `store/sqlite_store.go`) with prepared
       statements and transactional writes
 - [x] delete `store/file.go` and `store/types.go` JSON-only fields;
       rename `Document` → `Snapshot` to make intent clear
 - [x] port existing sorting (`store/file.go:86-92`) into SQL `ORDER BY` clauses
 - [x] unit tests: each write path (`handleRecord`, `mirrorReject`,
       `startReplay`, `finishReplay`) produces the expected rows
-- [ ] drop the in-memory maps from `runtime.go:66-72` and replace with typed
+- [x] drop the in-memory maps from `runtime.go:66-72` and replace with typed
       repository calls; `stateMu` becomes the DB tx boundary
 
 ### W1.3 Acceptance
@@ -424,6 +430,22 @@ CREATE TABLE provenance (
   produced_at   TEXT NOT NULL
 );
 CREATE INDEX idx_provenance_subject ON provenance(subject_kind, subject_id);
+
+CREATE TABLE entity_geometry (
+  entity_id      TEXT PRIMARY KEY REFERENCES entities(id) ON DELETE CASCADE,
+  geometry_type  TEXT NOT NULL,        -- point|line|polygon|multipolygon|bbox
+  geojson        TEXT NOT NULL,        -- RFC 7946 object
+  srid           INTEGER NOT NULL DEFAULT 4326,
+  min_lat        REAL,
+  min_lon        REAL,
+  max_lat        REAL,
+  max_lon        REAL,
+  z_min          REAL,
+  z_max          REAL,
+  observed_at    TEXT NOT NULL,
+  valid_to       TEXT
+);
+CREATE INDEX idx_entity_geometry_bbox ON entity_geometry(min_lat, min_lon, max_lat, max_lon);
 ```
 
 Tasks:
@@ -433,6 +455,11 @@ Tasks:
       `task:<uuid>`, `trace:<uuid>`, `topic:group.core.requests`,
       `correlation:<uuid>`); pack-declared types add to the prefix set
 - [x] indexes audited with `EXPLAIN QUERY PLAN` on realistic loads
+- [ ] add shared geometry storage for points, tracks, polygons, and bboxes;
+      RFC 7946 GeoJSON on the wire, WGS84 (`SRID 4326`) at rest
+- [ ] first-class core spatial types available to every pack:
+      `location`, `area`; packs may add `site`, `zone`, `track`, `contact`
+      etc. on top
 
 ### W2.2 Edge Writer Hooks (Core Types Only)
 
@@ -501,6 +528,13 @@ Tasks on `internal/graph/query.go`:
 - [ ] `Path(ctx, src, dst, maxDepth int, window TimeRange) ([]Edge, bool)`
 - [ ] `EntityProfile(ctx, entityID) (Profile)` returning counts by edge
       type, first/last seen, top neighbors by edge weight
+- [ ] `Geometry(ctx, entityID) (Geometry, error)`, `WithinBBox(ctx, bbox,
+      typeFilter, window) ([]Entity, []Geometry)`, `Intersects(ctx, entityID,
+      areaID, window) (bool, error)`, `Nearby(ctx, point, radiusMeters,
+      typeFilter, window) ([]Entity, []Geometry)`
+- [ ] bbox-prefiltered spatial search in SQLite using stored min/max bounds;
+      exact intersects / contains checks happen in Go on GeoJSON, not via
+      SpatiaLite
 - [ ] benchmarks for each on a 100k-edge synthetic DB; p99 < 100 ms for
       `depth=2`
 - [ ] table tests per query method against a fixture DB
@@ -536,9 +570,15 @@ analyst traffic and breaking-change protection on `/api/v1/` starts counting.
       — k-hop graph
 - [ ] `GET /api/v1/entities/{type}/{id}/provenance` — provenance chain for
       the subject
+- [ ] `GET /api/v1/entities/{type}/{id}/geometry` — GeoJSON geometry +
+      bbox metadata for the entity, if present
 - [ ] `GET /api/v1/entities/{type}/{id}/timeline?after=&limit=` — paginated
       events in which this entity participates
 - [ ] `GET /api/v1/graph/path?src=<entity_id>&dst=<entity_id>&max=3`
+- [ ] `GET /api/v1/map/features?bbox=<minLon,minLat,maxLon,maxLat>&types=...&window=...`
+      — pack-aware feature query for the shared map surface
+- [ ] `GET /api/v1/map/layers` — active basemap / overlay definitions from
+      core + packs
 - [ ] `GET /api/v1/flows`, `/api/v1/flows/{id}`,
       `/api/v1/flows/{id}/messages`, `/api/v1/flows/{id}/timeline`
 - [ ] `GET /api/v1/topic-health`, `/api/v1/health`, `/api/v1/replays`
@@ -584,6 +624,9 @@ analyst traffic and breaking-change protection on `/api/v1/` starts counting.
 - [ ] timestamps are RFC3339 UTC
 - [ ] entity IDs are opaque strings on the wire (`agent:alice`,
       `platform:auv-07`, `device:plc-12.bravo`); clients echo, never compose
+- [ ] spatial wire format is GeoJSON only; clients may render with
+      OpenStreetMap, OpenFreeMap, or self-hosted vector/raster tiles, but
+      the API does not emit provider-specific map objects
 
 ---
 
@@ -609,6 +652,12 @@ that hit the W4 endpoints through the generated typed client.
 - [ ] entity-type renderers come from active packs (W6 / W7); a generic
       fallback renderer ships in core for entity types the active packs do
       not provide a view for
+- [ ] core map surface ships beside timeline / graph / table views using the
+      existing Leaflet path first; packs configure map layers, styling, and
+      entity popovers rather than owning bespoke map code
+- [ ] base-map defaults use open/free sources first (`OpenStreetMap`,
+      `OpenFreeMap`, self-hosted tiles later if needed); overlays are served
+      as GeoJSON from the API
 
 ---
 
@@ -629,6 +678,8 @@ packs/
       <id>.yaml            subgraph patterns, severity, suggested actions
     views/
       <entity_type>.yaml   field order, hide/show, format hints
+    maps/
+      layers.yaml          basemap defaults, overlay defs, popup templates
     queries/
       <id>.yaml            saved query templates with parameters
     reports/
@@ -642,7 +693,7 @@ packs/
 - [ ] `internal/packs/loader.go` reads `packs/*/pack.yaml` at startup,
       validates schema, registers entity types and edge types into the
       graph type whitelist, registers detectors, registers view templates,
-      registers query templates
+      registers map layer definitions, registers query templates
 - [ ] loader rejects on collision (two packs declaring the same entity
       type); collisions are a build-time error, never runtime
 - [ ] loader is order-stable: pack file paths are sorted lexicographically
@@ -673,11 +724,19 @@ edge_types:
     dst_types: [subsystem]
     temporal: true
   - ...
+map_layers:
+  - id: live-platforms
+    geometry_source: entity_geometry
+    entity_types: [platform]
+    render: point
 ```
 
 - [ ] `pack.yaml` schema versioned; version field determines parser path
 - [ ] entity_types and edge_types declarations validated against the graph
       capability matrix at load time
+- [ ] map layer declarations validated against the core geometry capability
+      matrix at load time; packs may style / label / filter only, not change
+      the spatial storage contract
 
 ### W6.4 Detector File Schema
 

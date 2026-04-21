@@ -2,111 +2,59 @@ package store
 
 import (
 	"database/sql"
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 )
 
-func TestNewFileStoreImportsLegacyJSONSnapshot(t *testing.T) {
+func TestNewSqliteStorePersistsAndReloadsSnapshot(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "agentops-state.json")
-	raw := `{
-	  "generated_at":"2026-04-20T10:00:00Z",
-	  "enabled":true,
-	  "ui_mode":"AGENTOPS",
-	  "profile":"agentops-default",
-	  "group_name":"core",
-	  "topics":["group.core.requests"],
-	  "flow_count":1,
-	  "trace_count":0,
-	  "task_count":0,
-	  "message_count":1,
-	  "health":{"connected":true,"effective_topics":["group.core.requests"],"group_id":"group-a","accepted_count":1,"rejected_count":0,"mirrored_count":0,"mirror_failed_count":0,"rejected_by_reason":{},"topic_health":[]},
-	  "replay_sessions":[],
-	  "flows":[{"id":"corr-1","first_seen":"2026-04-20T10:00:00Z","last_seen":"2026-04-20T10:00:00Z","message_count":1,"topics":["group.core.requests"],"senders":["worker-a"],"trace_ids":[],"task_ids":[]}],
-	  "traces":[],
-	  "tasks":[],
-	  "messages":[{"id":"group.core.requests:0:1","topic":"group.core.requests","topic_family":"requests","partition":0,"offset":1,"timestamp":"2026-04-20T10:00:00Z","sender_id":"worker-a","correlation_id":"corr-1"}]
-	}`
-	if err := os.WriteFile(path, []byte(raw), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	fs, err := NewSqliteStore(path, Snapshot{})
-	if err != nil {
-		t.Fatalf("NewSqliteStore() error = %v", err)
-	}
-	doc := fs.Snapshot()
-	if doc.FlowCount != 1 || len(doc.Messages) != 1 || doc.Flows[0].ID != "corr-1" {
-		t.Fatalf("unexpected imported snapshot %#v", doc)
-	}
-	if _, err := os.Stat(filepath.Join(dir, "agentops-state.db")); err != nil {
-		t.Fatalf("expected sqlite db to exist: %v", err)
-	}
-}
-
-func TestUpdatePersistsSQLiteAndJSONShadow(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "agentops-state.json")
+	path := filepath.Join(dir, "agentops-state.db")
 
 	fs, err := NewSqliteStore(path, Snapshot{
-		Health: Health{RejectedByReason: map[string]int{}},
+		Enabled:   true,
+		UIMode:    "AGENTOPS",
+		Profile:   "agentops-default",
+		GroupName: "core",
+		Topics:    []string{"group.core.requests"},
+		Health:    Health{RejectedByReason: map[string]int{}},
 	})
 	if err != nil {
 		t.Fatalf("NewSqliteStore() error = %v", err)
 	}
 
 	err = fs.Update(func(doc *Snapshot) {
-		doc.Enabled = true
-		doc.UIMode = "AGENTOPS"
-		doc.Profile = "agentops-default"
-		doc.GroupName = "core"
-		doc.Topics = []string{"group.core.requests"}
-		doc.Flows = []Flow{{ID: "corr-1", FirstSeen: "2026-04-20T10:00:00Z", LastSeen: "2026-04-20T10:00:00Z", MessageCount: 1}}
+		doc.GeneratedAt = "2026-04-20T10:00:00Z"
+		doc.Flows = []Flow{{ID: "corr-1", FirstSeen: "2026-04-20T10:00:00Z", LastSeen: "2026-04-20T10:00:01Z", MessageCount: 1}}
+		doc.Messages = []Message{{ID: "msg-1", Topic: "group.core.requests", TopicFamily: "requests", Timestamp: "2026-04-20T10:00:00Z"}}
 		doc.FlowCount = 1
+		doc.MessageCount = 1
 		doc.Health.Connected = true
 		doc.Health.GroupID = "group-a"
+		doc.Health.EffectiveTopics = []string{"group.core.requests"}
 		doc.Health.RejectedByReason = map[string]int{}
 	})
 	if err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
 
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("expected JSON shadow export: %v", err)
-	}
-	reopened, err := NewSqliteStore(path, Snapshot{
-		Enabled:   true,
-		UIMode:    "AGENTOPS",
-		Profile:   "agentops-default",
-		GroupName: "core",
-		Topics:    []string{"group.core.requests"},
-	})
+	reopened, err := NewSqliteStore(path, Snapshot{})
 	if err != nil {
-		t.Fatalf("reopen store error = %v", err)
+		t.Fatalf("reopen error = %v", err)
 	}
 	doc := reopened.Snapshot()
-	if len(doc.Flows) != 1 || doc.Flows[0].ID != "corr-1" {
-		t.Fatalf("unexpected reopened snapshot %#v", doc)
+	if doc.FlowCount != 1 || len(doc.Messages) != 1 || doc.Flows[0].ID != "corr-1" {
+		t.Fatalf("unexpected persisted snapshot %#v", doc)
 	}
-}
-
-func TestNewFileStoreReturnsLegacyJSONErrorWhenDBEmpty(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "agentops-state.json")
-	if err := os.WriteFile(path, []byte(`{`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := NewSqliteStore(path, Snapshot{}); err == nil {
-		t.Fatal("expected invalid legacy json to fail when bootstrapping empty db")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("expected sqlite db to exist: %v", err)
 	}
 }
 
 func TestSqliteStoreRoundTripFullSnapshot(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "agentops-state.json")
+	path := filepath.Join(dir, "agentops-state.db")
 	start := time.Now().UTC().Add(-2 * time.Hour).Format(time.RFC3339)
 	end := time.Now().UTC().Add(-10 * time.Minute).Format(time.RFC3339)
 
@@ -133,14 +81,11 @@ func TestSqliteStoreRoundTripFullSnapshot(t *testing.T) {
 			AcceptedCount:         4,
 			RejectedCount:         1,
 			MirroredCount:         1,
-			MirrorFailedCount:     0,
 			RejectedByReason:      map[string]int{"invalid_envelope": 1},
 			LastReject:            "invalid_envelope",
-			LastMirrorError:       "",
 			LastPollAt:            time.Now().UTC().Format(time.RFC3339),
 			ReplayStatus:          "completed",
 			ReplayActive:          0,
-			ReplayLastError:       "",
 			ReplayLastFinishedAt:  time.Now().UTC().Format(time.RFC3339),
 			ReplayLastRecordCount: 25,
 			TopicHealth: []TopicHealth{
@@ -149,7 +94,7 @@ func TestSqliteStoreRoundTripFullSnapshot(t *testing.T) {
 			},
 		},
 		ReplaySessions: []ReplaySession{
-			{ID: "replay-1", GroupID: "group-replay", Status: "completed", StartedAt: start, FinishedAt: end, MessageCount: 25, Topics: []string{"group.core.requests"}, LastError: ""},
+			{ID: "replay-1", GroupID: "group-replay", Status: "completed", StartedAt: start, FinishedAt: end, MessageCount: 25, Topics: []string{"group.core.requests"}},
 		},
 		Flows: []Flow{
 			{ID: "corr-1", TopicCount: 2, SenderCount: 2, Topics: []string{"group.core.requests", "group.core.responses"}, Senders: []string{"worker-a", "worker-b"}, TraceIDs: []string{"trace-1"}, TaskIDs: []string{"task-1"}, FirstSeen: start, LastSeen: end, LatestStatus: "completed", MessageCount: 2, LatestPreview: "Investigate outage"},
@@ -169,29 +114,16 @@ func TestSqliteStoreRoundTripFullSnapshot(t *testing.T) {
 	if err := fs.Update(func(doc *Snapshot) { *doc = want }); err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
-
 	got := fs.Snapshot()
-	if len(got.Flows) != 1 || got.Flows[0].ID != "corr-1" {
-		t.Fatalf("unexpected round-tripped flows %#v", got.Flows)
-	}
-	if len(got.Traces) != 1 || len(got.Traces[0].Agents) != 2 || len(got.Traces[0].SpanTypes) != 2 {
-		t.Fatalf("unexpected round-tripped traces %#v", got.Traces)
-	}
-	if len(got.Tasks) != 1 || got.Tasks[0].RequesterID != "worker-a" {
-		t.Fatalf("unexpected round-tripped tasks %#v", got.Tasks)
-	}
-	if len(got.ReplaySessions) != 1 || len(got.ReplaySessions[0].Topics) != 1 {
-		t.Fatalf("unexpected round-tripped replay sessions %#v", got.ReplaySessions)
+	if got.Health.GroupID != "group-a" || len(got.Traces) != 1 || len(got.ReplaySessions) != 1 {
+		t.Fatalf("unexpected round-tripped snapshot %#v", got)
 	}
 	if len(got.Messages) != 2 || got.Messages[1].LFS == nil || got.Messages[1].LFS.Path != "s3://ops/req/1" {
-		t.Fatalf("unexpected round-tripped messages %#v", got.Messages)
-	}
-	if got.Health.GroupID != "group-a" || len(got.Health.RejectedByReason) != 1 || len(got.Health.TopicHealth) != 2 {
-		t.Fatalf("unexpected round-tripped health %#v", got.Health)
+		t.Fatalf("unexpected message round-trip %#v", got.Messages)
 	}
 }
 
-func TestStoreHelpers(t *testing.T) {
+func TestSqliteStoreHelpers(t *testing.T) {
 	if got := sqlitePath(""); got != "" {
 		t.Fatalf("sqlitePath empty = %q", got)
 	}
@@ -228,12 +160,9 @@ func TestStoreHelpers(t *testing.T) {
 	if got := storeDensityBucket(60); got != "high" {
 		t.Fatalf("storeDensityBucket(60) = %q", got)
 	}
-	if err := exportSnapshot("", Snapshot{}); err != nil {
-		t.Fatalf("exportSnapshot empty path error = %v", err)
-	}
 }
 
-func TestReadDocumentHandlesQueryErrors(t *testing.T) {
+func TestReadDocumentHandlesClosedDB(t *testing.T) {
 	fs, err := NewSqliteStore("", Snapshot{})
 	if err != nil {
 		t.Fatalf("NewSqliteStore() error = %v", err)
@@ -255,7 +184,7 @@ func TestNewSqliteStoreFailsWhenCreateDirFails(t *testing.T) {
 	if err := os.WriteFile(blocker, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, err := NewSqliteStore(filepath.Join(blocker, "child.json"), Snapshot{})
+	_, err := NewSqliteStore(filepath.Join(blocker, "child.db"), Snapshot{})
 	if err == nil {
 		t.Fatal("expected create dir failure")
 	}
@@ -276,12 +205,6 @@ func TestStoreReloadPreservesInitialShellWhenDatabaseIsEmpty(t *testing.T) {
 	doc := fs.Snapshot()
 	if !doc.Enabled || doc.UIMode != "AGENTOPS" || doc.GroupName != "core" {
 		t.Fatalf("unexpected preserved shell %#v", doc)
-	}
-}
-
-func TestLoadLegacySnapshotMissingFile(t *testing.T) {
-	if _, ok, err := loadLegacySnapshot(filepath.Join(t.TempDir(), "missing.json")); err != nil || ok {
-		t.Fatalf("expected missing legacy snapshot to be ignored, ok=%v err=%v", ok, err)
 	}
 }
 
@@ -325,24 +248,5 @@ func TestReadMessagesErrorPropagation(t *testing.T) {
 	defer db.Close()
 	if _, err := readMessages(db); err == nil {
 		t.Fatal("expected readMessages failure without schema")
-	}
-}
-
-func TestExportSnapshotJSONErrorPropagation(t *testing.T) {
-	if err := exportSnapshot(filepath.Join(t.TempDir(), "out.json"), Snapshot{
-		Health: Health{RejectedByReason: map[string]int{}},
-	}); err != nil {
-		t.Fatalf("unexpected export error %v", err)
-	}
-}
-
-func TestLoadLegacySnapshotPropagatesReadError(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "legacy.json")
-	if err := os.Mkdir(path, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if _, _, err := loadLegacySnapshot(path); err == nil || errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("expected read error for directory path, got %v", err)
 	}
 }

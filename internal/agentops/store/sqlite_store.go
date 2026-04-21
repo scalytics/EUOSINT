@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -18,15 +17,13 @@ import (
 	graphschema "github.com/scalytics/kafSIEM/internal/graph/schema"
 )
 
-type FileStore struct {
-	path   string
-	dbPath string
-	db     *sql.DB
-	mu     sync.Mutex
-	doc    Snapshot
+type SqliteStore struct {
+	db  *sql.DB
+	mu  sync.Mutex
+	doc Snapshot
 }
 
-func NewFileStore(path string, initial Snapshot) (*FileStore, error) {
+func NewSqliteStore(path string, initial Snapshot) (*SqliteStore, error) {
 	dbPath := sqlitePath(path)
 	db, err := schema.Open(dbPath)
 	if err != nil {
@@ -37,29 +34,15 @@ func NewFileStore(path string, initial Snapshot) (*FileStore, error) {
 		return nil, err
 	}
 
-	fs := &FileStore{
-		path:   path,
-		dbPath: dbPath,
-		db:     db,
-		doc:    cloneDocument(initial),
+	fs := &SqliteStore{
+		db:  db,
+		doc: cloneDocument(initial),
 	}
 
 	empty, err := fs.isEmpty()
 	if err != nil {
 		_ = db.Close()
 		return nil, err
-	}
-	if empty && path != "" {
-		if doc, ok, err := loadLegacySnapshot(path); err != nil {
-			_ = db.Close()
-			return nil, err
-		} else if ok {
-			if err := fs.replaceWithDocument(doc); err != nil {
-				_ = db.Close()
-				return nil, err
-			}
-			empty = false
-		}
 	}
 	if empty && hasDocumentData(initial) {
 		if err := fs.replaceWithDocument(cloneDocument(initial)); err != nil {
@@ -75,13 +58,13 @@ func NewFileStore(path string, initial Snapshot) (*FileStore, error) {
 	return fs, nil
 }
 
-func (s *FileStore) Snapshot() Snapshot {
+func (s *SqliteStore) Snapshot() Snapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return cloneDocument(s.doc)
 }
 
-func (s *FileStore) Update(apply func(*Snapshot)) error {
+func (s *SqliteStore) Update(apply func(*Snapshot)) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -96,7 +79,7 @@ func (s *FileStore) Update(apply func(*Snapshot)) error {
 	return nil
 }
 
-func (s *FileStore) Apply(apply func(*sql.Tx) error) error {
+func (s *SqliteStore) Apply(apply func(*sql.Tx) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -118,7 +101,11 @@ func (s *FileStore) Apply(apply func(*sql.Tx) error) error {
 	return s.reload()
 }
 
-func (s *FileStore) reload() error {
+func (s *SqliteStore) Close() error {
+	return s.db.Close()
+}
+
+func (s *SqliteStore) reload() error {
 	doc, err := s.readDocument()
 	if err != nil {
 		return err
@@ -140,7 +127,7 @@ func (s *FileStore) reload() error {
 	return nil
 }
 
-func (s *FileStore) replaceWithDocument(doc Snapshot) error {
+func (s *SqliteStore) replaceWithDocument(doc Snapshot) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -194,13 +181,10 @@ func (s *FileStore) replaceWithDocument(doc Snapshot) error {
 	if err = tx.Commit(); err != nil {
 		return err
 	}
-	if err = exportSnapshot(s.path, doc); err != nil {
-		return err
-	}
 	return nil
 }
 
-func (s *FileStore) isEmpty() (bool, error) {
+func (s *SqliteStore) isEmpty() (bool, error) {
 	var count int
 	err := s.db.QueryRow(`SELECT COUNT(*) FROM (
 		SELECT id FROM flows
@@ -216,7 +200,7 @@ func (s *FileStore) isEmpty() (bool, error) {
 	return count == 0, nil
 }
 
-func (s *FileStore) readDocument() (Snapshot, error) {
+func (s *SqliteStore) readDocument() (Snapshot, error) {
 	doc := Snapshot{
 		Health: Health{
 			RejectedByReason: map[string]int{},
@@ -249,39 +233,6 @@ func (s *FileStore) readDocument() (Snapshot, error) {
 	doc.MessageCount = len(doc.Messages)
 	doc.GeneratedAt = firstNonEmpty(doc.Health.LastPollAt, doc.Health.ReplayLastFinishedAt)
 	return doc, nil
-}
-
-func loadLegacySnapshot(path string) (Snapshot, bool, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return Snapshot{}, false, nil
-		}
-		return Snapshot{}, false, err
-	}
-	if len(raw) == 0 {
-		return Snapshot{}, false, nil
-	}
-	var doc Snapshot
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		return Snapshot{}, false, err
-	}
-	return doc, doc.GeneratedAt != "" || len(doc.Messages) > 0 || len(doc.Flows) > 0, nil
-}
-
-func exportSnapshot(path string, doc Snapshot) error {
-	if strings.TrimSpace(path) == "" {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
-	data, err := json.MarshalIndent(doc, "", "  ")
-	if err != nil {
-		return err
-	}
-	data = append(data, '\n')
-	return os.WriteFile(path, data, 0o644)
 }
 
 func hasDocumentData(doc Snapshot) bool {
