@@ -204,7 +204,7 @@ test("boots the real app into the AgentOps dashboard with demo-backed mocked Kaf
 
   render(<App />);
 
-  expect(await screen.findByText("Flow Desk")).toBeTruthy();
+  expect(await screen.findByText("Operations Desk")).toBeTruthy();
   expect(await screen.findByText("agent-runtime-core")).toBeTruthy();
   expect(await screen.findByText("Investigation Workspace")).toBeTruthy();
   expect(await screen.findByText("s3://agentops/exports/f5-assets-20260416.ndjson")).toBeTruthy();

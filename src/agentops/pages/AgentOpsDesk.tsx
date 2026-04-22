@@ -18,7 +18,7 @@ interface Props {
   mode: AgentOpsMode;
 }
 
-export function AgentOpsDesk({ state, mode }: Props) {
+export function LegacyAgentOpsDesk({ state, mode }: Props) {
   const modeName = displayModeName(mode);
   const operator = useAgentOpsOperator(mode !== "OSINT");
   const { alerts } = useAlerts();

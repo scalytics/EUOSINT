@@ -161,6 +161,8 @@ func (s *Server) routes() http.Handler {
 		r.Get("/flows/{id}", s.handleFlow)
 		r.Get("/flows/{id}/messages", s.handleFlowMessages)
 		r.Get("/flows/{id}/timeline", s.handleFlowMessages)
+		r.Get("/flows/{id}/tasks", s.handleFlowTasks)
+		r.Get("/flows/{id}/traces", s.handleFlowTraces)
 		r.Get("/topic-health", s.handleTopicHealth)
 		r.Get("/health", s.handleHealth)
 		r.Get("/replays", s.handleReplays)
@@ -408,6 +410,24 @@ func (s *Server) handleFlowMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeList(w, http.StatusOK, items, string(next))
+}
+
+func (s *Server) handleFlowTasks(w http.ResponseWriter, r *http.Request) {
+	items, err := s.store.ListTasksForFlow(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		s.writeSQLError(w, r, err)
+		return
+	}
+	writeList(w, http.StatusOK, items, "")
+}
+
+func (s *Server) handleFlowTraces(w http.ResponseWriter, r *http.Request) {
+	items, err := s.store.ListTracesForFlow(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		s.writeSQLError(w, r, err)
+		return
+	}
+	writeList(w, http.StatusOK, items, "")
 }
 
 func (s *Server) handleTopicHealth(w http.ResponseWriter, r *http.Request) {

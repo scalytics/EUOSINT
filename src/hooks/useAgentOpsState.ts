@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { agentOpsStateURL } from "@/agentops/lib/demo";
+import { agentOpsStateURL, isAgentOpsDemo } from "@/agentops/lib/demo";
 import { loadPersistedShell, normalizeState, persistShell } from "@/agentops/lib/state";
 import type { AgentOpsState } from "@/agentops/types";
 
@@ -11,9 +11,17 @@ function fallbackState(): AgentOpsState {
 
 export function useAgentOpsState() {
   const [state, setState] = useState<AgentOpsState>(() => fallbackState());
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => isAgentOpsDemo());
 
   useEffect(() => {
+    if (!isAgentOpsDemo()) {
+      const shell = fallbackState();
+      persistShell(shell.ui_mode, shell.profile);
+      setState(shell);
+      setIsLoading(false);
+      return undefined;
+    }
+
     let cancelled = false;
 
     async function load() {

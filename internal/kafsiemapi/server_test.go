@@ -130,6 +130,22 @@ func TestServerRoutes(t *testing.T) {
 		}
 	})
 
+	t.Run("flow-tasks", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/flows/corr-1/tasks", nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("flow tasks code=%d body=%s", rec.Code, rec.Body.String())
+		}
+	})
+
+	t.Run("flow-traces", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/flows/corr-1/traces", nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("flow traces code=%d body=%s", rec.Code, rec.Body.String())
+		}
+	})
+
 	t.Run("ontology", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/ontology/types", nil))

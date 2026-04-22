@@ -19,7 +19,9 @@ import type {
   ReplayRequest,
   ReplaySession,
   SearchResponse,
+  Task,
   TopicHealth,
+  Trace,
 } from "./types";
 
 export class APIError extends Error {
@@ -103,6 +105,14 @@ export class AgentOpsApiClient {
 
   listFlowMessages(id: string, params: { after?: Cursor; limit?: number } = {}, options?: RequestOptions): Promise<ListResponse<Message>> {
     return requestJSON<ListResponse<Message>>(this.baseUrl + "/flows/" + encodeURIComponent(id) + "/messages" + buildQuery({ after: params.after ?? undefined, limit: params.limit }), { signal: options?.signal });
+  }
+
+  listFlowTasks(id: string, options?: RequestOptions): Promise<ListResponse<Task>> {
+    return requestJSON<ListResponse<Task>>(this.baseUrl + "/flows/" + encodeURIComponent(id) + "/tasks", { signal: options?.signal });
+  }
+
+  listFlowTraces(id: string, options?: RequestOptions): Promise<ListResponse<Trace>> {
+    return requestJSON<ListResponse<Trace>>(this.baseUrl + "/flows/" + encodeURIComponent(id) + "/traces", { signal: options?.signal });
   }
 
   listFlowTimeline(id: string, params: { after?: Cursor; limit?: number } = {}, options?: RequestOptions): Promise<ListResponse<Message>> {

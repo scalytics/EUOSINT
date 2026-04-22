@@ -276,6 +276,38 @@ paths:
               schema: { $ref: '#/components/schemas/ListMessageResponse' }
         default:
           $ref: '#/components/responses/Problem'
+  /flows/{id}/tasks:
+    get:
+      operationId: listFlowTasks
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Flow tasks
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListTaskResponse' }
+        default:
+          $ref: '#/components/responses/Problem'
+  /flows/{id}/traces:
+    get:
+      operationId: listFlowTraces
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Flow traces
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListTraceResponse' }
+        default:
+          $ref: '#/components/responses/Problem'
   /flows/{id}/timeline:
     get:
       operationId: listFlowTimeline
@@ -654,6 +686,18 @@ components:
       properties:
         items: { type: array, items: { $ref: '#/components/schemas/Message' } }
         next: { type: [string, 'null'] }
+    ListTaskResponse:
+      type: object
+      required: [items, next]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Task' } }
+        next: { type: [string, 'null'] }
+    ListTraceResponse:
+      type: object
+      required: [items, next]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Trace' } }
+        next: { type: [string, 'null'] }
     ListReplayResponse:
       type: object
       required: [items, next]
@@ -1023,7 +1067,9 @@ import type {
   ReplayRequest,
   ReplaySession,
   SearchResponse,
+  Task,
   TopicHealth,
+  Trace,
 } from "./types";
 
 export class APIError extends Error {
@@ -1107,6 +1153,14 @@ export class AgentOpsApiClient {
 
   listFlowMessages(id: string, params: { after?: Cursor; limit?: number } = {}, options?: RequestOptions): Promise<ListResponse<Message>> {
     return requestJSON<ListResponse<Message>>(this.baseUrl + "/flows/" + encodeURIComponent(id) + "/messages" + buildQuery({ after: params.after ?? undefined, limit: params.limit }), { signal: options?.signal });
+  }
+
+  listFlowTasks(id: string, options?: RequestOptions): Promise<ListResponse<Task>> {
+    return requestJSON<ListResponse<Task>>(this.baseUrl + "/flows/" + encodeURIComponent(id) + "/tasks", { signal: options?.signal });
+  }
+
+  listFlowTraces(id: string, options?: RequestOptions): Promise<ListResponse<Trace>> {
+    return requestJSON<ListResponse<Trace>>(this.baseUrl + "/flows/" + encodeURIComponent(id) + "/traces", { signal: options?.signal });
   }
 
   listFlowTimeline(id: string, params: { after?: Cursor; limit?: number } = {}, options?: RequestOptions): Promise<ListResponse<Message>> {
