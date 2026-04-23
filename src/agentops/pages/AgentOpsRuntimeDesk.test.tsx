@@ -148,3 +148,57 @@ test("renders a drones pack entity profile inside the runtime desk", () => {
   expect(screen.getByText("mission:sea-trial-12")).toBeTruthy();
   expect(screen.getAllByText("platform:auv-7").length).toBeGreaterThan(0);
 });
+
+test("renders a scada pack entity profile inside the runtime desk", () => {
+  window.history.pushState({}, "", "/?view=entity&type=device&id=safety-plc-1");
+  mockedHooks.useOntologyPacks.mockReturnValue({
+    packs: [{
+      name: "scada",
+      version: "0.1.0",
+      views: [{
+        id: "device",
+        entity_type: "device",
+        title: "Device",
+        fields: [
+          { id: "asset_id", label: "Asset ID" },
+          { id: "vendor", label: "Vendor" },
+          { id: "firmware_version", label: "Firmware" },
+          { id: "zone", label: "Zone" },
+        ],
+        source: "pack/scada",
+      }],
+    }],
+  });
+  mockedHooks.useEntityProfile.mockReturnValue({
+    profile: {
+      entity: {
+        id: "device:safety-plc-1",
+        type: "device",
+        canonical_id: "safety-plc-1",
+        display_name: "Safety PLC 1",
+        first_seen: "2026-04-10T12:00:00Z",
+        last_seen: "2026-04-10T12:00:01Z",
+        attrs: {
+          asset_id: "PLC-001",
+          vendor: "Triconex",
+          firmware_version: "fw-live-2",
+          zone: "L3A",
+        },
+      },
+      first_seen: "2026-04-10T12:00:00Z",
+      last_seen: "2026-04-10T12:00:01Z",
+      edge_counts: { in: 1 },
+      top_neighbors: [{ entity_id: "zone:l3a", entity_type: "zone", weight: 1 }],
+    },
+  });
+
+  render(<AgentOpsRuntimeDesk mode="AGENTOPS" />);
+
+  expect(screen.getByText("scada pack")).toBeTruthy();
+  expect(screen.getByText("Safety PLC 1")).toBeTruthy();
+  expect(screen.getByText("Asset ID")).toBeTruthy();
+  expect(screen.getByText("PLC-001")).toBeTruthy();
+  expect(screen.getByText("Firmware")).toBeTruthy();
+  expect(screen.getByText("fw-live-2")).toBeTruthy();
+  expect(screen.getByText("zone:l3a")).toBeTruthy();
+});

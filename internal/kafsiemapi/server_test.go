@@ -243,6 +243,21 @@ func TestServerLoadsBundledPackOntologyAndPackEntities(t *testing.T) {
 		if !strings.Contains(rec.Body.String(), `"source":"pack/drones"`) || !strings.Contains(rec.Body.String(), `"name":"platform"`) {
 			t.Fatalf("expected drones ontology type in %s", rec.Body.String())
 		}
+		if !strings.Contains(rec.Body.String(), `"source":"pack/scada"`) || !strings.Contains(rec.Body.String(), `"name":"plant"`) {
+			t.Fatalf("expected scada ontology type in %s", rec.Body.String())
+		}
+	})
+
+	t.Run("ontology-packs-include-both-bundled-packs", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/ontology/packs", nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("ontology packs code=%d body=%s", rec.Code, rec.Body.String())
+		}
+		body := rec.Body.String()
+		if !strings.Contains(body, `"name":"drones"`) || !strings.Contains(body, `"name":"scada"`) {
+			t.Fatalf("expected both bundled packs in %s", body)
+		}
 	})
 
 	t.Run("pack-entity-profile", func(t *testing.T) {
@@ -253,6 +268,17 @@ func TestServerLoadsBundledPackOntologyAndPackEntities(t *testing.T) {
 		}
 		if !strings.Contains(rec.Body.String(), `"display_name":"AUV-7"`) || !strings.Contains(rec.Body.String(), `"autonomy_version":"7.4.2"`) {
 			t.Fatalf("expected pack entity attrs in %s", rec.Body.String())
+		}
+	})
+
+	t.Run("scada-pack-entity-profile", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entities/device/safety-plc-1", nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("device entity code=%d body=%s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), `"display_name":"Safety PLC 1"`) || !strings.Contains(rec.Body.String(), `"firmware_version":"fw-live-2"`) {
+			t.Fatalf("expected scada pack entity attrs in %s", rec.Body.String())
 		}
 	})
 }
@@ -329,6 +355,9 @@ func seedAPIStore(t *testing.T, path string) {
 		{ID: "area:ao-1", Type: graph.CoreTypeArea, CanonicalID: "ao-1", FirstSeen: "2026-04-20T09:20:00Z", LastSeen: "2026-04-20T10:00:00Z"},
 		{ID: "platform:auv-7", Type: "platform", CanonicalID: "auv-7", DisplayName: "AUV-7", FirstSeen: "2026-04-20T09:00:00Z", LastSeen: "2026-04-20T10:00:00Z", Attrs: map[string]any{"serial": "SN-007", "callsign": "TRITON-7", "readiness": "Green", "autonomy_version": "7.4.2"}},
 		{ID: "mission:sea-trial-12", Type: "mission", CanonicalID: "sea-trial-12", DisplayName: "Sea Trial 12", FirstSeen: "2026-04-20T09:00:00Z", LastSeen: "2026-04-20T10:00:00Z", Attrs: map[string]any{"mission_code": "ST-12", "status": "ready"}},
+		{ID: "plant:plant-a", Type: "plant", CanonicalID: "plant-a", DisplayName: "Plant A", FirstSeen: "2026-04-20T09:00:00Z", LastSeen: "2026-04-20T10:00:00Z", Attrs: map[string]any{"site_name": "Marsa Plant", "criticality": "high"}},
+		{ID: "zone:l3a", Type: "zone", CanonicalID: "l3a", DisplayName: "Level 3A", FirstSeen: "2026-04-20T09:00:00Z", LastSeen: "2026-04-20T10:00:00Z", Attrs: map[string]any{"purdue_level": "L3", "plant_id": "plant-a"}},
+		{ID: "device:safety-plc-1", Type: "device", CanonicalID: "safety-plc-1", DisplayName: "Safety PLC 1", FirstSeen: "2026-04-20T09:00:00Z", LastSeen: "2026-04-20T10:00:00Z", Attrs: map[string]any{"asset_id": "PLC-001", "vendor": "Triconex", "firmware_version": "fw-live-2", "zone": "L3A"}},
 	} {
 		if err := graph.UpsertEntity(tx, entity); err != nil {
 			t.Fatal(err)
@@ -340,6 +369,8 @@ func seedAPIStore(t *testing.T, path string) {
 		{SrcID: "task:t-1", DstID: "location:pt-1", Type: "observed_at", ValidFrom: "2026-04-20T09:20:00Z", EvidenceMsg: "msg-1"},
 		{SrcID: "location:pt-1", DstID: "area:ao-1", Type: "in_area", ValidFrom: "2026-04-20T09:25:00Z", EvidenceMsg: "msg-1"},
 		{SrcID: "mission:sea-trial-12", DstID: "platform:auv-7", Type: "assigned_to", ValidFrom: "2026-04-20T09:30:00Z", EvidenceMsg: "msg-1"},
+		{SrcID: "device:safety-plc-1", DstID: "zone:l3a", Type: "in", ValidFrom: "2026-04-20T09:35:00Z", EvidenceMsg: "msg-1"},
+		{SrcID: "zone:l3a", DstID: "plant:plant-a", Type: "in", ValidFrom: "2026-04-20T09:36:00Z", EvidenceMsg: "msg-1"},
 	} {
 		if _, _, err := graph.AppendEdge(tx, edge); err != nil {
 			t.Fatal(err)
