@@ -10,7 +10,7 @@ Use an immutable image plus mounted config and data volumes:
   - `agentops_policy.yaml`
   - optional UI policy files
 - `/data`
-  - `agentops-state.json`
+  - `agentops.db`
   - replay session metadata
   - effective runtime snapshot artifacts
 
@@ -41,7 +41,7 @@ npm run fetch:alerts:watch
 npm run dev
 ```
 
-In that mode, the desktop app reads generated runtime JSON such as `alerts.json` and `agentops-state.json`.
+In that mode, the desktop app reads generated runtime JSON such as `alerts.json`, while the analyst API serves AgentOps state from `agentops.db`.
 
 ## Runtime Surface
 
@@ -62,7 +62,7 @@ Important optional environment:
 - `AGENTOPS_REPLAY_ENABLED=true`
 - `AGENTOPS_REPLAY_PREFIX=kafsiem-agentops-replay`
 - `AGENTOPS_REJECT_TOPIC=group.<group>.agentops.rejects`
-- `AGENTOPS_OUTPUT_PATH=/data/agentops-state.json`
+- `AGENTOPS_OUTPUT_PATH=/data/agentops.db`
 
 Installer guidance:
 

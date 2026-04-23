@@ -735,6 +735,33 @@ components:
       properties:
         items: { type: array, items: { $ref: '#/components/schemas/Message' } }
         next: { type: [string, 'null'] }
+    Trace:
+      type: object
+      required: [id, span_count, agents, span_types]
+      properties:
+        id: { type: string }
+        span_count: { type: integer }
+        agents: { type: array, items: { type: string } }
+        span_types: { type: array, items: { type: string } }
+        latest_title: { type: string }
+        started_at: { type: string, format: date-time }
+        ended_at: { type: string, format: date-time }
+        duration_ms: { type: integer }
+    Task:
+      type: object
+      required: [id, first_seen, last_seen]
+      properties:
+        id: { type: string }
+        parent_task_id: { type: string }
+        delegation_depth: { type: integer }
+        requester_id: { type: string }
+        responder_id: { type: string }
+        original_requester_id: { type: string }
+        status: { type: string }
+        description: { type: string }
+        last_summary: { type: string }
+        first_seen: { type: string, format: date-time }
+        last_seen: { type: string, format: date-time }
     ListTaskResponse:
       type: object
       required: [items, next]

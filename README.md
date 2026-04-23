@@ -83,9 +83,9 @@ The installer will:
 - prompt only for the profile-relevant runtime keys
 - optionally run `docker compose pull` and start with `--no-build`
 
-- The release pipeline builds two images: a web image and a Go collector image.
+- The release pipeline builds three images: a web image, a Go collector image, and a Go analyst API image.
 - The scheduled feed refresh workflow runs the Go collector.
-- The web image uses Caddy, with collector output mounted into the web container at runtime.
+- The web image uses Caddy, with collector output mounted into the web container at runtime and `/api/*` reverse-proxied to the standalone analyst API service.
 - In Docker dev mode, the collector initializes empty JSON outputs on a fresh volume and writes live output on the first successful run.
 
 ## Run Locally Without Docker
@@ -141,16 +141,18 @@ AgentOps-specific runtime knobs include:
 - `AGENTOPS_REPLAY_ENABLED`
 - `AGENTOPS_REJECT_TOPIC`
 - `AGENTOPS_OUTPUT_PATH`
+- `KAFSIEM_PACKS_DIR`
 - `UI_MODE`
 - `PROFILE`
 - `UI_POLICY_PATH`
 
-When AgentOps is enabled, the collector writes `agentops-state.json` into the runtime data volume and the web UI reads that state directly.
+When AgentOps is enabled, the collector writes `agentops.db` into the runtime data volume and the analyst API serves typed `/api/v1/...` resources from that SQLite store.
 
 Mount contract:
 
 - `/config`: policy and UI steering files
-- `/data`: generated AgentOps state and replay metadata
+- `/data`: generated AgentOps SQLite state (`agentops.db` plus WAL/SHM sidecars), alerts JSON, and replay metadata
+- `/packs`: active bundled or mounted pack directories
 
 Content behavior is explicit:
 
