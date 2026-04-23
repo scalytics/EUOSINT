@@ -175,6 +175,23 @@ match:
 	}
 }
 
+func TestBundledPacksLoad(t *testing.T) {
+	root := filepath.Join("..", "..", "packs")
+	registry, err := LoadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(registry.Packs) != 2 {
+		t.Fatalf("expected bundled drones and scada packs, got %#v", registry.Packs)
+	}
+	if !registry.AllowsEntityType("platform") || !registry.AllowsEntityType("plant") {
+		t.Fatalf("expected bundled pack entity types in registry %#v", registry.EntityTypes)
+	}
+	if len(registry.Detectors) < 2 || len(registry.Queries) < 2 || len(registry.Views) < 2 {
+		t.Fatalf("expected bundled pack assets in registry detectors=%d queries=%d views=%d", len(registry.Detectors), len(registry.Queries), len(registry.Views))
+	}
+}
+
 func writePackFile(t *testing.T, path, body string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

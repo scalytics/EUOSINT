@@ -1,0 +1,89 @@
+name: scada
+version: 0.1.0
+schema_version: v1
+description: SCADA and critical infrastructure pack for plant, process, and change workflows.
+owner: scalytics
+requires:
+  core_min_version: "0.5.0"
+entity_types:
+  - id: plant
+    display: Plant
+    canonical_id_format: "<plant-id>"
+  - id: zone
+    display: Zone
+    canonical_id_format: "<plant>/<zone>"
+  - id: device
+    display: Device
+    canonical_id_format: "<asset-id>"
+  - id: firmware
+    display: Firmware
+    canonical_id_format: "<name>@<version>"
+  - id: process
+    display: Process
+    canonical_id_format: "<process-id>"
+  - id: tag
+    display: Tag
+    canonical_id_format: "<tag-id>"
+  - id: alarm
+    display: Alarm
+    canonical_id_format: "<alarm-id>"
+  - id: alarm_event
+    display: Alarm Event
+    canonical_id_format: "<event-id>"
+  - id: change
+    display: Change
+    canonical_id_format: "<change-id>"
+  - id: engineer
+    display: Engineer
+    canonical_id_format: "<engineer-id>"
+  - id: vendor_tech
+    display: Vendor Technician
+    canonical_id_format: "<vendor-tech-id>"
+  - id: session
+    display: Session
+    canonical_id_format: "<session-id>"
+  - id: work_order
+    display: Work Order
+    canonical_id_format: "<wo-id>"
+  - id: vulnerability
+    display: Vulnerability
+    canonical_id_format: "<cve>"
+  - id: tradecraft
+    display: Tradecraft
+    canonical_id_format: "<pattern-id>"
+edge_types:
+  - id: in
+    src_types: [device, zone]
+    dst_types: [zone, plant]
+  - id: controls
+    src_types: [device]
+    dst_types: [process]
+  - id: reports
+    src_types: [process]
+    dst_types: [tag]
+  - id: device_runs
+    src_types: [device]
+    dst_types: [firmware]
+    temporal: true
+  - id: vulnerable_to
+    src_types: [firmware]
+    dst_types: [vulnerability]
+  - id: authenticated_on
+    src_types: [engineer, vendor_tech]
+    dst_types: [device]
+    temporal: true
+  - id: applied
+    src_types: [engineer, vendor_tech]
+    dst_types: [change]
+  - id: modified
+    src_types: [change]
+    dst_types: [device, tag]
+  - id: justified_by
+    src_types: [change]
+    dst_types: [work_order]
+  - id: fired_on
+    src_types: [alarm_event]
+    dst_types: [alarm]
+  - id: defined_on
+    src_types: [alarm]
+    dst_types: [tag]

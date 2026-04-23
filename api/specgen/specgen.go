@@ -645,6 +645,11 @@ components:
         kind: { type: string }
         url: { type: string }
         attribution: { type: string }
+        geometry_source: { type: string }
+        entity_types: { type: array, items: { type: string } }
+        render: { type: string }
+        label_field: { type: string }
+        filter: { type: string }
         source: { type: string }
     Pack:
       type: object
@@ -652,11 +657,72 @@ components:
       properties:
         name: { type: string }
         version: { type: string }
+        schema_version: { type: string }
         description: { type: string }
         owner: { type: string }
+        requires:
+          type: object
+          properties:
+            core_min_version: { type: string }
         entity_types: { type: array, items: { type: string } }
         edge_types: { type: array, items: { type: string } }
         map_layers: { type: array, items: { $ref: '#/components/schemas/MapLayer' } }
+        detectors:
+          type: array
+          items:
+            type: object
+            required: [id, severity, query, source]
+            properties:
+              id: { type: string }
+              severity: { type: string }
+              window: { type: string }
+              query: { type: string }
+              explanation_template: { type: string }
+              suggested_actions: { type: array, items: { type: string } }
+              source: { type: string }
+        views:
+          type: array
+          items:
+            type: object
+            required: [id, entity_type, source]
+            properties:
+              id: { type: string }
+              entity_type: { type: string }
+              title: { type: string }
+              fields:
+                type: array
+                items:
+                  type: object
+                  required: [id]
+                  properties:
+                    id: { type: string }
+                    label: { type: string }
+                    format: { type: string }
+                    hidden: { type: boolean }
+              source: { type: string }
+        queries:
+          type: array
+          items:
+            type: object
+            required: [id, sql, source]
+            properties:
+              id: { type: string }
+              title: { type: string }
+              description: { type: string }
+              sql: { type: string }
+              params:
+                type: array
+                items:
+                  type: object
+                  required: [name]
+                  properties:
+                    name: { type: string }
+                    type: { type: string }
+                    label: { type: string }
+                    description: { type: string }
+                    required: { type: boolean }
+              source: { type: string }
+        report_templates: { type: array, items: { type: string } }
     Feature:
       type: object
       required: [type, geometry, properties]
@@ -906,17 +972,74 @@ export interface MapLayer {
   kind: string;
   url?: string;
   attribution?: string;
+  geometry_source?: string;
+  entity_types?: string[];
+  render?: string;
+  label_field?: string;
+  filter?: string;
+  source: string;
+}
+
+export interface Requires {
+  core_min_version?: string;
+}
+
+export interface Detector {
+  id: string;
+  severity: string;
+  window?: string;
+  query: string;
+  explanation_template?: string;
+  suggested_actions?: string[];
+  source: string;
+}
+
+export interface ViewField {
+  id: string;
+  label?: string;
+  format?: string;
+  hidden?: boolean;
+}
+
+export interface View {
+  id: string;
+  entity_type: string;
+  title?: string;
+  fields?: ViewField[];
+  source: string;
+}
+
+export interface QueryParam {
+  name: string;
+  type?: string;
+  label?: string;
+  description?: string;
+  required?: boolean;
+}
+
+export interface QueryTemplate {
+  id: string;
+  title?: string;
+  description?: string;
+  sql?: string;
+  params?: QueryParam[];
   source: string;
 }
 
 export interface Pack {
   name: string;
   version: string;
+  schema_version?: string;
   description?: string;
   owner?: string;
+  requires?: Requires;
   entity_types?: string[];
   edge_types?: string[];
   map_layers?: MapLayer[];
+  detectors?: Detector[];
+  views?: View[];
+  queries?: QueryTemplate[];
+  report_templates?: string[];
 }
 
 export interface Feature {

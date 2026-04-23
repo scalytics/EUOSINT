@@ -1,0 +1,11 @@
+entity_type: platform
+title: Platform
+fields:
+  - id: serial
+    label: Serial
+  - id: callsign
+    label: Callsign
+  - id: readiness
+    label: Readiness
+  - id: autonomy_version
+    label: Autonomy Version

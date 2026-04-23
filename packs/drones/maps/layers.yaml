@@ -1,0 +1,15 @@
+layers:
+  - id: live-platforms
+    name: Live Platforms
+    kind: overlay
+    geometry_source: entity_geometry
+    entity_types: [platform]
+    render: point
+    label_field: callsign
+  - id: no-engage-areas
+    name: No-Engage Areas
+    kind: overlay
+    geometry_source: entity_geometry
+    entity_types: [area]
+    render: polygon
+    filter: kind=no-engage

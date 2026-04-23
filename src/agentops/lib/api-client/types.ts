@@ -174,17 +174,74 @@ export interface MapLayer {
   kind: string;
   url?: string;
   attribution?: string;
+  geometry_source?: string;
+  entity_types?: string[];
+  render?: string;
+  label_field?: string;
+  filter?: string;
+  source: string;
+}
+
+export interface Requires {
+  core_min_version?: string;
+}
+
+export interface Detector {
+  id: string;
+  severity: string;
+  window?: string;
+  query: string;
+  explanation_template?: string;
+  suggested_actions?: string[];
+  source: string;
+}
+
+export interface ViewField {
+  id: string;
+  label?: string;
+  format?: string;
+  hidden?: boolean;
+}
+
+export interface View {
+  id: string;
+  entity_type: string;
+  title?: string;
+  fields?: ViewField[];
+  source: string;
+}
+
+export interface QueryParam {
+  name: string;
+  type?: string;
+  label?: string;
+  description?: string;
+  required?: boolean;
+}
+
+export interface QueryTemplate {
+  id: string;
+  title?: string;
+  description?: string;
+  sql?: string;
+  params?: QueryParam[];
   source: string;
 }
 
 export interface Pack {
   name: string;
   version: string;
+  schema_version?: string;
   description?: string;
   owner?: string;
+  requires?: Requires;
   entity_types?: string[];
   edge_types?: string[];
   map_layers?: MapLayer[];
+  detectors?: Detector[];
+  views?: View[];
+  queries?: QueryTemplate[];
+  report_templates?: string[];
 }
 
 export interface Feature {

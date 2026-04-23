@@ -1,0 +1,13 @@
+id: platforms-running-software
+title: Platforms Running Software X
+description: Find every platform currently tied to a software release.
+params:
+  - name: software_version
+    type: string
+    label: Software Version
+    required: true
+sql: |
+  SELECT platform_id, software_version, observed_at
+    FROM view_drone_platform_software
+   WHERE software_version = :software_version
+   ORDER BY observed_at DESC

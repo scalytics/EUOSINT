@@ -1,0 +1,16 @@
+id: cohort-failure-early-warning
+severity: high
+window: 72h
+match:
+  pattern: |
+    SELECT variant_id, fault_mode_id, COUNT(DISTINCT platform_id) AS affected_platforms
+      FROM view_drone_faults_by_variant
+     WHERE observed_at >= :window_start
+     GROUP BY variant_id, fault_mode_id
+    HAVING COUNT(DISTINCT platform_id) >= 3
+explanation_template: >
+  {{affected_platforms}} platforms of variant {{variant_id}} produced
+  fault mode {{fault_mode_id}} inside the active window.
+suggested_actions:
+  - inspect autonomy software lineage on affected platforms
+  - review recent maintenance changes for the variant cohort
