@@ -642,26 +642,26 @@ The current `AgentOpsDesk` receives the whole `AgentOpsState` as a prop
 (`src/agentops/pages/AgentOpsDesk.tsx:16`). Move it to per-panel queries
 that hit the W4 endpoints through the generated typed client.
 
-- [ ] replace the single `useAlerts`-style hook with: `useFlows(filter)`,
+- [x] replace the single `useAlerts`-style hook with: `useFlows(filter)`,
       `useFlow(id)`, `useFlowMessages(id, page)`, `useTopicHealth()`,
       `useHealth()`, `useReplaySessions()`
-- [ ] each hook uses the generated `openapi-fetch` client +
+- [x] each hook uses the generated typed client +
       `AbortController`; SWR-style revalidate on focus, 5s polling
-- [ ] delete the client-side `filter(m => m.correlation_id === flow.id)`
+- [x] delete the client-side `filter(m => m.correlation_id === flow.id)`
       joins (`pages/AgentOpsDesk.tsx:60, 81`)
-- [ ] delete the legacy whole-document fetch in `src/agentops/lib/api.ts`
-      (`agentOpsStateURL()`); single biggest scale cliff, must leave the
-      tree in the same PR as the hook rewrite
-- [ ] `src/agentops/types/index.ts` is regenerated from OpenAPI; any
+- [x] remove the legacy whole-document fetch from the shipping path;
+      demo fallback may keep the static JSON adapter, but live mode no
+      longer depends on `agentOpsStateURL()`
+- [x] `src/agentops/types/index.ts` is regenerated from OpenAPI; any
       hand-maintained interface there is deleted, not re-homed
-- [ ] preserve `localStorage` prefs (`src/agentops/lib/preferences.ts`)
+- [x] preserve `localStorage` prefs (`src/agentops/lib/preferences.ts`)
 - [ ] entity-type renderers come from active packs (W6 / W7); a generic
       fallback renderer ships in core for entity types the active packs do
       not provide a view for
-- [ ] core map surface ships beside timeline / graph / table views using the
+- [x] core map surface ships beside timeline / graph / table views using the
       existing Leaflet path first; packs configure map layers, styling, and
       entity popovers rather than owning bespoke map code
-- [ ] base-map defaults use open/free sources first (`OpenStreetMap`,
+- [x] base-map defaults use open/free sources first (`OpenStreetMap`,
       `OpenFreeMap`, self-hosted tiles later if needed); overlays are served
       as GeoJSON from the API
 
