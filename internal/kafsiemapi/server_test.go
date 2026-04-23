@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -219,6 +220,43 @@ func TestServerRoutes(t *testing.T) {
 	})
 }
 
+func TestServerLoadsBundledPackOntologyAndPackEntities(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "agentops.db")
+	seedAPIStore(t, dbPath)
+
+	srv, err := New(Config{
+		Listen:   ":0",
+		DBPath:   dbPath,
+		PacksDir: filepath.Join("..", "..", "packs"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srv.Close()
+
+	t.Run("ontology-types-include-drones-source", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/ontology/types", nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("ontology code=%d body=%s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), `"source":"pack/drones"`) || !strings.Contains(rec.Body.String(), `"name":"platform"`) {
+			t.Fatalf("expected drones ontology type in %s", rec.Body.String())
+		}
+	})
+
+	t.Run("pack-entity-profile", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/entities/platform/auv-7", nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("platform entity code=%d body=%s", rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), `"display_name":"AUV-7"`) || !strings.Contains(rec.Body.String(), `"autonomy_version":"7.4.2"`) {
+			t.Fatalf("expected pack entity attrs in %s", rec.Body.String())
+		}
+	})
+}
+
 func TestCursorAndBBoxHelpers(t *testing.T) {
 	raw := encodeCursor("2026-04-20T10:00:00Z", "msg-1")
 	got, err := decodeCursor(raw)
@@ -289,6 +327,8 @@ func seedAPIStore(t *testing.T, path string) {
 		{ID: "trace:tr-1", Type: "trace", CanonicalID: "tr-1", FirstSeen: "2026-04-20T09:10:00Z", LastSeen: "2026-04-20T10:00:00Z"},
 		{ID: "location:pt-1", Type: graph.CoreTypeLocation, CanonicalID: "pt-1", FirstSeen: "2026-04-20T09:20:00Z", LastSeen: "2026-04-20T10:00:00Z"},
 		{ID: "area:ao-1", Type: graph.CoreTypeArea, CanonicalID: "ao-1", FirstSeen: "2026-04-20T09:20:00Z", LastSeen: "2026-04-20T10:00:00Z"},
+		{ID: "platform:auv-7", Type: "platform", CanonicalID: "auv-7", DisplayName: "AUV-7", FirstSeen: "2026-04-20T09:00:00Z", LastSeen: "2026-04-20T10:00:00Z", Attrs: map[string]any{"serial": "SN-007", "callsign": "TRITON-7", "readiness": "Green", "autonomy_version": "7.4.2"}},
+		{ID: "mission:sea-trial-12", Type: "mission", CanonicalID: "sea-trial-12", DisplayName: "Sea Trial 12", FirstSeen: "2026-04-20T09:00:00Z", LastSeen: "2026-04-20T10:00:00Z", Attrs: map[string]any{"mission_code": "ST-12", "status": "ready"}},
 	} {
 		if err := graph.UpsertEntity(tx, entity); err != nil {
 			t.Fatal(err)
@@ -299,6 +339,7 @@ func seedAPIStore(t *testing.T, path string) {
 		{SrcID: "task:t-1", DstID: "trace:tr-1", Type: "spans", ValidFrom: "2026-04-20T09:10:00Z", EvidenceMsg: "msg-1"},
 		{SrcID: "task:t-1", DstID: "location:pt-1", Type: "observed_at", ValidFrom: "2026-04-20T09:20:00Z", EvidenceMsg: "msg-1"},
 		{SrcID: "location:pt-1", DstID: "area:ao-1", Type: "in_area", ValidFrom: "2026-04-20T09:25:00Z", EvidenceMsg: "msg-1"},
+		{SrcID: "mission:sea-trial-12", DstID: "platform:auv-7", Type: "assigned_to", ValidFrom: "2026-04-20T09:30:00Z", EvidenceMsg: "msg-1"},
 	} {
 		if _, _, err := graph.AppendEdge(tx, edge); err != nil {
 			t.Fatal(err)

@@ -7,6 +7,8 @@ import type {
   Health,
   MapLayer,
   Message,
+  Pack,
+  Profile,
   ReplaySession,
   Task,
   TopicHealth,
@@ -95,6 +97,15 @@ export function useFlow(id: string | null) {
   return { flow: data, ...rest };
 }
 
+export function useEntityProfile(type: string | null, id: string | null) {
+  const { data, ...rest } = usePolledQuery<Profile | null>(
+    (signal) => (type && id ? client.getEntity(type, id, { signal }) : Promise.resolve(null)),
+    null,
+    [type, id],
+  );
+  return { profile: data, ...rest };
+}
+
 export function useFlowMessages(id: string | null, page: { after?: Cursor; limit?: number } = {}) {
   const { data, ...rest } = usePolledQuery(
     (signal) => (id ? client.listFlowMessages(id, page, { signal }) : Promise.resolve({ items: [] as Message[], next: null as Cursor })),
@@ -152,6 +163,15 @@ export function useMapLayers() {
     [],
   );
   return { mapLayers: data.items, ...rest };
+}
+
+export function useOntologyPacks() {
+  const { data, ...rest } = usePolledQuery(
+    (signal) => client.getOntologyPacks({ signal }),
+    { items: [] as Pack[], next: null as Cursor },
+    [],
+  );
+  return { packs: data.items, ...rest };
 }
 
 export function useMapFeatures(params: { bbox: string; types?: string; window?: string }) {

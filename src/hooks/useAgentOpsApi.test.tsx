@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { useFlowMessages, useFlows, useHealth, useMapFeatures, useReplaySessions, useTopicHealth } from "@/hooks/useAgentOpsApi";
+import { useEntityProfile, useFlowMessages, useFlows, useHealth, useMapFeatures, useOntologyPacks, useReplaySessions, useTopicHealth } from "@/hooks/useAgentOpsApi";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -56,4 +56,33 @@ test("loads paged flow messages", async () => {
   await waitFor(() => expect(result.current.messages).toHaveLength(1));
 
   expect(fetchMock).toHaveBeenCalled();
+});
+
+test("loads ontology packs and entity profiles", async () => {
+  const fetchMock = vi.fn(async (input: string | URL) => {
+    const url = String(input);
+    if (url.endsWith("/api/v1/ontology/packs")) {
+      return { ok: true, json: async () => ({ items: [{ name: "drones", version: "0.1.0", views: [{ id: "platform", entity_type: "platform", title: "Platform" }] }], next: null }) };
+    }
+    if (url.endsWith("/api/v1/entities/platform/auv-7")) {
+      return {
+        ok: true,
+        json: async () => ({
+          entity: { id: "platform:auv-7", type: "platform", canonical_id: "auv-7", first_seen: "2026-04-10T12:00:00Z", last_seen: "2026-04-10T12:00:01Z", attrs: { serial: "SN-007" } },
+          first_seen: "2026-04-10T12:00:00Z",
+          last_seen: "2026-04-10T12:00:01Z",
+          edge_counts: { assigned_to: 1 },
+          top_neighbors: [],
+        }),
+      };
+    }
+    throw new Error(`unexpected fetch ${url}`);
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  const packs = renderHook(() => useOntologyPacks());
+  const entity = renderHook(() => useEntityProfile("platform", "auv-7"));
+
+  await waitFor(() => expect(packs.result.current.packs).toHaveLength(1));
+  await waitFor(() => expect(entity.result.current.profile?.entity.id).toBe("platform:auv-7"));
 });

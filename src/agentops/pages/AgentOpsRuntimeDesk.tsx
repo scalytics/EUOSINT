@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Activity, AlertTriangle, CheckCircle2, GitBranch, Globe2, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
 import { EmptyState, MetricCard, Panel, StatusRow, Tag } from "@/agentops/components/Chrome";
+import { EntityProfileCard } from "@/agentops/components/EntityProfileCard";
 import { MessageCard } from "@/agentops/components/MessageCard";
 import { RuntimeMap } from "@/agentops/components/RuntimeMap";
 import { buildFailureBuckets } from "@/agentops/lib/failures";
@@ -11,6 +12,7 @@ import { displayModeName } from "@/agentops/lib/state";
 import { formatTime } from "@/agentops/lib/view";
 import { useAgentOpsOperator } from "@/hooks/useAgentOpsOperator";
 import {
+  useEntityProfile,
   useFlow,
   useFlowMessages,
   useFlowTasks,
@@ -19,6 +21,7 @@ import {
   useHealth,
   useMapFeatures,
   useMapLayers,
+  useOntologyPacks,
   useReplaySessions,
   useTopicHealth,
 } from "@/hooks/useAgentOpsApi";
@@ -32,9 +35,24 @@ interface Props {
   mode: AgentOpsMode;
 }
 
+interface EntitySelection {
+  type: string;
+  id: string;
+}
+
 function anomalyHint(status?: string, messageCount = 0): boolean {
   if (messageCount === 0) return true;
   return /(failed|error|rejected|timeout|stalled)/i.test(status || "");
+}
+
+function readSelectedEntity(): EntitySelection | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("view") !== "entity") return null;
+  const type = (params.get("type") || "").trim();
+  const id = (params.get("id") || "").trim();
+  if (!type || !id) return null;
+  return { type, id };
 }
 
 export function AgentOpsRuntimeDesk({ mode }: Props) {
@@ -44,7 +62,8 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(() => loadSelectedRunId());
   const [queueFilter, setQueueFilter] = useState<RunQueueFilter>(() => loadQueueFilter());
   const [anomaliesOnly, setAnomaliesOnly] = useState<boolean>(() => loadAnomaliesOnly());
-  const [workspaceTab, setWorkspaceTab] = useState<"replay" | "failures" | "raw" | "operator">("replay");
+  const [selectedEntity] = useState<EntitySelection | null>(() => readSelectedEntity());
+  const [workspaceTab, setWorkspaceTab] = useState<"replay" | "failures" | "raw" | "operator" | "entity">(() => (readSelectedEntity() ? "entity" : "replay"));
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [replayScope, setReplayScope] = useState<"run" | "trace" | "task" | "topics">("run");
   const [replayNotice, setReplayNotice] = useState("");
@@ -59,6 +78,8 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   const { replaySessions } = useReplaySessions();
   const { mapLayers } = useMapLayers();
   const { featureCollection } = useMapFeatures({ bbox: mapBBox, types: mapTypes.length > 0 ? mapTypes.join(",") : undefined });
+  const { packs } = useOntologyPacks();
+  const { profile: entityProfile } = useEntityProfile(selectedEntity?.type ?? null, selectedEntity?.id ?? null);
 
   useEffect(() => {
     setOptimisticReplaySessions(replaySessions);
@@ -383,6 +404,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                   <StatusRow label="Mirrored" value={String(health?.mirrored_count ?? 0)} />
                   {mode === "HYBRID" ? <StatusRow label="Fusion matches" value={String(fusionMatches.length)} /> : null}
                   <StatusRow label="Last poll" value={formatTime(health?.last_poll_at || "")} />
+                  {selectedEntity ? <StatusRow label="Entity focus" value={`${selectedEntity.type}:${selectedEntity.id}`} /> : null}
                 </div>
                 {selectedFlow ? (
                   <>
@@ -459,6 +481,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                   ["replay", "Replay Studio"],
                   ["failures", "Failure Workbench"],
                   ["raw", "Raw Messages"],
+                  ["entity", "Entity View"],
                   ["operator", "Operator"],
                 ].map(([id, label]) => (
                   <button key={id} type="button" onClick={() => setWorkspaceTab(id as typeof workspaceTab)} className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${workspaceTab === id ? "border-siem-accent/50 bg-siem-accent/14 text-siem-text" : "border-siem-border text-siem-muted"}`}>
@@ -518,6 +541,14 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                   <MessageCard message={selectedMessage} />
                 </div>
               ) : <EmptyState text="Select a timeline or message entry to inspect the raw transport artifact." /> : null}
+
+              {workspaceTab === "entity" ? (
+                selectedEntity ? (
+                  <EntityProfileCard profile={entityProfile} packs={packs} />
+                ) : (
+                  <EmptyState text="Open the runtime desk with `?view=entity&type=platform&id=<id>` to render a pack-defined entity profile." />
+                )
+              ) : null}
 
               {workspaceTab === "operator" ? (
                 <>
