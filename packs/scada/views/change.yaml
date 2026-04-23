@@ -1,0 +1,11 @@
+entity_type: change
+title: Change
+fields:
+  - id: change_type
+    label: Change Type
+  - id: device_id
+    label: Device
+  - id: engineer_id
+    label: Engineer
+  - id: applied_at
+    label: Applied At

@@ -1,0 +1,14 @@
+id: firmware-drift
+severity: medium
+window: 168h
+match:
+  pattern: |
+    SELECT device_id, expected_firmware, observed_firmware, criticality
+      FROM view_scada_firmware_drift
+     WHERE observed_at >= :window_start
+       AND expected_firmware <> observed_firmware
+explanation_template: >
+  Device {{device_id}} is running {{observed_firmware}} instead of the expected {{expected_firmware}}.
+suggested_actions:
+  - validate the approved firmware baseline for the asset
+  - check whether the observed firmware came from an authorized change

@@ -1,0 +1,11 @@
+entity_type: alarm_event
+title: Alarm Event
+fields:
+  - id: alarm_id
+    label: Alarm
+  - id: severity
+    label: Severity
+  - id: tag_id
+    label: Tag
+  - id: fired_at
+    label: Fired At

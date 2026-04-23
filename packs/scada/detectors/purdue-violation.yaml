@@ -1,0 +1,13 @@
+id: purdue-violation
+severity: high
+window: 24h
+match:
+  pattern: |
+    SELECT src_device_id, dst_device_id, observed_at
+      FROM view_scada_purdue_violations
+     WHERE observed_at >= :window_start
+explanation_template: >
+  {{src_device_id}} communicated directly with {{dst_device_id}} across a prohibited Purdue boundary.
+suggested_actions:
+  - validate conduit and segmentation policy exceptions
+  - inspect the initiating session and recent network changes

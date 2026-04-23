@@ -1,0 +1,14 @@
+id: stale-session
+severity: medium
+window: 48h
+match:
+  pattern: |
+    SELECT session_id, engineer_id, device_id, open_hours
+      FROM view_scada_stale_sessions
+     WHERE observed_at >= :window_start
+       AND open_hours > 24
+explanation_template: >
+  Session {{session_id}} remained open on {{device_id}} for {{open_hours}} hours.
+suggested_actions:
+  - review session activity and terminal ownership
+  - terminate or rotate credentials if the session is no longer justified

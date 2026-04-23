@@ -1,0 +1,11 @@
+entity_type: tag
+title: Tag
+fields:
+  - id: tag_name
+    label: Tag
+  - id: process_id
+    label: Process
+  - id: quality
+    label: Quality
+  - id: last_value
+    label: Last Value

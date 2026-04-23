@@ -260,6 +260,66 @@ func TestBundledDronesDetectorsAndQueriesExecuteAgainstFixtureDB(t *testing.T) {
 	}
 }
 
+func TestBundledScadaDetectorsAndQueriesExecuteAgainstFixtureDB(t *testing.T) {
+	root := filepath.Join("..", "..", "packs")
+	registry, err := LoadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var scada *Pack
+	for i := range registry.Packs {
+		if registry.Packs[i].Name == "scada" {
+			scada = &registry.Packs[i]
+			break
+		}
+	}
+	if scada == nil {
+		t.Fatal("expected bundled scada pack")
+	}
+
+	db, err := agentopsschema.Open(filepath.Join(t.TempDir(), "fixture.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	for _, stmt := range []string{
+		`CREATE VIEW view_scada_purdue_violations AS SELECT 'plc-l1-1' AS src_device_id, 'historian-l4-1' AS dst_device_id, '2026-04-22T10:00:00Z' AS observed_at`,
+		`CREATE VIEW view_scada_changes_without_work_order AS SELECT 'chg-1' AS change_id, 'safety-plc-1' AS device_id, 'eng-1' AS engineer_id, '2026-04-22T10:00:00Z' AS applied_at`,
+		`CREATE VIEW view_scada_firmware_drift AS SELECT 'safety-plc-1' AS device_id, 'fw-expected-1' AS expected_firmware, 'fw-live-2' AS observed_firmware, 'critical' AS criticality, '2026-04-22T10:00:00Z' AS observed_at`,
+		`CREATE VIEW view_scada_tradecraft_matches AS SELECT 'triton' AS pattern_id, 'safety-plc-1' AS device_id, '2026-04-22T10:00:00Z' AS matched_at`,
+		`CREATE VIEW view_scada_stale_sessions AS SELECT 'sess-1' AS session_id, 'eng-1' AS engineer_id, 'safety-plc-1' AS device_id, 36 AS open_hours, '2026-04-22T10:00:00Z' AS observed_at`,
+		`CREATE VIEW view_scada_alarm_flood_after_change AS SELECT 'chg-1' AS change_id, 'tag-1' AS tag_id, 57 AS alarm_count, '2026-04-22T10:00:00Z' AS flood_started_at`,
+		`CREATE VIEW view_scada_device_vulnerabilities AS SELECT 'safety-plc-1' AS device_id, 'plant-a' AS plant_id, 'critical' AS criticality, 'fw-live-2' AS firmware_version, 'CVE-2026-12345' AS cve`,
+		`CREATE VIEW view_scada_tag_changes AS SELECT 'chg-1' AS change_id, 'safety-plc-1' AS device_id, 'tag-1' AS tag_id, '2026-04-22T10:00:00Z' AS applied_at`,
+	} {
+		if _, err := db.Exec(stmt); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, detector := range scada.Detectors {
+		if err := executeReadOnlyStatement(db, detector.Query,
+			sql.Named("window_start", "2026-04-20T00:00:00Z"),
+			sql.Named("cve", "CVE-2026-12345"),
+			sql.Named("tag_id", "tag-1"),
+			sql.Named("pattern_id", "triton"),
+		); err != nil {
+			t.Fatalf("detector %s failed: %v", detector.ID, err)
+		}
+	}
+	for _, query := range scada.Queries {
+		if err := executeReadOnlyStatement(db, query.SQL,
+			sql.Named("window_start", "2026-04-20T00:00:00Z"),
+			sql.Named("cve", "CVE-2026-12345"),
+			sql.Named("tag_id", "tag-1"),
+			sql.Named("pattern_id", "triton"),
+		); err != nil {
+			t.Fatalf("query %s failed: %v", query.ID, err)
+		}
+	}
+}
+
 func writePackFile(t *testing.T, path, body string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

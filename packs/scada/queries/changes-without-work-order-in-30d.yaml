@@ -1,0 +1,13 @@
+id: changes-without-work-order-in-30d
+title: Every Change Without Work Order In 30d
+description: Find unlinked engineering changes in the last thirty days.
+params:
+  - name: window_start
+    type: string
+    label: Window Start
+    required: true
+sql: |
+  SELECT change_id, device_id, engineer_id, applied_at
+    FROM view_scada_changes_without_work_order
+   WHERE applied_at >= :window_start
+   ORDER BY applied_at DESC

@@ -1,0 +1,11 @@
+entity_type: tradecraft
+title: Tradecraft
+fields:
+  - id: pattern_id
+    label: Pattern
+  - id: framework
+    label: Framework
+  - id: family
+    label: Family
+  - id: confidence
+    label: Confidence

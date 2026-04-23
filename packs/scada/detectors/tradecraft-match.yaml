@@ -1,0 +1,13 @@
+id: tradecraft-match
+severity: high
+window: 168h
+match:
+  pattern: |
+    SELECT pattern_id, device_id, matched_at
+      FROM view_scada_tradecraft_matches
+     WHERE matched_at >= :window_start
+explanation_template: >
+  Activity on {{device_id}} matched the {{pattern_id}} ICS tradecraft pattern.
+suggested_actions:
+  - reconstruct the full write sequence for the matched pattern
+  - isolate affected engineering workstations and PLCs for review
