@@ -1,0 +1,18 @@
+id: sorties-with-degraded-comms-in-area
+title: Sorties With Degraded Comms In Area
+description: Find sorties that experienced degraded communications inside a selected area and window.
+params:
+  - name: area_id
+    type: string
+    label: Area
+    required: true
+  - name: window_start
+    type: string
+    label: Window Start
+    required: true
+sql: |
+  SELECT sortie_id, platform_id, degraded_at
+    FROM view_drone_degraded_comms
+   WHERE area_id = :area_id
+     AND degraded_at >= :window_start
+   ORDER BY degraded_at DESC

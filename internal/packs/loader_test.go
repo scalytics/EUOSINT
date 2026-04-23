@@ -1,9 +1,12 @@
 package packs
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"testing"
+
+	agentopsschema "github.com/scalytics/kafSIEM/internal/agentops/schema"
 )
 
 func TestLoadDirDefaultsWithoutPacks(t *testing.T) {
@@ -192,6 +195,71 @@ func TestBundledPacksLoad(t *testing.T) {
 	}
 }
 
+func TestBundledDronesDetectorsAndQueriesExecuteAgainstFixtureDB(t *testing.T) {
+	root := filepath.Join("..", "..", "packs")
+	registry, err := LoadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var drones *Pack
+	for i := range registry.Packs {
+		if registry.Packs[i].Name == "drones" {
+			drones = &registry.Packs[i]
+			break
+		}
+	}
+	if drones == nil {
+		t.Fatal("expected bundled drones pack")
+	}
+
+	db, err := agentopsschema.Open(filepath.Join(t.TempDir(), "fixture.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	for _, stmt := range []string{
+		`CREATE VIEW view_drone_faults_by_variant AS SELECT 'variant-a' AS variant_id, 'fault-mode-1' AS fault_mode_id, 'platform-1' AS platform_id, '2026-04-22T10:00:00Z' AS observed_at UNION ALL SELECT 'variant-a', 'fault-mode-1', 'platform-2', '2026-04-22T10:10:00Z' UNION ALL SELECT 'variant-a', 'fault-mode-1', 'platform-3', '2026-04-22T10:20:00Z'`,
+		`CREATE VIEW view_drone_roe_drift AS SELECT 'sortie-1' AS sortie_id, 'area-roe' AS area_id, '2026-04-22T10:00:00Z' AS crossed_at`,
+		`CREATE VIEW view_drone_silent_subsystems AS SELECT 'sortie-1' AS sortie_id, 'platform-1' AS platform_id, 'nav' AS subsystem_id, 90 AS heartbeat_gap_seconds, 20 AS expected_gap_seconds, '2026-04-22T10:00:00Z' AS observed_at`,
+		`CREATE VIEW view_drone_autonomy_regressions AS SELECT 'autonomy-7.4.2' AS software_version, 'variant-a' AS variant_id, 0.42 AS fault_rate_delta, '2026-04-22T10:00:00Z' AS deployed_at`,
+		`CREATE VIEW view_drone_component_lot_anomalies AS SELECT 'lot-55' AS component_lot, 'fault-mode-1' AS fault_mode_id, 3.7 AS z_score, '2026-04-22T10:00:00Z' AS observed_at`,
+		`CREATE VIEW view_drone_pre_mission_gaps AS SELECT 'mission-1' AS mission_id, 'platform-1' AS platform_id, 1 AS open_faults, 0 AS open_signoffs, '2026-04-22T10:00:00Z' AS scheduled_at`,
+		`CREATE VIEW view_drone_changes_since_signoff AS SELECT 'platform-1' AS platform_id, '2026-04-22T10:00:00Z' AS changed_at, 'software' AS change_type, 'Autonomy package upgraded' AS summary`,
+		`CREATE VIEW view_drone_fault_mode_spread AS SELECT 'fault-mode-1' AS fault_mode_id, 'platform-1' AS platform_id, 'variant-a' AS variant_id, '2026-04-22T10:00:00Z' AS last_seen`,
+		`CREATE VIEW view_drone_platform_software AS SELECT 'platform-1' AS platform_id, 'autonomy-7.4.2' AS software_version, '2026-04-22T10:00:00Z' AS observed_at`,
+		`CREATE VIEW view_drone_degraded_comms AS SELECT 'sortie-1' AS sortie_id, 'platform-1' AS platform_id, 'area-roe' AS area_id, '2026-04-22T10:00:00Z' AS degraded_at`,
+	} {
+		if _, err := db.Exec(stmt); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, detector := range drones.Detectors {
+		if err := executeReadOnlyStatement(db, detector.Query,
+			sql.Named("window_start", "2026-04-20T00:00:00Z"),
+			sql.Named("area_id", "area-roe"),
+			sql.Named("platform_id", "platform-1"),
+			sql.Named("fault_mode_id", "fault-mode-1"),
+			sql.Named("software_version", "autonomy-7.4.2"),
+			sql.Named("cve", "CVE-2026-12345"),
+		); err != nil {
+			t.Fatalf("detector %s failed: %v", detector.ID, err)
+		}
+	}
+	for _, query := range drones.Queries {
+		if err := executeReadOnlyStatement(db, query.SQL,
+			sql.Named("window_start", "2026-04-20T00:00:00Z"),
+			sql.Named("area_id", "area-roe"),
+			sql.Named("platform_id", "platform-1"),
+			sql.Named("fault_mode_id", "fault-mode-1"),
+			sql.Named("software_version", "autonomy-7.4.2"),
+		); err != nil {
+			t.Fatalf("query %s failed: %v", query.ID, err)
+		}
+	}
+}
+
 func writePackFile(t *testing.T, path, body string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -200,4 +268,14 @@ func writePackFile(t *testing.T, path, body string) {
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func executeReadOnlyStatement(db *sql.DB, query string, args ...any) error {
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	_, err = rows.Columns()
+	return err
 }

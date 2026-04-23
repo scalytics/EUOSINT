@@ -1,0 +1,11 @@
+entity_type: component
+title: Component
+fields:
+  - id: serial
+    label: Serial
+  - id: lot
+    label: Lot
+  - id: subsystem_id
+    label: Installed In
+  - id: state
+    label: State

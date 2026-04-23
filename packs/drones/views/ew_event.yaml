@@ -1,0 +1,11 @@
+entity_type: ew_event
+title: EW Event
+fields:
+  - id: effect
+    label: Effect
+  - id: severity
+    label: Severity
+  - id: area_id
+    label: Area
+  - id: observed_at
+    label: Observed At

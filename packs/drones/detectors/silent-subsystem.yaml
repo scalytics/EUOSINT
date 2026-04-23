@@ -1,0 +1,14 @@
+id: silent-subsystem
+severity: medium
+window: 6h
+match:
+  pattern: |
+    SELECT sortie_id, platform_id, subsystem_id, heartbeat_gap_seconds
+      FROM view_drone_silent_subsystems
+     WHERE observed_at >= :window_start
+       AND heartbeat_gap_seconds >= expected_gap_seconds * 3
+explanation_template: >
+  Subsystem {{subsystem_id}} on {{platform_id}} went silent during sortie {{sortie_id}}.
+suggested_actions:
+  - inspect subsystem telemetry continuity
+  - compare the gap against recent maintenance actions

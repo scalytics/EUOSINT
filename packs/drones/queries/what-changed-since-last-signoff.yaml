@@ -1,0 +1,13 @@
+id: what-changed-since-last-signoff
+title: What Changed Since Last Signoff
+description: Compare maintenance, software, and component churn after the last approved signoff.
+params:
+  - name: platform_id
+    type: string
+    label: Platform
+    required: true
+sql: |
+  SELECT changed_at, change_type, summary
+    FROM view_drone_changes_since_signoff
+   WHERE platform_id = :platform_id
+   ORDER BY changed_at DESC

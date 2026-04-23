@@ -1,0 +1,11 @@
+entity_type: sortie
+title: Sortie
+fields:
+  - id: sortie_code
+    label: Sortie Code
+  - id: mission_id
+    label: Mission
+  - id: platform_id
+    label: Platform
+  - id: outcome
+    label: Outcome

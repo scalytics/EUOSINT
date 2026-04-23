@@ -1,0 +1,13 @@
+id: roe-drift
+severity: high
+window: 24h
+match:
+  pattern: |
+    SELECT sortie_id, area_id, crossed_at
+      FROM view_drone_roe_drift
+     WHERE crossed_at >= :window_start
+explanation_template: >
+  Sortie {{sortie_id}} crossed the restricted area {{area_id}} during the active window.
+suggested_actions:
+  - review mission routing and ROE settings
+  - attach telemetry excerpts to the sortie incident record
