@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -163,6 +164,14 @@ func TestServerRoutes(t *testing.T) {
 		}
 	})
 
+	t.Run("legacy-replay-post", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/agentops/replay", nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("legacy replay post code=%d body=%s", rec.Code, rec.Body.String())
+		}
+	})
+
 	t.Run("ontology-packs", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/ontology/packs", nil))
@@ -218,6 +227,44 @@ func TestServerRoutes(t *testing.T) {
 			t.Fatalf("bad bbox code=%d body=%s", rec.Code, rec.Body.String())
 		}
 	})
+}
+
+func TestRunMainValidatePacks(t *testing.T) {
+	stdout, stderr := &strings.Builder{}, &strings.Builder{}
+	if err := RunMain([]string{"--validate-packs", "--packs", filepath.Join("..", "..", "packs")}, os.Stdout, os.Stderr); err != nil {
+		t.Fatal(err)
+	}
+	_ = stdout
+	_ = stderr
+}
+
+func TestLegacyProxyRoute(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/zone-brief-llm" {
+			t.Fatalf("unexpected proxied path %s", r.URL.Path)
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "proxied"})
+	}))
+	defer target.Close()
+
+	dbPath := filepath.Join(t.TempDir(), "agentops.db")
+	seedAPIStore(t, dbPath)
+	srv, err := New(Config{
+		Listen:             ":0",
+		DBPath:             dbPath,
+		PacksDir:           filepath.Join(t.TempDir(), "packs"),
+		LegacyCollectorURL: target.URL,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srv.Close()
+
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/zone-brief-llm", strings.NewReader(`{}`)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("legacy proxy code=%d body=%s", rec.Code, rec.Body.String())
+	}
 }
 
 func TestServerLoadsBundledPackOntologyAndPackEntities(t *testing.T) {

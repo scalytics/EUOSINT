@@ -27,7 +27,7 @@
 	respond @preflight 204
 
 	handle /api/* {
-		reverse_proxy collector:3001 {
+		reverse_proxy kafsiem-api:8081 {
 			header_up Authorization "Bearer {$API_BEARER_TOKEN:}"
 		}
 	}
@@ -66,17 +66,6 @@
 	}
 
 	handle /source-health.json {
-		route {
-			root * /var/lib/kafsiem
-			file_server {
-				pass_thru
-			}
-			root * /srv
-			file_server
-		}
-	}
-
-	handle /agentops-state.json {
 		route {
 			root * /var/lib/kafsiem
 			file_server {

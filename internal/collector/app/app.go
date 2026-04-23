@@ -20,6 +20,7 @@ import (
 	"github.com/scalytics/kafSIEM/internal/collector/config"
 	"github.com/scalytics/kafSIEM/internal/collector/discover"
 	"github.com/scalytics/kafSIEM/internal/collector/run"
+	"github.com/scalytics/kafSIEM/internal/packs"
 	"github.com/scalytics/kafSIEM/internal/sourcedb"
 )
 
@@ -109,6 +110,8 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 	fs.IntVar(&cfg.MilitaryBasesRefreshHours, "military-bases-refresh-hours", cfg.MilitaryBasesRefreshHours, "Refresh cadence in hours for military-bases GeoJSON")
 	fs.StringVar(&cfg.CollectorRole, "collector-role", cfg.CollectorRole, "Collector role: all|merge|fast|browser|api|api-ucdp|api-acled|api-gdelt")
 	fs.StringVar(&cfg.CollectorRole, "role", cfg.CollectorRole, "Alias for --collector-role")
+	fs.BoolVar(&cfg.ResetAgentOps, "reset-agentops", cfg.ResetAgentOps, "Delete the AgentOps SQLite DB before starting")
+	fs.StringVar(&cfg.PacksDir, "packs", cfg.PacksDir, "Path to the active packs directory")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -128,6 +131,15 @@ func Run(ctx context.Context, args []string, stdout io.Writer, stderr io.Writer)
 
 	if cfg.DiscoverMode {
 		return discover.Run(ctx, cfg, stdout, stderr)
+	}
+	if _, err := packs.LoadDir(cfg.PacksDir); err != nil {
+		return fmt.Errorf("load packs: %w", err)
+	}
+	if cfg.ResetAgentOps {
+		if err := resetAgentOpsFiles(cfg.AgentOpsOutputPath); err != nil {
+			return fmt.Errorf("reset agentops: %w", err)
+		}
+		fmt.Fprintf(stdout, "Reset AgentOps DB -> %s\n", cfg.AgentOpsOutputPath)
 	}
 	if cfg.SourceDBInit || cfg.SourceDBImportRegistry || cfg.SourceDBMergeRegistry || cfg.SourceDBExportRegistry {
 		db, err := sourcedb.Open(cfg.SourceDBPath)
@@ -265,4 +277,21 @@ func clearConflictStatsNarratives(path string) error {
 	}
 	updated = append(updated, '\n')
 	return os.WriteFile(path, updated, 0o644)
+}
+
+func resetAgentOpsFiles(path string) error {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return nil
+	}
+	targets := []string{path}
+	if strings.HasSuffix(path, ".db") {
+		targets = append(targets, path+"-wal", path+"-shm")
+	}
+	for _, target := range targets {
+		if err := os.Remove(target); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
 }

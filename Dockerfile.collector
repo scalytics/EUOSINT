@@ -9,12 +9,15 @@ ARG TARGETARCH
 
 COPY go.mod go.sum ./
 RUN go mod download
+COPY api ./api
 COPY cmd ./cmd
 COPY internal ./internal
+COPY packs ./packs
 COPY registry ./registry
 COPY public ./public
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -o /out/kafsiem-collector ./cmd/kafsiem-collector
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -o /out/kafsiem-api ./cmd/kafsiem-api
 
 FROM alpine:3.20 AS geonames
 RUN apk add --no-cache curl unzip
@@ -31,8 +34,20 @@ WORKDIR /app
 COPY --from=build /out/kafsiem-collector /usr/local/bin/kafsiem-collector
 COPY --from=geonames /tmp/cities500.txt ./registry/cities500.txt
 COPY registry ./registry
+COPY packs /packs
 COPY docker/collector-entrypoint.sh /usr/local/bin/collector-entrypoint.sh
 
 RUN chmod +x /usr/local/bin/collector-entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/collector-entrypoint.sh"]
+
+FROM alpine:3.20 AS api-runtime
+
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /app
+
+COPY --from=build /out/kafsiem-api /usr/local/bin/kafsiem-api
+COPY packs /packs
+
+ENTRYPOINT ["/usr/local/bin/kafsiem-api"]

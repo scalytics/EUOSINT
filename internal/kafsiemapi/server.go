@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -25,19 +27,21 @@ import (
 )
 
 type Config struct {
-	Listen   string
-	DBPath   string
-	PacksDir string
+	Listen             string
+	DBPath             string
+	PacksDir           string
+	LegacyCollectorURL string
 }
 
 type Server struct {
-	cfg      Config
-	db       *sql.DB
-	writeDB  *sql.DB
-	store    store.Store
-	graph    *graph.Reader
-	registry packs.Registry
-	router   http.Handler
+	cfg         Config
+	db          *sql.DB
+	writeDB     *sql.DB
+	store       store.Store
+	graph       *graph.Reader
+	registry    packs.Registry
+	legacyProxy http.Handler
+	router      http.Handler
 }
 
 type problem struct {
@@ -65,12 +69,13 @@ func New(cfg Config) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		cfg:      cfg,
-		db:       readStore.DB(),
-		writeDB:  writeDB,
-		store:    readStore,
-		graph:    graph.NewReader(readStore.DB()),
-		registry: registry,
+		cfg:         cfg,
+		db:          readStore.DB(),
+		writeDB:     writeDB,
+		store:       readStore,
+		graph:       graph.NewReader(readStore.DB()),
+		registry:    registry,
+		legacyProxy: newLegacyProxy(cfg.LegacyCollectorURL),
 	}
 	s.router = s.routes()
 	return s, nil
@@ -117,15 +122,36 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 
 func RunMain(args []string, stdout, stderr *os.File) error {
 	cfg := Config{
-		Listen:   envString("KAFSIEM_API_LISTEN", ":8081"),
-		DBPath:   envString("AGENTOPS_OUTPUT_PATH", "public/agentops-state.json"),
-		PacksDir: envString("KAFSIEM_PACKS_DIR", "packs"),
+		Listen:             envString("KAFSIEM_API_LISTEN", ":8081"),
+		DBPath:             envString("AGENTOPS_OUTPUT_PATH", "public/agentops.db"),
+		PacksDir:           envString("KAFSIEM_PACKS_DIR", "/packs"),
+		LegacyCollectorURL: envString("KAFSIEM_COLLECTOR_BASE_URL", "http://collector:3001"),
 	}
+	validatePacks := false
 	for i := 0; i < len(args); i++ {
 		if args[i] == "--listen" && i+1 < len(args) {
 			cfg.Listen = args[i+1]
 			i++
+		} else if args[i] == "--db" && i+1 < len(args) {
+			cfg.DBPath = args[i+1]
+			i++
+		} else if args[i] == "--packs" && i+1 < len(args) {
+			cfg.PacksDir = args[i+1]
+			i++
+		} else if args[i] == "--collector-base-url" && i+1 < len(args) {
+			cfg.LegacyCollectorURL = args[i+1]
+			i++
+		} else if args[i] == "--validate-packs" {
+			validatePacks = true
 		}
+	}
+	if validatePacks {
+		registry, err := packs.LoadDir(cfg.PacksDir)
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintf(stdout, "validated %d packs from %s\n", len(registry.Packs), cfg.PacksDir)
+		return nil
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -147,6 +173,14 @@ func (s *Server) routes() http.Handler {
 
 	r.Get("/healthz", s.handleHealthz)
 	r.Get("/readyz", s.handleReadyz)
+	r.Post("/api/agentops/replay", s.handleLegacyReplayRequest)
+	r.Handle("/api/agentops/groups", s.legacyProxy)
+	r.Handle("/api/zone-brief-llm", s.legacyProxy)
+	r.Handle("/api/health", s.legacyProxy)
+	r.Handle("/api/search", s.legacyProxy)
+	r.Handle("/api/digest", s.legacyProxy)
+	r.Handle("/api/noise-feedback", s.legacyProxy)
+	r.Handle("/api/noise-feedback/*", s.legacyProxy)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/entities/{type}/{id}", s.handleEntityProfile)
@@ -172,6 +206,26 @@ func (s *Server) routes() http.Handler {
 		r.Get("/ontology/packs", s.handleOntologyPacks)
 	})
 	return r
+}
+
+func newLegacyProxy(raw string) http.Handler {
+	base := strings.TrimSpace(raw)
+	if base == "" {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			writeProblem(w, r, http.StatusNotImplemented, "legacy-proxy-disabled", "legacy collector API proxy is not configured")
+		})
+	}
+	target, err := url.Parse(base)
+	if err != nil {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			writeProblem(w, r, http.StatusInternalServerError, "bad-legacy-proxy", err.Error())
+		})
+	}
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		writeProblem(w, r, http.StatusBadGateway, "legacy-proxy-failed", err.Error())
+	}
+	return proxy
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
@@ -476,6 +530,31 @@ func (s *Server) handleReplayRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusAccepted, map[string]any{
+		"id":           id,
+		"status":       "pending",
+		"requested_at": time.Now().UTC().Format(time.RFC3339),
+		"topics":       body.Topics,
+	})
+}
+
+func (s *Server) handleLegacyReplayRequest(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Topics []string `json:"topics"`
+	}
+	if r.Body != nil {
+		defer r.Body.Close()
+		_ = json.NewDecoder(r.Body).Decode(&body)
+	}
+	topicsJSON, _ := json.Marshal(body.Topics)
+	id := time.Now().UTC().Format("20060102T150405.000000000")
+	if _, err := s.writeDB.ExecContext(r.Context(), `
+		INSERT INTO replay_requests (id, requested_at, status, topics_json)
+		VALUES (?, ?, 'pending', ?)
+	`, id, time.Now().UTC().Format(time.RFC3339), string(topicsJSON)); err != nil {
+		s.writeSQLError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
 		"id":           id,
 		"status":       "pending",
 		"requested_at": time.Now().UTC().Format(time.RFC3339),

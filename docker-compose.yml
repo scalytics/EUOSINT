@@ -30,6 +30,8 @@ services:
       - --api
       - --api-addr
       - ":3001"
+      - --packs
+      - /packs
       - --registry
       - /data/sources.db
       - --registry-seed
@@ -86,8 +88,11 @@ services:
       FAIL_ON_CRITICAL_SOURCE_GAP: "0"
       CRITICAL_SOURCE_PREFIXES: "interpol-red,interpol-yellow"
       COUNTRY_BOUNDARIES_PATH: "${COUNTRY_BOUNDARIES_PATH:-/app/registry/geo/countries-adm0.geojson}"
+      AGENTOPS_OUTPUT_PATH: "${AGENTOPS_OUTPUT_PATH:-/data/agentops.db}"
+      KAFSIEM_PACKS_DIR: "/packs"
     volumes:
       - feed-data:/data
+      - ./packs:/packs:ro
       - ./registry/source_registry.json:/app/registry/source_registry.json:ro
       - ./registry/category_dictionary.json:/app/registry/category_dictionary.json:ro
       - ./registry/noise_policy.json:/app/registry/noise_policy.json:ro
@@ -105,6 +110,35 @@ services:
     init: true
     restart: unless-stopped
 
+  kafsiem-api:
+    image: "${KAFSIEM_API_IMAGE:-ghcr.io/scalytics/kafsiem-api:latest}"
+    build:
+      context: .
+      dockerfile: Dockerfile.collector
+      target: api-runtime
+    env_file:
+      - .env
+    command:
+      - --listen
+      - ":8081"
+      - --db
+      - /data/agentops.db
+      - --packs
+      - /packs
+      - --collector-base-url
+      - http://collector:3001
+    environment:
+      AGENTOPS_OUTPUT_PATH: "${AGENTOPS_OUTPUT_PATH:-/data/agentops.db}"
+      KAFSIEM_PACKS_DIR: "/packs"
+      KAFSIEM_COLLECTOR_BASE_URL: "http://collector:3001"
+    volumes:
+      - feed-data:/data:ro
+      - ./packs:/packs:ro
+    depends_on:
+      - collector
+    init: true
+    restart: unless-stopped
+
   kafsiem:
     image: "${KAFSIEM_WEB_IMAGE:-ghcr.io/scalytics/kafsiem-web:latest}"
     build:
@@ -112,6 +146,7 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - collector
+      - kafsiem-api
     env_file:
       - .env
     environment:
