@@ -255,6 +255,24 @@ export interface FeatureCollection {
   features: Feature[];
 }
 
+export interface SearchResult {
+  kind: "entity" | "flow" | "detector_hit";
+  id: string;
+  type?: string;
+  canonical_id?: string;
+  display_name?: string;
+  title?: string;
+  latest_status?: string;
+  message_count?: number;
+  first_seen?: string;
+  last_seen?: string;
+  detector_id?: string;
+  severity?: string;
+  source?: string;
+  attrs?: Record<string, unknown>;
+  score: number;
+}
+
 export interface ConsumerGroupMember {
   member_id: string;
   client_id: string;
@@ -354,7 +372,6 @@ export interface OntologyTypesResponse {
   edge_types: TypeSpec[];
 }
 
-export type SearchResult = Record<string, unknown>;
 export type SearchResponse = ListResponse<SearchResult>;
 
 export type AgentOpsPointer = Pointer;

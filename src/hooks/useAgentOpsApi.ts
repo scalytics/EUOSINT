@@ -7,9 +7,12 @@ import type {
   Health,
   MapLayer,
   Message,
+  NeighborhoodResponse,
   Pack,
   Profile,
+  Provenance,
   ReplaySession,
+  SearchResult,
   Task,
   TopicHealth,
   Trace,
@@ -104,6 +107,43 @@ export function useEntityProfile(type: string | null, id: string | null) {
     [type, id],
   );
   return { profile: data, ...rest };
+}
+
+export function useEntityNeighborhood(type: string | null, id: string | null, params: { depth?: number; types?: string; window?: string } = {}) {
+  const { data, ...rest } = usePolledQuery<NeighborhoodResponse>(
+    (signal) => (type && id ? client.getEntityNeighborhood(type, id, params, { signal }) : Promise.resolve({ entities: [], edges: [] })),
+    { entities: [], edges: [] },
+    [type, id, params.depth, params.types, params.window],
+  );
+  return { neighborhood: data, ...rest };
+}
+
+export function useEntityTimeline(type: string | null, id: string | null, page: { after?: Cursor; limit?: number } = {}) {
+  const { data, ...rest } = usePolledQuery(
+    (signal) => (type && id ? client.listEntityTimeline(type, id, page, { signal }) : Promise.resolve({ items: [] as Message[], next: null as Cursor })),
+    { items: [] as Message[], next: null as Cursor },
+    [type, id, page.after, page.limit],
+  );
+  return { messages: data.items, next: data.next, ...rest };
+}
+
+export function useEntityProvenance(type: string | null, id: string | null) {
+  const { data, ...rest } = usePolledQuery(
+    (signal) => (type && id ? client.listEntityProvenance(type, id, { signal }) : Promise.resolve({ items: [] as Provenance[], next: null as Cursor })),
+    { items: [] as Provenance[], next: null as Cursor },
+    [type, id],
+  );
+  return { provenance: data.items, ...rest };
+}
+
+export function useSearchEntities(q: string) {
+  const query = q.trim();
+  const { data, ...rest } = usePolledQuery(
+    (signal) => (query ? client.searchEntities(query, { signal }) : Promise.resolve({ items: [] as SearchResult[], next: null as Cursor })),
+    { items: [] as SearchResult[], next: null as Cursor },
+    [query],
+  );
+  return { results: data.items, next: data.next, ...rest };
 }
 
 export function useFlowMessages(id: string | null, page: { after?: Cursor; limit?: number } = {}) {

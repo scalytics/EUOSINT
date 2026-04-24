@@ -1,6 +1,19 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { useEntityProfile, useFlowMessages, useFlows, useHealth, useMapFeatures, useOntologyPacks, useReplaySessions, useTopicHealth } from "@/hooks/useAgentOpsApi";
+import {
+  useEntityNeighborhood,
+  useEntityProfile,
+  useEntityProvenance,
+  useEntityTimeline,
+  useFlowMessages,
+  useFlows,
+  useHealth,
+  useMapFeatures,
+  useOntologyPacks,
+  useReplaySessions,
+  useSearchEntities,
+  useTopicHealth,
+} from "@/hooks/useAgentOpsApi";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -85,4 +98,35 @@ test("loads ontology packs and entity profiles", async () => {
 
   await waitFor(() => expect(packs.result.current.packs).toHaveLength(1));
   await waitFor(() => expect(entity.result.current.profile?.entity.id).toBe("platform:auv-7"));
+});
+
+test("loads entity graph, timeline, provenance, and search resources", async () => {
+  const fetchMock = vi.fn(async (input: string | URL) => {
+    const url = String(input);
+    if (url.includes("/api/v1/entities/platform/auv-7/neighborhood")) {
+      return { ok: true, json: async () => ({ entities: [{ id: "platform:auv-7", type: "platform", canonical_id: "auv-7", first_seen: "2026-04-10T12:00:00Z", last_seen: "2026-04-10T12:00:01Z" }], edges: [] }) };
+    }
+    if (url.includes("/api/v1/entities/platform/auv-7/timeline")) {
+      return { ok: true, json: async () => ({ items: [{ id: "msg-1", topic: "group.core.requests", topic_family: "requests", partition: 0, offset: 1, timestamp: "2026-04-10T12:00:00Z" }], next: "cursor-1" }) };
+    }
+    if (url.endsWith("/api/v1/entities/platform/auv-7/provenance")) {
+      return { ok: true, json: async () => ({ items: [{ subject_kind: "entity", subject_id: "platform:auv-7", stage: "graph", decision: "inserted", produced_at: "2026-04-10T12:00:00Z" }], next: null }) };
+    }
+    if (url.includes("/api/v1/search?q=platform%3Aauv-7")) {
+      return { ok: true, json: async () => ({ items: [{ kind: "entity", id: "platform:auv-7", type: "platform", canonical_id: "auv-7", score: 1 }], next: null }) };
+    }
+    throw new Error(`unexpected fetch ${url}`);
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  const neighborhood = renderHook(() => useEntityNeighborhood("platform", "auv-7", { depth: 2 }));
+  const timeline = renderHook(() => useEntityTimeline("platform", "auv-7", { limit: 50 }));
+  const provenance = renderHook(() => useEntityProvenance("platform", "auv-7"));
+  const search = renderHook(() => useSearchEntities("platform:auv-7"));
+
+  await waitFor(() => expect(neighborhood.result.current.neighborhood.entities).toHaveLength(1));
+  await waitFor(() => expect(timeline.result.current.messages).toHaveLength(1));
+  await waitFor(() => expect(timeline.result.current.next).toBe("cursor-1"));
+  await waitFor(() => expect(provenance.result.current.provenance).toHaveLength(1));
+  await waitFor(() => expect(search.result.current.results[0]?.kind).toBe("entity"));
 });

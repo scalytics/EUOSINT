@@ -398,9 +398,7 @@ paths:
                 properties:
                   items:
                     type: array
-                    items:
-                      type: object
-                      additionalProperties: true
+                    items: { $ref: '#/components/schemas/SearchResult' }
                   next:
                     type: [string, 'null']
   /ontology/types:
@@ -740,6 +738,27 @@ components:
         features:
           type: array
           items: { $ref: '#/components/schemas/Feature' }
+    SearchResult:
+      type: object
+      required: [kind, id, score]
+      properties:
+        kind: { type: string, enum: [entity, flow, detector_hit] }
+        id: { type: string }
+        type: { type: string }
+        canonical_id: { type: string }
+        display_name: { type: string }
+        title: { type: string }
+        latest_status: { type: string }
+        message_count: { type: integer }
+        first_seen: { type: string, format: date-time }
+        last_seen: { type: string, format: date-time }
+        detector_id: { type: string }
+        severity: { type: string }
+        source: { type: string }
+        attrs:
+          type: object
+          additionalProperties: true
+        score: { type: number }
     ListFlowResponse:
       type: object
       required: [items, next]
@@ -1080,6 +1099,24 @@ export interface FeatureCollection {
   features: Feature[];
 }
 
+export interface SearchResult {
+  kind: "entity" | "flow" | "detector_hit";
+  id: string;
+  type?: string;
+  canonical_id?: string;
+  display_name?: string;
+  title?: string;
+  latest_status?: string;
+  message_count?: number;
+  first_seen?: string;
+  last_seen?: string;
+  detector_id?: string;
+  severity?: string;
+  source?: string;
+  attrs?: Record<string, unknown>;
+  score: number;
+}
+
 export interface ConsumerGroupMember {
   member_id: string;
   client_id: string;
@@ -1179,7 +1216,6 @@ export interface OntologyTypesResponse {
   edge_types: TypeSpec[];
 }
 
-export type SearchResult = Record<string, unknown>;
 export type SearchResponse = ListResponse<SearchResult>;
 
 export type AgentOpsPointer = Pointer;

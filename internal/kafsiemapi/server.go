@@ -568,17 +568,108 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, r, http.StatusBadRequest, "bad-request", "q is required")
 		return
 	}
-	like := "%" + q + "%"
-	rows, err := s.db.QueryContext(r.Context(), `
-		SELECT id, type, canonical_id, display_name, last_seen
-		  FROM entities
-		 WHERE id LIKE ? OR canonical_id LIKE ? OR COALESCE(display_name, '') LIKE ?
-		 ORDER BY last_seen DESC, id DESC
-		 LIMIT 20
-	`, like, like, like)
+	query := parseSearchQuery(q)
+	items, err := s.searchEntities(r.Context(), query)
 	if err != nil {
 		s.writeSQLError(w, r, err)
 		return
+	}
+	flows, err := s.searchFlows(r.Context(), query)
+	if err != nil {
+		s.writeSQLError(w, r, err)
+		return
+	}
+	items = append(items, flows...)
+	items = append(items, s.searchDetectorHits(r.Context(), query)...)
+	if len(items) > 50 {
+		items = items[:50]
+	}
+	writeList(w, http.StatusOK, items, "")
+}
+
+type searchQuery struct {
+	Raw          string
+	Text         string
+	Filters      map[string]string
+	Window       graph.TimeRange
+	EntityFilter map[string]string
+}
+
+func parseSearchQuery(raw string) searchQuery {
+	out := searchQuery{
+		Raw:          strings.TrimSpace(raw),
+		Filters:      map[string]string{},
+		EntityFilter: map[string]string{},
+	}
+	var free []string
+	for _, token := range strings.Fields(out.Raw) {
+		key, value, ok := strings.Cut(token, ":")
+		if !ok || strings.TrimSpace(value) == "" {
+			free = append(free, token)
+			continue
+		}
+		key = strings.ToLower(strings.TrimSpace(key))
+		value = strings.TrimSpace(value)
+		out.Filters[key] = value
+		if key == "window" {
+			out.Window = parseWindow(value)
+			continue
+		}
+		switch key {
+		case "agent":
+			out.EntityFilter["agent"] = value
+		case "topic", "status":
+		default:
+			out.EntityFilter[key] = value
+		}
+	}
+	out.Text = strings.TrimSpace(strings.Join(free, " "))
+	return out
+}
+
+func (s *Server) searchEntities(ctx context.Context, query searchQuery) ([]map[string]any, error) {
+	var items []map[string]any
+	if len(query.EntityFilter) > 0 {
+		for entityType, value := range query.EntityFilter {
+			if !s.registry.AllowsEntityType(entityType) {
+				continue
+			}
+			found, err := s.searchEntitiesByType(ctx, entityType, value, query.Window)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, found...)
+		}
+		return items, nil
+	}
+	if query.Text == "" {
+		return items, nil
+	}
+	return s.searchEntitiesByType(ctx, "", query.Text, query.Window)
+}
+
+func (s *Server) searchEntitiesByType(ctx context.Context, entityType, text string, window graph.TimeRange) ([]map[string]any, error) {
+	like := "%" + text + "%"
+	args := []any{like, like, like, like}
+	clauses := []string{"(id LIKE ? OR canonical_id LIKE ? OR COALESCE(display_name, '') LIKE ? OR COALESCE(attrs_json, '') LIKE ?)"}
+	if entityType != "" {
+		clauses = append(clauses, "type = ?")
+		args = append(args, entityType)
+	}
+	if window.Start != "" {
+		clauses = append(clauses, "last_seen >= ?")
+		args = append(args, window.Start)
+	}
+	q := `
+		SELECT id, type, canonical_id, display_name, last_seen
+		  FROM entities
+		 WHERE ` + strings.Join(clauses, " AND ") + `
+		 ORDER BY last_seen DESC, id DESC
+		 LIMIT 20
+	`
+	rows, err := s.db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
 	}
 	defer rows.Close()
 	items := []map[string]any{}
@@ -586,8 +677,7 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		var id, entityType, canonicalID, lastSeen string
 		var displayName sql.NullString
 		if err := rows.Scan(&id, &entityType, &canonicalID, &displayName, &lastSeen); err != nil {
-			s.writeSQLError(w, r, err)
-			return
+			return nil, err
 		}
 		items = append(items, map[string]any{
 			"kind":         "entity",
@@ -596,9 +686,184 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 			"canonical_id": canonicalID,
 			"display_name": displayName.String,
 			"last_seen":    lastSeen,
+			"score":        1.0,
 		})
 	}
-	writeList(w, http.StatusOK, items, "")
+	return items, rows.Err()
+}
+
+func (s *Server) searchFlows(ctx context.Context, query searchQuery) ([]map[string]any, error) {
+	args := []any{}
+	clauses := []string{}
+	if query.Text != "" {
+		like := "%" + query.Text + "%"
+		clauses = append(clauses, `(f.id LIKE ? OR COALESCE(f.latest_preview, '') LIKE ? OR fp.value LIKE ? OR COALESCE(m.preview, '') LIKE ? OR COALESCE(m.content, '') LIKE ?)`)
+		args = append(args, like, like, like, like, like)
+	}
+	if topic := strings.TrimSpace(query.Filters["topic"]); topic != "" {
+		clauses = append(clauses, `(fp.kind = 'topic' AND fp.value LIKE ?)`)
+		args = append(args, "%"+topic+"%")
+	}
+	if status := strings.TrimSpace(query.Filters["status"]); status != "" {
+		clauses = append(clauses, `COALESCE(f.latest_status, '') = ?`)
+		args = append(args, status)
+	}
+	for entityType, value := range query.EntityFilter {
+		if !s.registry.AllowsEntityType(entityType) {
+			continue
+		}
+		clauses = append(clauses, `(fp.value = ? OR fp.value = ? OR m.sender_id = ? OR m.trace_id = ? OR m.task_id = ? OR COALESCE(m.content, '') LIKE ?)`)
+		entityID := graph.EntityID(entityType, value)
+		args = append(args, value, entityID, value, value, value, "%"+value+"%")
+	}
+	if query.Window.Start != "" {
+		clauses = append(clauses, `f.last_seen >= ?`)
+		args = append(args, query.Window.Start)
+	}
+	if len(clauses) == 0 {
+		return nil, nil
+	}
+	q := `
+		SELECT DISTINCT f.id, f.first_seen, f.last_seen, f.message_count, f.latest_status, f.latest_preview
+		  FROM flows f
+		  LEFT JOIN flow_participants fp ON fp.flow_id = f.id
+		  LEFT JOIN messages m ON m.correlation_id = f.id
+		 WHERE ` + strings.Join(clauses, " AND ") + `
+		 ORDER BY f.last_seen DESC, f.id DESC
+		 LIMIT 20
+	`
+	rows, err := s.db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []map[string]any{}
+	for rows.Next() {
+		var id, firstSeen, lastSeen string
+		var messageCount int
+		var latestStatus, latestPreview sql.NullString
+		if err := rows.Scan(&id, &firstSeen, &lastSeen, &messageCount, &latestStatus, &latestPreview); err != nil {
+			return nil, err
+		}
+		items = append(items, map[string]any{
+			"kind":          "flow",
+			"id":            id,
+			"title":         nullStringFallback(latestPreview, id),
+			"latest_status": latestStatus.String,
+			"message_count": messageCount,
+			"first_seen":    firstSeen,
+			"last_seen":     lastSeen,
+			"score":         0.86,
+		})
+	}
+	return items, rows.Err()
+}
+
+func (s *Server) searchDetectorHits(ctx context.Context, query searchQuery) []map[string]any {
+	if len(s.registry.Detectors) == 0 {
+		return nil
+	}
+	var items []map[string]any
+	for _, detector := range s.registry.Detectors {
+		if !detectorMatchesSearch(detector, query) {
+			continue
+		}
+		rows, err := s.db.QueryContext(ctx, detector.Query, detectorArgs(detector, query)...)
+		if err != nil {
+			continue
+		}
+		columns, err := rows.Columns()
+		if err != nil {
+			_ = rows.Close()
+			continue
+		}
+		count := 0
+		for rows.Next() && count < 5 {
+			values := make([]any, len(columns))
+			ptrs := make([]any, len(columns))
+			for i := range values {
+				ptrs[i] = &values[i]
+			}
+			if err := rows.Scan(ptrs...); err != nil {
+				break
+			}
+			attrs := map[string]any{}
+			for i, column := range columns {
+				attrs[column] = searchValue(values[i])
+			}
+			items = append(items, map[string]any{
+				"kind":        "detector_hit",
+				"id":          fmt.Sprintf("%s:%d", detector.ID, count+1),
+				"detector_id": detector.ID,
+				"title":       detector.ID,
+				"severity":    detector.Severity,
+				"source":      detector.Source,
+				"attrs":       attrs,
+				"score":       0.72,
+			})
+			count++
+		}
+		_ = rows.Close()
+	}
+	return items
+}
+
+func detectorMatchesSearch(detector packs.Detector, query searchQuery) bool {
+	if len(query.EntityFilter) > 0 {
+		return true
+	}
+	text := strings.ToLower(strings.TrimSpace(query.Text))
+	if text == "" {
+		return query.Filters["topic"] != "" || query.Filters["status"] != "" || query.Window.Start != ""
+	}
+	haystack := strings.ToLower(strings.Join([]string{detector.ID, detector.Severity, detector.Source, detector.ExplanationTemplate}, " "))
+	return strings.Contains(haystack, text)
+}
+
+func detectorArgs(detector packs.Detector, query searchQuery) []any {
+	window := query.Window.Start
+	if window == "" && detector.Window != "" {
+		window = parseWindow(detector.Window).Start
+	}
+	values := map[string]string{"window_start": window}
+	for key, value := range query.Filters {
+		values[key] = value
+		values[key+"_id"] = value
+	}
+	for entityType, value := range query.EntityFilter {
+		values[entityType] = value
+		values[entityType+"_id"] = value
+	}
+	for _, key := range []string{"area_id", "platform_id", "fault_mode_id", "software_version", "cve", "device_id", "plant_id", "zone_id"} {
+		if _, ok := values[key]; !ok {
+			values[key] = ""
+		}
+	}
+	args := make([]any, 0, len(values))
+	for key, value := range values {
+		args = append(args, sql.Named(key, value))
+	}
+	return args
+}
+
+func searchValue(value any) any {
+	switch typed := value.(type) {
+	case nil:
+		return nil
+	case []byte:
+		return string(typed)
+	case time.Time:
+		return typed.Format(time.RFC3339)
+	default:
+		return typed
+	}
+}
+
+func nullStringFallback(value sql.NullString, fallback string) string {
+	if value.Valid && value.String != "" {
+		return value.String
+	}
+	return fallback
 }
 
 func (s *Server) handleOntologyTypes(w http.ResponseWriter, r *http.Request) {

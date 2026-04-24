@@ -210,6 +210,13 @@ func TestServerRoutes(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Fatalf("search code=%d body=%s", rec.Code, rec.Body.String())
 		}
+		body := rec.Body.String()
+		if !strings.Contains(body, `"kind":"entity"`) || !strings.Contains(body, `"id":"agent:alice"`) {
+			t.Fatalf("expected entity result in %s", body)
+		}
+		if !strings.Contains(body, `"kind":"flow"`) || !strings.Contains(body, `"id":"corr-1"`) {
+			t.Fatalf("expected flow result in %s", body)
+		}
 	})
 
 	t.Run("bad-entity-type", func(t *testing.T) {
@@ -227,6 +234,45 @@ func TestServerRoutes(t *testing.T) {
 			t.Fatalf("bad bbox code=%d body=%s", rec.Code, rec.Body.String())
 		}
 	})
+}
+
+func TestSearchReturnsDetectorHitsFromPackQueries(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "agentops.db")
+	seedAPIStore(t, dbPath)
+	packsDir := t.TempDir()
+	writeAPIPackFile(t, filepath.Join(packsDir, "ops", "pack.yaml"), `
+name: ops
+version: 0.1.0
+entity_types:
+  - id: asset
+`)
+	writeAPIPackFile(t, filepath.Join(packsDir, "ops", "detectors", "seed-hit.yaml"), `
+id: seed-hit
+severity: high
+match:
+  pattern: |
+    SELECT 'agent:alice' AS subject_id, 'seed provenance' AS reason
+`)
+
+	srv, err := New(Config{
+		Listen:   ":0",
+		DBPath:   dbPath,
+		PacksDir: packsDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srv.Close()
+
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/search?q=agent:alice", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("search code=%d body=%s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `"kind":"detector_hit"`) || !strings.Contains(body, `"detector_id":"seed-hit"`) {
+		t.Fatalf("expected detector hit in %s", body)
+	}
 }
 
 func TestRunMainValidatePacks(t *testing.T) {
@@ -451,6 +497,16 @@ func seedAPIStore(t *testing.T, path string) {
 		t.Fatal(err)
 	}
 	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeAPIPackFile(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(strings.TrimSpace(body)+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }

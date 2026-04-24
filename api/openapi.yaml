@@ -381,9 +381,7 @@ paths:
                 properties:
                   items:
                     type: array
-                    items:
-                      type: object
-                      additionalProperties: true
+                    items: { $ref: '#/components/schemas/SearchResult' }
                   next:
                     type: [string, 'null']
   /ontology/types:
@@ -723,6 +721,27 @@ components:
         features:
           type: array
           items: { $ref: '#/components/schemas/Feature' }
+    SearchResult:
+      type: object
+      required: [kind, id, score]
+      properties:
+        kind: { type: string, enum: [entity, flow, detector_hit] }
+        id: { type: string }
+        type: { type: string }
+        canonical_id: { type: string }
+        display_name: { type: string }
+        title: { type: string }
+        latest_status: { type: string }
+        message_count: { type: integer }
+        first_seen: { type: string, format: date-time }
+        last_seen: { type: string, format: date-time }
+        detector_id: { type: string }
+        severity: { type: string }
+        source: { type: string }
+        attrs:
+          type: object
+          additionalProperties: true
+        score: { type: number }
     ListFlowResponse:
       type: object
       required: [items, next]
