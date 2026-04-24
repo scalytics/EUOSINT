@@ -1,4 +1,7 @@
 import { EmptyState, StatusRow, Tag } from "@/agentops/components/Chrome";
+import { EntityChip } from "@/agentops/components/EntityChip";
+import type { EntityRef } from "@/agentops/lib/entities";
+import { entityCanonicalID } from "@/agentops/lib/entities";
 import { formatTime } from "@/agentops/lib/view";
 import type { Pack, Profile, View } from "@/agentops/lib/api-client/types";
 
@@ -17,13 +20,24 @@ function displayValue(value: unknown): string {
   return String(value);
 }
 
-export function EntityProfileCard({ profile, packs }: { profile: Profile | null; packs: Pack[] }) {
+export function EntityProfileCard({
+  profile,
+  packs,
+  onTogglePin,
+  isPinned,
+}: {
+  profile: Profile | null;
+  packs: Pack[];
+  onTogglePin?: (entity: EntityRef) => void;
+  isPinned?: (entity: EntityRef) => boolean;
+}) {
   if (!profile) {
     return <EmptyState text="Select an entity route to inspect a pack-defined profile." />;
   }
 
   const attrs = profile.entity.attrs ?? {};
   const match = findView(packs, profile.entity.type);
+  const entityRef = { type: profile.entity.type, id: entityCanonicalID({ type: profile.entity.type, id: profile.entity.id }), label: profile.entity.display_name || profile.entity.id };
   const fieldRows = match?.view.fields?.length
     ? match.view.fields.map((field) => ({
         key: field.id,
@@ -47,7 +61,10 @@ export function EntityProfileCard({ profile, packs }: { profile: Profile | null;
             <div className="mt-2 text-lg font-semibold">{profile.entity.display_name || profile.entity.canonical_id}</div>
             <div className="mt-1 font-mono text-xs text-siem-muted">{profile.entity.id}</div>
           </div>
-          <Tag>{match?.view.title || profile.entity.type}</Tag>
+          <div className="flex flex-wrap justify-end gap-2 text-[11px] text-siem-muted">
+            <EntityChip entity={entityRef} pinned={isPinned?.(entityRef)} onTogglePin={onTogglePin} />
+            <Tag>{match?.view.title || profile.entity.type}</Tag>
+          </div>
         </div>
         <div className="mt-3 grid gap-2 text-sm text-siem-muted">
           <div>First seen: {formatTime(profile.first_seen)}</div>
@@ -73,7 +90,7 @@ export function EntityProfileCard({ profile, packs }: { profile: Profile | null;
           {profile.top_neighbors.length > 0 ? profile.top_neighbors.map((neighbor) => (
             <div key={neighbor.entity_id} className="flex items-center justify-between gap-3 rounded-2xl border border-siem-border bg-siem-panel/55 px-3 py-2 text-sm">
               <span>{neighbor.entity_type}</span>
-              <span className="font-mono text-xs text-siem-muted">{neighbor.entity_id}</span>
+              <EntityChip entity={{ type: neighbor.entity_type, id: neighbor.entity_id, label: neighbor.entity_id }} pinned={isPinned?.({ type: neighbor.entity_type, id: neighbor.entity_id })} onTogglePin={onTogglePin} />
             </div>
           )) : <EmptyState text="No graph neighbors ranked for this entity yet." />}
         </div>

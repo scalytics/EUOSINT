@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { AgentOpsRuntimeDesk } from "@/agentops/pages/AgentOpsRuntimeDesk";
 import type { AgentOpsOperatorState } from "@/types/agentops";
@@ -32,6 +32,10 @@ const mockedHooks = {
   useFlowTraces: vi.fn(),
   useOntologyPacks: vi.fn(),
   useEntityProfile: vi.fn(),
+  useEntityNeighborhood: vi.fn(),
+  useEntityTimeline: vi.fn(),
+  useEntityProvenance: vi.fn(),
+  useSearchEntities: vi.fn(),
 };
 
 vi.mock("@/hooks/useAgentOpsOperator", () => ({
@@ -44,6 +48,14 @@ vi.mock("@/hooks/useAlerts", () => ({
 
 vi.mock("@/agentops/components/RuntimeMap", () => ({
   RuntimeMap: () => <div>Map Surface Stub</div>,
+}));
+
+vi.mock("@/agentops/components/GraphCanvas", () => ({
+  GraphCanvas: ({ entities, edges }: { entities: unknown[]; edges: unknown[] }) => <div>Graph Canvas Stub {entities.length}/{edges.length}</div>,
+}));
+
+vi.mock("@/agentops/components/ProvenanceDrawer", () => ({
+  ProvenanceDrawer: ({ subject }: { subject: { type: string; id: string } | null }) => subject ? <div>Provenance Drawer Stub {subject.type}:{subject.id}</div> : null,
 }));
 
 vi.mock("@/hooks/useAgentOpsApi", () => ({
@@ -59,10 +71,14 @@ vi.mock("@/hooks/useAgentOpsApi", () => ({
   useFlowTraces: (...args: unknown[]) => mockedHooks.useFlowTraces(...args),
   useOntologyPacks: (...args: unknown[]) => mockedHooks.useOntologyPacks(...args),
   useEntityProfile: (...args: unknown[]) => mockedHooks.useEntityProfile(...args),
+  useEntityNeighborhood: (...args: unknown[]) => mockedHooks.useEntityNeighborhood(...args),
+  useEntityTimeline: (...args: unknown[]) => mockedHooks.useEntityTimeline(...args),
+  useEntityProvenance: (...args: unknown[]) => mockedHooks.useEntityProvenance(...args),
+  useSearchEntities: (...args: unknown[]) => mockedHooks.useSearchEntities(...args),
 }));
 
 beforeEach(() => {
-  window.history.pushState({}, "", "/?view=entity&type=platform&id=auv-7");
+  window.history.pushState({}, "", "/");
   mockedUseAgentOpsOperator.mockReset();
   mockedUseAgentOpsOperator.mockReturnValue({
     supported: true,
@@ -93,6 +109,18 @@ beforeEach(() => {
   mockedHooks.useFlowMessages.mockReturnValue({ messages: [] });
   mockedHooks.useFlowTasks.mockReturnValue({ tasks: [] });
   mockedHooks.useFlowTraces.mockReturnValue({ traces: [] });
+  mockedHooks.useEntityNeighborhood.mockReturnValue({
+    neighborhood: {
+      entities: [{ id: "correlation:corr-1", type: "correlation", canonical_id: "corr-1", first_seen: "2026-04-10T12:00:00Z", last_seen: "2026-04-10T12:00:01Z" }],
+      edges: [],
+    },
+  });
+  mockedHooks.useEntityTimeline.mockReturnValue({ messages: [], next: null });
+  mockedHooks.useEntityProvenance.mockReturnValue({ provenance: [] });
+  mockedHooks.useSearchEntities.mockImplementation((q: string) => ({
+    results: q ? [{ kind: "entity", id: "platform:auv-7", type: "platform", canonical_id: "auv-7", display_name: "AUV-7", score: 1 }] : [],
+    isLoading: false,
+  }));
   mockedHooks.useOntologyPacks.mockReturnValue({
     packs: [{
       name: "drones",
@@ -135,70 +163,28 @@ beforeEach(() => {
   });
 });
 
-test("renders a drones pack entity profile inside the runtime desk", () => {
+test("renders command search, notes, and topology surfaces in the runtime desk", async () => {
   render(<AgentOpsRuntimeDesk mode="AGENTOPS" />);
 
-  expect(screen.getByText("Entity View")).toBeTruthy();
-  expect(screen.getByText("drones pack")).toBeTruthy();
+  expect(screen.getByPlaceholderText("agent:alice topic:requests window:1h")).toBeTruthy();
+  expect(screen.getByText("Notes")).toBeTruthy();
+  fireEvent.change(screen.getByPlaceholderText("agent:alice topic:requests window:1h"), { target: { value: "platform:auv-7 window:1h" } });
+  fireEvent.submit(screen.getByPlaceholderText("agent:alice topic:requests window:1h").closest("form") as HTMLFormElement);
+
+  await waitFor(() => expect(mockedHooks.useSearchEntities).toHaveBeenLastCalledWith("platform:auv-7 window:1h"));
   expect(screen.getByText("AUV-7")).toBeTruthy();
-  expect(screen.getByText("Serial")).toBeTruthy();
-  expect(screen.getByText("SN-007")).toBeTruthy();
-  expect(screen.getByText("Autonomy Version")).toBeTruthy();
-  expect(screen.getByText("7.4.2")).toBeTruthy();
-  expect(screen.getByText("mission:sea-trial-12")).toBeTruthy();
-  expect(screen.getAllByText("platform:auv-7").length).toBeGreaterThan(0);
+
+  fireEvent.click(screen.getByRole("button", { name: /topology/i }));
+  expect(screen.getByText("Graph Canvas Stub 1/0")).toBeTruthy();
+  expect(mockedHooks.useEntityNeighborhood).toHaveBeenCalledWith("correlation", "corr-1", { depth: 2 });
 });
 
-test("renders a scada pack entity profile inside the runtime desk", () => {
-  window.history.pushState({}, "", "/?view=entity&type=device&id=safety-plc-1");
-  mockedHooks.useOntologyPacks.mockReturnValue({
-    packs: [{
-      name: "scada",
-      version: "0.1.0",
-      views: [{
-        id: "device",
-        entity_type: "device",
-        title: "Device",
-        fields: [
-          { id: "asset_id", label: "Asset ID" },
-          { id: "vendor", label: "Vendor" },
-          { id: "firmware_version", label: "Firmware" },
-          { id: "zone", label: "Zone" },
-        ],
-        source: "pack/scada",
-      }],
-    }],
+test("opens the provenance drawer from a why affordance", async () => {
+  mockedHooks.useFlowMessages.mockReturnValue({
+    messages: [{ id: "msg-1", topic: "group.core.requests", topic_family: "requests", partition: 0, offset: 1, timestamp: "2026-04-10T12:00:00Z", correlation_id: "corr-1", sender_id: "worker-a" }],
   });
-  mockedHooks.useEntityProfile.mockReturnValue({
-    profile: {
-      entity: {
-        id: "device:safety-plc-1",
-        type: "device",
-        canonical_id: "safety-plc-1",
-        display_name: "Safety PLC 1",
-        first_seen: "2026-04-10T12:00:00Z",
-        last_seen: "2026-04-10T12:00:01Z",
-        attrs: {
-          asset_id: "PLC-001",
-          vendor: "Triconex",
-          firmware_version: "fw-live-2",
-          zone: "L3A",
-        },
-      },
-      first_seen: "2026-04-10T12:00:00Z",
-      last_seen: "2026-04-10T12:00:01Z",
-      edge_counts: { in: 1 },
-      top_neighbors: [{ entity_id: "zone:l3a", entity_type: "zone", weight: 1 }],
-    },
-  });
-
   render(<AgentOpsRuntimeDesk mode="AGENTOPS" />);
 
-  expect(screen.getByText("scada pack")).toBeTruthy();
-  expect(screen.getByText("Safety PLC 1")).toBeTruthy();
-  expect(screen.getByText("Asset ID")).toBeTruthy();
-  expect(screen.getByText("PLC-001")).toBeTruthy();
-  expect(screen.getByText("Firmware")).toBeTruthy();
-  expect(screen.getByText("fw-live-2")).toBeTruthy();
-  expect(screen.getByText("zone:l3a")).toBeTruthy();
+  fireEvent.click(screen.getAllByRole("button", { name: /why/i })[0]);
+  await waitFor(() => expect(screen.getByText(/Provenance Drawer Stub/)).toBeTruthy());
 });

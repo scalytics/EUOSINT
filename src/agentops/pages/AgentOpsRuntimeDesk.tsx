@@ -1,18 +1,24 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Activity, AlertTriangle, CheckCircle2, GitBranch, Globe2, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, GitBranch, Globe2, NotebookText, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
+import { CommandBar } from "@/agentops/components/CommandBar";
 import { EmptyState, MetricCard, Panel, StatusRow, Tag } from "@/agentops/components/Chrome";
-import { EntityProfileCard } from "@/agentops/components/EntityProfileCard";
+import { EntityChip } from "@/agentops/components/EntityChip";
+import { GraphCanvas } from "@/agentops/components/GraphCanvas";
 import { MessageCard } from "@/agentops/components/MessageCard";
+import { ProvenanceDrawer } from "@/agentops/components/ProvenanceDrawer";
 import { RuntimeMap } from "@/agentops/components/RuntimeMap";
 import { buildFailureBuckets } from "@/agentops/lib/failures";
+import { edgeColorMap } from "@/agentops/lib/graph";
 import { buildFusionMatches } from "@/agentops/lib/hybrid";
 import { buildConversationTimeline, buildRunSummary } from "@/agentops/lib/investigation";
 import { loadAnomaliesOnly, loadQueueFilter, loadSelectedRunId, persistAnomaliesOnly, persistQueueFilter, persistSelectedRunId, type RunQueueFilter } from "@/agentops/lib/preferences";
 import { displayModeName } from "@/agentops/lib/state";
 import { formatTime } from "@/agentops/lib/view";
+import { entityCanonicalID, entityKey, entityRefFromFlow, parseCommandFilters, refsForFlow, refsForMessage, splitEntityID, type EntityRef } from "@/agentops/lib/entities";
 import { useAgentOpsOperator } from "@/hooks/useAgentOpsOperator";
+import { useSavedInvestigation } from "@/hooks/useSavedInvestigation";
 import {
-  useEntityProfile,
+  useEntityNeighborhood,
   useFlow,
   useFlowMessages,
   useFlowTasks,
@@ -23,6 +29,7 @@ import {
   useMapLayers,
   useOntologyPacks,
   useReplaySessions,
+  useSearchEntities,
   useTopicHealth,
 } from "@/hooks/useAgentOpsApi";
 import { useAlerts } from "@/hooks/useAlerts";
@@ -35,24 +42,9 @@ interface Props {
   mode: AgentOpsMode;
 }
 
-interface EntitySelection {
-  type: string;
-  id: string;
-}
-
 function anomalyHint(status?: string, messageCount = 0): boolean {
   if (messageCount === 0) return true;
   return /(failed|error|rejected|timeout|stalled)/i.test(status || "");
-}
-
-function readSelectedEntity(): EntitySelection | null {
-  if (typeof window === "undefined") return null;
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("view") !== "entity") return null;
-  const type = (params.get("type") || "").trim();
-  const id = (params.get("id") || "").trim();
-  if (!type || !id) return null;
-  return { type, id };
 }
 
 export function AgentOpsRuntimeDesk({ mode }: Props) {
@@ -62,24 +54,33 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(() => loadSelectedRunId());
   const [queueFilter, setQueueFilter] = useState<RunQueueFilter>(() => loadQueueFilter());
   const [anomaliesOnly, setAnomaliesOnly] = useState<boolean>(() => loadAnomaliesOnly());
-  const [selectedEntity] = useState<EntitySelection | null>(() => readSelectedEntity());
-  const [workspaceTab, setWorkspaceTab] = useState<"replay" | "failures" | "raw" | "operator" | "entity">(() => (readSelectedEntity() ? "entity" : "replay"));
+  const [workspaceTab, setWorkspaceTab] = useState<"replay" | "failures" | "raw" | "operator" | "topology">("replay");
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [replayScope, setReplayScope] = useState<"run" | "trace" | "task" | "topics">("run");
   const [replayNotice, setReplayNotice] = useState("");
   const [optimisticReplaySessions, setOptimisticReplaySessions] = useState<ReplaySession[]>([]);
   const [mapBBox, setMapBBox] = useState("14.40,35.80,14.60,36.00");
   const [mapTypes, setMapTypes] = useState<string[]>([]);
+  const [commandValue, setCommandValue] = useState("");
+  const [activeCommand, setActiveCommand] = useState("");
+  const [drawerSubject, setDrawerSubject] = useState<EntityRef | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const { flows } = useFlows({ limit: 50, status: queueFilter === "all" || queueFilter === "attention" ? undefined : queueFilter });
+  const commandFilters = useMemo(() => parseCommandFilters(activeCommand), [activeCommand]);
+  const { flows } = useFlows({
+    limit: 50,
+    status: commandFilters.status ?? (queueFilter === "all" || queueFilter === "attention" ? undefined : queueFilter),
+    topic: commandFilters.topic,
+    sender: commandFilters.sender,
+    q: commandFilters.text,
+  });
   const { health } = useHealth();
   const { topicHealth } = useTopicHealth();
   const { replaySessions } = useReplaySessions();
   const { mapLayers } = useMapLayers();
   const { featureCollection } = useMapFeatures({ bbox: mapBBox, types: mapTypes.length > 0 ? mapTypes.join(",") : undefined });
   const { packs } = useOntologyPacks();
-  const { profile: entityProfile } = useEntityProfile(selectedEntity?.type ?? null, selectedEntity?.id ?? null);
+  const { results: commandResults, isLoading: commandLoading } = useSearchEntities(activeCommand);
 
   useEffect(() => {
     setOptimisticReplaySessions(replaySessions);
@@ -106,6 +107,10 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   const { messages: relatedMessages } = useFlowMessages(selectedFlowId, { limit: 100 });
   const { tasks: relatedTasks } = useFlowTasks(selectedFlowId);
   const { traces: relatedTraces } = useFlowTraces(selectedFlowId);
+  const selectedCorrelation = selectedFlow ? entityRefFromFlow(selectedFlow) : null;
+  const { neighborhood } = useEntityNeighborhood(selectedCorrelation?.type ?? null, selectedCorrelation ? entityCanonicalID(selectedCorrelation) : null, { depth: 2 });
+  const edgeColors = useMemo(() => edgeColorMap(packs), [packs]);
+  const saved = useSavedInvestigation(selectedFlowId);
 
   useEffect(() => {
     setSelectedMessageId((current) => current ?? relatedMessages[0]?.id ?? null);
@@ -265,6 +270,18 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
         <section className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[1.1fr_1fr_0.95fr]">
           <Panel title={mode === "HYBRID" ? "Fusion Queue" : "Operations Queue"} icon={Activity} bodyClassName="overflow-y-auto pr-1">
             <div className="space-y-4">
+              <CommandBar
+                value={commandValue}
+                results={commandResults}
+                isLoading={commandLoading}
+                onChange={setCommandValue}
+                onSubmit={() => setActiveCommand(commandValue.trim())}
+                onClear={() => {
+                  setCommandValue("");
+                  setActiveCommand("");
+                }}
+                onFlowSelect={selectFlow}
+              />
               <div className="flex flex-wrap gap-2">
                 {(["attention", "active", "completed", "all"] as RunQueueFilter[]).map((filter) => (
                   <button
@@ -291,20 +308,17 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                   {section.items.map((flow) => {
                     const active = selectedFlow?.id === flow.id;
                     return (
-                      <button
-                        key={flow.id}
-                        type="button"
-                        onClick={() => selectFlow(flow.id)}
-                        className={`w-full rounded-2xl border p-3 text-left transition ${active ? "border-siem-accent/45 bg-siem-accent/12" : "border-siem-border bg-siem-panel/55 hover:border-siem-accent/25 hover:bg-siem-panel-strong"}`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="truncate font-semibold">{flow.latest_preview || flow.id}</div>
-                            <div className="mt-1 font-mono text-[11px] text-siem-muted">{flow.id}</div>
-                            <div className="mt-2 text-xs text-siem-muted">{flow.topics.join(", ") || "No topics declared"}</div>
+                      <div key={flow.id} className={`rounded-2xl border p-3 transition ${active ? "border-siem-accent/45 bg-siem-accent/12" : "border-siem-border bg-siem-panel/55 hover:border-siem-accent/25 hover:bg-siem-panel-strong"}`}>
+                        <button type="button" onClick={() => selectFlow(flow.id)} className="block w-full text-left">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="truncate font-semibold">{flow.latest_preview || flow.id}</div>
+                              <div className="mt-1 font-mono text-[11px] text-siem-muted">{flow.id}</div>
+                              <div className="mt-2 text-xs text-siem-muted">{flow.topics.join(", ") || "No topics declared"}</div>
+                            </div>
+                            <span className="rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-siem-muted">{flow.latest_status || "active"}</span>
                           </div>
-                          <span className="rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-siem-muted">{flow.latest_status || "active"}</span>
-                        </div>
+                        </button>
                         <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
                           <Tag>{flow.sender_count} participants</Tag>
                           <Tag>{flow.message_count} messages</Tag>
@@ -312,7 +326,12 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                           {anomalyHint(flow.latest_status, flow.message_count) ? <Tag>attention</Tag> : null}
                           {active ? <Tag>selected</Tag> : null}
                         </div>
-                      </button>
+                        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
+                          {refsForFlow(flow).map((entity) => (
+                            <EntityChip key={entityKey(entity)} entity={entity} pinned={saved.isPinned(entity)} onTogglePin={saved.togglePinned} />
+                          ))}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
@@ -354,36 +373,47 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                   {timeline.map((item) =>
                     item.kind === "gap" ? (
                       <div key={item.id} className="rounded-2xl border border-dashed border-siem-border bg-siem-bg/30 px-4 py-3 text-sm text-siem-muted">
-                        <div className="inline-flex items-center gap-2">
-                          <AlertTriangle size={14} className="text-siem-accent" />
-                          {item.detail}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="inline-flex items-center gap-2">
+                            <AlertTriangle size={14} className="text-siem-accent" />
+                            {item.detail}
+                          </div>
+                          {selectedCorrelation ? (
+                            <button type="button" onClick={() => setDrawerSubject(selectedCorrelation)} className="rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em]">
+                              why
+                            </button>
+                          ) : null}
                         </div>
                       </div>
                     ) : (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => {
-                          if (item.sourceMessageId) {
-                            setSelectedMessageId(item.sourceMessageId);
-                            setWorkspaceTab("raw");
-                          }
-                        }}
-                        className="block w-full rounded-2xl border border-siem-border bg-siem-panel/55 p-4 text-left"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="font-semibold">{item.title}</div>
-                            <div className="mt-1 text-xs text-siem-muted">{item.detail}</div>
+                      <div key={item.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (item.sourceMessageId) {
+                              setSelectedMessageId(item.sourceMessageId);
+                              setWorkspaceTab("raw");
+                            }
+                          }}
+                          className="block w-full text-left"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="font-semibold">{item.title}</div>
+                              <div className="mt-1 text-xs text-siem-muted">{item.detail}</div>
+                            </div>
+                            <Tag>{item.family || "event"}</Tag>
                           </div>
-                          <Tag>{item.family || "event"}</Tag>
-                        </div>
+                        </button>
                         <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
                           <Tag>{formatTime(item.at)}</Tag>
-                          {item.sender ? <Tag>{item.sender}</Tag> : null}
+                          {item.sender ? <EntityChip entity={{ type: "agent", id: item.sender, label: item.sender }} pinned={saved.isPinned({ type: "agent", id: item.sender })} onTogglePin={saved.togglePinned} /> : null}
                           {item.status ? <Tag>{item.status}</Tag> : null}
+                          <button type="button" onClick={() => setDrawerSubject(item.sender ? { type: "agent", id: item.sender, label: item.sender } : selectedCorrelation)} className="rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em]">
+                            why
+                          </button>
                         </div>
-                      </button>
+                      </div>
                     ),
                   )}
                 </>
@@ -404,7 +434,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                   <StatusRow label="Mirrored" value={String(health?.mirrored_count ?? 0)} />
                   {mode === "HYBRID" ? <StatusRow label="Fusion matches" value={String(fusionMatches.length)} /> : null}
                   <StatusRow label="Last poll" value={formatTime(health?.last_poll_at || "")} />
-                  {selectedEntity ? <StatusRow label="Entity focus" value={`${selectedEntity.type}:${selectedEntity.id}`} /> : null}
+                  {selectedCorrelation ? <StatusRow label="Correlation entity" value={entityKey(selectedCorrelation)} /> : null}
                 </div>
                 {selectedFlow ? (
                   <>
@@ -421,7 +451,34 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                     <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
                       <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Participants</div>
                       <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                        {selectedFlow.senders.map((sender) => <Tag key={sender}>{sender}</Tag>)}
+                        {selectedFlow.senders.map((sender) => (
+                          <EntityChip key={sender} entity={{ type: "agent", id: sender, label: sender }} pinned={saved.isPinned({ type: "agent", id: sender })} onTogglePin={saved.togglePinned} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Anomalies</div>
+                      <div className="mt-3 space-y-2">
+                        {runSummary.anomalies.length === 0 ? (
+                          <EmptyState text="No run anomalies detected." />
+                        ) : (
+                          runSummary.anomalies.map((anomaly) => (
+                            <div key={anomaly.id} className="rounded-2xl border border-siem-border bg-siem-bg/45 p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="font-semibold">{anomaly.label}</div>
+                                  <div className="mt-1 text-xs text-siem-muted">{anomaly.detail}</div>
+                                </div>
+                                <Tag>{anomaly.severity}</Tag>
+                              </div>
+                              {selectedCorrelation ? (
+                                <button type="button" onClick={() => setDrawerSubject(selectedCorrelation)} className="mt-3 rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-siem-muted hover:text-siem-text">
+                                  why
+                                </button>
+                              ) : null}
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
                   </>
@@ -466,9 +523,19 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
           <Panel title="Message Detail" icon={RadioTower} bodyClassName="overflow-y-auto pr-1">
             <div className="space-y-3">
               {relatedMessages.map((message) => (
-                <button key={message.id} type="button" onClick={() => { setSelectedMessageId(message.id); setWorkspaceTab("raw"); }} className={`block w-full text-left ${selectedMessageId === message.id ? "rounded-[18px] ring-1 ring-siem-accent/45" : ""}`}>
-                  <MessageCard message={message} />
-                </button>
+                <div key={message.id} className={`space-y-2 ${selectedMessageId === message.id ? "rounded-[18px] ring-1 ring-siem-accent/45" : ""}`}>
+                  <button type="button" onClick={() => { setSelectedMessageId(message.id); setWorkspaceTab("raw"); }} className="block w-full text-left">
+                    <MessageCard message={message} />
+                  </button>
+                  <div className="flex flex-wrap gap-2 text-[11px] text-siem-muted">
+                    {refsForMessage(message, packs).map((entity) => (
+                      <EntityChip key={entityKey(entity)} entity={entity} pinned={saved.isPinned(entity)} onTogglePin={saved.togglePinned} />
+                    ))}
+                    <button type="button" onClick={() => setDrawerSubject(refForMessage(message) || selectedCorrelation)} className="rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em] hover:text-siem-text">
+                      why
+                    </button>
+                  </div>
+                </div>
               ))}
               {relatedMessages.length === 0 ? <EmptyState text="No decoded messages for the selected flow yet." /> : null}
             </div>
@@ -481,8 +548,8 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                   ["replay", "Replay Studio"],
                   ["failures", "Failure Workbench"],
                   ["raw", "Raw Messages"],
-                  ["entity", "Entity View"],
                   ["operator", "Operator"],
+                  ["topology", "Topology"],
                 ].map(([id, label]) => (
                   <button key={id} type="button" onClick={() => setWorkspaceTab(id as typeof workspaceTab)} className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${workspaceTab === id ? "border-siem-accent/50 bg-siem-accent/14 text-siem-text" : "border-siem-border text-siem-muted"}`}>
                     {label}
@@ -542,14 +609,6 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                 </div>
               ) : <EmptyState text="Select a timeline or message entry to inspect the raw transport artifact." /> : null}
 
-              {workspaceTab === "entity" ? (
-                selectedEntity ? (
-                  <EntityProfileCard profile={entityProfile} packs={packs} />
-                ) : (
-                  <EmptyState text="Open the runtime desk with `?view=entity&type=platform&id=<id>` to render a pack-defined entity profile." />
-                )
-              ) : null}
-
               {workspaceTab === "operator" ? (
                 <>
                   <StatusRow label="Admin surface" value={operator.supported ? "supported" : "limited"} />
@@ -571,14 +630,51 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                   ))}
                 </>
               ) : null}
+
+              {workspaceTab === "topology" ? (
+                selectedCorrelation ? (
+                  <GraphCanvas
+                    entities={neighborhood.entities}
+                    edges={neighborhood.edges}
+                    edgeColors={edgeColors}
+                    selectedEntityId={entityKey(selectedCorrelation)}
+                    onEntityClick={(entity) => { window.location.href = `?view=entity&type=${entity.type}&id=${entityCanonicalID(entity)}`; }}
+                  />
+                ) : (
+                  <EmptyState text="Select a run to render the 2-hop correlation neighborhood." />
+                )
+              ) : null}
             </div>
           </Panel>
 
-          <Panel title="Map Surface" icon={Globe2} bodyClassName="overflow-y-auto pr-1">
-            <RuntimeMap bbox={mapBBox} layers={mapLayers} features={featureCollection} selectedTypes={mapTypes} onBBoxChange={setMapBBox} onTypesChange={setMapTypes} />
-          </Panel>
+          <div className="grid min-h-0 gap-4 overflow-hidden">
+            <Panel title="Notes" icon={NotebookText} bodyClassName="overflow-y-auto pr-1">
+              <textarea
+                value={saved.investigation.notes}
+                onChange={(event) => saved.setNotes(event.target.value)}
+                className="min-h-[150px] w-full resize-none rounded-2xl border border-siem-border bg-siem-bg/45 p-3 text-sm text-siem-text outline-none"
+              />
+              <div className="mt-3 grid gap-2">
+                <StatusRow label="Opened" value={formatTime(saved.investigation.openedAt)} />
+                <StatusRow label="Pinned entities" value={String(saved.investigation.pinnedEntities.length)} />
+              </div>
+            </Panel>
+
+            <Panel title="Map Surface" icon={Globe2} bodyClassName="overflow-y-auto pr-1">
+              <RuntimeMap bbox={mapBBox} layers={mapLayers} features={featureCollection} selectedTypes={mapTypes} onBBoxChange={setMapBBox} onTypesChange={setMapTypes} />
+            </Panel>
+          </div>
         </section>
       </div>
+      <ProvenanceDrawer subject={drawerSubject} onClose={() => setDrawerSubject(null)} />
     </main>
   );
+}
+
+function refForMessage(message: { task_id?: string; trace_id?: string; sender_id?: string; correlation_id?: string }): EntityRef | null {
+  if (message.task_id) return { type: "task", id: message.task_id, label: message.task_id };
+  if (message.trace_id) return { type: "trace", id: message.trace_id, label: message.trace_id };
+  if (message.sender_id) return { type: "agent", id: message.sender_id, label: message.sender_id };
+  if (message.correlation_id) return { type: "correlation", id: message.correlation_id, label: message.correlation_id };
+  return null;
 }

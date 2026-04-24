@@ -1,6 +1,7 @@
 import { isAgentOpsDemo } from "@/agentops/lib/demo";
 import { LegacyAgentOpsDesk } from "@/agentops/pages/AgentOpsDesk";
 import { AgentOpsRuntimeDesk } from "@/agentops/pages/AgentOpsRuntimeDesk";
+import { EntityProfilePage, readEntityRoute } from "@/agentops/pages/EntityProfilePage";
 import type { AgentOpsMode, AgentOpsState } from "@/agentops/types";
 
 interface Props {
@@ -14,6 +15,9 @@ function hasLegacyData(state: AgentOpsState | undefined): boolean {
 }
 
 export function AgentOpsApp({ mode, state }: Props) {
+  if (readEntityRoute()) {
+    return <EntityProfilePage mode={mode} />;
+  }
   if (isAgentOpsDemo() || hasLegacyData(state)) {
     return <LegacyAgentOpsDesk state={state ?? {
       generated_at: "",
