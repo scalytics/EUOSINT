@@ -1,7 +1,8 @@
 import { isAgentOpsDemo } from "@/agentops/lib/demo";
+import { readEntityRoute } from "@/agentops/lib/routes";
 import { LegacyAgentOpsDesk } from "@/agentops/pages/AgentOpsDesk";
 import { AgentOpsRuntimeDesk } from "@/agentops/pages/AgentOpsRuntimeDesk";
-import { EntityProfilePage, readEntityRoute } from "@/agentops/pages/EntityProfilePage";
+import { EntityProfilePage } from "@/agentops/pages/EntityProfilePage";
 import type { AgentOpsMode, AgentOpsState } from "@/agentops/types";
 
 interface Props {

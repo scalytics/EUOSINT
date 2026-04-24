@@ -7,20 +7,12 @@ import { GraphCanvas } from "@/agentops/components/GraphCanvas";
 import { MessageCard } from "@/agentops/components/MessageCard";
 import { ProvenanceDrawer } from "@/agentops/components/ProvenanceDrawer";
 import { edgeColorMap } from "@/agentops/lib/graph";
-import { entityCanonicalID, entityKey, entityRefFromFlow, splitEntityID, type EntityRef } from "@/agentops/lib/entities";
+import { entityCanonicalID, entityKey, entityRefFromFlow, type EntityRef } from "@/agentops/lib/entities";
+import { readEntityRoute } from "@/agentops/lib/routes";
 import { formatTime } from "@/agentops/lib/view";
 import { useSavedInvestigation } from "@/hooks/useSavedInvestigation";
 import { useEntityNeighborhood, useEntityProfile, useEntityProvenance, useEntityTimeline, useFlows, useOntologyPacks } from "@/hooks/useAgentOpsApi";
 import type { AgentOpsMode } from "@/agentops/types";
-
-export function readEntityRoute(): EntityRef | null {
-  if (typeof window === "undefined") return null;
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("view") !== "entity") return null;
-  const type = (params.get("type") || "").trim();
-  const id = (params.get("id") || "").trim();
-  return type && id ? { type, id, label: `${type}:${id}` } : null;
-}
 
 export function EntityProfilePage({ mode }: { mode: AgentOpsMode }) {
   const [subject] = useState<EntityRef | null>(() => readEntityRoute());

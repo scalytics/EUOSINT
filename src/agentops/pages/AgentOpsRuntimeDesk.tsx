@@ -14,7 +14,7 @@ import { buildConversationTimeline, buildRunSummary } from "@/agentops/lib/inves
 import { loadAnomaliesOnly, loadQueueFilter, loadSelectedRunId, persistAnomaliesOnly, persistQueueFilter, persistSelectedRunId, type RunQueueFilter } from "@/agentops/lib/preferences";
 import { displayModeName } from "@/agentops/lib/state";
 import { formatTime } from "@/agentops/lib/view";
-import { entityCanonicalID, entityKey, entityRefFromFlow, parseCommandFilters, refsForFlow, refsForMessage, splitEntityID, type EntityRef } from "@/agentops/lib/entities";
+import { entityCanonicalID, entityKey, entityRefFromFlow, parseCommandFilters, refsForFlow, refsForMessage, type EntityRef } from "@/agentops/lib/entities";
 import { useAgentOpsOperator } from "@/hooks/useAgentOpsOperator";
 import { useSavedInvestigation } from "@/hooks/useSavedInvestigation";
 import {
