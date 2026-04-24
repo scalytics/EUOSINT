@@ -5,6 +5,7 @@ node_modules/
 dist/
 dist-ssr/
 coverage/
+*.lcov
 .tmp/
 /kafsiem-collector
 cmd/test-*/
@@ -58,6 +59,18 @@ internal/collector/run/public/
 
 # Tool caches
 .eslintcache
+.cache/
+.vite/
+.vite-inspect/
+.turbo/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+storybook-static/
+playwright-report/
+test-results/
+junit.xml
 .npm/
 .pnpm-store/
 .yarn/
