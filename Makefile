@@ -22,7 +22,7 @@ CODEQL_GO_OUT ?= $(CODEQL_DIR)/go.sarif
 BRANCH ?= main
 RELEASE_LEVEL ?= patch
 
-.PHONY: help check check-commit install clean lint typecheck test build ci api-lint pack-lint \
+.PHONY: help check check-commit install clean lint typecheck test build ci api-lint pack-lint pack-docs \
 	npm-install-if-needed \
 	go-fmt go-fmt-check go-test go-race go-cover go-vet go-codeql commit-check \
 	docker-build docker-up docker-down docker-logs docker-shell \
@@ -88,7 +88,12 @@ api-lint: ## Lint OpenAPI with Spectral
 	npx --yes @stoplight/spectral-cli lint --fail-severity=error api/openapi.yaml
 
 pack-lint: ## Validate bundled packs
-	go run ./cmd/kafsiem-api --validate-packs --packs ./packs
+	@mkdir -p $(GOCACHE_DIR) $(GOMODCACHE_DIR)
+	GOCACHE=$(GOCACHE_DIR) GOMODCACHE=$(GOMODCACHE_DIR) go run ./cmd/kafsiem-api --validate-packs --packs ./packs
+
+pack-docs: ## Generate bundled pack reference docs
+	@mkdir -p $(GOCACHE_DIR) $(GOMODCACHE_DIR)
+	GOCACHE=$(GOCACHE_DIR) GOMODCACHE=$(GOMODCACHE_DIR) go run ./cmd/pack-docs --packs ./packs --out docs/packs
 
 ci: check lint typecheck test build go-test api-lint pack-lint ## Run the full local CI suite
 
