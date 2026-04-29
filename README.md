@@ -1,6 +1,13 @@
 # kafSIEM
 
-kafSIEM is the open-source edition of our OSINT pipeline, used across multiple installations and packaged for local and server deployment.
+kafSIEM is an open-source operations and fusion analysis surface. It turns
+Kafka-observed operational traffic and selected OSINT context into an
+auditable entity graph for analyst workflows.
+
+The product can run standalone for teams that need a local, Docker-first
+analysis stack. It can also complement existing enterprise intelligence
+platforms through typed APIs, pack-defined ontology, provenance-preserving
+records, and exportable graph context.
 
 It now ships with three operating modes:
 
@@ -13,10 +20,26 @@ This repository has been prepared for public use by removing non-public, interna
 ## Open-Source Scope
 
 - Public-ready OSINT pipeline architecture
-- AgentOps flow tracking over Kafka for KafClaw-style agent traffic
+- Operations flow tracking over Kafka for KafClaw-style agent traffic
+- Entity, edge, provenance, map, and timeline APIs backed by SQLite
+- Pack-defined ontology for unmanned systems and SCADA / critical infrastructure workflows
 - Docker-first deployment for reproducible installs
-- Web dashboard + Go collector runtime
+- Web dashboard, Go collector runtime, and standalone analyst API service
 - Configurable ingestion and refresh cadence
+
+## Target Deployments
+
+kafSIEM is designed for two initial operations profiles:
+
+- unmanned systems teams that need readiness, sortie, EW, software, and
+  signoff evidence connected across fleet activity
+- SCADA and critical infrastructure teams that need plant, device, change,
+  alarm, firmware, vulnerability, and session evidence connected across
+  operational telemetry
+
+These profiles are shipped as data packs under `packs/`. The active pack
+contract is documented in [docs/packs/drones.md](https://github.com/scalytics/kafSIEM/blob/main/docs/packs/drones.md)
+and [docs/packs/scada.md](https://github.com/scalytics/kafSIEM/blob/main/docs/packs/scada.md).
 
 ## Operating Modes
 
@@ -36,6 +59,8 @@ AgentOps is a separate bounded domain in the codebase:
 - frontend: `src/agentops/...`
 
 It is not implemented as a generic plugin tree.
+
+Architecture details live in [docs/architecture.md](https://github.com/scalytics/kafSIEM/blob/main/docs/architecture.md).
 
 ## Run With Docker
 
@@ -163,6 +188,9 @@ Content behavior is explicit:
 - replay always uses a dedicated consumer group and never mutates the live tracking group
 
 Operator reference and examples live in [docs/agentops-operator-guide.md](https://github.com/scalytics/kafSIEM/blob/main/docs/agentops-operator-guide.md).
+The analyst API contract lives in [api/openapi.yaml](https://github.com/scalytics/kafSIEM/blob/main/api/openapi.yaml);
+client guidance is in [docs/api-clients.md](https://github.com/scalytics/kafSIEM/blob/main/docs/api-clients.md)
+and problem details are registered in [docs/agentops-api-errors.md](https://github.com/scalytics/kafSIEM/blob/main/docs/agentops-api-errors.md).
 
 ## Operations
 
