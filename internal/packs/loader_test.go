@@ -178,6 +178,198 @@ match:
 	}
 }
 
+func TestLoadDirRejectsInvalidPackDeclarations(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+	}{
+		{
+			name: "unsupported schema",
+			body: `
+name: drones
+version: 0.1.0
+schema_version: v9
+`,
+		},
+		{
+			name: "invalid entity id",
+			body: `
+name: drones
+version: 0.1.0
+entity_types:
+  - id: Platform
+`,
+		},
+		{
+			name: "edge missing endpoints",
+			body: `
+name: drones
+version: 0.1.0
+entity_types:
+  - id: platform
+edge_types:
+  - id: assigned_to
+`,
+		},
+		{
+			name: "edge unknown destination",
+			body: `
+name: drones
+version: 0.1.0
+entity_types:
+  - id: platform
+edge_types:
+  - id: assigned_to
+    src_types: [platform]
+    dst_types: [missing]
+`,
+		},
+		{
+			name: "overlay missing entity types",
+			body: `
+name: drones
+version: 0.1.0
+map_layers:
+  - id: live-platforms
+    name: Live Platforms
+    kind: overlay
+    geometry_source: entity_geometry
+    render: point
+`,
+		},
+		{
+			name: "overlay unknown entity type",
+			body: `
+name: drones
+version: 0.1.0
+map_layers:
+  - id: live-platforms
+    name: Live Platforms
+    kind: overlay
+    geometry_source: entity_geometry
+    entity_types: [missing]
+    render: point
+`,
+		},
+		{
+			name: "basemap missing url",
+			body: `
+name: drones
+version: 0.1.0
+map_layers:
+  - id: osm
+    name: OSM
+    kind: basemap
+`,
+		},
+		{
+			name: "unsupported map kind",
+			body: `
+name: drones
+version: 0.1.0
+map_layers:
+  - id: odd
+    name: Odd
+    kind: raster
+`,
+		},
+		{
+			name: "unsupported render",
+			body: `
+name: drones
+version: 0.1.0
+map_layers:
+  - id: live-platforms
+    name: Live Platforms
+    kind: overlay
+    geometry_source: entity_geometry
+    entity_types: [agent]
+    render: sparkle
+`,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			writePackFile(t, filepath.Join(root, "drones", "pack.yaml"), tc.body)
+			if _, err := LoadDir(root); err == nil {
+				t.Fatal("expected invalid pack declaration to fail")
+			}
+		})
+	}
+}
+
+func TestLoadDirRejectsInvalidDetectorViewAndQueryDeclarations(t *testing.T) {
+	cases := []struct {
+		name  string
+		path  string
+		body  string
+		setup func(t *testing.T, root string)
+	}{
+		{
+			name: "detector severity",
+			path: filepath.Join("drones", "detectors", "bad.yaml"),
+			body: `
+id: bad
+severity: urgent
+match:
+  pattern: SELECT 1
+`,
+		},
+		{
+			name: "detector empty sql",
+			path: filepath.Join("drones", "detectors", "bad.yaml"),
+			body: `
+id: bad
+severity: low
+match:
+  pattern: ""
+`,
+		},
+		{
+			name: "detector multiple statements",
+			path: filepath.Join("drones", "detectors", "bad.yaml"),
+			body: `
+id: bad
+severity: low
+match:
+  pattern: SELECT 1; SELECT 2
+`,
+		},
+		{
+			name: "view unknown entity",
+			path: filepath.Join("drones", "views", "missing.yaml"),
+			body: `
+entity_type: missing
+title: Missing
+`,
+		},
+		{
+			name: "query not read only",
+			path: filepath.Join("drones", "queries", "bad.yaml"),
+			body: `
+id: bad
+sql: UPDATE entities SET type = 'x'
+`,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			writePackFile(t, filepath.Join(root, "drones", "pack.yaml"), `
+name: drones
+version: 0.1.0
+entity_types:
+  - id: platform
+`)
+			writePackFile(t, filepath.Join(root, tc.path), tc.body)
+			if _, err := LoadDir(root); err == nil {
+				t.Fatal("expected invalid declaration to fail")
+			}
+		})
+	}
+}
+
 func TestBundledPacksLoad(t *testing.T) {
 	root := filepath.Join("..", "..", "packs")
 	registry, err := LoadDir(root)

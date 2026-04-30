@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"path/filepath"
 	"testing"
 
@@ -73,6 +74,54 @@ func TestReaderProfileAndGeometryQueries(t *testing.T) {
 	}
 	if !intersects {
 		t.Fatal("expected point geometry to intersect containing area")
+	}
+}
+
+func TestGeometryHelpersCoverPointLinePolygonAndInvalidGeoJSON(t *testing.T) {
+	point := json.RawMessage(`{"type":"Point","coordinates":[14.5146,35.8989]}`)
+	line := json.RawMessage(`{"type":"LineString","coordinates":[[14.50,35.88],[14.5146,35.8989]]}`)
+	multipoint := json.RawMessage(`{"type":"MultiPoint","coordinates":[[14.1,35.1],[14.2,35.2]]}`)
+	polygon := json.RawMessage(`{"type":"Polygon","coordinates":[[[14.4,35.8],[14.6,35.8],[14.6,36.0],[14.4,36.0],[14.4,35.8]]]}`)
+	multipolygon := json.RawMessage(`{"type":"MultiPolygon","coordinates":[[[[14.4,35.8],[14.6,35.8],[14.6,36.0],[14.4,36.0],[14.4,35.8]]]]}`)
+
+	if points := extractPoints(line); len(points) != 2 {
+		t.Fatalf("expected line points, got %#v", points)
+	}
+	if points := extractPoints(multipoint); len(points) != 2 {
+		t.Fatalf("expected multipoint points, got %#v", points)
+	}
+	if points := extractPoints(multipolygon); len(points) != 5 {
+		t.Fatalf("expected multipolygon ring points, got %#v", points)
+	}
+	if points := extractPoints(json.RawMessage(`{`)); points != nil {
+		t.Fatalf("expected invalid GeoJSON to return nil points, got %#v", points)
+	}
+	if !pointInGeometry([2]float64{14.5146, 35.8989}, point) {
+		t.Fatal("expected exact point match")
+	}
+	if !pointInGeometry([2]float64{14.5146, 35.8989}, polygon) {
+		t.Fatal("expected point in polygon")
+	}
+	if !pointInGeometry([2]float64{14.5146, 35.8989}, multipolygon) {
+		t.Fatal("expected point in multipolygon")
+	}
+	if !pointInGeometry([2]float64{14.5146, 35.8989}, line) {
+		t.Fatal("expected point on line vertex")
+	}
+	if pointInGeometry([2]float64{14.5146, 35.8989}, json.RawMessage(`{`)) {
+		t.Fatal("expected invalid GeoJSON to miss")
+	}
+	if !geoIntersects(Geometry{GeoJSON: point}, Geometry{GeoJSON: polygon}) {
+		t.Fatal("expected point and polygon to intersect")
+	}
+	if geoIntersects(Geometry{GeoJSON: json.RawMessage(`{"type":"Point","coordinates":[15.0,35.0]}`)}, Geometry{GeoJSON: polygon}) {
+		t.Fatal("expected distant point not to intersect polygon")
+	}
+	if !geoIntersects(Geometry{GeoJSON: json.RawMessage(`{`)}, Geometry{GeoJSON: polygon}) {
+		t.Fatal("empty/invalid geometry falls back to bbox-level intersection")
+	}
+	if !almostEqual(1.0, 1.0+1e-10) || almostEqual(1.0, 1.0+1e-6) {
+		t.Fatal("unexpected almostEqual tolerance")
 	}
 }
 

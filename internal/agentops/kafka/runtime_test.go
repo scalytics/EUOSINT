@@ -382,6 +382,20 @@ func TestHandleRecordWritesGraphEntitiesEdgesAndProvenance(t *testing.T) {
 		if provenance < 7 {
 			t.Fatalf("expected graph provenance rows, got %d", provenance)
 		}
+		var edgesWithoutProvenance int
+		if err := tx.QueryRow(`
+			SELECT COUNT(*)
+			  FROM edges e
+			  LEFT JOIN provenance p
+			    ON p.subject_kind = 'edge'
+			   AND p.subject_id = CAST(e.id AS TEXT)
+			 WHERE p.id IS NULL
+		`).Scan(&edgesWithoutProvenance); err != nil {
+			return err
+		}
+		if edgesWithoutProvenance != 0 {
+			t.Fatalf("expected every graph edge to have provenance, missing=%d", edgesWithoutProvenance)
+		}
 		return nil
 	})
 	if err != nil {
