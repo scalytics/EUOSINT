@@ -154,8 +154,20 @@ problem types are registered in [docs/agentops-api-errors.md](agentops-api-error
 ## Local Demo And Dev
 
 The old JSON-backed AgentOps dashboard demo has been removed. Local Operations
-and Fusion UI development now runs against the live `kafsiem-api` surface and
-the collector-written SQLite AgentOps database.
+and Fusion UI development runs against the live `kafsiem-api` surface and the
+collector-written SQLite AgentOps database.
+
+For UI-only demos, the runtime desk can use typed in-browser mock streams that
+exercise the same queue, ontology, graph, map, provenance, and Fusion-context
+surfaces without requiring Kafka or SQLite:
+
+```bash
+npm run demo:ontology
+npm run demo:fusion
+```
+
+The demo URLs are `/?demo=ontology` for Operations and `/?demo=fusion` for
+Fusion. They do not restore the discontinued legacy dashboard.
 
 For live local development against collector and API output:
 

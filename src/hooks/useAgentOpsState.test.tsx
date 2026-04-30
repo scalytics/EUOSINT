@@ -62,6 +62,24 @@ test("does not fetch legacy AgentOps JSON demo state", async () => {
   });
 
   expect(result.current.isLoading).toBe(false);
-  expect(result.current.state.ui_mode).toBe("OSINT");
+  expect(result.current.state.ui_mode).toBe("AGENTOPS");
+  expect(result.current.state.profile).toBe("agentops-default");
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+test("uses fusion shell state for the mocked fusion demo", async () => {
+  window.history.replaceState({}, "", "/?demo=fusion");
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+
+  const { result } = renderHook(() => useAgentOpsState());
+
+  await act(async () => {
+    await Promise.resolve();
+  });
+
+  expect(result.current.isLoading).toBe(false);
+  expect(result.current.state.ui_mode).toBe("HYBRID");
+  expect(result.current.state.profile).toBe("hybrid-ops");
   expect(fetchMock).not.toHaveBeenCalled();
 });

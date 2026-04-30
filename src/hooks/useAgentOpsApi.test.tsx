@@ -17,6 +17,7 @@ import {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.history.replaceState({}, "", "/");
 });
 
 test("loads typed flow and health resources from the api", async () => {
@@ -129,4 +130,25 @@ test("loads entity graph, timeline, provenance, and search resources", async () 
   await waitFor(() => expect(timeline.result.current.next).toBe("cursor-1"));
   await waitFor(() => expect(provenance.result.current.provenance).toHaveLength(1));
   await waitFor(() => expect(search.result.current.results[0]?.kind).toBe("entity"));
+});
+
+test("serves ontology demo streams without fetching the live api", async () => {
+  window.history.replaceState({}, "", "/?demo=ontology");
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+
+  const flows = renderHook(() => useFlows({ limit: 10 }));
+  const health = renderHook(() => useHealth());
+  const messages = renderHook(() => useFlowMessages("corr-drone-ew-1", { limit: 10 }));
+  const packs = renderHook(() => useOntologyPacks());
+  const provenance = renderHook(() => useEntityProvenance("correlation", "corr-drone-ew-1"));
+  const search = renderHook(() => useSearchEntities("platform:auv-07"));
+
+  await waitFor(() => expect(flows.result.current.flows[0]?.id).toBe("corr-drone-ew-1"));
+  await waitFor(() => expect(health.result.current.health?.group_id).toBe("kafsiem-ontology-demo"));
+  await waitFor(() => expect(messages.result.current.messages.length).toBeGreaterThan(1));
+  await waitFor(() => expect(packs.result.current.packs.map((pack) => pack.name)).toContain("drones"));
+  await waitFor(() => expect(provenance.result.current.provenance.some((item) => item.stage === "ontology")).toBe(true));
+  await waitFor(() => expect(search.result.current.results[0]?.id).toBe("platform:auv-07"));
+  expect(fetchMock).not.toHaveBeenCalled();
 });

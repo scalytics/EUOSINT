@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AgentOpsApiClient } from "@/agentops/lib/api-client";
+import { agentOpsDataSource } from "@/agentops/lib/api-source";
 import type {
   Cursor,
   FeatureCollection,
@@ -19,7 +19,6 @@ import type {
 } from "@/agentops/lib/api-client/types";
 
 const POLL_MS = 5000;
-const client = new AgentOpsApiClient();
 
 type QueryState<T> = {
   data: T;
@@ -84,7 +83,7 @@ function usePolledQuery<T>(load: (signal: AbortSignal) => Promise<T>, initial: T
 
 export function useFlows(filter: { after?: Cursor; limit?: number; topic?: string; sender?: string; status?: string; q?: string } = {}) {
   const { data, ...rest } = usePolledQuery(
-    (signal) => client.listFlows(filter, { signal }),
+    (signal) => agentOpsDataSource().listFlows(filter, { signal }),
     { items: [] as Flow[], next: null as Cursor },
     [filter.after, filter.limit, filter.q, filter.sender, filter.status, filter.topic],
   );
@@ -93,7 +92,7 @@ export function useFlows(filter: { after?: Cursor; limit?: number; topic?: strin
 
 export function useFlow(id: string | null) {
   const { data, ...rest } = usePolledQuery<Flow | null>(
-    (signal) => (id ? client.getFlow(id, { signal }) : Promise.resolve(null)),
+    (signal) => (id ? agentOpsDataSource().getFlow(id, { signal }) : Promise.resolve(null)),
     null,
     [id],
   );
@@ -102,7 +101,7 @@ export function useFlow(id: string | null) {
 
 export function useEntityProfile(type: string | null, id: string | null) {
   const { data, ...rest } = usePolledQuery<Profile | null>(
-    (signal) => (type && id ? client.getEntity(type, id, { signal }) : Promise.resolve(null)),
+    (signal) => (type && id ? agentOpsDataSource().getEntity(type, id, { signal }) : Promise.resolve(null)),
     null,
     [type, id],
   );
@@ -111,7 +110,7 @@ export function useEntityProfile(type: string | null, id: string | null) {
 
 export function useEntityNeighborhood(type: string | null, id: string | null, params: { depth?: number; types?: string; window?: string } = {}) {
   const { data, ...rest } = usePolledQuery<NeighborhoodResponse>(
-    (signal) => (type && id ? client.getEntityNeighborhood(type, id, params, { signal }) : Promise.resolve({ entities: [], edges: [] })),
+    (signal) => (type && id ? agentOpsDataSource().getEntityNeighborhood(type, id, params, { signal }) : Promise.resolve({ entities: [], edges: [] })),
     { entities: [], edges: [] },
     [type, id, params.depth, params.types, params.window],
   );
@@ -120,7 +119,7 @@ export function useEntityNeighborhood(type: string | null, id: string | null, pa
 
 export function useEntityTimeline(type: string | null, id: string | null, page: { after?: Cursor; limit?: number } = {}) {
   const { data, ...rest } = usePolledQuery(
-    (signal) => (type && id ? client.listEntityTimeline(type, id, page, { signal }) : Promise.resolve({ items: [] as Message[], next: null as Cursor })),
+    (signal) => (type && id ? agentOpsDataSource().listEntityTimeline(type, id, page, { signal }) : Promise.resolve({ items: [] as Message[], next: null as Cursor })),
     { items: [] as Message[], next: null as Cursor },
     [type, id, page.after, page.limit],
   );
@@ -129,7 +128,7 @@ export function useEntityTimeline(type: string | null, id: string | null, page: 
 
 export function useEntityProvenance(type: string | null, id: string | null) {
   const { data, ...rest } = usePolledQuery(
-    (signal) => (type && id ? client.listEntityProvenance(type, id, { signal }) : Promise.resolve({ items: [] as Provenance[], next: null as Cursor })),
+    (signal) => (type && id ? agentOpsDataSource().listEntityProvenance(type, id, { signal }) : Promise.resolve({ items: [] as Provenance[], next: null as Cursor })),
     { items: [] as Provenance[], next: null as Cursor },
     [type, id],
   );
@@ -139,7 +138,7 @@ export function useEntityProvenance(type: string | null, id: string | null) {
 export function useSearchEntities(q: string) {
   const query = q.trim();
   const { data, ...rest } = usePolledQuery(
-    (signal) => (query ? client.searchEntities(query, { signal }) : Promise.resolve({ items: [] as SearchResult[], next: null as Cursor })),
+    (signal) => (query ? agentOpsDataSource().searchEntities(query, { signal }) : Promise.resolve({ items: [] as SearchResult[], next: null as Cursor })),
     { items: [] as SearchResult[], next: null as Cursor },
     [query],
   );
@@ -148,7 +147,7 @@ export function useSearchEntities(q: string) {
 
 export function useFlowMessages(id: string | null, page: { after?: Cursor; limit?: number } = {}) {
   const { data, ...rest } = usePolledQuery(
-    (signal) => (id ? client.listFlowMessages(id, page, { signal }) : Promise.resolve({ items: [] as Message[], next: null as Cursor })),
+    (signal) => (id ? agentOpsDataSource().listFlowMessages(id, page, { signal }) : Promise.resolve({ items: [] as Message[], next: null as Cursor })),
     { items: [] as Message[], next: null as Cursor },
     [id, page.after, page.limit],
   );
@@ -157,7 +156,7 @@ export function useFlowMessages(id: string | null, page: { after?: Cursor; limit
 
 export function useFlowTasks(id: string | null) {
   const { data, ...rest } = usePolledQuery(
-    (signal) => (id ? client.listFlowTasks(id, { signal }) : Promise.resolve({ items: [] as Task[], next: null as Cursor })),
+    (signal) => (id ? agentOpsDataSource().listFlowTasks(id, { signal }) : Promise.resolve({ items: [] as Task[], next: null as Cursor })),
     { items: [] as Task[], next: null as Cursor },
     [id],
   );
@@ -166,7 +165,7 @@ export function useFlowTasks(id: string | null) {
 
 export function useFlowTraces(id: string | null) {
   const { data, ...rest } = usePolledQuery(
-    (signal) => (id ? client.listFlowTraces(id, { signal }) : Promise.resolve({ items: [] as Trace[], next: null as Cursor })),
+    (signal) => (id ? agentOpsDataSource().listFlowTraces(id, { signal }) : Promise.resolve({ items: [] as Trace[], next: null as Cursor })),
     { items: [] as Trace[], next: null as Cursor },
     [id],
   );
@@ -175,7 +174,7 @@ export function useFlowTraces(id: string | null) {
 
 export function useTopicHealth() {
   const { data, ...rest } = usePolledQuery(
-    (signal) => client.listTopicHealth({ signal }),
+    (signal) => agentOpsDataSource().listTopicHealth({ signal }),
     { items: [] as TopicHealth[], next: null as Cursor },
     [],
   );
@@ -183,13 +182,13 @@ export function useTopicHealth() {
 }
 
 export function useHealth() {
-  const { data, ...rest } = usePolledQuery<Health | null>((signal) => client.getHealth({ signal }), null, []);
+  const { data, ...rest } = usePolledQuery<Health | null>((signal) => agentOpsDataSource().getHealth({ signal }), null, []);
   return { health: data, ...rest };
 }
 
 export function useReplaySessions(limit = 20) {
   const { data, ...rest } = usePolledQuery(
-    (signal) => client.listReplays(limit, { signal }),
+    (signal) => agentOpsDataSource().listReplays(limit, { signal }),
     { items: [] as ReplaySession[], next: null as Cursor },
     [limit],
   );
@@ -198,7 +197,7 @@ export function useReplaySessions(limit = 20) {
 
 export function useMapLayers() {
   const { data, ...rest } = usePolledQuery(
-    (signal) => client.listMapLayers({ signal }),
+    (signal) => agentOpsDataSource().listMapLayers({ signal }),
     { items: [] as MapLayer[], next: null as Cursor },
     [],
   );
@@ -207,7 +206,7 @@ export function useMapLayers() {
 
 export function useOntologyPacks() {
   const { data, ...rest } = usePolledQuery(
-    (signal) => client.getOntologyPacks({ signal }),
+    (signal) => agentOpsDataSource().getOntologyPacks({ signal }),
     { items: [] as Pack[], next: null as Cursor },
     [],
   );
@@ -216,7 +215,7 @@ export function useOntologyPacks() {
 
 export function useMapFeatures(params: { bbox: string; types?: string; window?: string }) {
   const { data, ...rest } = usePolledQuery<FeatureCollection>(
-    (signal) => client.listMapFeatures(params, { signal }),
+    (signal) => agentOpsDataSource().listMapFeatures(params, { signal }),
     { type: "FeatureCollection", features: [] },
     [params.bbox, params.types, params.window],
   );

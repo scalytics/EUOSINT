@@ -14,6 +14,8 @@
   },
   "scripts": {
     "dev": "vite",
+    "demo:ontology": "vite --open '/?demo=ontology'",
+    "demo:fusion": "vite --open '/?demo=fusion'",
     "generate:api": "go generate ./api/...",
     "fetch:alerts": "go run ./cmd/kafsiem-collector",
     "fetch:alerts:watch": "go run ./cmd/kafsiem-collector --watch",

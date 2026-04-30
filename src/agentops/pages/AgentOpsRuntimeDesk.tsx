@@ -12,6 +12,8 @@ import { buildFusionMatches } from "@/agentops/lib/hybrid";
 import { buildConversationTimeline, buildRunSummary } from "@/agentops/lib/investigation";
 import { loadAnomaliesOnly, loadQueueFilter, loadSelectedRunId, persistAnomaliesOnly, persistQueueFilter, persistSelectedRunId, type RunQueueFilter } from "@/agentops/lib/preferences";
 import { displayModeName } from "@/agentops/lib/state";
+import { agentOpsDataSource } from "@/agentops/lib/api-source";
+import { demoLabel, isAgentOpsDemo } from "@/agentops/lib/demo";
 import { formatTime } from "@/agentops/lib/view";
 import {
   entityCanonicalID,
@@ -44,9 +46,7 @@ import {
 } from "@/hooks/useAgentOpsApi";
 import { useAlerts } from "@/hooks/useAlerts";
 import type { AgentOpsFlow, AgentOpsHealth, AgentOpsMessage, AgentOpsMode, Pack, Profile, ReplaySession, SearchResult } from "@/agentops/types";
-import { AgentOpsApiClient } from "@/agentops/lib/api-client";
 
-const api = new AgentOpsApiClient();
 const CORE_ENTITY_TYPES = ["agent", "task", "trace", "topic", "correlation", "location", "area"];
 
 type WorkspaceTab = "topology" | "map" | "replay" | "failures" | "raw" | "operator";
@@ -80,16 +80,18 @@ interface Props {
 
 function anomalyHint(status?: string, messageCount = 0): boolean {
   if (messageCount === 0) return true;
-  return /(failed|error|rejected|timeout|stalled)/i.test(status || "");
+  return /(attention|blocked|degraded|failed|error|rejected|timeout|stalled|triage)/i.test(status || "");
 }
 
 export function AgentOpsRuntimeDesk({ mode }: Props) {
   const modeName = displayModeName(mode);
+  const demoActive = isAgentOpsDemo();
+  const activeDemoLabel = demoLabel();
   const operator = useAgentOpsOperator(mode !== "OSINT");
   const { alerts } = useAlerts();
-  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(() => loadSelectedRunId());
-  const [queueFilter, setQueueFilter] = useState<RunQueueFilter>(() => loadQueueFilter());
-  const [anomaliesOnly, setAnomaliesOnly] = useState<boolean>(() => loadAnomaliesOnly());
+  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(() => (demoActive ? null : loadSelectedRunId()));
+  const [queueFilter, setQueueFilter] = useState<RunQueueFilter>(() => (demoActive ? "attention" : loadQueueFilter()));
+  const [anomaliesOnly, setAnomaliesOnly] = useState<boolean>(() => (demoActive ? false : loadAnomaliesOnly()));
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>("topology");
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [replayScope, setReplayScope] = useState<"run" | "trace" | "task" | "topics">("run");
@@ -136,9 +138,9 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
     if (!selectedFlowId || !flows.some((flow) => flow.id === selectedFlowId)) {
       const next = flows[0]?.id ?? null;
       setSelectedFlowId(next);
-      persistSelectedRunId(next);
+      if (!demoActive) persistSelectedRunId(next);
     }
-  }, [flows, selectedFlowId]);
+  }, [demoActive, flows, selectedFlowId]);
 
   const { flow: selectedFlow } = useFlow(selectedFlowId);
   const { messages: relatedMessages } = useFlowMessages(selectedFlowId, { limit: 100 });
@@ -203,19 +205,19 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
 
   function selectFlow(id: string) {
     setSelectedFlowId(id);
-    persistSelectedRunId(id);
+    if (!demoActive) persistSelectedRunId(id);
     setWorkspaceTab("topology");
   }
 
   function updateQueueFilter(filter: RunQueueFilter) {
     setQueueFilter(filter);
-    persistQueueFilter(filter);
+    if (!demoActive) persistQueueFilter(filter);
   }
 
   function toggleAnomaliesOnly() {
     setAnomaliesOnly((current) => {
       const next = !current;
-      persistAnomaliesOnly(next);
+      if (!demoActive) persistAnomaliesOnly(next);
       return next;
     });
   }
@@ -232,7 +234,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
       };
       setOptimisticReplaySessions((current) => [optimistic, ...current]);
       setReplayNotice("Replay request queued.");
-      void api
+      void agentOpsDataSource()
         .createReplayRequest(selectedFlow?.topics ?? [], {})
         .then(() => setReplayNotice("Replay accepted."))
         .catch(() => {
@@ -293,6 +295,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
             <StatusPill label="topics" value={String(topicCount)} ok={topicCount > 0} />
             <StatusPill label="det" value={String(detectorCount)} ok={detectorCount > 0} />
             <StatusPill label="pack" value={activePackLabel} ok={packs.length > 0} />
+            <StatusPill label="stream" value={demoActive ? activeDemoLabel : "live"} ok />
             <button
               type="button"
               onClick={() => void triggerReplay()}

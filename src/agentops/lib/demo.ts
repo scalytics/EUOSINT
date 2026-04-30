@@ -1,15 +1,39 @@
 import { appURL } from "@/lib/app-url";
+import type { AgentOpsMode } from "@/agentops/types";
 
-type DemoMode = "agentops" | null;
+export type AgentOpsDemoMode = "ontology" | "fusion";
 
-function currentDemoMode(): DemoMode {
+export function currentDemoMode(): AgentOpsDemoMode | null {
   if (typeof window === "undefined") return null;
   const value = new URLSearchParams(window.location.search).get("demo")?.trim().toLowerCase();
-  return value === "agentops" ? "agentops" : null;
+  switch (value) {
+    case "agentops":
+    case "ontology":
+      return "ontology";
+    case "hybrid":
+    case "fusion":
+      return "fusion";
+    default:
+      return null;
+  }
 }
 
 export function isAgentOpsDemo(): boolean {
-  return currentDemoMode() === "agentops";
+  return currentDemoMode() !== null;
+}
+
+export function demoShellMode(): AgentOpsMode | null {
+  const mode = currentDemoMode();
+  if (mode === "fusion") return "HYBRID";
+  if (mode === "ontology") return "AGENTOPS";
+  return null;
+}
+
+export function demoLabel(): string {
+  const mode = currentDemoMode();
+  if (mode === "fusion") return "Fusion demo";
+  if (mode === "ontology") return "Ontology demo";
+  return "";
 }
 
 export function alertsURL(): string {

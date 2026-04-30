@@ -78,7 +78,7 @@ vi.mock("@/hooks/useAgentOpsApi", () => ({
 }));
 
 beforeEach(() => {
-  window.history.pushState({}, "", "/");
+  window.history.replaceState({}, "", "/");
   mockedUseAgentOpsOperator.mockReset();
   mockedUseAgentOpsOperator.mockReturnValue({
     supported: true,
@@ -177,6 +177,14 @@ test("renders command search, notes, and topology surfaces in the runtime desk",
 
   expect(screen.getByText("Graph Canvas Stub 1/0")).toBeTruthy();
   expect(mockedHooks.useEntityNeighborhood).toHaveBeenCalledWith("correlation", "corr-1", { depth: 2 });
+});
+
+test("marks mocked ontology demo streams in the console chrome", () => {
+  window.history.replaceState({}, "", "/?demo=ontology");
+
+  render(<AgentOpsRuntimeDesk mode="AGENTOPS" />);
+
+  expect(screen.getByText("Ontology demo")).toBeTruthy();
 });
 
 test("opens the provenance drawer from a why affordance", async () => {

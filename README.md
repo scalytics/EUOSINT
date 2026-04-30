@@ -84,8 +84,18 @@ make dev-logs
 ```
 
 The old JSON-backed AgentOps demo UI has been removed. Operations and Fusion
-development now uses the live runtime desk against `kafsiem-api` and the
-collector-written SQLite store.
+development uses the live runtime desk against `kafsiem-api` and the
+collector-written SQLite store. For UI-only demos without Kafka or SQLite,
+the same runtime desk can run against typed mock streams:
+
+```bash
+npm run demo:ontology
+npm run demo:fusion
+```
+
+These open `/?demo=ontology` and `/?demo=fusion`, which keep OSINT untouched
+and feed the Operations/Fusion ontology dashboard through mocked typed API
+resources.
 
 ## Remote Install (wget bootstrap)
 
