@@ -153,17 +153,9 @@ problem types are registered in [docs/agentops-api-errors.md](agentops-api-error
 
 ## Local Demo And Dev
 
-For a local AgentOps dashboard demo with mocked Kafka-derived traffic:
-
-```bash
-npm install
-npm run demo:agentops
-```
-
-This starts Vite, opens `/?demo=agentops`, serves fixture data from
-`public/demo/*.json`, and mocks the replay POST path locally. The demo is a
-UI/dev workflow only; it does not require a live Kafka broker or SQLite
-AgentOps database.
+The old JSON-backed AgentOps dashboard demo has been removed. Local Operations
+and Fusion UI development now runs against the live `kafsiem-api` surface and
+the collector-written SQLite AgentOps database.
 
 For live local development against collector and API output:
 

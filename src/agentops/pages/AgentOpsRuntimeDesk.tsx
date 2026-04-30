@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { Activity, AlertTriangle, CheckCircle2, GitBranch, Globe2, NotebookText, PlayCircle, RadioTower, ShieldAlert, TimerReset, Workflow } from "lucide-react";
-import { CommandBar } from "@/agentops/components/CommandBar";
-import { EmptyState, MetricCard, Panel, StatusRow, Tag } from "@/agentops/components/Chrome";
+import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import { AlertTriangle, CheckCircle2, PlayCircle, Search, TimerReset, X } from "lucide-react";
+import { EmptyState, StatusRow, Tag } from "@/agentops/components/Chrome";
 import { EntityChip } from "@/agentops/components/EntityChip";
 import { GraphCanvas } from "@/agentops/components/GraphCanvas";
 import { MessageCard } from "@/agentops/components/MessageCard";
@@ -14,11 +13,22 @@ import { buildConversationTimeline, buildRunSummary } from "@/agentops/lib/inves
 import { loadAnomaliesOnly, loadQueueFilter, loadSelectedRunId, persistAnomaliesOnly, persistQueueFilter, persistSelectedRunId, type RunQueueFilter } from "@/agentops/lib/preferences";
 import { displayModeName } from "@/agentops/lib/state";
 import { formatTime } from "@/agentops/lib/view";
-import { entityCanonicalID, entityKey, entityRefFromFlow, parseCommandFilters, refsForFlow, refsForMessage, type EntityRef } from "@/agentops/lib/entities";
+import {
+  entityCanonicalID,
+  entityFromSearchResult,
+  entityKey,
+  entityRefFromFlow,
+  parseCommandFilters,
+  refsForFlow,
+  refsForMessage,
+  type EntityRef,
+} from "@/agentops/lib/entities";
 import { useAgentOpsOperator } from "@/hooks/useAgentOpsOperator";
 import { useSavedInvestigation } from "@/hooks/useSavedInvestigation";
 import {
   useEntityNeighborhood,
+  useEntityProfile,
+  useEntityProvenance,
   useFlow,
   useFlowMessages,
   useFlowTasks,
@@ -33,10 +43,36 @@ import {
   useTopicHealth,
 } from "@/hooks/useAgentOpsApi";
 import { useAlerts } from "@/hooks/useAlerts";
-import type { AgentOpsMode, ReplaySession } from "@/agentops/types";
+import type { AgentOpsFlow, AgentOpsHealth, AgentOpsMessage, AgentOpsMode, Pack, Profile, ReplaySession, SearchResult } from "@/agentops/types";
 import { AgentOpsApiClient } from "@/agentops/lib/api-client";
 
 const api = new AgentOpsApiClient();
+const CORE_ENTITY_TYPES = ["agent", "task", "trace", "topic", "correlation", "location", "area"];
+
+type WorkspaceTab = "topology" | "map" | "replay" | "failures" | "raw" | "operator";
+
+const WORKSPACE_TABS: Array<{ id: WorkspaceTab; label: string; aria: string }> = [
+  { id: "topology", label: "topology", aria: "Topology" },
+  { id: "map", label: "map", aria: "Map" },
+  { id: "replay", label: "replay", aria: "Replay Studio" },
+  { id: "failures", label: "failures", aria: "Failure Workbench" },
+  { id: "raw", label: "raw", aria: "Raw Messages" },
+  { id: "operator", label: "operator", aria: "Operator" },
+];
+
+const EMPTY_HEALTH: AgentOpsHealth = {
+  connected: false,
+  effective_topics: [],
+  group_id: "",
+  accepted_count: 0,
+  rejected_count: 0,
+  mirrored_count: 0,
+  mirror_failed_count: 0,
+  rejected_by_reason: {},
+  replay_active: 0,
+  replay_last_record_count: 0,
+  topic_health: [],
+};
 
 interface Props {
   mode: AgentOpsMode;
@@ -54,7 +90,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(() => loadSelectedRunId());
   const [queueFilter, setQueueFilter] = useState<RunQueueFilter>(() => loadQueueFilter());
   const [anomaliesOnly, setAnomaliesOnly] = useState<boolean>(() => loadAnomaliesOnly());
-  const [workspaceTab, setWorkspaceTab] = useState<"replay" | "failures" | "raw" | "operator" | "topology">("replay");
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>("topology");
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [replayScope, setReplayScope] = useState<"run" | "trace" | "task" | "topics">("run");
   const [replayNotice, setReplayNotice] = useState("");
@@ -75,6 +111,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
     q: commandFilters.text,
   });
   const { health } = useHealth();
+  const effectiveHealth = health ?? EMPTY_HEALTH;
   const { topicHealth } = useTopicHealth();
   const { replaySessions } = useReplaySessions();
   const { mapLayers } = useMapLayers();
@@ -108,8 +145,13 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   const { tasks: relatedTasks } = useFlowTasks(selectedFlowId);
   const { traces: relatedTraces } = useFlowTraces(selectedFlowId);
   const selectedCorrelation = selectedFlow ? entityRefFromFlow(selectedFlow) : null;
-  const { neighborhood } = useEntityNeighborhood(selectedCorrelation?.type ?? null, selectedCorrelation ? entityCanonicalID(selectedCorrelation) : null, { depth: 2 });
+  const selectedCanonicalID = selectedCorrelation ? entityCanonicalID(selectedCorrelation) : null;
+  const { neighborhood } = useEntityNeighborhood(selectedCorrelation?.type ?? null, selectedCanonicalID, { depth: 2 });
+  const { profile: selectedProfile } = useEntityProfile(selectedCorrelation?.type ?? null, selectedCanonicalID);
+  const { provenance: selectedProvenance } = useEntityProvenance(selectedCorrelation?.type ?? null, selectedCanonicalID);
   const edgeColors = useMemo(() => edgeColorMap(packs), [packs]);
+  const ontologyTypes = useMemo(() => activeOntologyTypes(packs), [packs]);
+  const activePackLabel = useMemo(() => packLabel(packs), [packs]);
   const saved = useSavedInvestigation(selectedFlowId);
 
   useEffect(() => {
@@ -117,35 +159,11 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   }, [relatedMessages]);
 
   const runSummary = useMemo(
-    () => buildRunSummary(selectedFlow, relatedMessages, relatedTasks, relatedTraces, health ?? {
-      connected: false,
-      effective_topics: [],
-      group_id: "",
-      accepted_count: 0,
-      rejected_count: 0,
-      mirrored_count: 0,
-      mirror_failed_count: 0,
-      rejected_by_reason: {},
-      replay_active: 0,
-      replay_last_record_count: 0,
-      topic_health: [],
-    }),
-    [health, relatedMessages, relatedTasks, relatedTraces, selectedFlow],
+    () => buildRunSummary(selectedFlow, relatedMessages, relatedTasks, relatedTraces, effectiveHealth),
+    [effectiveHealth, relatedMessages, relatedTasks, relatedTraces, selectedFlow],
   );
   const timeline = useMemo(() => buildConversationTimeline(selectedFlow, relatedMessages, relatedTasks, relatedTraces), [relatedMessages, relatedTasks, relatedTraces, selectedFlow]);
-  const failureBuckets = useMemo(() => buildFailureBuckets(selectedFlow, relatedMessages, relatedTasks, health ?? {
-    connected: false,
-    effective_topics: [],
-    group_id: "",
-    accepted_count: 0,
-    rejected_count: 0,
-    mirrored_count: 0,
-    mirror_failed_count: 0,
-    rejected_by_reason: {},
-    replay_active: 0,
-    replay_last_record_count: 0,
-    topic_health: [],
-  }), [health, relatedMessages, relatedTasks, selectedFlow]);
+  const failureBuckets = useMemo(() => buildFailureBuckets(selectedFlow, relatedMessages, relatedTasks, effectiveHealth), [effectiveHealth, relatedMessages, relatedTasks, selectedFlow]);
   const selectedMessage = useMemo(() => relatedMessages.find((message) => message.id === selectedMessageId) ?? relatedMessages[0] ?? null, [relatedMessages, selectedMessageId]);
   const fusionMatches = useMemo(() => (mode === "HYBRID" ? buildFusionMatches(selectedFlow, relatedMessages, alerts) : []), [alerts, mode, relatedMessages, selectedFlow]);
 
@@ -162,30 +180,31 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   );
 
   const queueSections = useMemo(
-    () => [
-      {
-        key: "attention",
-        title: "Needs Attention",
-        items: queueFlows.filter((flow) => anomalyHint(flow.latest_status, flow.message_count)),
-      },
-      {
-        key: "active",
-        title: "Active",
-        items: queueFlows.filter((flow) => !anomalyHint(flow.latest_status, flow.message_count) && !/completed|done/i.test(flow.latest_status || "")),
-      },
-      {
-        key: "completed",
-        title: "Completed",
-        items: queueFlows.filter((flow) => /completed|done/i.test(flow.latest_status || "")),
-      },
-    ].filter((section) => section.items.length > 0),
+    () =>
+      [
+        {
+          key: "attention",
+          title: "Needs Attention",
+          items: queueFlows.filter((flow) => anomalyHint(flow.latest_status, flow.message_count)),
+        },
+        {
+          key: "active",
+          title: "Active",
+          items: queueFlows.filter((flow) => !anomalyHint(flow.latest_status, flow.message_count) && !/completed|done/i.test(flow.latest_status || "")),
+        },
+        {
+          key: "completed",
+          title: "Completed",
+          items: queueFlows.filter((flow) => /completed|done/i.test(flow.latest_status || "")),
+        },
+      ].filter((section) => section.items.length > 0),
     [queueFlows],
   );
 
   function selectFlow(id: string) {
     setSelectedFlowId(id);
     persistSelectedRunId(id);
-    setWorkspaceTab("replay");
+    setWorkspaceTab("topology");
   }
 
   function updateQueueFilter(filter: RunQueueFilter) {
@@ -205,11 +224,11 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
     startTransition(() => {
       const optimistic: ReplaySession = {
         id: `replay-${Date.now()}`,
-        group_id: `${health?.group_id || "agentops"}-replay`,
+        group_id: `${effectiveHealth.group_id || "agentops"}-replay`,
         status: "starting",
         started_at: new Date().toISOString(),
         message_count: relatedMessages.length,
-        topics: selectedFlow?.topics ?? health?.effective_topics ?? [],
+        topics: selectedFlow?.topics ?? effectiveHealth.effective_topics ?? [],
       };
       setOptimisticReplaySessions((current) => [optimistic, ...current]);
       setReplayNotice("Replay request queued.");
@@ -225,412 +244,139 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
     });
   }
 
-  const topicCount = health?.effective_topics.length ?? 0;
+  const topicCount = effectiveHealth.effective_topics.length;
+  const detectorCount = packs.reduce((total, pack) => total + (pack.detectors?.length ?? 0), 0);
+  const provenanceTrail = selectedProvenance.slice(0, 4);
 
   return (
-    <main className="h-dvh overflow-hidden bg-siem-bg text-siem-text">
-      <div className="mx-auto flex h-full max-w-[1800px] flex-col gap-5 overflow-hidden px-4 py-5 md:px-6">
-        <section className="rounded-[28px] border border-siem-border bg-[linear-gradient(135deg,rgba(24,40,53,0.94),rgba(5,10,17,0.96))] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.34)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-siem-accent/30 bg-siem-accent/10 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-siem-accent">
-                <Workflow size={12} />
-                {mode === "HYBRID" ? "Fusion Desk" : "Operations Desk"}
-              </div>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-[0.04em]">{health?.group_id || "AgentOps"}</h1>
-                <p className="mt-2 max-w-3xl text-sm text-siem-muted">{modeName}-mode workflow over typed `/api/v1` resources with queue, graph, replay, and geospatial surfaces.</p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <MetricCard icon={RadioTower} label="Topics" value={String(topicCount)} hint={health?.connected ? "tracking live" : "disconnected"} />
-              <MetricCard icon={GitBranch} label="Flows" value={String(flows.length)} hint={`${relatedTraces.length} traces selected`} />
-              <MetricCard icon={ShieldAlert} label="Messages" value={String(relatedMessages.length)} hint={`${health?.rejected_count ?? 0} rejected`} />
-              <button
-                type="button"
-                onClick={() => void triggerReplay()}
-                className="inline-flex min-w-[180px] items-center justify-between rounded-2xl border border-siem-accent/30 bg-siem-accent/12 px-4 py-3 text-left transition hover:border-siem-accent/50 hover:bg-siem-accent/18"
-              >
-                <span>
-                  <span className="block text-[11px] uppercase tracking-[0.22em] text-siem-muted">Replay</span>
-                  <span className="mt-1 block text-sm font-semibold text-siem-text">Start from earliest</span>
-                </span>
-                {isPending ? <TimerReset size={18} className="animate-spin text-siem-accent" /> : <PlayCircle size={18} className="text-siem-accent" />}
-              </button>
+    <main className="h-dvh overflow-hidden bg-[#07131c] text-[#e8eef3]">
+      <div className="mx-auto flex h-full max-w-[1900px] flex-col overflow-hidden p-3 md:p-4">
+        <header className="grid min-h-[58px] gap-3 rounded-t border border-[#18313f] bg-[#050d14] px-4 py-3 xl:grid-cols-[180px_minmax(360px,1fr)_auto] xl:items-center">
+          <div className="flex items-center gap-3">
+            <div className="font-mono text-sm font-semibold tracking-[0.16em] text-[#1D9E75]">kafSIEM</div>
+            <div className="rounded border border-[#1D9E75]/45 bg-[#1D9E75]/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[#1D9E75]">
+              {modeName}
             </div>
           </div>
-          {replayNotice ? (
-            <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-siem-accent/30 bg-siem-accent/10 px-3 py-2 text-sm text-siem-text">
-              <CheckCircle2 size={15} className="text-siem-accent" />
-              {replayNotice}
-            </div>
-          ) : null}
-        </section>
 
-        <section className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[1.1fr_1fr_0.95fr]">
-          <Panel title={mode === "HYBRID" ? "Fusion Queue" : "Operations Queue"} icon={Activity} bodyClassName="overflow-y-auto pr-1">
-            <div className="space-y-4">
-              <CommandBar
-                value={commandValue}
-                results={commandResults}
-                isLoading={commandLoading}
-                onChange={setCommandValue}
-                onSubmit={() => setActiveCommand(commandValue.trim())}
-                onClear={() => {
+          <form
+            className="flex min-h-9 min-w-0 items-center gap-2 border border-[#18313f] bg-[#0b1b26] px-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setActiveCommand(commandValue.trim());
+            }}
+          >
+            <Search size={14} className="shrink-0 text-[#1D9E75]" />
+            <input
+              value={commandValue}
+              onChange={(event) => setCommandValue(event.target.value)}
+              placeholder={commandPlaceholder(ontologyTypes)}
+              className="min-w-0 flex-1 bg-transparent font-mono text-xs text-[#e8eef3] outline-none placeholder:text-[#6b8090]"
+            />
+            {commandValue ? (
+              <button
+                type="button"
+                aria-label="Clear command search"
+                onClick={() => {
                   setCommandValue("");
                   setActiveCommand("");
                 }}
-                onFlowSelect={selectFlow}
-              />
-              <div className="flex flex-wrap gap-2">
-                {(["attention", "active", "completed", "all"] as RunQueueFilter[]).map((filter) => (
-                  <button
-                    key={filter}
-                    type="button"
-                    onClick={() => updateQueueFilter(filter)}
-                    className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${queueFilter === filter ? "border-siem-accent/50 bg-siem-accent/14 text-siem-text" : "border-siem-border text-siem-muted"}`}
-                  >
-                    {filter}
-                  </button>
+                className="text-[#6b8090] hover:text-[#e8eef3]"
+              >
+                <X size={13} />
+              </button>
+            ) : null}
+          </form>
+
+          <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[#a8b8c4]">
+            <StatusPill label="ingest" value={effectiveHealth.connected ? `+${effectiveHealth.accepted_count}` : "offline"} ok={effectiveHealth.connected} />
+            <StatusPill label="topics" value={String(topicCount)} ok={topicCount > 0} />
+            <StatusPill label="det" value={String(detectorCount)} ok={detectorCount > 0} />
+            <StatusPill label="pack" value={activePackLabel} ok={packs.length > 0} />
+            <button
+              type="button"
+              onClick={() => void triggerReplay()}
+              className="inline-flex min-h-8 items-center gap-2 border border-[#1D9E75]/45 bg-[#1D9E75]/10 px-3 text-[#1D9E75] hover:bg-[#1D9E75]/16"
+            >
+              {isPending ? <TimerReset size={13} className="animate-spin" /> : <PlayCircle size={13} />}
+              <span>Start from earliest</span>
+            </button>
+          </div>
+        </header>
+
+        {replayNotice ? (
+          <div className="border-x border-[#18313f] bg-[#0b1b26] px-4 py-2 font-mono text-xs text-[#e8eef3]">
+            <span className="inline-flex items-center gap-2">
+              <CheckCircle2 size={14} className="text-[#1D9E75]" />
+              {replayNotice}
+            </span>
+          </div>
+        ) : null}
+
+        <section className="grid min-h-0 flex-1 overflow-hidden border-x border-[#18313f] bg-[#07131c] xl:grid-cols-[280px_minmax(0,1fr)_340px]">
+          <aside className="flex min-h-0 flex-col border-b border-[#18313f] xl:border-b-0 xl:border-r">
+            <RailHeader title={mode === "HYBRID" ? "Fusion Queue" : "Operations Queue"} count={`${queueFlows.length} / ${flows.length}`} />
+            <div className="flex flex-wrap gap-2 border-b border-[#18313f] px-3 py-2">
+              {(["attention", "active", "completed", "all"] as RunQueueFilter[]).map((filter) => (
+                <FilterButton key={filter} active={queueFilter === filter} onClick={() => updateQueueFilter(filter)}>
+                  {filter}
+                </FilterButton>
+              ))}
+              <FilterButton active={anomaliesOnly} onClick={toggleAnomaliesOnly}>
+                anomalies only
+              </FilterButton>
+            </div>
+            <div className="border-b border-[#18313f] px-3 py-2">
+              <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#6b8090]">Ontology</div>
+              <div className="flex flex-wrap gap-1.5">
+                {ontologyTypes.slice(0, 12).map((type) => (
+                  <span key={type} className="border border-[#24425a] px-2 py-1 font-mono text-[10px] text-[#a8b8c4]">
+                    {type}
+                  </span>
                 ))}
-                <button
-                  type="button"
-                  onClick={toggleAnomaliesOnly}
-                  className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${anomaliesOnly ? "border-siem-accent/50 bg-siem-accent/14 text-siem-text" : "border-siem-border text-siem-muted"}`}
-                >
-                  anomalies only
-                </button>
               </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
+              <CommandResults results={commandResults} isLoading={commandLoading} activeCommand={activeCommand} onFlowSelect={selectFlow} />
               {queueSections.length === 0 ? <EmptyState text="No runs match the current queue filter." /> : null}
               {queueSections.map((section) => (
-                <div key={section.key} className="space-y-3">
-                  <div className="text-[11px] uppercase tracking-[0.22em] text-siem-muted">{section.title}</div>
-                  {section.items.map((flow) => {
-                    const active = selectedFlow?.id === flow.id;
-                    return (
-                      <div key={flow.id} className={`rounded-2xl border p-3 transition ${active ? "border-siem-accent/45 bg-siem-accent/12" : "border-siem-border bg-siem-panel/55 hover:border-siem-accent/25 hover:bg-siem-panel-strong"}`}>
-                        <button type="button" onClick={() => selectFlow(flow.id)} className="block w-full text-left">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="truncate font-semibold">{flow.latest_preview || flow.id}</div>
-                              <div className="mt-1 font-mono text-[11px] text-siem-muted">{flow.id}</div>
-                              <div className="mt-2 text-xs text-siem-muted">{flow.topics.join(", ") || "No topics declared"}</div>
-                            </div>
-                            <span className="rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-siem-muted">{flow.latest_status || "active"}</span>
-                          </div>
-                        </button>
-                        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                          <Tag>{flow.sender_count} participants</Tag>
-                          <Tag>{flow.message_count} messages</Tag>
-                          <Tag>{formatTime(flow.last_seen)}</Tag>
-                          {anomalyHint(flow.latest_status, flow.message_count) ? <Tag>attention</Tag> : null}
-                          {active ? <Tag>selected</Tag> : null}
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                          {refsForFlow(flow).map((entity) => (
-                            <EntityChip key={entityKey(entity)} entity={entity} pinned={saved.isPinned(entity)} onTogglePin={saved.togglePinned} />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </Panel>
-
-          <Panel title={mode === "HYBRID" ? "Fusion Timeline" : "Conversation Timeline"} icon={GitBranch} bodyClassName="overflow-y-auto pr-1">
-            <div className="space-y-4">
-              {selectedFlow ? (
-                <>
-                  <div className="rounded-2xl border border-siem-border bg-siem-panel/60 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Selected run</div>
-                    <div className="mt-2 text-lg font-semibold">{runSummary.title}</div>
-                    <div className="mt-1 font-mono text-xs text-siem-muted">{selectedFlow.id}</div>
-                    <div className="mt-2 grid gap-2 text-sm text-siem-muted">
-                      <div>First seen: {formatTime(selectedFlow.first_seen)}</div>
-                      <div>Last seen: {formatTime(selectedFlow.last_seen)}</div>
-                      <div>Participants: {selectedFlow.senders.join(", ") || "none"}</div>
-                      <div>Confidence: {runSummary.confidence}</div>
-                    </div>
-                  </div>
-                  {mode === "HYBRID" && fusionMatches.length > 0 ? (
-                    fusionMatches.slice(0, 3).map((match) => (
-                      <div key={match.alert_id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="font-semibold">{match.title}</div>
-                            <div className="mt-1 text-xs text-siem-muted">{match.source}</div>
-                          </div>
-                          <Tag>{match.severity}</Tag>
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                          {match.match_reasons.map((reason) => <Tag key={reason}>{reason}</Tag>)}
-                        </div>
-                      </div>
-                    ))
-                  ) : null}
-                  {timeline.map((item) =>
-                    item.kind === "gap" ? (
-                      <div key={item.id} className="rounded-2xl border border-dashed border-siem-border bg-siem-bg/30 px-4 py-3 text-sm text-siem-muted">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="inline-flex items-center gap-2">
-                            <AlertTriangle size={14} className="text-siem-accent" />
-                            {item.detail}
-                          </div>
-                          {selectedCorrelation ? (
-                            <button type="button" onClick={() => setDrawerSubject(selectedCorrelation)} className="rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em]">
-                              why
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    ) : (
-                      <div key={item.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (item.sourceMessageId) {
-                              setSelectedMessageId(item.sourceMessageId);
-                              setWorkspaceTab("raw");
-                            }
-                          }}
-                          className="block w-full text-left"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="font-semibold">{item.title}</div>
-                              <div className="mt-1 text-xs text-siem-muted">{item.detail}</div>
-                            </div>
-                            <Tag>{item.family || "event"}</Tag>
-                          </div>
-                        </button>
-                        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                          <Tag>{formatTime(item.at)}</Tag>
-                          {item.sender ? <EntityChip entity={{ type: "agent", id: item.sender, label: item.sender }} pinned={saved.isPinned({ type: "agent", id: item.sender })} onTogglePin={saved.togglePinned} /> : null}
-                          {item.status ? <Tag>{item.status}</Tag> : null}
-                          <button type="button" onClick={() => setDrawerSubject(item.sender ? { type: "agent", id: item.sender, label: item.sender } : selectedCorrelation)} className="rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em]">
-                            why
-                          </button>
-                        </div>
-                      </div>
-                    ),
-                  )}
-                </>
-              ) : (
-                <EmptyState text="No flow selected yet." />
-              )}
-            </div>
-          </Panel>
-
-          <div className="grid min-h-0 gap-4 overflow-hidden">
-            <Panel title={mode === "HYBRID" ? "External Intel Context" : "Run Context"} icon={ShieldAlert} bodyClassName="overflow-y-auto pr-1">
-              <div className="grid gap-4">
-                <div className="grid gap-3">
-                  <StatusRow label="Tracking group" value={health?.group_id || "unconfigured"} />
-                  <StatusRow label="Connected" value={health?.connected ? "yes" : "no"} />
-                  <StatusRow label="Accepted" value={String(health?.accepted_count ?? 0)} />
-                  <StatusRow label="Rejected" value={String(health?.rejected_count ?? 0)} />
-                  <StatusRow label="Mirrored" value={String(health?.mirrored_count ?? 0)} />
-                  {mode === "HYBRID" ? <StatusRow label="Fusion matches" value={String(fusionMatches.length)} /> : null}
-                  <StatusRow label="Last poll" value={formatTime(health?.last_poll_at || "")} />
-                  {selectedCorrelation ? <StatusRow label="Correlation entity" value={entityKey(selectedCorrelation)} /> : null}
-                </div>
-                {selectedFlow ? (
-                  <>
-                    <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Run Summary</div>
-                      <div className="mt-3 grid gap-2 text-sm text-siem-muted">
-                        <div>Replayable: {runSummary.replayable ? "yes" : "no"}</div>
-                        <div>Duration: {runSummary.durationLabel}</div>
-                        <div>Participants: {runSummary.participantCount}</div>
-                        <div>Requests / Responses: {runSummary.requestCount} / {runSummary.responseCount}</div>
-                        <div>Confidence: {runSummary.confidence}</div>
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Participants</div>
-                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                        {selectedFlow.senders.map((sender) => (
-                          <EntityChip key={sender} entity={{ type: "agent", id: sender, label: sender }} pinned={saved.isPinned({ type: "agent", id: sender })} onTogglePin={saved.togglePinned} />
-                        ))}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Anomalies</div>
-                      <div className="mt-3 space-y-2">
-                        {runSummary.anomalies.length === 0 ? (
-                          <EmptyState text="No run anomalies detected." />
-                        ) : (
-                          runSummary.anomalies.map((anomaly) => (
-                            <div key={anomaly.id} className="rounded-2xl border border-siem-border bg-siem-bg/45 p-3">
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <div className="font-semibold">{anomaly.label}</div>
-                                  <div className="mt-1 text-xs text-siem-muted">{anomaly.detail}</div>
-                                </div>
-                                <Tag>{anomaly.severity}</Tag>
-                              </div>
-                              {selectedCorrelation ? (
-                                <button type="button" onClick={() => setDrawerSubject(selectedCorrelation)} className="mt-3 rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-siem-muted hover:text-siem-text">
-                                  why
-                                </button>
-                              ) : null}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            </Panel>
-
-            <Panel title="Topic Health" icon={RadioTower} bodyClassName="overflow-y-auto pr-1">
-              <div className="space-y-2">
-                {topicHealth.map((topic) => (
-                  <div key={topic.topic} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
-                    <div className="font-mono text-xs text-siem-text">{topic.topic}</div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                      <Tag>{topic.active_agents} agents</Tag>
-                      <Tag>{topic.messages_per_hour.toFixed(0)} msg/h</Tag>
-                      <Tag>{topic.message_density}</Tag>
-                      <Tag>{topic.is_stale ? "stale" : "active"}</Tag>
-                    </div>
-                  </div>
-                ))}
-                {topicHealth.length === 0 ? <EmptyState text="No topic health yet." /> : null}
-              </div>
-            </Panel>
-
-            <Panel title="Replay Panel" icon={TimerReset} bodyClassName="overflow-y-auto pr-1">
-              <div className="space-y-2">
-                {(optimisticReplaySessions.length === 0 ? [{ id: "none", status: "idle", group_id: "", started_at: "", message_count: 0 }] : optimisticReplaySessions).map((session) => (
-                  <div key={session.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="text-xs font-semibold">{session.id === "none" ? "No replay sessions yet" : session.group_id}</div>
-                      <Tag>{session.status}</Tag>
-                    </div>
-                    {session.id !== "none" ? <div className="mt-2 text-[11px] text-siem-muted">Started {formatTime(session.started_at)} · {session.message_count} messages</div> : null}
-                  </div>
-                ))}
-              </div>
-            </Panel>
-          </div>
-        </section>
-
-        <section className="grid min-h-0 flex-[1.05] gap-4 overflow-hidden xl:grid-cols-[1.1fr_1fr_1fr]">
-          <Panel title="Message Detail" icon={RadioTower} bodyClassName="overflow-y-auto pr-1">
-            <div className="space-y-3">
-              {relatedMessages.map((message) => (
-                <div key={message.id} className={`space-y-2 ${selectedMessageId === message.id ? "rounded-[18px] ring-1 ring-siem-accent/45" : ""}`}>
-                  <button type="button" onClick={() => { setSelectedMessageId(message.id); setWorkspaceTab("raw"); }} className="block w-full text-left">
-                    <MessageCard message={message} />
-                  </button>
-                  <div className="flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                    {refsForMessage(message, packs).map((entity) => (
-                      <EntityChip key={entityKey(entity)} entity={entity} pinned={saved.isPinned(entity)} onTogglePin={saved.togglePinned} />
+                <div key={section.key} className="mb-5">
+                  <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[#6b8090]">{section.title}</div>
+                  <div className="space-y-2">
+                    {section.items.map((flow) => (
+                      <RunQueueRow
+                        key={flow.id}
+                        flow={flow}
+                        active={selectedFlow?.id === flow.id}
+                        saved={saved}
+                        onSelect={selectFlow}
+                      />
                     ))}
-                    <button type="button" onClick={() => setDrawerSubject(refForMessage(message) || selectedCorrelation)} className="rounded-full border border-siem-border px-2 py-1 text-[11px] uppercase tracking-[0.18em] hover:text-siem-text">
-                      why
-                    </button>
                   </div>
                 </div>
               ))}
-              {relatedMessages.length === 0 ? <EmptyState text="No decoded messages for the selected flow yet." /> : null}
             </div>
-          </Panel>
+          </aside>
 
-          <Panel title="Investigation Workspace" icon={TimerReset} bodyClassName="overflow-y-auto pr-1">
-            <div className="space-y-4 text-sm text-siem-muted">
-              <div className="flex flex-wrap gap-2">
-                {[
-                  ["replay", "Replay Studio"],
-                  ["failures", "Failure Workbench"],
-                  ["raw", "Raw Messages"],
-                  ["operator", "Operator"],
-                  ["topology", "Topology"],
-                ].map(([id, label]) => (
-                  <button key={id} type="button" onClick={() => setWorkspaceTab(id as typeof workspaceTab)} className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${workspaceTab === id ? "border-siem-accent/50 bg-siem-accent/14 text-siem-text" : "border-siem-border text-siem-muted"}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+          <section className="flex min-h-0 flex-col">
+            <div className="flex min-h-10 flex-wrap items-center border-b border-[#18313f] bg-[#050d14] px-3">
+              {WORKSPACE_TABS.map((tab, index) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-label={tab.aria}
+                  onClick={() => setWorkspaceTab(tab.id)}
+                  className={`min-h-10 border-b-2 px-4 font-mono text-[11px] tracking-[0.08em] ${
+                    workspaceTab === tab.id ? "border-[#1D9E75] text-[#1D9E75]" : "border-transparent text-[#6b8090] hover:text-[#e8eef3]"
+                  }`}
+                >
+                  {tab.label}
+                  <span className="ml-2 border border-[#24425a] px-1 text-[9px] text-[#6b8090]">{index + 1}</span>
+                </button>
+              ))}
+            </div>
 
-              {workspaceTab === "replay" ? (
-                <div className="space-y-3">
-                  <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Replay Scope</div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {([
-                        ["run", "Full run"],
-                        ["trace", "Selected trace"],
-                        ["task", "Task chain"],
-                        ["topics", "Topic families"],
-                      ] as const).map(([scope, label]) => (
-                        <button key={scope} type="button" onClick={() => setReplayScope(scope)} className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${replayScope === scope ? "border-siem-accent/50 bg-siem-accent/14 text-siem-text" : "border-siem-border text-siem-muted"}`}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="mt-4 grid gap-2">
-                      <StatusRow label="Replay group" value={`${health?.group_id || "agentops"}-replay`} />
-                      <StatusRow label="Expected records" value={String(relatedMessages.length)} />
-                      <StatusRow label="Scope" value={replayScope} />
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {workspaceTab === "failures" ? (
-                <div className="space-y-3">
-                  {failureBuckets.length === 0 ? <EmptyState text="No failure buckets for the selected run." /> : failureBuckets.map((bucket) => (
-                    <div key={bucket.id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="font-semibold">{bucket.title}</div>
-                          <div className="mt-1 text-xs text-siem-muted">{bucket.detail}</div>
-                        </div>
-                        <Tag>{bucket.count}</Tag>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-
-              {workspaceTab === "raw" ? selectedMessage ? (
-                <div className="space-y-3">
-                  <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-siem-muted">Selected Message</div>
-                    <div className="mt-2 font-mono text-xs text-siem-text">{selectedMessage.id}</div>
-                    <div className="mt-3 text-xs text-siem-muted">{selectedMessage.topic} · p{selectedMessage.partition} · o{selectedMessage.offset}</div>
-                  </div>
-                  <MessageCard message={selectedMessage} />
-                </div>
-              ) : <EmptyState text="Select a timeline or message entry to inspect the raw transport artifact." /> : null}
-
-              {workspaceTab === "operator" ? (
-                <>
-                  <StatusRow label="Admin surface" value={operator.supported ? "supported" : "limited"} />
-                  <StatusRow label="Live group" value={operator.live_group_id || health?.group_id || "-"} />
-                  <StatusRow label="Replay groups" value={String(operator.replay_group_ids.length)} />
-                  {operator.last_error ? <div className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3 text-xs">{operator.last_error}</div> : null}
-                  {operator.groups.length === 0 ? <EmptyState text="No consumer groups returned yet." /> : operator.groups.slice(0, 8).map((group) => (
-                    <div key={group.group_id} className="rounded-2xl border border-siem-border bg-siem-panel/55 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="font-mono text-xs text-siem-text">{group.group_id}</div>
-                        <Tag>{group.state || "unknown"}</Tag>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-siem-muted">
-                        <Tag>{group.protocol_type || "consumer"}</Tag>
-                        {group.protocol ? <Tag>{group.protocol}</Tag> : null}
-                        <Tag>{group.members.length} members</Tag>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              ) : null}
-
+            <div className="min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(rgba(36,66,90,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(36,66,90,0.16)_1px,transparent_1px)] bg-[length:20px_20px] p-3">
               {workspaceTab === "topology" ? (
                 selectedCorrelation ? (
                   <GraphCanvas
@@ -638,40 +384,559 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                     edges={neighborhood.edges}
                     edgeColors={edgeColors}
                     selectedEntityId={entityKey(selectedCorrelation)}
-                    onEntityClick={(entity) => { window.location.href = `?view=entity&type=${entity.type}&id=${entityCanonicalID(entity)}`; }}
+                    onEntityClick={(entity) => {
+                      window.location.href = `?view=entity&type=${entity.type}&id=${entityCanonicalID(entity)}`;
+                    }}
                   />
                 ) : (
                   <EmptyState text="Select a run to render the 2-hop correlation neighborhood." />
                 )
               ) : null}
+
+              {workspaceTab === "map" ? (
+                <RuntimeMap bbox={mapBBox} layers={mapLayers} features={featureCollection} selectedTypes={mapTypes} onBBoxChange={setMapBBox} onTypesChange={setMapTypes} />
+              ) : null}
+
+              {workspaceTab === "replay" ? (
+                <div className="grid gap-3 xl:grid-cols-[1fr_1fr]">
+                  <ConsoleBlock title="Replay Scope">
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        ["run", "Full run"],
+                        ["trace", "Selected trace"],
+                        ["task", "Task chain"],
+                        ["topics", "Topic families"],
+                      ] as const).map(([scope, label]) => (
+                        <FilterButton key={scope} active={replayScope === scope} onClick={() => setReplayScope(scope)}>
+                          {label}
+                        </FilterButton>
+                      ))}
+                    </div>
+                    <div className="mt-4 grid gap-2">
+                      <StatusRow label="Replay group" value={`${effectiveHealth.group_id || "agentops"}-replay`} />
+                      <StatusRow label="Expected records" value={String(relatedMessages.length)} />
+                      <StatusRow label="Scope" value={replayScope} />
+                    </div>
+                  </ConsoleBlock>
+                  <ConsoleBlock title="Replay Sessions">
+                    <div className="space-y-2">
+                      {(optimisticReplaySessions.length === 0 ? [{ id: "none", status: "idle", group_id: "", started_at: "", message_count: 0 }] : optimisticReplaySessions).map((session) => (
+                        <div key={session.id} className="border border-[#18313f] bg-[#07131c]/80 p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-xs font-semibold">{session.id === "none" ? "No replay sessions yet" : session.group_id}</div>
+                            <Tag>{session.status}</Tag>
+                          </div>
+                          {session.id !== "none" ? <div className="mt-2 text-[11px] text-[#6b8090]">Started {formatTime(session.started_at)} · {session.message_count} messages</div> : null}
+                        </div>
+                      ))}
+                    </div>
+                  </ConsoleBlock>
+                </div>
+              ) : null}
+
+              {workspaceTab === "failures" ? (
+                <div className="space-y-3">
+                  {failureBuckets.length === 0 ? (
+                    <EmptyState text="No failure buckets for the selected run." />
+                  ) : (
+                    failureBuckets.map((bucket) => (
+                      <div key={bucket.id} className="border border-[#18313f] bg-[#07131c]/85 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-semibold text-[#e8eef3]">{bucket.title}</div>
+                            <div className="mt-1 text-xs text-[#a8b8c4]">{bucket.detail}</div>
+                          </div>
+                          <Tag>{bucket.count}</Tag>
+                        </div>
+                        {bucket.messageId ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedMessageId(bucket.messageId ?? null);
+                              setWorkspaceTab("raw");
+                            }}
+                            className="mt-3 border border-[#24425a] px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-[#1D9E75]"
+                          >
+                            inspect raw
+                          </button>
+                        ) : null}
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : null}
+
+              {workspaceTab === "raw" ? (
+                selectedMessage ? (
+                  <div className="space-y-3">
+                  <ConsoleBlock title="Selected Message">
+                    <div className="font-mono text-xs text-[#e8eef3]">{selectedMessage.id}</div>
+                    <div className="mt-2 text-xs text-[#a8b8c4]">{selectedMessage.topic} · p{selectedMessage.partition} · o{selectedMessage.offset}</div>
+                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[#a8b8c4]">
+                      {refsForMessage(selectedMessage, packs).map((entity) => (
+                        <EntityChip key={entityKey(entity)} entity={entity} pinned={saved.isPinned(entity)} onTogglePin={saved.togglePinned} />
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setDrawerSubject(subjectForMessage(selectedMessage) || selectedCorrelation)}
+                        className="border border-[#24425a] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[#1D9E75]"
+                      >
+                        why
+                      </button>
+                    </div>
+                  </ConsoleBlock>
+                    <MessageCard message={selectedMessage} />
+                  </div>
+                ) : (
+                  <EmptyState text="Select a timeline or message entry to inspect the raw transport artifact." />
+                )
+              ) : null}
+
+              {workspaceTab === "operator" ? (
+                <div className="grid gap-3 xl:grid-cols-[320px_1fr]">
+                  <ConsoleBlock title="Operator State">
+                    <div className="grid gap-2">
+                      <StatusRow label="Admin surface" value={operator.supported ? "supported" : "limited"} />
+                      <StatusRow label="Live group" value={operator.live_group_id || effectiveHealth.group_id || "-"} />
+                      <StatusRow label="Replay groups" value={String(operator.replay_group_ids.length)} />
+                    </div>
+                    {operator.last_error ? <div className="mt-3 border border-[#24425a] bg-[#07131c] p-3 text-xs text-[#a8b8c4]">{operator.last_error}</div> : null}
+                  </ConsoleBlock>
+                  <ConsoleBlock title="Consumer Groups">
+                    <div className="space-y-2">
+                      {operator.groups.length === 0 ? (
+                        <EmptyState text="No consumer groups returned yet." />
+                      ) : (
+                        operator.groups.slice(0, 8).map((group) => (
+                          <div key={group.group_id} className="border border-[#18313f] bg-[#07131c]/80 p-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="font-mono text-xs text-[#e8eef3]">{group.group_id}</div>
+                              <Tag>{group.state || "unknown"}</Tag>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[#6b8090]">
+                              <Tag>{group.protocol_type || "consumer"}</Tag>
+                              {group.protocol ? <Tag>{group.protocol}</Tag> : null}
+                              <Tag>{group.members.length} members</Tag>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ConsoleBlock>
+                </div>
+              ) : null}
             </div>
-          </Panel>
 
-          <div className="grid min-h-0 gap-4 overflow-hidden">
-            <Panel title="Notes" icon={NotebookText} bodyClassName="overflow-y-auto pr-1">
-              <textarea
-                value={saved.investigation.notes}
-                onChange={(event) => saved.setNotes(event.target.value)}
-                className="min-h-[150px] w-full resize-none rounded-2xl border border-siem-border bg-siem-bg/45 p-3 text-sm text-siem-text outline-none"
-              />
-              <div className="mt-3 grid gap-2">
-                <StatusRow label="Opened" value={formatTime(saved.investigation.openedAt)} />
-                <StatusRow label="Pinned entities" value={String(saved.investigation.pinnedEntities.length)} />
+            <div className="border-t border-[#18313f] bg-[#050d14] px-4 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[#6b8090]">
+              <div className="mb-1 flex justify-between gap-3">
+                <span>-24h</span>
+                <span>{selectedFlow ? formatTime(selectedFlow.last_seen) : "no run selected"}</span>
               </div>
-            </Panel>
+              <div className="relative h-3 border border-[#18313f] bg-[#0b1b26]">
+                <div className="absolute inset-y-[-1px] left-[40%] w-[22%] border border-[#1D9E75] bg-[#1D9E75]/18" />
+                <div className="absolute inset-y-0 left-[18%] w-px bg-[#d6a82e]" />
+                <div className="absolute inset-y-0 left-[62%] w-px bg-[#d6a82e]" />
+              </div>
+            </div>
+          </section>
 
-            <Panel title="Map Surface" icon={Globe2} bodyClassName="overflow-y-auto pr-1">
-              <RuntimeMap bbox={mapBBox} layers={mapLayers} features={featureCollection} selectedTypes={mapTypes} onBBoxChange={setMapBBox} onTypesChange={setMapTypes} />
-            </Panel>
-          </div>
+          <aside className="flex min-h-0 flex-col border-t border-[#18313f] xl:border-l xl:border-t-0">
+            <RailHeader title="Entity Detail" count={selectedProfile?.entity.type ?? selectedCorrelation?.type ?? "none"} />
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+              <EntityDetailPanel profile={selectedProfile} packs={packs} fallbackFlow={selectedFlow} saved={saved} />
+
+              <ConsoleBlock title="Run Summary" className="mt-3">
+                <div className="grid gap-2">
+                  <StatusRow label="Replayable" value={runSummary.replayable ? "yes" : "no"} />
+                  <StatusRow label="Duration" value={runSummary.durationLabel} />
+                  <StatusRow label="Participants" value={String(runSummary.participantCount)} />
+                  <StatusRow label="Requests / Responses" value={`${runSummary.requestCount} / ${runSummary.responseCount}`} />
+                  <StatusRow label="Confidence" value={String(runSummary.confidence)} />
+                </div>
+              </ConsoleBlock>
+
+              <ConsoleBlock title={mode === "HYBRID" ? "Fusion Timeline" : "Activity Timeline"} className="mt-3">
+                <div className="space-y-2">
+                  {timeline.length === 0 ? (
+                    <EmptyState text="No timeline events for the selected run." />
+                  ) : (
+                    timeline.slice(0, 5).map((item) =>
+                      item.kind === "gap" ? (
+                        <div key={item.id} className="border border-dashed border-[#24425a] bg-[#07131c]/70 p-3 text-xs text-[#a8b8c4]">
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle size={13} className="text-[#d6a82e]" />
+                            {item.detail}
+                          </div>
+                        </div>
+                      ) : (
+                        <div key={item.id} className="border border-[#18313f] bg-[#07131c]/80 p-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (item.sourceMessageId) {
+                                setSelectedMessageId(item.sourceMessageId);
+                                setWorkspaceTab("raw");
+                              }
+                            }}
+                            className="block w-full text-left"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="font-semibold text-[#e8eef3]">{item.title}</div>
+                                <div className="mt-1 text-xs text-[#a8b8c4]">{item.detail}</div>
+                              </div>
+                              <Tag>{item.family || "event"}</Tag>
+                            </div>
+                          </button>
+                          <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[#a8b8c4]">
+                            <Tag>{formatTime(item.at)}</Tag>
+                            {item.status ? <Tag>{item.status}</Tag> : null}
+                            <button
+                              type="button"
+                              onClick={() => setDrawerSubject(item.sender ? { type: "agent", id: item.sender, label: item.sender } : selectedCorrelation)}
+                              className="border border-[#24425a] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[#1D9E75]"
+                            >
+                              why
+                            </button>
+                          </div>
+                        </div>
+                      ),
+                    )
+                  )}
+                </div>
+              </ConsoleBlock>
+
+              {mode === "HYBRID" ? (
+                <ConsoleBlock title="Fusion Context" className="mt-3">
+                  {fusionMatches.length > 0 ? (
+                    <div className="space-y-2">
+                      {fusionMatches.slice(0, 4).map((match) => (
+                        <div key={match.alert_id} className="border border-[#18313f] bg-[#07131c]/80 p-3">
+                          <div className="font-semibold text-[#e8eef3]">{match.title}</div>
+                          <div className="mt-1 text-xs text-[#6b8090]">{match.source}</div>
+                          <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-[#a8b8c4]">
+                            <Tag>{match.severity}</Tag>
+                            {match.match_reasons.map((reason) => <Tag key={reason}>{reason}</Tag>)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState text="No OSINT fusion match for the selected flow." />
+                  )}
+                </ConsoleBlock>
+              ) : null}
+
+              <ConsoleBlock title="Topic Health" className="mt-3">
+                <div className="space-y-2">
+                  {topicHealth.length === 0 ? (
+                    <EmptyState text="No topic health yet." />
+                  ) : (
+                    topicHealth.slice(0, 5).map((topic) => (
+                      <div key={topic.topic} className="border border-[#18313f] bg-[#07131c]/80 p-3">
+                        <div className="font-mono text-xs text-[#e8eef3]">{topic.topic}</div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[#6b8090]">
+                          <Tag>{topic.active_agents} agents</Tag>
+                          <Tag>{topic.messages_per_hour.toFixed(0)} msg/h</Tag>
+                          <Tag>{topic.is_stale ? "stale" : "active"}</Tag>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ConsoleBlock>
+
+              <ConsoleBlock title="Notes" className="mt-3">
+                <textarea
+                  value={saved.investigation.notes}
+                  onChange={(event) => saved.setNotes(event.target.value)}
+                  className="min-h-[120px] w-full resize-none border border-[#18313f] bg-[#07131c] p-3 text-sm text-[#e8eef3] outline-none"
+                />
+                <div className="mt-3 grid gap-2">
+                  <StatusRow label="Opened" value={formatTime(saved.investigation.openedAt)} />
+                  <StatusRow label="Pinned entities" value={String(saved.investigation.pinnedEntities.length)} />
+                </div>
+              </ConsoleBlock>
+            </div>
+          </aside>
         </section>
+
+        <footer className="flex min-h-[44px] flex-wrap items-center gap-3 rounded-b border border-[#18313f] bg-[#050d14] px-4 py-2 font-mono text-[11px]">
+          <button
+            type="button"
+            onClick={() => setDrawerSubject(selectedCorrelation)}
+            disabled={!selectedCorrelation}
+            className="font-semibold uppercase tracking-[0.14em] text-[#d6a82e] disabled:text-[#6b8090]"
+          >
+            provenance · {selectedCorrelation ? entityKey(selectedCorrelation) : "no subject"}
+          </button>
+          {provenanceTrail.length > 0 ? (
+            provenanceTrail.map((item, index) => (
+              <span key={`${item.subject_id}-${item.stage}-${item.produced_at}-${index}`} className="border border-[#18313f] bg-[#07131c] px-2 py-1 text-[#a8b8c4]">
+                {item.stage} · {formatTime(item.produced_at)}
+              </span>
+            ))
+          ) : (
+            <>
+              <span className="border border-[#18313f] bg-[#07131c] px-2 py-1 text-[#a8b8c4]">{selectedMessage?.topic ?? "no topic"}</span>
+              <span className="text-[#d6a82e]">→</span>
+              <span className="border border-[#18313f] bg-[#07131c] px-2 py-1 text-[#a8b8c4]">graph</span>
+              <span className="text-[#d6a82e]">→</span>
+              <span className="border border-[#18313f] bg-[#07131c] px-2 py-1 text-[#a8b8c4]">{selectedFlow?.last_seen ? formatTime(selectedFlow.last_seen) : "pending"}</span>
+            </>
+          )}
+        </footer>
       </div>
       <ProvenanceDrawer subject={drawerSubject} onClose={() => setDrawerSubject(null)} />
     </main>
   );
 }
 
-function refForMessage(message: { task_id?: string; trace_id?: string; sender_id?: string; correlation_id?: string }): EntityRef | null {
+function RailHeader({ title, count }: { title: string; count: string }) {
+  return (
+    <div className="flex min-h-10 items-center justify-between border-b border-[#18313f] bg-[#050d14] px-3">
+      <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#e8eef3]">{title}</span>
+      <span className="font-mono text-[10px] text-[#6b8090]">{count}</span>
+    </div>
+  );
+}
+
+function StatusPill({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <span className="inline-flex min-h-8 items-center gap-1.5 border border-[#18313f] bg-[#07131c] px-2">
+      <span>{label}</span>
+      <span className={ok ? "text-[#1D9E75]" : "text-[#d6a82e]"}>●</span>
+      <span className="max-w-[120px] truncate text-[#e8eef3]">{value}</span>
+    </span>
+  );
+}
+
+function FilterButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] ${
+        active ? "border-[#1D9E75] bg-[#1D9E75]/10 text-[#1D9E75]" : "border-[#24425a] text-[#a8b8c4] hover:text-[#e8eef3]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ConsoleBlock({ title, className = "", children }: { title: string; className?: string; children: ReactNode }) {
+  return (
+    <section className={`border border-[#18313f] bg-[#0b1b26]/92 p-3 ${className}`}>
+      <div className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1D9E75]">{title}</div>
+      {children}
+    </section>
+  );
+}
+
+function RunQueueRow({
+  flow,
+  active,
+  saved,
+  onSelect,
+}: {
+  flow: AgentOpsFlow;
+  active: boolean;
+  saved: ReturnType<typeof useSavedInvestigation>;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className={`border p-3 ${active ? "border-[#1D9E75] bg-[#1D9E75]/8" : "border-[#18313f] bg-[#0b1b26]/75 hover:border-[#24425a]"}`}>
+      <button type="button" onClick={() => onSelect(flow.id)} className="block w-full text-left">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold text-[#e8eef3]">{flow.latest_preview || flow.id}</div>
+            <div className="mt-1 font-mono text-[11px] text-[#6b8090]">{flow.id}</div>
+            <div className="mt-2 truncate text-xs text-[#a8b8c4]">{flow.topics.join(", ") || "No topics declared"}</div>
+          </div>
+          <span className="shrink-0 border border-[#24425a] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[#a8b8c4]">
+            {flow.latest_status || "active"}
+          </span>
+        </div>
+      </button>
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[#a8b8c4]">
+        <Tag>{flow.sender_count} participants</Tag>
+        <Tag>{flow.message_count} messages</Tag>
+        <Tag>{formatTime(flow.last_seen)}</Tag>
+        {anomalyHint(flow.latest_status, flow.message_count) ? <Tag>attention</Tag> : null}
+        {active ? <Tag>selected</Tag> : null}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[#a8b8c4]">
+        {refsForFlow(flow).map((entity) => (
+          <EntityChip key={entityKey(entity)} entity={entity} pinned={saved.isPinned(entity)} onTogglePin={saved.togglePinned} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CommandResults({
+  results,
+  isLoading,
+  activeCommand,
+  onFlowSelect,
+}: {
+  results: SearchResult[];
+  isLoading?: boolean;
+  activeCommand: string;
+  onFlowSelect: (id: string) => void;
+}) {
+  if (!activeCommand) return null;
+  return (
+    <div className="mb-4 border border-[#18313f] bg-[#050d14] p-3">
+      <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#6b8090]">Command Results</div>
+      {isLoading ? <div className="text-xs text-[#a8b8c4]">Searching.</div> : null}
+      {!isLoading && results.length === 0 ? <EmptyState text="No command results." /> : null}
+      <div className="space-y-2">
+        {results.map((result) => (
+          <SearchResultRow key={`${result.kind}-${result.id}`} result={result} onFlowSelect={onFlowSelect} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SearchResultRow({ result, onFlowSelect }: { result: SearchResult; onFlowSelect: (id: string) => void }) {
+  const entity = entityFromSearchResult(result);
+  if (entity) {
+    return (
+      <div className="flex items-center justify-between gap-3 border border-[#18313f] bg-[#07131c] px-3 py-2">
+        <EntityChip entity={entity} />
+        <Tag>{result.type}</Tag>
+      </div>
+    );
+  }
+  if (result.kind === "flow") {
+    return (
+      <button type="button" onClick={() => onFlowSelect(result.id)} className="block w-full border border-[#18313f] bg-[#07131c] px-3 py-2 text-left hover:border-[#1D9E75]/50">
+        <div className="flex items-start justify-between gap-3">
+          <span className="min-w-0 truncate font-semibold text-[#e8eef3]">{result.title || result.id}</span>
+          {result.latest_status ? <Tag>{result.latest_status}</Tag> : null}
+        </div>
+        <div className="mt-1 font-mono text-[11px] text-[#6b8090]">{result.id}</div>
+      </button>
+    );
+  }
+  return (
+    <div className="border border-[#18313f] bg-[#07131c] px-3 py-2">
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-semibold text-[#e8eef3]">{result.title || result.detector_id || result.id}</span>
+        {result.severity ? <Tag>{result.severity}</Tag> : null}
+      </div>
+      {result.source ? <div className="mt-1 text-[11px] text-[#6b8090]">{result.source}</div> : null}
+    </div>
+  );
+}
+
+function EntityDetailPanel({
+  profile,
+  packs,
+  fallbackFlow,
+  saved,
+}: {
+  profile: Profile | null;
+  packs: Pack[];
+  fallbackFlow: AgentOpsFlow | null;
+  saved: ReturnType<typeof useSavedInvestigation>;
+}) {
+  if (!profile) {
+    if (!fallbackFlow) return <EmptyState text="Select a run to inspect its correlation entity." />;
+    return (
+      <ConsoleBlock title="Run Summary">
+        <div className="font-semibold text-[#e8eef3]">{fallbackFlow.latest_preview || fallbackFlow.id}</div>
+        <div className="mt-1 font-mono text-xs text-[#6b8090]">{fallbackFlow.id}</div>
+        <div className="mt-3 grid gap-2 text-sm text-[#a8b8c4]">
+          <div>First seen: {formatTime(fallbackFlow.first_seen)}</div>
+          <div>Last seen: {formatTime(fallbackFlow.last_seen)}</div>
+          <div>Participants: {fallbackFlow.senders.join(", ") || "none"}</div>
+        </div>
+      </ConsoleBlock>
+    );
+  }
+
+  const rows = compactFieldRows(profile, packs);
+  const entityRef = { type: profile.entity.type, id: entityCanonicalID({ type: profile.entity.type, id: profile.entity.id }), label: profile.entity.display_name || profile.entity.id };
+  return (
+    <ConsoleBlock title={profile.entity.type}>
+      <div className="flex items-start justify-between gap-3 border-b border-[#18313f] pb-3">
+        <div className="min-w-0">
+          <div className="truncate text-lg font-semibold text-[#e8eef3]">{profile.entity.display_name || profile.entity.canonical_id || profile.entity.id}</div>
+          <div className="mt-1 font-mono text-xs text-[#6b8090]">{profile.entity.id}</div>
+        </div>
+        <EntityChip entity={entityRef} pinned={saved.isPinned(entityRef)} onTogglePin={saved.togglePinned} />
+      </div>
+      <div className="mt-3 grid gap-2">
+        {rows.length > 0 ? (
+          rows.slice(0, 8).map((row) => (
+            <div key={row.key} className="flex justify-between gap-3 border-b border-dotted border-[#18313f] py-1.5 font-mono text-[11px]">
+              <span className="text-[#6b8090]">{row.label}</span>
+              <span className="max-w-[160px] overflow-wrap-anywhere text-right text-[#e8eef3]">{row.value}</span>
+            </div>
+          ))
+        ) : (
+          <EmptyState text="No pack fields declared for this entity." />
+        )}
+      </div>
+      <div className="mt-4">
+        <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#6b8090]">Edges</div>
+        <div className="flex flex-wrap gap-2 text-[11px] text-[#a8b8c4]">
+          {Object.entries(profile.edge_counts).map(([edgeType, count]) => <Tag key={edgeType}>{edgeType}:{count}</Tag>)}
+          {Object.keys(profile.edge_counts).length === 0 ? <Tag>none</Tag> : null}
+        </div>
+      </div>
+    </ConsoleBlock>
+  );
+}
+
+function activeOntologyTypes(packs: Pack[]): string[] {
+  const seen = new Set<string>(CORE_ENTITY_TYPES);
+  for (const pack of packs) {
+    for (const type of pack.entity_types ?? []) seen.add(type);
+  }
+  return [...seen].sort();
+}
+
+function packLabel(packs: Pack[]): string {
+  if (packs.length === 0) return "core";
+  return packs.map((pack) => pack.name).join(" · ");
+}
+
+function commandPlaceholder(types: string[]): string {
+  if (types.includes("platform")) return "platform:auv-07 window:24h pack:drones";
+  if (types.includes("device")) return "device:plc-12 window:72h pack:scada";
+  return "agent:alice topic:requests window:1h";
+}
+
+function compactFieldRows(profile: Profile, packs: Pack[]): Array<{ key: string; label: string; value: string }> {
+  const attrs = profile.entity.attrs ?? {};
+  const view = packs.flatMap((pack) => pack.views ?? []).find((item) => item.entity_type === profile.entity.type);
+  if (view?.fields?.length) {
+    return view.fields.map((field) => ({
+      key: field.id,
+      label: field.label || field.id,
+      value: displayValue(attrs[field.id]),
+    }));
+  }
+  return Object.entries(attrs).map(([key, value]) => ({
+    key,
+    label: key,
+    value: displayValue(value),
+  }));
+}
+
+function displayValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "-";
+  if (Array.isArray(value)) return value.map((item) => displayValue(item)).join(", ");
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function subjectForMessage(message: Pick<AgentOpsMessage, "task_id" | "trace_id" | "sender_id" | "correlation_id">): EntityRef | null {
   if (message.task_id) return { type: "task", id: message.task_id, label: message.task_id };
   if (message.trace_id) return { type: "trace", id: message.trace_id, label: message.trace_id };
   if (message.sender_id) return { type: "agent", id: message.sender_id, label: message.sender_id };

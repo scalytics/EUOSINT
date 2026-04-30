@@ -9,10 +9,10 @@ export default function App() {
   useEffect(() => {
     switch (state.ui_mode) {
       case "AGENTOPS":
-        document.title = "Agent Flow Desk";
+        document.title = "Operations Console";
         break;
       case "HYBRID":
-        document.title = "Hybrid Flow Desk";
+        document.title = "Fusion Console";
         break;
       case "OSINT":
       default:
@@ -22,7 +22,7 @@ export default function App() {
   }, [state.ui_mode]);
 
   if (state.ui_mode === "AGENTOPS" || state.ui_mode === "HYBRID") {
-    return <AgentOpsApp state={state} mode={state.ui_mode} />;
+    return <AgentOpsApp mode={state.ui_mode} />;
   }
 
   return <OsintApp />;

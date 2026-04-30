@@ -125,6 +125,7 @@ beforeEach(() => {
     packs: [{
       name: "drones",
       version: "0.1.0",
+      entity_types: ["platform"],
       views: [{
         id: "platform",
         entity_type: "platform",
@@ -166,15 +167,14 @@ beforeEach(() => {
 test("renders command search, notes, and topology surfaces in the runtime desk", async () => {
   render(<AgentOpsRuntimeDesk mode="AGENTOPS" />);
 
-  expect(screen.getByPlaceholderText("agent:alice topic:requests window:1h")).toBeTruthy();
+  expect(screen.getByPlaceholderText("platform:auv-07 window:24h pack:drones")).toBeTruthy();
   expect(screen.getByText("Notes")).toBeTruthy();
-  fireEvent.change(screen.getByPlaceholderText("agent:alice topic:requests window:1h"), { target: { value: "platform:auv-7 window:1h" } });
-  fireEvent.submit(screen.getByPlaceholderText("agent:alice topic:requests window:1h").closest("form") as HTMLFormElement);
+  fireEvent.change(screen.getByPlaceholderText("platform:auv-07 window:24h pack:drones"), { target: { value: "platform:auv-7 window:1h" } });
+  fireEvent.submit(screen.getByPlaceholderText("platform:auv-07 window:24h pack:drones").closest("form") as HTMLFormElement);
 
   await waitFor(() => expect(mockedHooks.useSearchEntities).toHaveBeenLastCalledWith("platform:auv-7 window:1h"));
-  expect(screen.getByText("AUV-7")).toBeTruthy();
+  expect(screen.getAllByText("AUV-7").length).toBeGreaterThan(0);
 
-  fireEvent.click(screen.getByRole("button", { name: /topology/i }));
   expect(screen.getByText("Graph Canvas Stub 1/0")).toBeTruthy();
   expect(mockedHooks.useEntityNeighborhood).toHaveBeenCalledWith("correlation", "corr-1", { depth: 2 });
 });

@@ -83,13 +83,9 @@ make dev-restart
 make dev-logs
 ```
 
-For a local AgentOps demo with mocked Kafka-derived traffic and the real dashboard:
-
-```bash
-npm run demo:agentops
-```
-
-This opens the desktop UI directly in Operations mode via `/?demo=agentops`, serves demo state from `public/demo/*.json`, and mocks the replay endpoint locally.
+The old JSON-backed AgentOps demo UI has been removed. Operations and Fusion
+development now uses the live runtime desk against `kafsiem-api` and the
+collector-written SQLite store.
 
 ## Remote Install (wget bootstrap)
 

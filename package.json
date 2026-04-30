@@ -15,7 +15,6 @@
   "scripts": {
     "dev": "vite",
     "generate:api": "go generate ./api/...",
-    "demo:agentops": "vite --open '/?demo=agentops'",
     "fetch:alerts": "go run ./cmd/kafsiem-collector",
     "fetch:alerts:watch": "go run ./cmd/kafsiem-collector --watch",
     "collector:run": "go run ./cmd/kafsiem-collector --watch",
