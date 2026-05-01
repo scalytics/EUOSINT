@@ -20,6 +20,7 @@ import type {
   TopicHealth,
   Trace,
 } from "@/agentops/lib/api-client";
+import { currentDemoScenario, type AgentOpsDemoScenario } from "@/agentops/lib/demo";
 
 export type AgentOpsDataSource = Pick<
   AgentOpsApiClient,
@@ -42,14 +43,25 @@ export type AgentOpsDataSource = Pick<
   | "searchEntities"
 >;
 
-const TOPICS = [
-  "group.drones.requests",
-  "group.drones.traces",
-  "group.drones.observe.audit",
-  "group.scada.requests",
-  "group.scada.tasks.status",
-  "group.scada.memory.context",
+const DRONE_TOPICS = [
+  "ops.drones.command.v1",
+  "ops.drones.telemetry.v1",
+  "ops.drones.detections.v1",
+  "ops.drones.ontology.edges.v1",
 ];
+
+const SCADA_TOPICS = [
+  "ot.scada.modbus.readings.v1",
+  "ot.scada.alarm.events.v1",
+  "ot.scada.change.audit.v1",
+  "ot.scada.ontology.edges.v1",
+];
+
+function topicsForScenario(scenario = currentDemoScenario()): string[] {
+  if (scenario === "drones") return DRONE_TOPICS;
+  if (scenario === "scada") return SCADA_TOPICS;
+  return [...DRONE_TOPICS, ...SCADA_TOPICS];
+}
 
 function tick(): number {
   return Math.floor(Date.now() / 5000);
@@ -67,74 +79,94 @@ function content(data: Record<string, unknown>): string {
   return JSON.stringify(data);
 }
 
+function scenarioMatchesFlow(flow: Flow, scenario: AgentOpsDemoScenario): boolean {
+  if (scenario === "all") return true;
+  return flow.topics.some((topic) => topic.includes(`.${scenario}.`));
+}
+
 function flowSeed(): Flow[] {
   const t = tick() % 12;
-  return [
+  const flows: Flow[] = [
     {
       id: "corr-drone-ew-1",
-      topic_count: 3,
-      sender_count: 4,
-      topics: ["group.drones.requests", "group.drones.traces", "group.drones.observe.audit"],
-      senders: ["mission-planner", "ew-sentinel", "route-planner", "safety-officer"],
-      trace_ids: ["trace-auv-07-sortie"],
-      task_ids: ["task-launch-readiness", "task-ew-mitigation"],
+      topic_count: 4,
+      sender_count: 5,
+      topics: DRONE_TOPICS,
+      senders: ["mission-control", "drone-auv-07", "drone-uav-11", "ew-sentinel", "route-planner"],
+      trace_ids: ["trace-drone-swarm-readiness"],
+      task_ids: ["task-drone-readiness", "task-ew-route"],
       first_seen: iso(56),
       last_seen: iso(1),
       latest_status: "triage_required",
-      message_count: 8 + t,
-      latest_preview: "AUV-07 telemetry gap near Mtarfa ridge; EW advisory joined",
+      message_count: 31 + t,
+      latest_preview: "Drone flight telemetry joined into EW and mission ontology",
+    },
+    {
+      id: "corr-drone-payload-2",
+      topic_count: 3,
+      sender_count: 4,
+      topics: ["ops.drones.telemetry.v1", "ops.drones.detections.v1", "ops.drones.ontology.edges.v1"],
+      senders: ["drone-uav-19", "payload-classifier", "mission-control", "safety-officer"],
+      trace_ids: ["trace-drone-payload-dropouts"],
+      task_ids: ["task-payload-dropout"],
+      first_seen: iso(43),
+      last_seen: iso(3),
+      latest_status: "active",
+      message_count: 18 + (t % 5),
+      latest_preview: "UAV-19 EO payload dropouts linked to sortie and RF link",
+    },
+    {
+      id: "corr-scada-purdue-1",
+      topic_count: 4,
+      sender_count: 5,
+      topics: SCADA_TOPICS,
+      senders: ["plc-12", "hmi-intake-02", "historian-04", "change-gate", "detector-purdue"],
+      trace_ids: ["trace-scada-purdue-violation"],
+      task_ids: ["task-purdue-isolation", "task-change-review"],
+      first_seen: iso(39),
+      last_seen: iso(4),
+      latest_status: "blocked",
+      message_count: 24 + (t % 4),
+      latest_preview: "PLC-12 write path crossed Purdue zones after unapproved change",
     },
     {
       id: "corr-scada-fw-1",
-      topic_count: 3,
+      topic_count: 2,
       sender_count: 3,
-      topics: ["group.scada.requests", "group.scada.tasks.status", "group.scada.memory.context"],
-      senders: ["plant-operator", "firmware-checker", "change-approver"],
+      topics: ["ot.scada.change.audit.v1", "ot.scada.ontology.edges.v1"],
+      senders: ["firmware-checker", "asset-inventory", "change-approver"],
       trace_ids: ["trace-rtu-12-firmware"],
       task_ids: ["task-firmware-exception"],
-      first_seen: iso(39),
-      last_seen: iso(4),
-      latest_status: "active",
-      message_count: 6 + (t % 4),
-      latest_preview: "RTU-12 firmware exception linked to vendor advisory",
-    },
-    {
-      id: "corr-satcom-cve-1",
-      topic_count: 2,
-      sender_count: 2,
-      topics: ["group.drones.requests", "group.drones.memory.context"],
-      senders: ["link-auditor", "mission-planner"],
-      trace_ids: ["trace-link-cve"],
-      task_ids: ["task-satcom-cve"],
       first_seen: iso(91),
       last_seen: iso(27),
       latest_status: "completed",
-      message_count: 5,
-      latest_preview: "Satcom edge appliance review closed with compensating controls",
+      message_count: 9,
+      latest_preview: "RTU-12 firmware drift closed with compensating controls",
     },
   ];
+  return flows.filter((flow) => scenarioMatchesFlow(flow, currentDemoScenario()));
 }
 
 const PACKS: Pack[] = [
   {
     name: "drones",
     version: "0.1.0",
-    description: "Mock unmanned systems ontology stream",
-    entity_types: ["platform", "payload", "area", "location", "mission", "finding"],
-    edge_types: ["observed_at", "assigned_to", "reported_by", "affects", "mitigates"],
+    description: "Unmanned systems Kafka traffic mapped into mission, platform, sortie, payload, and EW ontology",
+    entity_types: ["platform", "payload", "area", "location", "mission", "sortie", "subsystem", "ew_event", "finding"],
+    edge_types: ["assigned_to", "participates_in", "located_in", "emits", "observed_at", "affects", "mitigates", "depends_on"],
     detectors: [
       {
         id: "drones.telemetry_gap",
         severity: "high",
         window: "15m",
-        query: "platform with missing heartbeat and active sortie",
+        query: "active platform with heartbeat loss inside sortie window",
         source: "demo",
       },
       {
         id: "drones.ew_overlap",
         severity: "medium",
         window: "30m",
-        query: "platform location intersects EW advisory area",
+        query: "drone track intersects EW event area and RF link confidence falls",
         source: "demo",
       },
     ],
@@ -151,9 +183,9 @@ const PACKS: Pack[] = [
         source: "demo",
         fields: [
           { id: "readiness", label: "Readiness" },
-          { id: "mission", label: "Mission" },
+          { id: "callsign", label: "Callsign" },
           { id: "battery", label: "Battery" },
-          { id: "country_code", label: "Country" },
+          { id: "link_quality", label: "Link" },
         ],
       },
       {
@@ -173,15 +205,22 @@ const PACKS: Pack[] = [
   {
     name: "scada",
     version: "0.1.0",
-    description: "Mock critical infrastructure ontology stream",
-    entity_types: ["plant", "device", "zone", "asset", "vendor", "vulnerability"],
-    edge_types: ["controls", "depends_on", "has_vulnerability", "located_in", "owned_by"],
+    description: "Critical infrastructure Kafka traffic mapped into plant, process, Purdue zone, device, tag, change, and vulnerability ontology",
+    entity_types: ["plant", "process", "zone", "device", "tag", "change", "tradecraft", "vulnerability"],
+    edge_types: ["controls", "depends_on", "has_vulnerability", "located_in", "writes_to", "changed_by", "matches_tradecraft"],
     detectors: [
       {
         id: "scada.unapproved_firmware",
         severity: "high",
         window: "1h",
         query: "device firmware mismatch with open change ticket",
+        source: "demo",
+      },
+      {
+        id: "scada.purdue_violation",
+        severity: "critical",
+        window: "5m",
+        query: "write request crosses Purdue L3 to L1 without approved jump host",
         source: "demo",
       },
     ],
@@ -197,7 +236,7 @@ const PACKS: Pack[] = [
         source: "demo",
         fields: [
           { id: "firmware", label: "Firmware" },
-          { id: "zone", label: "Zone" },
+          { id: "purdue_level", label: "Purdue" },
           { id: "vendor", label: "Vendor" },
           { id: "risk", label: "Risk" },
         ],
@@ -206,33 +245,47 @@ const PACKS: Pack[] = [
   },
 ];
 
+function packsForScenario(scenario = currentDemoScenario()): Pack[] {
+  if (scenario === "all") return PACKS;
+  return PACKS.filter((pack) => pack.name === scenario);
+}
+
 const ENTITIES: Entity[] = [
   {
     id: "correlation:corr-drone-ew-1",
     type: "correlation",
     canonical_id: "corr-drone-ew-1",
-    display_name: "AUV-07 EW telemetry gap",
+    display_name: "Drone flight EW correlation",
     first_seen: iso(56),
     last_seen: iso(1),
-    attrs: { status: "triage_required", priority: "high", scenario: "sortie-readiness", operator: "mission-planner" },
+    attrs: { status: "triage_required", priority: "high", scenario: "drone-flight-ontology", operator: "mission-control" },
+  },
+  {
+    id: "correlation:corr-drone-payload-2",
+    type: "correlation",
+    canonical_id: "corr-drone-payload-2",
+    display_name: "UAV-19 payload dropout",
+    first_seen: iso(43),
+    last_seen: iso(3),
+    attrs: { status: "active", priority: "medium", scenario: "payload-health", operator: "safety-officer" },
+  },
+  {
+    id: "correlation:corr-scada-purdue-1",
+    type: "correlation",
+    canonical_id: "corr-scada-purdue-1",
+    display_name: "PLC-12 Purdue violation",
+    first_seen: iso(39),
+    last_seen: iso(4),
+    attrs: { status: "blocked", priority: "critical", scenario: "purdue-zone-enforcement", operator: "change-gate" },
   },
   {
     id: "correlation:corr-scada-fw-1",
     type: "correlation",
     canonical_id: "corr-scada-fw-1",
     display_name: "RTU-12 firmware exception",
-    first_seen: iso(39),
-    last_seen: iso(4),
-    attrs: { status: "active", priority: "medium", scenario: "plant-change-control", operator: "plant-operator" },
-  },
-  {
-    id: "correlation:corr-satcom-cve-1",
-    type: "correlation",
-    canonical_id: "corr-satcom-cve-1",
-    display_name: "Satcom edge appliance review",
     first_seen: iso(91),
     last_seen: iso(27),
-    attrs: { status: "completed", priority: "low", scenario: "edge-appliance-review", operator: "link-auditor" },
+    attrs: { status: "completed", priority: "medium", scenario: "firmware-drift", operator: "firmware-checker" },
   },
   {
     id: "platform:auv-07",
@@ -241,7 +294,43 @@ const ENTITIES: Entity[] = [
     display_name: "AUV-07",
     first_seen: iso(140),
     last_seen: iso(1),
-    attrs: { readiness: "degraded", mission: "harbor ISR", battery: "62%", country_code: "DE", vendor: "F5", product: "BIG-IP", cve: "CVE-2026-12345" },
+    attrs: { readiness: "degraded", callsign: "TRITON-7", battery: "62%", link_quality: "38%", autonomy_version: "7.4.2" },
+  },
+  {
+    id: "platform:uav-11",
+    type: "platform",
+    canonical_id: "uav-11",
+    display_name: "UAV-11",
+    first_seen: iso(138),
+    last_seen: iso(1),
+    attrs: { readiness: "green", callsign: "KITE-11", battery: "74%", link_quality: "88%", autonomy_version: "7.4.2" },
+  },
+  {
+    id: "platform:uav-19",
+    type: "platform",
+    canonical_id: "uav-19",
+    display_name: "UAV-19",
+    first_seen: iso(116),
+    last_seen: iso(3),
+    attrs: { readiness: "amber", callsign: "KITE-19", battery: "69%", link_quality: "71%", autonomy_version: "7.4.1" },
+  },
+  {
+    id: "mission:harbor-isr",
+    type: "mission",
+    canonical_id: "harbor-isr",
+    display_name: "Harbor ISR Mission",
+    first_seen: iso(180),
+    last_seen: iso(1),
+    attrs: { objective: "perimeter surveillance", commander: "mission-control", status: "hold" },
+  },
+  {
+    id: "sortie:sortie-441",
+    type: "sortie",
+    canonical_id: "sortie-441",
+    display_name: "Sortie 441",
+    first_seen: iso(62),
+    last_seen: iso(1),
+    attrs: { window: "2026-05-01T08:00Z/2026-05-01T12:00Z", status: "blocked", launch_gate: "telemetry" },
   },
   {
     id: "area:mtarfa-ridge",
@@ -250,7 +339,7 @@ const ENTITIES: Entity[] = [
     display_name: "Mtarfa Ridge EW Box",
     first_seen: iso(190),
     last_seen: iso(1),
-    attrs: { country_code: "DE", sector: "critical infrastructure", category: "cyber_advisory" },
+    attrs: { country_code: "MT", sector: "defense", signal: "L-band interference", confidence: "0.81" },
   },
   {
     id: "location:mtarfa-telemetry",
@@ -259,7 +348,34 @@ const ENTITIES: Entity[] = [
     display_name: "Telemetry Station M-4",
     first_seen: iso(200),
     last_seen: iso(2),
-    attrs: { country_code: "DE", lat: 35.895, lon: 14.405 },
+    attrs: { country_code: "MT", lat: 35.895, lon: 14.405 },
+  },
+  {
+    id: "subsystem:rf-link-auv-07",
+    type: "subsystem",
+    canonical_id: "rf-link-auv-07",
+    display_name: "AUV-07 RF Link",
+    first_seen: iso(140),
+    last_seen: iso(1),
+    attrs: { kind: "rf-link", health: "degraded", packet_loss: "21%" },
+  },
+  {
+    id: "payload:eo-uav-19",
+    type: "payload",
+    canonical_id: "eo-uav-19",
+    display_name: "UAV-19 EO Payload",
+    first_seen: iso(116),
+    last_seen: iso(3),
+    attrs: { kind: "electro-optical", health: "intermittent", dropouts: 4 },
+  },
+  {
+    id: "ew_event:ew-mtarfa-042",
+    type: "ew_event",
+    canonical_id: "ew-mtarfa-042",
+    display_name: "EW Event Mtarfa 042",
+    first_seen: iso(24),
+    last_seen: iso(1),
+    attrs: { band: "L-band", confidence: "0.81", source: "ew-sentinel" },
   },
   {
     id: "finding:ew-interference",
@@ -268,7 +384,7 @@ const ENTITIES: Entity[] = [
     display_name: "EW interference hypothesis",
     first_seen: iso(52),
     last_seen: iso(1),
-    attrs: { severity: "high", confidence: "0.78", category: "cyber_advisory" },
+    attrs: { severity: "high", confidence: "0.78", category: "mission_risk" },
   },
   {
     id: "plant:desal-east",
@@ -277,7 +393,43 @@ const ENTITIES: Entity[] = [
     display_name: "East Desalination Plant",
     first_seen: iso(400),
     last_seen: iso(4),
-    attrs: { sector: "water", country_code: "DE" },
+    attrs: { sector: "water", country_code: "MT", criticality: "high" },
+  },
+  {
+    id: "process:intake-pump-train",
+    type: "process",
+    canonical_id: "intake-pump-train",
+    display_name: "Intake Pump Train",
+    first_seen: iso(390),
+    last_seen: iso(4),
+    attrs: { process_area: "intake", state: "running", safety_impact: "high" },
+  },
+  {
+    id: "zone:purdue-l1",
+    type: "zone",
+    canonical_id: "purdue-l1",
+    display_name: "Purdue Level 1",
+    first_seen: iso(400),
+    last_seen: iso(4),
+    attrs: { level: "L1", role: "basic control" },
+  },
+  {
+    id: "zone:purdue-l3",
+    type: "zone",
+    canonical_id: "purdue-l3",
+    display_name: "Purdue Level 3",
+    first_seen: iso(400),
+    last_seen: iso(4),
+    attrs: { level: "L3", role: "operations management" },
+  },
+  {
+    id: "device:plc-12",
+    type: "device",
+    canonical_id: "plc-12",
+    display_name: "PLC-12",
+    first_seen: iso(340),
+    last_seen: iso(4),
+    attrs: { firmware: "3.8.9", purdue_level: "L1", vendor: "Siemens", risk: "critical" },
   },
   {
     id: "device:rtu-12",
@@ -286,7 +438,43 @@ const ENTITIES: Entity[] = [
     display_name: "RTU-12",
     first_seen: iso(300),
     last_seen: iso(4),
-    attrs: { firmware: "4.2.1", zone: "intake", vendor: "F5", risk: "high", cve: "CVE-2026-12345" },
+    attrs: { firmware: "4.2.1", purdue_level: "L2", vendor: "Schneider Electric", risk: "high", cve: "CVE-2026-12345" },
+  },
+  {
+    id: "device:hmi-intake-02",
+    type: "device",
+    canonical_id: "hmi-intake-02",
+    display_name: "HMI Intake 02",
+    first_seen: iso(300),
+    last_seen: iso(4),
+    attrs: { firmware: "2.14.0", purdue_level: "L3", vendor: "Inductive Automation", risk: "medium" },
+  },
+  {
+    id: "tag:FIT-201",
+    type: "tag",
+    canonical_id: "FIT-201",
+    display_name: "FIT-201 Flow Rate",
+    first_seen: iso(260),
+    last_seen: iso(4),
+    attrs: { engineering_unit: "m3/h", current_value: "1420", alarm_state: "high-high" },
+  },
+  {
+    id: "change:chg-7731",
+    type: "change",
+    canonical_id: "chg-7731",
+    display_name: "Change CHG-7731",
+    first_seen: iso(40),
+    last_seen: iso(4),
+    attrs: { approval: "missing", engineer: "contractor-a", work_order: "none" },
+  },
+  {
+    id: "tradecraft:unauthorized-write",
+    type: "tradecraft",
+    canonical_id: "unauthorized-write",
+    display_name: "Unauthorized PLC Write",
+    first_seen: iso(39),
+    last_seen: iso(4),
+    attrs: { framework: "ATT&CK ICS", tactic: "impair process control", severity: "critical" },
   },
   {
     id: "vulnerability:CVE-2026-12345",
@@ -295,7 +483,7 @@ const ENTITIES: Entity[] = [
     display_name: "CVE-2026-12345",
     first_seen: iso(320),
     last_seen: iso(4),
-    attrs: { vendor: "F5", product: "BIG-IP", severity: "critical" },
+    attrs: { vendor: "Schneider Electric", product: "RTU firmware 4.2.x", severity: "high" },
   },
 ];
 
@@ -310,110 +498,239 @@ function edge(src: string, dst: string, type: string, weight = 0.8): Edge {
   };
 }
 
+function demoEdges(): Edge[] {
+  return [
+    edge("correlation:corr-drone-ew-1", "mission:harbor-isr", "observed_subject", 0.95),
+    edge("mission:harbor-isr", "sortie:sortie-441", "has_sortie", 0.92),
+    edge("sortie:sortie-441", "platform:auv-07", "assigned_to", 0.96),
+    edge("sortie:sortie-441", "platform:uav-11", "assigned_to", 0.88),
+    edge("platform:auv-07", "subsystem:rf-link-auv-07", "depends_on", 0.82),
+    edge("platform:auv-07", "area:mtarfa-ridge", "observed_at", 0.82),
+    edge("area:mtarfa-ridge", "location:mtarfa-telemetry", "covers", 0.71),
+    edge("ew_event:ew-mtarfa-042", "area:mtarfa-ridge", "located_in", 0.86),
+    edge("ew_event:ew-mtarfa-042", "finding:ew-interference", "produces", 0.79),
+    edge("finding:ew-interference", "platform:auv-07", "affects", 0.77),
+    edge("correlation:corr-drone-payload-2", "platform:uav-19", "observed_subject", 0.9),
+    edge("platform:uav-19", "payload:eo-uav-19", "emits", 0.74),
+    edge("platform:uav-19", "sortie:sortie-441", "participates_in", 0.72),
+    edge("payload:eo-uav-19", "finding:ew-interference", "affected_by", 0.51),
+    edge("correlation:corr-scada-purdue-1", "plant:desal-east", "observed_subject", 0.9),
+    edge("plant:desal-east", "process:intake-pump-train", "hosts", 0.9),
+    edge("process:intake-pump-train", "device:plc-12", "controls", 0.84),
+    edge("device:hmi-intake-02", "device:plc-12", "writes_to", 0.93),
+    edge("device:hmi-intake-02", "zone:purdue-l3", "located_in", 0.72),
+    edge("device:plc-12", "zone:purdue-l1", "located_in", 0.8),
+    edge("device:plc-12", "tag:FIT-201", "writes_to", 0.87),
+    edge("change:chg-7731", "device:plc-12", "changed_by", 0.69),
+    edge("tradecraft:unauthorized-write", "device:plc-12", "matches_tradecraft", 0.67),
+    edge("correlation:corr-scada-fw-1", "device:rtu-12", "observed_subject", 0.91),
+    edge("plant:desal-east", "device:rtu-12", "controls", 0.8),
+    edge("device:rtu-12", "vulnerability:CVE-2026-12345", "has_vulnerability", 0.69),
+  ];
+}
+
 function messagesFor(flowId: string): Message[] {
   const t = tick() % 50;
   const dynamicOffset = 1200 + t;
   const data: Record<string, Message[]> = {
     "corr-drone-ew-1": [
       {
-        id: "msg-drone-req-1",
-        topic: "group.drones.requests",
-        topic_family: "requests",
+        id: "msg-drone-command-1",
+        topic: "ops.drones.command.v1",
+        topic_family: "command",
         partition: 0,
         offset: 1188,
         timestamp: iso(54),
-        envelope_type: "request",
-        sender_id: "mission-planner",
+        envelope_type: "mission_command",
+        sender_id: "mission-control",
         correlation_id: flowId,
-        trace_id: "trace-auv-07-sortie",
-        task_id: "task-launch-readiness",
+        trace_id: "trace-drone-swarm-readiness",
+        task_id: "task-drone-readiness",
         status: "requested",
-        preview: "Launch readiness check for AUV-07",
-        content: content({ platform: "auv-07", area: "mtarfa-ridge", location: "mtarfa-telemetry", category: "cyber_advisory", country_code: "DE", vendor: "F5", product: "BIG-IP", cve: "CVE-2026-12345" }),
+        preview: "Launch gate requested for three-drone harbor ISR sortie",
+        content: content({ mission: "harbor-isr", sortie: "sortie-441", platform_id: "auv-07", platform: "uav-11", area: "mtarfa-ridge", command_key: "sortie-441:launch-gate" }),
       },
       {
-        id: "msg-drone-gap-1",
-        topic: "group.drones.observe.audit",
-        topic_family: "audit",
+        id: "msg-drone-telemetry-1",
+        topic: "ops.drones.telemetry.v1",
+        topic_family: "telemetry",
         partition: 0,
         offset: 1192,
         timestamp: iso(18),
-        envelope_type: "observation",
-        sender_id: "ew-sentinel",
+        envelope_type: "telemetry",
+        sender_id: "drone-auv-07",
         correlation_id: flowId,
-        trace_id: "trace-auv-07-sortie",
-        task_id: "task-ew-mitigation",
+        trace_id: "trace-drone-swarm-readiness",
+        task_id: "task-ew-route",
         status: "triage_required",
-        preview: "Telemetry gap overlaps EW advisory area",
-        content: content({ platform: "auv-07", finding: "ew-interference", area: "mtarfa-ridge", sector: "critical infrastructure", category: "cyber_advisory", country_code: "DE" }),
+        preview: "AUV-07 heartbeat loss and RF packet loss crossed detector threshold",
+        content: content({ platform: "auv-07", subsystem: "rf-link-auv-07", location: "mtarfa-telemetry", battery: 62, link_quality: 38, packet_loss_pct: 21 }),
       },
       {
-        id: `msg-drone-stream-${t}`,
-        topic: "group.drones.traces",
-        topic_family: "traces",
+        id: "msg-drone-ew-1",
+        topic: "ops.drones.detections.v1",
+        topic_family: "detections",
+        partition: 1,
+        offset: 1197,
+        timestamp: iso(6),
+        envelope_type: "detector_hit",
+        sender_id: "ew-sentinel",
+        correlation_id: flowId,
+        trace_id: "trace-drone-swarm-readiness",
+        task_id: "task-ew-route",
+        status: "triage_required",
+        preview: "EW event overlaps sortie route and degraded RF link",
+        content: content({ ew_event: "ew-mtarfa-042", finding: "ew-interference", area: "mtarfa-ridge", platform: "auv-07", confidence: 0.81 }),
+      },
+      {
+        id: `msg-drone-ontology-${t}`,
+        topic: "ops.drones.ontology.edges.v1",
+        topic_family: "ontology",
         partition: 1,
         offset: dynamicOffset,
         timestamp: iso(1),
-        envelope_type: "trace",
+        envelope_type: "ontology_edge_batch",
         sender_id: "route-planner",
         correlation_id: flowId,
-        trace_id: "trace-auv-07-sortie",
-        task_id: "task-ew-mitigation",
+        trace_id: "trace-drone-swarm-readiness",
+        task_id: "task-ew-route",
         status: "streaming",
-        preview: `Mock stream heartbeat ${t}: mitigation route recomputed`,
-        content: content({ platform: "auv-07", mission: "harbor-isr", area: "mtarfa-ridge", product: "BIG-IP", vendor: "F5" }),
+        preview: `Kafka edge batch ${t}: platform, sortie, EW event, and mitigation route linked`,
+        content: content({ platform: "auv-07", mission: "harbor-isr", sortie: "sortie-441", ew_event: "ew-mtarfa-042", edge_count: 8, detector: "drones.ew_overlap" }),
+      },
+    ],
+    "corr-drone-payload-2": [
+      {
+        id: "msg-drone-payload-1",
+        topic: "ops.drones.telemetry.v1",
+        topic_family: "telemetry",
+        partition: 2,
+        offset: 2102,
+        timestamp: iso(31),
+        envelope_type: "telemetry",
+        sender_id: "drone-uav-19",
+        correlation_id: flowId,
+        trace_id: "trace-drone-payload-dropouts",
+        task_id: "task-payload-dropout",
+        status: "active",
+        preview: "UAV-19 payload health stream reports repeated EO dropouts",
+        content: content({ platform: "uav-19", payload: "eo-uav-19", mission: "harbor-isr", sortie: "sortie-441", dropouts: 4 }),
+      },
+      {
+        id: "msg-drone-payload-ontology-1",
+        topic: "ops.drones.ontology.edges.v1",
+        topic_family: "ontology",
+        partition: 2,
+        offset: 2110,
+        timestamp: iso(3),
+        envelope_type: "ontology_edge_batch",
+        sender_id: "payload-classifier",
+        correlation_id: flowId,
+        trace_id: "trace-drone-payload-dropouts",
+        task_id: "task-payload-dropout",
+        status: "active",
+        preview: "Payload dropout linked to platform, mission, sortie, and RF subsystem",
+        content: content({ platform: "uav-19", payload: "eo-uav-19", mission: "harbor-isr", finding: "ew-interference", edge_count: 5 }),
+      },
+    ],
+    "corr-scada-purdue-1": [
+      {
+        id: "msg-scada-modbus-1",
+        topic: "ot.scada.modbus.readings.v1",
+        topic_family: "telemetry",
+        partition: 0,
+        offset: 530,
+        timestamp: iso(38),
+        envelope_type: "modbus_write",
+        sender_id: "hmi-intake-02",
+        correlation_id: flowId,
+        trace_id: "trace-scada-purdue-violation",
+        task_id: "task-purdue-isolation",
+        status: "blocked",
+        preview: "HMI Intake 02 issued write request to PLC-12 flow tag",
+        content: content({ plant: "desal-east", process: "intake-pump-train", device: "plc-12", tag: "FIT-201", zone: "purdue-l1", source_zone: "purdue-l3", function_code: 16 }),
+      },
+      {
+        id: "msg-scada-alarm-1",
+        topic: "ot.scada.alarm.events.v1",
+        topic_family: "alarms",
+        partition: 1,
+        offset: 544,
+        timestamp: iso(8),
+        envelope_type: "alarm_event",
+        sender_id: "plc-12",
+        correlation_id: flowId,
+        trace_id: "trace-scada-purdue-violation",
+        task_id: "task-purdue-isolation",
+        status: "blocked",
+        preview: "FIT-201 high-high alarm followed unapproved write path",
+        content: content({ plant: "desal-east", process: "intake-pump-train", device: "plc-12", tag: "FIT-201", alarm_state: "high-high" }),
+      },
+      {
+        id: "msg-scada-change-1",
+        topic: "ot.scada.change.audit.v1",
+        topic_family: "changes",
+        partition: 0,
+        offset: 558,
+        timestamp: iso(5),
+        envelope_type: "change_audit",
+        sender_id: "change-gate",
+        correlation_id: flowId,
+        trace_id: "trace-scada-purdue-violation",
+        task_id: "task-change-review",
+        status: "missing_approval",
+        preview: "No approved work order found for HMI-to-PLC write path",
+        content: content({ change: "chg-7731", device: "plc-12", tag: "FIT-201", engineer: "contractor-a", approval: "missing" }),
+      },
+      {
+        id: `msg-scada-ontology-${t}`,
+        topic: "ot.scada.ontology.edges.v1",
+        topic_family: "ontology",
+        partition: 2,
+        offset: 580 + t,
+        timestamp: iso(4),
+        envelope_type: "ontology_edge_batch",
+        sender_id: "detector-purdue",
+        correlation_id: flowId,
+        trace_id: "trace-scada-purdue-violation",
+        task_id: "task-purdue-isolation",
+        status: "blocked",
+        preview: `Kafka edge batch ${t}: plant, process, zone, device, tag, and change linked`,
+        content: content({ plant: "desal-east", process: "intake-pump-train", zone: "purdue-l1", device: "plc-12", tag: "FIT-201", change: "chg-7731", tradecraft: "unauthorized-write", detector: "scada.purdue_violation" }),
       },
     ],
     "corr-scada-fw-1": [
       {
-        id: "msg-scada-req-1",
-        topic: "group.scada.requests",
-        topic_family: "requests",
+        id: "msg-scada-fw-1",
+        topic: "ot.scada.change.audit.v1",
+        topic_family: "changes",
         partition: 0,
-        offset: 530,
-        timestamp: iso(38),
-        envelope_type: "request",
-        sender_id: "plant-operator",
+        offset: 730,
+        timestamp: iso(70),
+        envelope_type: "asset_inventory",
+        sender_id: "asset-inventory",
         correlation_id: flowId,
         trace_id: "trace-rtu-12-firmware",
         task_id: "task-firmware-exception",
-        status: "requested",
-        preview: "Review RTU-12 firmware exception",
-        content: content({ plant: "desal-east", device: "rtu-12", vendor: "F5", product: "BIG-IP", cve: "CVE-2026-12345", category: "cyber_advisory", country_code: "DE" }),
+        status: "completed",
+        preview: "RTU-12 firmware drift matched vulnerability advisory",
+        content: content({ plant: "desal-east", device: "rtu-12", vulnerability: "CVE-2026-12345", vendor: "Schneider Electric", firmware: "4.2.1" }),
       },
       {
-        id: "msg-scada-status-1",
-        topic: "group.scada.tasks.status",
-        topic_family: "tasks",
+        id: "msg-scada-fw-ontology-1",
+        topic: "ot.scada.ontology.edges.v1",
+        topic_family: "ontology",
         partition: 0,
-        offset: 544,
-        timestamp: iso(4),
-        envelope_type: "task_status",
+        offset: 744,
+        timestamp: iso(27),
+        envelope_type: "ontology_edge_batch",
         sender_id: "firmware-checker",
         correlation_id: flowId,
         trace_id: "trace-rtu-12-firmware",
         task_id: "task-firmware-exception",
-        status: "active",
-        preview: "Firmware mismatch confirmed; awaiting change approval",
-        content: content({ plant: "desal-east", device: "rtu-12", vulnerability: "CVE-2026-12345", sector: "water" }),
-      },
-    ],
-    "corr-satcom-cve-1": [
-      {
-        id: "msg-satcom-1",
-        topic: "group.drones.memory.context",
-        topic_family: "memory",
-        partition: 0,
-        offset: 300,
-        timestamp: iso(90),
-        envelope_type: "context",
-        sender_id: "link-auditor",
-        correlation_id: flowId,
-        trace_id: "trace-link-cve",
-        task_id: "task-satcom-cve",
         status: "completed",
-        preview: "Edge appliance compensating controls recorded",
-        content: content({ platform: "auv-07", vendor: "F5", product: "BIG-IP", cve: "CVE-2026-12345", category: "cyber_advisory" }),
+        preview: "RTU-12 vulnerability linked to compensating control record",
+        content: content({ plant: "desal-east", device: "rtu-12", vulnerability: "CVE-2026-12345", edge_count: 4, detector: "scada.unapproved_firmware" }),
       },
     ],
   };
@@ -424,26 +741,66 @@ function tasksFor(flowId: string): Task[] {
   if (flowId === "corr-drone-ew-1") {
     return [
       {
-        id: "task-launch-readiness",
-        requester_id: "mission-planner",
+        id: "task-drone-readiness",
+        requester_id: "mission-control",
         responder_id: "safety-officer",
         status: "blocked",
-        description: "Gate AUV-07 launch readiness against telemetry confidence",
-        last_summary: "Battery acceptable; telemetry confidence degraded by EW overlap.",
+        description: "Gate sortie launch readiness against platform telemetry and EW context",
+        last_summary: "AUV-07 RF link degraded; route mitigation is required before launch.",
         first_seen: iso(54),
         last_seen: iso(18),
       },
       {
-        id: "task-ew-mitigation",
-        parent_task_id: "task-launch-readiness",
+        id: "task-ew-route",
+        parent_task_id: "task-drone-readiness",
         delegation_depth: 1,
         requester_id: "safety-officer",
         responder_id: "route-planner",
         status: "triage_required",
-        description: "Compute mitigation route around EW advisory",
-        last_summary: "Route recompute stream is live.",
+        description: "Compute mitigation route around EW event area",
+        last_summary: "Ontology edge stream is joining sortie, platform, area, and EW event.",
         first_seen: iso(19),
         last_seen: iso(1),
+      },
+    ];
+  }
+  if (flowId === "corr-drone-payload-2") {
+    return [
+      {
+        id: "task-payload-dropout",
+        requester_id: "mission-control",
+        responder_id: "payload-classifier",
+        status: "active",
+        description: "Correlate EO payload dropouts across sortie and RF subsystem",
+        last_summary: "UAV-19 payload dropouts linked to sortie 441.",
+        first_seen: iso(31),
+        last_seen: iso(3),
+      },
+    ];
+  }
+  if (flowId === "corr-scada-purdue-1") {
+    return [
+      {
+        id: "task-purdue-isolation",
+        requester_id: "detector-purdue",
+        responder_id: "change-gate",
+        status: "blocked",
+        description: "Isolate HMI-to-PLC write path crossing Purdue L3 to L1",
+        last_summary: "Write path blocked pending approved work order.",
+        first_seen: iso(38),
+        last_seen: iso(4),
+      },
+      {
+        id: "task-change-review",
+        parent_task_id: "task-purdue-isolation",
+        delegation_depth: 1,
+        requester_id: "change-gate",
+        responder_id: "asset-inventory",
+        status: "missing_approval",
+        description: "Find approved change for PLC-12 tag write",
+        last_summary: "No work order found for CHG-7731.",
+        first_seen: iso(8),
+        last_seen: iso(4),
       },
     ];
   }
@@ -451,42 +808,59 @@ function tasksFor(flowId: string): Task[] {
     return [
       {
         id: "task-firmware-exception",
-        requester_id: "plant-operator",
+        requester_id: "asset-inventory",
         responder_id: "firmware-checker",
-        status: "active",
-        description: "Check firmware exception for RTU-12",
-        last_summary: "Exception requires change approval.",
-        first_seen: iso(38),
-        last_seen: iso(4),
+        status: "completed",
+        description: "Check firmware exception for RTU-12 against advisory context",
+        last_summary: "Compensating controls accepted.",
+        first_seen: iso(70),
+        last_seen: iso(27),
       },
     ];
   }
-  return [
-    {
-      id: "task-satcom-cve",
-      requester_id: "link-auditor",
-      responder_id: "mission-planner",
-      status: "completed",
-      description: "Review satcom edge appliance advisory",
-      last_summary: "Controls accepted.",
-      first_seen: iso(90),
-      last_seen: iso(27),
-    },
-  ];
+  return [];
 }
 
 function tracesFor(flowId: string): Trace[] {
   if (flowId === "corr-drone-ew-1") {
     return [
       {
-        id: "trace-auv-07-sortie",
+        id: "trace-drone-swarm-readiness",
         span_count: 7 + (tick() % 4),
-        agents: ["mission-planner", "ew-sentinel", "route-planner"],
-        span_types: ["request", "observation", "route_update"],
-        latest_title: "AUV-07 launch readiness",
+        agents: ["mission-control", "drone-auv-07", "ew-sentinel", "route-planner"],
+        span_types: ["mission_command", "telemetry", "detector_hit", "ontology_edge_batch"],
+        latest_title: "Drone flight ontology edge stream",
         started_at: iso(54),
         ended_at: iso(1),
         duration_ms: 3_180_000,
+      },
+    ];
+  }
+  if (flowId === "corr-drone-payload-2") {
+    return [
+      {
+        id: "trace-drone-payload-dropouts",
+        span_count: 4,
+        agents: ["drone-uav-19", "payload-classifier", "mission-control"],
+        span_types: ["telemetry", "ontology_edge_batch"],
+        latest_title: "UAV-19 payload dropout correlation",
+        started_at: iso(31),
+        ended_at: iso(3),
+        duration_ms: 1_680_000,
+      },
+    ];
+  }
+  if (flowId === "corr-scada-purdue-1") {
+    return [
+      {
+        id: "trace-scada-purdue-violation",
+        span_count: 8,
+        agents: ["hmi-intake-02", "plc-12", "change-gate", "detector-purdue"],
+        span_types: ["modbus_write", "alarm_event", "change_audit", "ontology_edge_batch"],
+        latest_title: "SCADA Purdue violation correlation",
+        started_at: iso(38),
+        ended_at: iso(4),
+        duration_ms: 2_040_000,
       },
     ];
   }
@@ -495,27 +869,16 @@ function tracesFor(flowId: string): Trace[] {
       {
         id: "trace-rtu-12-firmware",
         span_count: 5,
-        agents: ["plant-operator", "firmware-checker"],
-        span_types: ["request", "approval_gate"],
+        agents: ["asset-inventory", "firmware-checker", "change-approver"],
+        span_types: ["asset_inventory", "ontology_edge_batch", "approval_gate"],
         latest_title: "RTU-12 firmware exception",
-        started_at: iso(38),
-        ended_at: iso(4),
-        duration_ms: 2_040_000,
+        started_at: iso(70),
+        ended_at: iso(27),
+        duration_ms: 2_580_000,
       },
     ];
   }
-  return [
-    {
-      id: "trace-link-cve",
-      span_count: 4,
-      agents: ["link-auditor", "mission-planner"],
-      span_types: ["context", "control"],
-      latest_title: "Satcom advisory review",
-      started_at: iso(90),
-      ended_at: iso(27),
-      duration_ms: 1_260_000,
-    },
-  ];
+  return [];
 }
 
 function profileFor(type: string, id: string): Profile {
@@ -552,50 +915,57 @@ function profileFor(type: string, id: string): Profile {
 
 function neighborhoodFor(type: string, id: string): NeighborhoodResponse {
   const key = id.startsWith(`${type}:`) ? id : `${type}:${id}`;
+  const allEdges = demoEdges();
   if (key === "correlation:corr-drone-ew-1") {
-    const ids = ["correlation:corr-drone-ew-1", "platform:auv-07", "area:mtarfa-ridge", "location:mtarfa-telemetry", "finding:ew-interference", "vulnerability:CVE-2026-12345"];
+    const ids = ["correlation:corr-drone-ew-1", "mission:harbor-isr", "sortie:sortie-441", "platform:auv-07", "platform:uav-11", "subsystem:rf-link-auv-07", "area:mtarfa-ridge", "location:mtarfa-telemetry", "ew_event:ew-mtarfa-042", "finding:ew-interference"];
     return {
       entities: ENTITIES.filter((item) => ids.includes(item.id)),
-      edges: [
-        edge("correlation:corr-drone-ew-1", "platform:auv-07", "observed_subject", 0.96),
-        edge("platform:auv-07", "area:mtarfa-ridge", "observed_at", 0.82),
-        edge("area:mtarfa-ridge", "location:mtarfa-telemetry", "covers", 0.71),
-        edge("finding:ew-interference", "platform:auv-07", "affects", 0.77),
-        edge("vulnerability:CVE-2026-12345", "platform:auv-07", "external_context", 0.63),
-      ],
+      edges: allEdges.filter((item) => ids.includes(item.src_id) && ids.includes(item.dst_id)),
+    };
+  }
+  if (key === "correlation:corr-drone-payload-2") {
+    const ids = ["correlation:corr-drone-payload-2", "platform:uav-19", "payload:eo-uav-19", "sortie:sortie-441", "mission:harbor-isr", "finding:ew-interference"];
+    return {
+      entities: ENTITIES.filter((item) => ids.includes(item.id)),
+      edges: allEdges.filter((item) => ids.includes(item.src_id) && ids.includes(item.dst_id)),
+    };
+  }
+  if (key === "correlation:corr-scada-purdue-1") {
+    const ids = ["correlation:corr-scada-purdue-1", "plant:desal-east", "process:intake-pump-train", "zone:purdue-l1", "zone:purdue-l3", "device:plc-12", "device:hmi-intake-02", "tag:FIT-201", "change:chg-7731", "tradecraft:unauthorized-write"];
+    return {
+      entities: ENTITIES.filter((item) => ids.includes(item.id)),
+      edges: allEdges.filter((item) => ids.includes(item.src_id) && ids.includes(item.dst_id)),
     };
   }
   if (key === "correlation:corr-scada-fw-1") {
     const ids = ["correlation:corr-scada-fw-1", "plant:desal-east", "device:rtu-12", "vulnerability:CVE-2026-12345"];
     return {
       entities: ENTITIES.filter((item) => ids.includes(item.id)),
-      edges: [
-        edge("correlation:corr-scada-fw-1", "device:rtu-12", "observed_subject", 0.91),
-        edge("plant:desal-east", "device:rtu-12", "controls", 0.8),
-        edge("device:rtu-12", "vulnerability:CVE-2026-12345", "has_vulnerability", 0.69),
-      ],
+      edges: allEdges.filter((item) => ids.includes(item.src_id) && ids.includes(item.dst_id)),
     };
   }
   const center = ENTITIES.find((item) => item.id === key || (item.type === type && item.canonical_id === id));
   if (!center) return { entities: [], edges: [] };
+  const edges = allEdges.filter((item) => item.src_id === center.id || item.dst_id === center.id);
+  const ids = new Set([center.id, ...edges.flatMap((item) => [item.src_id, item.dst_id])]);
   return {
-    entities: [center, ...ENTITIES.filter((item) => item.id !== center.id).slice(0, 4)],
-    edges: [
-      edge(center.id, "correlation:corr-drone-ew-1", "seen_in", 0.72),
-      edge(center.id, "vulnerability:CVE-2026-12345", "context", 0.48),
-    ],
+    entities: ENTITIES.filter((item) => ids.has(item.id)),
+    edges,
   };
 }
 
 function provenanceFor(type: string, id: string): Provenance[] {
   const subject = id.startsWith(`${type}:`) ? id : `${type}:${id}`;
+  const pack = ["plant", "process", "zone", "device", "tag", "change", "tradecraft", "vulnerability"].includes(type) ? "scada" : "drones";
+  const ingestTopic = pack === "scada" ? "ot.scada.modbus.readings.v1" : "ops.drones.telemetry.v1";
+  const ontologyTopic = pack === "scada" ? "ot.scada.ontology.edges.v1" : "ops.drones.ontology.edges.v1";
   return [
     {
       subject_kind: "entity",
       subject_id: subject,
       stage: "ingest",
       policy_ver: "demo-stream-v1",
-      inputs: { topic: "group.drones.requests", offset: 1188 },
+      inputs: { topic: ingestTopic, offset: 1188 },
       decision: "accepted",
       reasons: ["typed-envelope", "pack-field-match"],
       produced_at: iso(54),
@@ -605,7 +975,7 @@ function provenanceFor(type: string, id: string): Provenance[] {
       subject_id: subject,
       stage: "ontology",
       policy_ver: "demo-stream-v1",
-      inputs: { pack: "drones", entity_type: type },
+      inputs: { topic: ontologyTopic, pack, entity_type: type },
       decision: "linked",
       reasons: ["canonical-id", "correlation-window"],
       produced_at: iso(18),
@@ -613,11 +983,11 @@ function provenanceFor(type: string, id: string): Provenance[] {
     {
       subject_kind: "entity",
       subject_id: subject,
-      stage: "fusion",
+      stage: "detector",
       policy_ver: "demo-stream-v1",
-      inputs: { alert_id: "advisory-f5-2026-12345" },
-      decision: "candidate-context",
-      reasons: ["vendor:F5", "cve:CVE-2026-12345"],
+      inputs: { detector: pack === "scada" ? "scada.purdue_violation" : "drones.ew_overlap" },
+      decision: "scored",
+      reasons: pack === "scada" ? ["purdue-zone-crossing", "missing-change"] : ["route-overlap", "telemetry-gap"],
       produced_at: iso(2),
     },
   ];
@@ -625,11 +995,22 @@ function provenanceFor(type: string, id: string): Provenance[] {
 
 function mapFeatures(params: { types?: string }): FeatureCollection {
   const selected = new Set((params.types || "").split(",").map((item) => item.trim()).filter(Boolean));
+  const scenario = currentDemoScenario();
   const features: FeatureCollection["features"] = [
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [14.405, 35.895] },
       properties: { id: "platform:auv-07", type: "platform", display_name: "AUV-07" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [14.42, 35.902] },
+      properties: { id: "platform:uav-11", type: "platform", display_name: "UAV-11" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [14.455, 35.887] },
+      properties: { id: "platform:uav-19", type: "platform", display_name: "UAV-19" },
     },
     {
       type: "Feature",
@@ -652,12 +1033,22 @@ function mapFeatures(params: { types?: string }): FeatureCollection {
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [14.525, 35.881] },
+      properties: { id: "device:plc-12", type: "device", display_name: "PLC-12" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [14.528, 35.879] },
       properties: { id: "device:rtu-12", type: "device", display_name: "RTU-12" },
     },
   ];
+  const scenarioFeatures = features.filter((item) => {
+    if (scenario === "all") return true;
+    const type = String(item.properties.type);
+    return scenario === "drones" ? ["platform", "area", "location"].includes(type) : ["plant", "device"].includes(type);
+  });
   return {
     type: "FeatureCollection",
-    features: selected.size === 0 ? features : features.filter((item) => selected.has(String(item.properties.type))),
+    features: selected.size === 0 ? scenarioFeatures : scenarioFeatures.filter((item) => selected.has(String(item.properties.type))),
   };
 }
 
@@ -692,7 +1083,7 @@ function search(q: string): SearchResponse {
       score: requestedType && entity.type === requestedType && entity.canonical_id.toLowerCase() === entityNeedle ? 1 : 0.94,
     }))
     .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));
-  const detectorHits = PACKS.flatMap((pack) => pack.detectors ?? [])
+  const detectorHits = packsForScenario().flatMap((pack) => pack.detectors ?? [])
     .filter((detector) => [detector.id, detector.query].join(" ").toLowerCase().includes(value))
     .map((detector) => ({
       kind: "detector_hit" as const,
@@ -738,7 +1129,7 @@ export const mockAgentOpsApiClient: AgentOpsDataSource = {
     const t = tick() % 120;
     return Promise.resolve({
       connected: true,
-      effective_topics: TOPICS,
+      effective_topics: topicsForScenario(),
       group_id: "kafsiem-ontology-demo",
       accepted_count: 620 + t * 3,
       rejected_count: 2,
@@ -753,7 +1144,7 @@ export const mockAgentOpsApiClient: AgentOpsDataSource = {
     });
   },
   getOntologyPacks(): Promise<ListResponse<Pack>> {
-    return Promise.resolve(list(PACKS));
+    return Promise.resolve(list(packsForScenario()));
   },
   listEntityProvenance(type: string, id: string): Promise<ListResponse<Provenance>> {
     return Promise.resolve(list(provenanceFor(type, id)));
@@ -779,7 +1170,7 @@ export const mockAgentOpsApiClient: AgentOpsDataSource = {
     return Promise.resolve(mapFeatures(params));
   },
   listMapLayers(): Promise<ListResponse<MapLayer>> {
-    return Promise.resolve(list(PACKS.flatMap((pack) => pack.map_layers ?? [])));
+    return Promise.resolve(list(packsForScenario().flatMap((pack) => pack.map_layers ?? [])));
   },
   listReplays(limit = 20): Promise<ListResponse<ReplaySession>> {
     return Promise.resolve(
@@ -792,7 +1183,7 @@ export const mockAgentOpsApiClient: AgentOpsDataSource = {
             started_at: iso(120),
             finished_at: iso(116),
             message_count: 84,
-            topics: TOPICS.slice(0, 3),
+            topics: topicsForScenario().slice(0, 3),
           },
         ].slice(0, limit),
       ),
@@ -808,10 +1199,14 @@ export const mockAgentOpsApiClient: AgentOpsDataSource = {
 
 function topicHealth(): TopicHealth[] {
   const t = tick() % 10;
-  return [
-    { topic: "group.drones.requests", messages_per_hour: 42 + t, message_density: "high", active_agents: 4, is_stale: false, last_message_at: iso(1) },
-    { topic: "group.drones.traces", messages_per_hour: 118 + t * 3, message_density: "high", active_agents: 5, is_stale: false, last_message_at: iso(0) },
-    { topic: "group.scada.tasks.status", messages_per_hour: 24 + t, message_density: "medium", active_agents: 3, is_stale: false, last_message_at: iso(4) },
-    { topic: "group.scada.memory.context", messages_per_hour: 5, message_density: "low", active_agents: 2, is_stale: t > 6, last_message_at: iso(31) },
+  const rows: TopicHealth[] = [
+    { topic: "ops.drones.command.v1", messages_per_hour: 42 + t, message_density: "high", active_agents: 3, is_stale: false, last_message_at: iso(1) },
+    { topic: "ops.drones.telemetry.v1", messages_per_hour: 420 + t * 11, message_density: "high", active_agents: 6, is_stale: false, last_message_at: iso(0) },
+    { topic: "ops.drones.ontology.edges.v1", messages_per_hour: 118 + t * 3, message_density: "high", active_agents: 4, is_stale: false, last_message_at: iso(0) },
+    { topic: "ot.scada.modbus.readings.v1", messages_per_hour: 820 + t * 9, message_density: "high", active_agents: 5, is_stale: false, last_message_at: iso(1) },
+    { topic: "ot.scada.alarm.events.v1", messages_per_hour: 24 + t, message_density: "medium", active_agents: 3, is_stale: false, last_message_at: iso(4) },
+    { topic: "ot.scada.ontology.edges.v1", messages_per_hour: 64 + t, message_density: "medium", active_agents: 3, is_stale: false, last_message_at: iso(4) },
   ];
+  const allowed = new Set(topicsForScenario());
+  return rows.filter((row) => allowed.has(row.topic));
 }

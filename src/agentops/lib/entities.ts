@@ -35,6 +35,13 @@ export function entityLabel(ref: EntityRef): string {
 
 export function entityHref(ref: EntityRef): string {
   const params = new URLSearchParams();
+  if (typeof window !== "undefined") {
+    const current = new URLSearchParams(window.location.search);
+    for (const key of ["demo", "scenario"]) {
+      const value = current.get(key);
+      if (value) params.set(key, value);
+    }
+  }
   params.set("view", "entity");
   params.set("type", ref.type);
   params.set("id", entityCanonicalID(ref));

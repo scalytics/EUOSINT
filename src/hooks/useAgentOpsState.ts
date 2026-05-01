@@ -12,7 +12,7 @@ function fallbackState(): AgentOpsState {
       ui_mode: demoMode,
       profile: demoMode === "HYBRID" ? "hybrid-ops" : "agentops-default",
       group_name: "kafsiem-ontology-demo",
-      topics: ["group.drones.requests", "group.drones.traces", "group.scada.tasks.status"],
+      topics: ["ops.drones.telemetry.v1", "ops.drones.ontology.edges.v1", "ot.scada.modbus.readings.v1", "ot.scada.ontology.edges.v1"],
     });
   }
   return normalizeState(loadPersistedShell());

@@ -15,6 +15,8 @@
   "scripts": {
     "dev": "vite",
     "demo:ontology": "vite --open '/?demo=ontology'",
+    "demo:ontology:drones": "vite --open '/?demo=ontology&scenario=drones'",
+    "demo:ontology:scada": "vite --open '/?demo=ontology&scenario=scada'",
     "demo:fusion": "vite --open '/?demo=fusion'",
     "generate:api": "go generate ./api/...",
     "fetch:alerts": "go run ./cmd/kafsiem-collector",

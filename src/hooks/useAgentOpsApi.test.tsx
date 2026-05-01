@@ -152,3 +152,19 @@ test("serves ontology demo streams without fetching the live api", async () => {
   await waitFor(() => expect(search.result.current.results[0]?.id).toBe("platform:auv-07"));
   expect(fetchMock).not.toHaveBeenCalled();
 });
+
+test("scopes ontology demo streams to the selected scenario", async () => {
+  window.history.replaceState({}, "", "/?demo=ontology&scenario=scada");
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+
+  const flows = renderHook(() => useFlows({ limit: 10 }));
+  const packs = renderHook(() => useOntologyPacks());
+  const neighborhood = renderHook(() => useEntityNeighborhood("correlation", "corr-scada-purdue-1", { depth: 2 }));
+
+  await waitFor(() => expect(flows.result.current.flows[0]?.id).toBe("corr-scada-purdue-1"));
+  await waitFor(() => expect(packs.result.current.packs.map((pack) => pack.name)).toEqual(["scada"]));
+  await waitFor(() => expect(neighborhood.result.current.neighborhood.entities.some((entity) => entity.id === "device:plc-12")).toBe(true));
+  expect(neighborhood.result.current.neighborhood.entities.some((entity) => entity.id === "platform:auv-07")).toBe(false);
+  expect(fetchMock).not.toHaveBeenCalled();
+});

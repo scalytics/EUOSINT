@@ -22,7 +22,7 @@ export function GraphCanvas({ entities, edges, edgeColors, selectedEntityId, onE
     const cy = cytoscape({
       container: container.current,
       elements,
-      layout: { name: "cose", animate: false, fit: true, padding: 28 },
+      layout: { name: "cose", animate: false, fit: true, padding: 44 },
       style: [
         {
           selector: "node",
@@ -64,7 +64,32 @@ export function GraphCanvas({ entities, edges, edgeColors, selectedEntityId, onE
       const ref = splitEntityID(id);
       if (ref) onEntityClick?.(ref);
     });
-    return () => cy.destroy();
+
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(() => {
+            cy.resize();
+            cy.fit(undefined, 44);
+          });
+    if (observer && container.current) observer.observe(container.current);
+
+    const pulse = window.setInterval(() => {
+      const now = Date.now() / 700;
+      cy.edges().forEach((edge, index) => {
+        const phase = (Math.sin(now + index) + 1) / 2;
+        edge.style({
+          opacity: 0.58 + phase * 0.34,
+          width: 1.2 + phase * 1.2,
+        });
+      });
+    }, 700);
+
+    return () => {
+      observer?.disconnect();
+      window.clearInterval(pulse);
+      cy.destroy();
+    };
   }, [elements, onEntityClick]);
 
   if (elements.length === 0) {
@@ -72,8 +97,8 @@ export function GraphCanvas({ entities, edges, edgeColors, selectedEntityId, onE
   }
 
   return (
-    <div className="space-y-3">
-      <div ref={container} className="h-[360px] min-h-[320px] overflow-hidden rounded-2xl border border-siem-border bg-siem-bg/45" />
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <div ref={container} className="min-h-0 flex-1 overflow-hidden border border-siem-border bg-siem-bg/45" />
       <div className="flex flex-wrap gap-2 text-[11px] text-siem-muted">
         <Tag>{entities.length} entities</Tag>
         <Tag>{edges.length} edges</Tag>

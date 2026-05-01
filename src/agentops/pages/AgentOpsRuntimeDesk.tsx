@@ -13,10 +13,11 @@ import { buildConversationTimeline, buildRunSummary } from "@/agentops/lib/inves
 import { loadAnomaliesOnly, loadQueueFilter, loadSelectedRunId, persistAnomaliesOnly, persistQueueFilter, persistSelectedRunId, type RunQueueFilter } from "@/agentops/lib/preferences";
 import { displayModeName } from "@/agentops/lib/state";
 import { agentOpsDataSource } from "@/agentops/lib/api-source";
-import { demoLabel, isAgentOpsDemo } from "@/agentops/lib/demo";
+import { currentDemoScenario, demoLabel, demoScenarioHref, isAgentOpsDemo, type AgentOpsDemoScenario } from "@/agentops/lib/demo";
 import { formatTime } from "@/agentops/lib/view";
 import {
   entityCanonicalID,
+  entityLabel,
   entityFromSearchResult,
   entityKey,
   entityRefFromFlow,
@@ -87,6 +88,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   const modeName = displayModeName(mode);
   const demoActive = isAgentOpsDemo();
   const activeDemoLabel = demoLabel();
+  const activeDemoScenario = currentDemoScenario();
   const operator = useAgentOpsOperator(mode !== "OSINT");
   const { alerts } = useAlerts();
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(() => (demoActive ? null : loadSelectedRunId()));
@@ -102,6 +104,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   const [commandValue, setCommandValue] = useState("");
   const [activeCommand, setActiveCommand] = useState("");
   const [drawerSubject, setDrawerSubject] = useState<EntityRef | null>(null);
+  const [inspectedEntity, setInspectedEntity] = useState<EntityRef | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const commandFilters = useMemo(() => parseCommandFilters(activeCommand), [activeCommand]);
@@ -148,9 +151,11 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
   const { traces: relatedTraces } = useFlowTraces(selectedFlowId);
   const selectedCorrelation = selectedFlow ? entityRefFromFlow(selectedFlow) : null;
   const selectedCanonicalID = selectedCorrelation ? entityCanonicalID(selectedCorrelation) : null;
+  const detailSubject = inspectedEntity ?? selectedCorrelation;
+  const detailCanonicalID = detailSubject ? entityCanonicalID(detailSubject) : null;
   const { neighborhood } = useEntityNeighborhood(selectedCorrelation?.type ?? null, selectedCanonicalID, { depth: 2 });
-  const { profile: selectedProfile } = useEntityProfile(selectedCorrelation?.type ?? null, selectedCanonicalID);
-  const { provenance: selectedProvenance } = useEntityProvenance(selectedCorrelation?.type ?? null, selectedCanonicalID);
+  const { profile: selectedProfile } = useEntityProfile(detailSubject?.type ?? null, detailCanonicalID);
+  const { provenance: selectedProvenance } = useEntityProvenance(detailSubject?.type ?? null, detailCanonicalID);
   const edgeColors = useMemo(() => edgeColorMap(packs), [packs]);
   const ontologyTypes = useMemo(() => activeOntologyTypes(packs), [packs]);
   const activePackLabel = useMemo(() => packLabel(packs), [packs]);
@@ -205,6 +210,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
 
   function selectFlow(id: string) {
     setSelectedFlowId(id);
+    setInspectedEntity(null);
     if (!demoActive) persistSelectedRunId(id);
     setWorkspaceTab("topology");
   }
@@ -339,6 +345,28 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
                 ))}
               </div>
             </div>
+            {demoActive ? (
+              <div className="border-b border-[#18313f] px-3 py-2">
+                <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#6b8090]">Demo Lens</div>
+                <div className="flex flex-wrap gap-2">
+                  {(["all", "drones", "scada"] as AgentOpsDemoScenario[]).map((scenario) => (
+                    <a
+                      key={scenario}
+                      href={demoScenarioHref(scenario)}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        window.location.assign(demoScenarioHref(scenario));
+                      }}
+                      className={`border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] ${
+                        activeDemoScenario === scenario ? "border-[#1D9E75] bg-[#1D9E75]/10 text-[#1D9E75]" : "border-[#24425a] text-[#a8b8c4] hover:text-[#e8eef3]"
+                      }`}
+                    >
+                      {scenario}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
               <CommandResults results={commandResults} isLoading={commandLoading} activeCommand={activeCommand} onFlowSelect={selectFlow} />
               {queueSections.length === 0 ? <EmptyState text="No runs match the current queue filter." /> : null}
@@ -379,18 +407,31 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
               ))}
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(rgba(36,66,90,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(36,66,90,0.16)_1px,transparent_1px)] bg-[length:20px_20px] p-3">
+            <div
+              className={`min-h-0 flex-1 bg-[linear-gradient(rgba(36,66,90,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(36,66,90,0.16)_1px,transparent_1px)] bg-[length:20px_20px] p-3 ${
+                workspaceTab === "topology" ? "overflow-hidden" : "overflow-y-auto"
+              }`}
+            >
               {workspaceTab === "topology" ? (
                 selectedCorrelation ? (
-                  <GraphCanvas
-                    entities={neighborhood.entities}
-                    edges={neighborhood.edges}
-                    edgeColors={edgeColors}
-                    selectedEntityId={entityKey(selectedCorrelation)}
-                    onEntityClick={(entity) => {
-                      window.location.href = `?view=entity&type=${entity.type}&id=${entityCanonicalID(entity)}`;
-                    }}
-                  />
+                  <div className="relative h-full min-h-0">
+                    <GraphCanvas
+                      entities={neighborhood.entities}
+                      edges={neighborhood.edges}
+                      edgeColors={edgeColors}
+                      selectedEntityId={entityKey(detailSubject ?? selectedCorrelation)}
+                      onEntityClick={(entity) => setInspectedEntity(entity)}
+                    />
+                    {inspectedEntity ? (
+                      <OntologyInspector
+                        subject={inspectedEntity}
+                        profile={selectedProfile}
+                        packs={packs}
+                        onClose={() => setInspectedEntity(null)}
+                        onProvenance={() => setDrawerSubject(inspectedEntity)}
+                      />
+                    ) : null}
+                  </div>
                 ) : (
                   <EmptyState text="Select a run to render the 2-hop correlation neighborhood." />
                 )
@@ -544,7 +585,7 @@ export function AgentOpsRuntimeDesk({ mode }: Props) {
           </section>
 
           <aside className="flex min-h-0 flex-col border-t border-[#18313f] xl:border-l xl:border-t-0">
-            <RailHeader title="Entity Detail" count={selectedProfile?.entity.type ?? selectedCorrelation?.type ?? "none"} />
+            <RailHeader title="Entity Detail" count={selectedProfile?.entity.type ?? detailSubject?.type ?? "none"} />
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               <EntityDetailPanel profile={selectedProfile} packs={packs} fallbackFlow={selectedFlow} saved={saved} />
 
@@ -734,6 +775,64 @@ function ConsoleBlock({ title, className = "", children }: { title: string; clas
       <div className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1D9E75]">{title}</div>
       {children}
     </section>
+  );
+}
+
+function OntologyInspector({
+  subject,
+  profile,
+  packs,
+  onClose,
+  onProvenance,
+}: {
+  subject: EntityRef;
+  profile: Profile | null;
+  packs: Pack[];
+  onClose: () => void;
+  onProvenance: () => void;
+}) {
+  const rows = profile ? compactFieldRows(profile, packs).slice(0, 5) : [];
+  return (
+    <div className="absolute right-3 top-3 z-10 w-[min(360px,calc(100%-1.5rem))] border border-[#1D9E75]/50 bg-[#050d14]/95 p-3 shadow-[0_18px_50px_rgba(0,0,0,0.42)]">
+      <div className="flex items-start justify-between gap-3 border-b border-[#18313f] pb-3">
+        <div className="min-w-0">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#1D9E75]">{subject.type}</div>
+          <div className="mt-1 truncate text-sm font-semibold text-[#e8eef3]">{profile?.entity.display_name || entityLabel(subject)}</div>
+          <div className="mt-1 truncate font-mono text-[11px] text-[#6b8090]">{profile?.entity.id || entityKey(subject)}</div>
+        </div>
+        <button type="button" aria-label="Close ontology entity detail" onClick={onClose} className="text-[#6b8090] hover:text-[#e8eef3]">
+          <X size={14} />
+        </button>
+      </div>
+      <div className="mt-3 grid gap-2">
+        {rows.length > 0 ? (
+          rows.map((row) => (
+            <div key={row.key} className="flex justify-between gap-3 border-b border-dotted border-[#18313f] py-1.5 font-mono text-[11px]">
+              <span className="text-[#6b8090]">{row.label}</span>
+              <span className="max-w-[180px] overflow-wrap-anywhere text-right text-[#e8eef3]">{row.value}</span>
+            </div>
+          ))
+        ) : (
+          <EmptyState text="Loading entity details." />
+        )}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[#a8b8c4]">
+        {profile ? (
+          <>
+            <Tag>{formatTime(profile.first_seen)}</Tag>
+            <Tag>{formatTime(profile.last_seen)}</Tag>
+            {Object.entries(profile.edge_counts).slice(0, 3).map(([edgeType, count]) => <Tag key={edgeType}>{edgeType}:{count}</Tag>)}
+          </>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={onProvenance}
+        className="mt-3 border border-[#24425a] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[#1D9E75] hover:border-[#1D9E75]/50"
+      >
+        provenance
+      </button>
+    </div>
   );
 }
 

@@ -51,7 +51,14 @@ vi.mock("@/agentops/components/RuntimeMap", () => ({
 }));
 
 vi.mock("@/agentops/components/GraphCanvas", () => ({
-  GraphCanvas: ({ entities, edges }: { entities: unknown[]; edges: unknown[] }) => <div>Graph Canvas Stub {entities.length}/{edges.length}</div>,
+  GraphCanvas: ({ entities, edges, onEntityClick }: { entities: unknown[]; edges: unknown[]; onEntityClick?: (entity: { type: string; id: string; label?: string }) => void }) => (
+    <div>
+      Graph Canvas Stub {entities.length}/{edges.length}
+      <button type="button" onClick={() => onEntityClick?.({ type: "platform", id: "auv-7", label: "AUV-7" })}>
+        click graph entity
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("@/agentops/components/ProvenanceDrawer", () => ({
@@ -185,6 +192,17 @@ test("marks mocked ontology demo streams in the console chrome", () => {
   render(<AgentOpsRuntimeDesk mode="AGENTOPS" />);
 
   expect(screen.getByText("Ontology demo")).toBeTruthy();
+});
+
+test("inspects topology entities in place without leaving the runtime desk", async () => {
+  window.history.replaceState({}, "", "/?demo=ontology&scenario=drones");
+  render(<AgentOpsRuntimeDesk mode="AGENTOPS" />);
+
+  fireEvent.click(screen.getByRole("button", { name: "click graph entity" }));
+
+  await waitFor(() => expect(screen.getByRole("button", { name: "Close ontology entity detail" })).toBeTruthy());
+  expect(window.location.search).toBe("?demo=ontology&scenario=drones");
+  expect(screen.getByText("Entity Detail")).toBeTruthy();
 });
 
 test("opens the provenance drawer from a why affordance", async () => {
