@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import cytoscape, { type ElementDefinition } from "cytoscape";
+import cytoscape, { type Core, type ElementDefinition } from "cytoscape";
 import { EmptyState, Tag } from "@/agentops/components/Chrome";
 import { colorForEdge } from "@/agentops/lib/graph";
 import { splitEntityID, type EntityRef } from "@/agentops/lib/entities";
@@ -15,13 +15,21 @@ interface Props {
 
 export function GraphCanvas({ entities, edges, edgeColors, selectedEntityId, onEntityClick }: Props) {
   const container = useRef<HTMLDivElement | null>(null);
+  const cyRef = useRef<Core | null>(null);
+  const signatureRef = useRef("");
+  const onEntityClickRef = useRef<typeof onEntityClick>(onEntityClick);
   const elements = useMemo(() => buildElements(entities, edges, edgeColors, selectedEntityId), [edgeColors, edges, entities, selectedEntityId]);
+  const graphSignature = useMemo(() => graphShapeSignature(entities, edges, selectedEntityId), [edges, entities, selectedEntityId]);
 
   useEffect(() => {
-    if (!container.current || elements.length === 0) return undefined;
+    onEntityClickRef.current = onEntityClick;
+  }, [onEntityClick]);
+
+  useEffect(() => {
+    if (!container.current || elements.length === 0 || cyRef.current) return undefined;
     const cy = cytoscape({
       container: container.current,
-      elements,
+      elements: [],
       layout: { name: "cose", animate: false, fit: true, padding: 44 },
       style: [
         {
@@ -31,12 +39,15 @@ export function GraphCanvas({ entities, edges, edgeColors, selectedEntityId, onE
             "border-color": "data(border)",
             "border-width": 2,
             color: "#e2e8f0",
-            "font-size": 10,
+            "font-size": 9,
             label: "data(label)",
             "min-zoomed-font-size": 7,
             "text-background-color": "#020617",
-            "text-background-opacity": 0.8,
-            "text-background-padding": "3px",
+            "text-background-opacity": 0.96,
+            "text-background-padding": "2px",
+            "text-border-color": "#0f172a",
+            "text-border-opacity": 0.95,
+            "text-border-width": 1,
             "text-valign": "bottom",
             "text-wrap": "wrap",
             width: "data(size)",
@@ -51,18 +62,28 @@ export function GraphCanvas({ entities, edges, edgeColors, selectedEntityId, onE
             "target-arrow-color": "data(color)",
             "target-arrow-shape": "triangle",
             label: "data(label)",
-            color: "#94a3b8",
-            "font-size": 8,
+            color: "#e2e8f0",
+            "font-size": 7,
             "text-rotation": "autorotate",
+            "text-background-color": "#020617",
+            "text-background-opacity": 0.94,
+            "text-background-padding": "1px",
+            "text-border-color": "#0f172a",
+            "text-border-opacity": 0.95,
+            "text-border-width": 0.5,
+            "text-margin-y": -8,
+            "text-wrap": "wrap",
+            "text-max-width": "72px",
             width: 1.5,
           },
         },
       ],
     });
+    cyRef.current = cy;
     cy.on("tap", "node", (event) => {
       const id = String(event.target.data("id") || "");
       const ref = splitEntityID(id);
-      if (ref) onEntityClick?.(ref);
+      if (ref) onEntityClickRef.current?.(ref);
     });
 
     const observer =
@@ -70,27 +91,42 @@ export function GraphCanvas({ entities, edges, edgeColors, selectedEntityId, onE
         ? null
         : new ResizeObserver(() => {
             cy.resize();
-            cy.fit(undefined, 44);
           });
     if (observer && container.current) observer.observe(container.current);
 
-    const pulse = window.setInterval(() => {
-      const now = Date.now() / 700;
-      cy.edges().forEach((edge, index) => {
-        const phase = (Math.sin(now + index) + 1) / 2;
-        edge.style({
-          opacity: 0.58 + phase * 0.34,
-          width: 1.2 + phase * 1.2,
-        });
-      });
-    }, 700);
-
     return () => {
       observer?.disconnect();
-      window.clearInterval(pulse);
+      cyRef.current = null;
+      signatureRef.current = "";
       cy.destroy();
     };
-  }, [elements, onEntityClick]);
+  }, [elements.length]);
+
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || elements.length === 0) return;
+
+    if (signatureRef.current === graphSignature) {
+      return;
+    }
+
+    signatureRef.current = graphSignature;
+    cy.elements().remove();
+    cy.add(elements);
+    cy.layout({
+      name: "cose",
+      animate: false,
+      fit: true,
+      padding: 44,
+      randomize: false,
+      nodeRepulsion: 160000,
+      idealEdgeLength: 110,
+      edgeElasticity: 120,
+      nestingFactor: 0.9,
+      gravity: 1,
+      componentSpacing: 120,
+    }).run();
+  }, [elements, graphSignature, selectedEntityId]);
 
   if (elements.length === 0) {
     return <EmptyState text="No neighborhood graph returned for this subject." />;
@@ -106,6 +142,13 @@ export function GraphCanvas({ entities, edges, edgeColors, selectedEntityId, onE
     </div>
   );
 }
+
+function graphShapeSignature(entities: Entity[], edges: Edge[], selectedEntityId?: string): string {
+  const nodeIDs = entities.map((entity) => entity.id).sort();
+  const edgeIDs = edges.map((edge) => `${edge.src_id}:${edge.type}:${edge.dst_id}`).sort();
+  return JSON.stringify({ nodeIDs, edgeIDs, selectedEntityId: selectedEntityId || "" });
+}
+
 
 function buildElements(entities: Entity[], edges: Edge[], edgeColors: Record<string, string>, selectedEntityId?: string): ElementDefinition[] {
   const nodes = new Map<string, ElementDefinition>();

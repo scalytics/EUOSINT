@@ -168,3 +168,11 @@ test("scopes ontology demo streams to the selected scenario", async () => {
   expect(neighborhood.result.current.neighborhood.entities.some((entity) => entity.id === "platform:auv-07")).toBe(false);
   expect(fetchMock).not.toHaveBeenCalled();
 });
+
+test("keeps a single drone correlation root while adding branch nodes", async () => {
+  window.history.replaceState({}, "", "/?demo=ontology&scenario=drones");
+  const neighborhood = renderHook(() => useEntityNeighborhood("correlation", "corr-drone-ew-1", { depth: 2 }));
+
+  await waitFor(() => expect(neighborhood.result.current.neighborhood.entities.some((entity) => entity.id === "correlation:corr-drone-ew-1")).toBe(true));
+  expect(neighborhood.result.current.neighborhood.entities.filter((entity) => entity.type === "correlation")).toHaveLength(1);
+});
