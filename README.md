@@ -17,6 +17,23 @@ It now ships with three operating modes:
 
 This repository has been prepared for public use by removing non-public, internal, and protected source integrations while keeping the operational pipeline structure intact.
 
+## Screenshots
+
+<p align="center">
+  <a href="public/images/Scalytics-OSINT-Prediction.png">
+    <img src="public/images/Scalytics-OSINT-Prediction.png" alt="kafSIEM OSINT mode screenshot" width="32%" />
+  </a>
+  <a href="public/images/Scalytics-Ontology-Drones.png">
+    <img src="public/images/Scalytics-Ontology-Drones.png" alt="kafSIEM Operations ontology drones screenshot" width="32%" />
+  </a>
+  <a href="public/images/Scalytics-Ontology-SCADA.png">
+    <img src="public/images/Scalytics-Ontology-SCADA.png" alt="kafSIEM Operations ontology SCADA screenshot" width="32%" />
+  </a>
+</p>
+<p align="center">
+  <strong>OSINT</strong> | <strong>Operations / Drones</strong> | <strong>Operations / SCADA</strong>
+</p>
+
 ## Open-Source Scope
 
 - Public-ready OSINT pipeline architecture
