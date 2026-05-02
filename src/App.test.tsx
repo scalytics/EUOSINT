@@ -41,7 +41,7 @@ test("renders the AgentOps app when ui_mode is AGENTOPS", () => {
   render(<App />);
 
   expect(screen.getByText("AGENTOPS APP AGENTOPS")).toBeTruthy();
-  expect(document.title).toBe("Agent Flow Desk");
+  expect(document.title).toBe("Operations Console");
 });
 
 test("renders the AgentOps app when ui_mode is HYBRID", () => {
@@ -53,5 +53,5 @@ test("renders the AgentOps app when ui_mode is HYBRID", () => {
   render(<App />);
 
   expect(screen.getByText("AGENTOPS APP HYBRID")).toBeTruthy();
-  expect(document.title).toBe("Hybrid Flow Desk");
+  expect(document.title).toBe("Fusion Console");
 });

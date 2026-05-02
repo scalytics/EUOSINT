@@ -1,0 +1,89 @@
+name: drones
+version: 0.1.0
+schema_version: v1
+description: Unmanned systems pack for readiness, sortie, and EW correlation workflows.
+owner: scalytics
+requires:
+  core_min_version: "0.5.0"
+entity_types:
+  - id: platform
+    display: Platform
+    canonical_id_format: "<serial>"
+  - id: variant
+    display: Variant
+    canonical_id_format: "<variant>"
+  - id: subsystem
+    display: Subsystem
+    canonical_id_format: "<platform>/<subsystem>"
+  - id: component
+    display: Component
+    canonical_id_format: "<component-serial>"
+  - id: software
+    display: Software
+    canonical_id_format: "<name>@<version>"
+  - id: mission
+    display: Mission
+    canonical_id_format: "<mission-id>"
+  - id: sortie
+    display: Sortie
+    canonical_id_format: "<sortie-id>"
+  - id: contact
+    display: Contact
+    canonical_id_format: "<contact-id>"
+  - id: ew_event
+    display: EW Event
+    canonical_id_format: "<event-id>"
+  - id: fault
+    display: Fault
+    canonical_id_format: "<fault-id>"
+  - id: fault_mode
+    display: Fault Mode
+    canonical_id_format: "<fault-mode>"
+  - id: operator
+    display: Operator
+    canonical_id_format: "<operator-id>"
+  - id: team
+    display: Team
+    canonical_id_format: "<team-id>"
+  - id: trial
+    display: Trial
+    canonical_id_format: "<trial-id>"
+  - id: signoff
+    display: Signoff
+    canonical_id_format: "<signoff-id>"
+edge_types:
+  - id: part_of
+    src_types: [subsystem, sortie]
+    dst_types: [platform, mission]
+  - id: installed_in
+    src_types: [component]
+    dst_types: [subsystem]
+    temporal: true
+  - id: assigned_to
+    src_types: [mission]
+    dst_types: [platform]
+  - id: experienced
+    src_types: [sortie]
+    dst_types: [fault]
+  - id: instance_of
+    src_types: [fault]
+    dst_types: [fault_mode]
+  - id: suspected_cause
+    src_types: [fault]
+    dst_types: [component]
+  - id: encountered
+    src_types: [sortie]
+    dst_types: [ew_event, contact, area]
+  - id: affected
+    src_types: [ew_event]
+    dst_types: [subsystem]
+  - id: platform_runs
+    src_types: [platform]
+    dst_types: [software]
+    temporal: true
+  - id: references
+    src_types: [signoff]
+    dst_types: [trial]
+  - id: approves
+    src_types: [signoff]
+    dst_types: [platform]

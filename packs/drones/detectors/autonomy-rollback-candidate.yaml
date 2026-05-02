@@ -1,0 +1,14 @@
+id: autonomy-rollback-candidate
+severity: high
+window: 168h
+match:
+  pattern: |
+    SELECT software_version, variant_id, fault_rate_delta
+      FROM view_drone_autonomy_regressions
+     WHERE deployed_at >= :window_start
+       AND fault_rate_delta > 0.25
+explanation_template: >
+  Software {{software_version}} correlates with a fleet fault-rate increase on {{variant_id}}.
+suggested_actions:
+  - evaluate rollback readiness for the autonomy build
+  - compare faults against the previous approved release

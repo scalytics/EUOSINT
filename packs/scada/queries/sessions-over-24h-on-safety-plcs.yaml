@@ -1,0 +1,14 @@
+id: sessions-over-24h-on-safety-plcs
+title: Every Session Over 24h On Safety PLCs
+description: Return stale authenticated sessions targeting safety PLC assets.
+params:
+  - name: window_start
+    type: string
+    label: Window Start
+    required: true
+sql: |
+  SELECT session_id, engineer_id, device_id, open_hours
+    FROM view_scada_stale_sessions
+   WHERE observed_at >= :window_start
+     AND open_hours > 24
+   ORDER BY open_hours DESC

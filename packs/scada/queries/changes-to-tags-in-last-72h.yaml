@@ -1,0 +1,18 @@
+id: changes-to-tags-in-last-72h
+title: Every Change To Tags A, B, C In Last 72h
+description: Return recent changes touching selected tags inside the last 72 hours.
+params:
+  - name: tag_id
+    type: string
+    label: Tag
+    required: true
+  - name: window_start
+    type: string
+    label: Window Start
+    required: true
+sql: |
+  SELECT change_id, device_id, applied_at
+    FROM view_scada_tag_changes
+   WHERE tag_id = :tag_id
+     AND applied_at >= :window_start
+   ORDER BY applied_at DESC

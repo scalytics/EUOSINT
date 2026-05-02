@@ -1,0 +1,11 @@
+entity_type: signoff
+title: Signoff
+fields:
+  - id: trial_id
+    label: Trial
+  - id: approver
+    label: Approver
+  - id: status
+    label: Status
+  - id: approved_at
+    label: Approved At

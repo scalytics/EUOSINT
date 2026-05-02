@@ -1,0 +1,11 @@
+entity_type: subsystem
+title: Subsystem
+fields:
+  - id: platform_id
+    label: Platform
+  - id: subsystem_name
+    label: Subsystem
+  - id: readiness
+    label: Readiness
+  - id: heartbeat_gap_seconds
+    label: Heartbeat Gap (s)

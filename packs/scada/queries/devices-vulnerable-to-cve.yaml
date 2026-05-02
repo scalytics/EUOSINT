@@ -1,0 +1,13 @@
+id: devices-vulnerable-to-cve
+title: Devices Vulnerable To CVE X
+description: Rank vulnerable devices by site criticality for a CVE.
+params:
+  - name: cve
+    type: string
+    label: CVE
+    required: true
+sql: |
+  SELECT device_id, plant_id, criticality, firmware_version
+    FROM view_scada_device_vulnerabilities
+   WHERE cve = :cve
+   ORDER BY criticality DESC, device_id ASC

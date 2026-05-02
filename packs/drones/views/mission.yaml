@@ -1,0 +1,11 @@
+entity_type: mission
+title: Mission
+fields:
+  - id: mission_code
+    label: Mission Code
+  - id: status
+    label: Status
+  - id: launch_window
+    label: Launch Window
+  - id: platform_id
+    label: Platform

@@ -41,8 +41,11 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.AgentOpsTopicMode != "auto" {
 		t.Fatalf("expected agentops topic mode auto by default, got %q", cfg.AgentOpsTopicMode)
 	}
-	if cfg.AgentOpsOutputPath != "public/agentops-state.json" {
+	if cfg.AgentOpsOutputPath != "public/agentops.db" {
 		t.Fatalf("unexpected AgentOps output path default %q", cfg.AgentOpsOutputPath)
+	}
+	if cfg.PacksDir != "/packs" {
+		t.Fatalf("unexpected packs dir default %q", cfg.PacksDir)
 	}
 	if cfg.AgentOpsRejectTopic != "" {
 		t.Fatalf("expected empty AgentOps reject topic without group name, got %q", cfg.AgentOpsRejectTopic)
@@ -165,7 +168,9 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	t.Setenv("AGENTOPS_REPLAY_ENABLED", "false")
 	t.Setenv("AGENTOPS_REPLAY_PREFIX", "replay-core")
 	t.Setenv("AGENTOPS_REJECT_TOPIC", "group.core.agentops.rejects")
-	t.Setenv("AGENTOPS_OUTPUT_PATH", "/data/agentops-state.json")
+	t.Setenv("AGENTOPS_OUTPUT_PATH", "/data/agentops.db")
+	t.Setenv("RESET_AGENTOPS", "true")
+	t.Setenv("KAFSIEM_PACKS_DIR", "/runtime/packs")
 	t.Setenv("UI_MODE", "agentops")
 	t.Setenv("PROFILE", "agentops-default")
 	t.Setenv("UI_POLICY_PATH", "/config/ui_policy.yaml")
@@ -245,8 +250,11 @@ func TestNoisePolicyPathFromEnv(t *testing.T) {
 	if !cfg.AgentOpsTLSInsecureSkipVerify {
 		t.Fatal("expected AGENTOPS_TLS_INSECURE_SKIP_VERIFY override")
 	}
-	if cfg.AgentOpsPolicyPath != "/config/agentops_policy.yaml" || cfg.AgentOpsReplayEnabled || cfg.AgentOpsReplayPrefix != "replay-core" || cfg.AgentOpsRejectTopic != "group.core.agentops.rejects" || cfg.AgentOpsOutputPath != "/data/agentops-state.json" {
+	if cfg.AgentOpsPolicyPath != "/config/agentops_policy.yaml" || cfg.AgentOpsReplayEnabled || cfg.AgentOpsReplayPrefix != "replay-core" || cfg.AgentOpsRejectTopic != "group.core.agentops.rejects" || cfg.AgentOpsOutputPath != "/data/agentops.db" {
 		t.Fatalf("unexpected agentops config policy=%q enabled=%v prefix=%q reject=%q output=%q", cfg.AgentOpsPolicyPath, cfg.AgentOpsReplayEnabled, cfg.AgentOpsReplayPrefix, cfg.AgentOpsRejectTopic, cfg.AgentOpsOutputPath)
+	}
+	if !cfg.ResetAgentOps || cfg.PacksDir != "/runtime/packs" {
+		t.Fatalf("unexpected reset/packs config reset=%v packs=%q", cfg.ResetAgentOps, cfg.PacksDir)
 	}
 	if cfg.UIMode != "AGENTOPS" || cfg.Profile != "agentops-default" || cfg.UIPolicyPath != "/config/ui_policy.yaml" {
 		t.Fatalf("unexpected UI config mode=%q profile=%q policy=%q", cfg.UIMode, cfg.Profile, cfg.UIPolicyPath)

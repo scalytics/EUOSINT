@@ -1,0 +1,11 @@
+entity_type: zone
+title: Zone
+fields:
+  - id: purdue_level
+    label: Purdue Level
+  - id: zone_name
+    label: Zone
+  - id: plant_id
+    label: Plant
+  - id: criticality
+    label: Criticality

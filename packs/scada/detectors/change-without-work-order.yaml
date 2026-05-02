@@ -1,0 +1,13 @@
+id: change-without-work-order
+severity: medium
+window: 15m
+match:
+  pattern: |
+    SELECT change_id, engineer_id, device_id, applied_at
+      FROM view_scada_changes_without_work_order
+     WHERE applied_at >= :window_start
+explanation_template: >
+  Change {{change_id}} touched {{device_id}} without a linked work order in the active window.
+suggested_actions:
+  - confirm the change request is authorized
+  - attach the missing work order or open an incident

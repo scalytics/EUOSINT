@@ -100,7 +100,7 @@ leave these unset and rely on built-in defaults.
 | `AGENTOPS_REPLAY_ENABLED` | `true` |
 | `AGENTOPS_REPLAY_PREFIX` | `kafsiem-agentops-replay` |
 | `AGENTOPS_REJECT_TOPIC` | `group.<group>.agentops.rejects` when `AGENTOPS_GROUP_NAME` is set |
-| `AGENTOPS_OUTPUT_PATH` | `public/agentops-state.json` |
+| `AGENTOPS_OUTPUT_PATH` | `public/agentops.db` |
 | `UI_MODE` | `OSINT` |
 | `PROFILE` | `osint-default` |
 | `UI_POLICY_PATH` | `/config/ui_policy.yaml` |

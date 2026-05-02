@@ -1,0 +1,14 @@
+id: lot-anomaly
+severity: medium
+window: 720h
+match:
+  pattern: |
+    SELECT component_lot, fault_mode_id, z_score
+      FROM view_drone_component_lot_anomalies
+     WHERE observed_at >= :window_start
+       AND z_score >= 3
+explanation_template: >
+  Component lot {{component_lot}} is over-indexed for fault mode {{fault_mode_id}}.
+suggested_actions:
+  - inspect inventory and maintenance records for the lot
+  - compare failed units against the fleet baseline

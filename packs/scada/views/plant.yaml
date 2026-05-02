@@ -1,0 +1,11 @@
+entity_type: plant
+title: Plant
+fields:
+  - id: site_name
+    label: Site Name
+  - id: criticality
+    label: Criticality
+  - id: operator
+    label: Operator
+  - id: status
+    label: Status

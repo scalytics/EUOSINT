@@ -54,13 +54,16 @@ Default local behavior:
   - prompts for `KAFSIEM_SITE_ADDRESS`
   - prompts for OSINT credentials and optional LLM toggles
   - writes `UI_MODE=OSINT` and `PROFILE=osint-default`
-- `AGENTOPS`
+- `Operations`
   - prompts for `KAFSIEM_SITE_ADDRESS`
   - prompts for AgentOps Kafka brokers, auth mode, group identifiers, topic mode, replay, and optional reject mirroring
   - writes `UI_MODE=AGENTOPS` and `PROFILE=agentops-default`
-- `HYBRID`
+- `Fusion`
   - prompts for both the OSINT and AgentOps settings above
   - writes `UI_MODE=HYBRID` and `PROFILE=hybrid-ops`
+
+Current runtime values remain `AGENTOPS` and `HYBRID` for compatibility. The
+user-facing product names are `Operations` and `Fusion`.
 
 The guided flow intentionally skips advanced settings such as replay prefixes, policy file paths, TLS skip-verify, and poll/record limits. Those stay in `.env` or mounted config files.
 

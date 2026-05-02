@@ -1,0 +1,13 @@
+id: alarm-flood-after-change
+severity: high
+window: 24h
+match:
+  pattern: |
+    SELECT change_id, tag_id, alarm_count, flood_started_at
+      FROM view_scada_alarm_flood_after_change
+     WHERE flood_started_at >= :window_start
+explanation_template: >
+  Change {{change_id}} was followed by an alarm flood on {{tag_id}}.
+suggested_actions:
+  - inspect downstream alarm thresholds and tag writes
+  - compare the flood window against recent configuration changes

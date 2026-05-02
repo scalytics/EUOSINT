@@ -15,6 +15,18 @@ export function profileForMode(mode: AgentOpsMode): string {
   }
 }
 
+export function displayModeName(mode: AgentOpsMode): "OSINT" | "Operations" | "Fusion" {
+  switch (mode) {
+    case "AGENTOPS":
+      return "Operations";
+    case "HYBRID":
+      return "Fusion";
+    case "OSINT":
+    default:
+      return "OSINT";
+  }
+}
+
 export function normalizeMode(raw: string | undefined): AgentOpsMode {
   switch ((raw || "").toUpperCase()) {
     case "AGENTOPS":

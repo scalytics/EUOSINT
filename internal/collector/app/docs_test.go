@@ -11,7 +11,7 @@ func TestUserFacingDocsAvoidLegacySIEMQueueLanguage(t *testing.T) {
 	for _, path := range []string{
 		filepath.Join("..", "..", "..", "README.md"),
 		filepath.Join("..", "..", "..", "docs", "agentops-operator-guide.md"),
-		filepath.Join("..", "..", "..", "src", "agentops", "pages", "AgentOpsDesk.tsx"),
+		filepath.Join("..", "..", "..", "src", "agentops", "pages", "AgentOpsRuntimeDesk.tsx"),
 	} {
 		raw, err := os.ReadFile(path)
 		if err != nil {

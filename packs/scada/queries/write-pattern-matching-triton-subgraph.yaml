@@ -1,0 +1,13 @@
+id: write-pattern-matching-triton-subgraph
+title: Every Triton-Pattern Write Sequence
+description: Show write activity matching the Triton / Trisis tradecraft fixture.
+params:
+  - name: pattern_id
+    type: string
+    label: Pattern
+    required: true
+sql: |
+  SELECT pattern_id, device_id, matched_at
+    FROM view_scada_tradecraft_matches
+   WHERE pattern_id = :pattern_id
+   ORDER BY matched_at DESC

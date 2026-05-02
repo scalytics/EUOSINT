@@ -1,0 +1,14 @@
+id: pre-mission-readiness-gap
+severity: critical
+window: 24h
+match:
+  pattern: |
+    SELECT mission_id, platform_id, open_faults, open_signoffs
+      FROM view_drone_pre_mission_gaps
+     WHERE scheduled_at >= :window_start
+       AND (open_faults > 0 OR open_signoffs > 0)
+explanation_template: >
+  Mission {{mission_id}} is blocked because {{platform_id}} still has open readiness gaps.
+suggested_actions:
+  - resolve open faults before launch
+  - complete the remaining signoff evidence chain

@@ -2,105 +2,84 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { useAgentOpsState } from "@/hooks/useAgentOpsState";
 
+function installStorage(entries: Array<[string, string]> = []) {
+  const store = new Map<string, string>(entries);
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value);
+      },
+      clear: () => {
+        store.clear();
+      },
+    },
+  });
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
+  window.history.replaceState({}, "", "/");
+  installStorage();
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
+  window.history.replaceState({}, "", "/");
 });
 
-test("loads AgentOps state and polls again on the refresh interval", async () => {
-  const fetchMock = vi
-    .fn()
-    .mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ ui_mode: "AGENTOPS", enabled: true, group_name: "core" }),
-    })
-    .mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ ui_mode: "HYBRID", enabled: true, group_name: "core" }),
-    });
+test("uses persisted shell state without fetching outside demo mode", async () => {
+  installStorage([
+    ["kafsiem.ui_mode", "AGENTOPS"],
+    ["kafsiem.profile", "agentops-default"],
+  ]);
+  const fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
 
   const { result } = renderHook(() => useAgentOpsState());
 
   await act(async () => {
     await Promise.resolve();
-    await Promise.resolve();
   });
+
   expect(result.current.isLoading).toBe(false);
-  expect(result.current.state.ui_mode).toBe("AGENTOPS");
-
-  await act(async () => {
-    vi.advanceTimersByTime(15000);
-    await Promise.resolve();
-    await Promise.resolve();
-  });
-
-  expect(result.current.state.ui_mode).toBe("HYBRID");
-  expect(fetchMock).toHaveBeenCalledTimes(2);
-});
-
-test("falls back to OSINT defaults on fetch failure", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("boom")));
-
-  const { result } = renderHook(() => useAgentOpsState());
-
-  await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
-  });
-  expect(result.current.isLoading).toBe(false);
-  expect(result.current.state.ui_mode).toBe("OSINT");
-  expect(result.current.state.enabled).toBe(false);
-});
-
-test("derives profile defaults from ui_mode when profile is missing", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ ui_mode: "HYBRID", enabled: true, group_name: "core" }),
-    }),
-  );
-
-  const { result } = renderHook(() => useAgentOpsState());
-
-  await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
-  });
-
-  expect(result.current.state.ui_mode).toBe("HYBRID");
-  expect(result.current.state.profile).toBe("hybrid-ops");
-});
-
-test("preserves persisted mode and profile on fetch failure", async () => {
-  const store = new Map<string, string>([
-    ["kafsiem.ui_mode", "AGENTOPS"],
-    ["kafsiem.profile", "agentops-default"],
-  ]);
-  vi.stubGlobal("window", {
-    ...window,
-    localStorage: {
-      getItem: (key: string) => store.get(key) ?? null,
-      setItem: (key: string, value: string) => {
-        store.set(key, value);
-      },
-    },
-  });
-  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("boom")));
-
-  const { result } = renderHook(() => useAgentOpsState());
-
-  await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
-  });
-
   expect(result.current.state.ui_mode).toBe("AGENTOPS");
   expect(result.current.state.profile).toBe("agentops-default");
-  expect(result.current.state.enabled).toBe(false);
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+test("does not fetch legacy AgentOps JSON demo state", async () => {
+  window.history.replaceState({}, "", "/?demo=agentops");
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+
+  const { result } = renderHook(() => useAgentOpsState());
+
+  await act(async () => {
+    await Promise.resolve();
+  });
+
+  expect(result.current.isLoading).toBe(false);
+  expect(result.current.state.ui_mode).toBe("AGENTOPS");
+  expect(result.current.state.profile).toBe("agentops-default");
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+test("uses fusion shell state for the mocked fusion demo", async () => {
+  window.history.replaceState({}, "", "/?demo=fusion");
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+
+  const { result } = renderHook(() => useAgentOpsState());
+
+  await act(async () => {
+    await Promise.resolve();
+  });
+
+  expect(result.current.isLoading).toBe(false);
+  expect(result.current.state.ui_mode).toBe("HYBRID");
+  expect(result.current.state.profile).toBe("hybrid-ops");
+  expect(fetchMock).not.toHaveBeenCalled();
 });

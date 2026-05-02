@@ -138,6 +138,8 @@ type Config struct {
 	CORSAllowedOrigins               []string
 	APIBearerToken                   string
 	ResetZoneBriefLLM                bool
+	ResetAgentOps                    bool
+	PacksDir                         string
 	KafkaEnabled                     bool
 	KafkaBrokers                     []string
 	KafkaTopics                      []string
@@ -274,6 +276,8 @@ func Default() Config {
 		ZoneBriefingRefreshHours:         24,
 		ZoneBriefingACLEDEnabled:         true,
 		CollectorRole:                    "all",
+		ResetAgentOps:                    false,
+		PacksDir:                         "/packs",
 		XFetchPauseMS:                    1250,
 		KafkaEnabled:                     false,
 		KafkaBrokers:                     nil,
@@ -306,7 +310,7 @@ func Default() Config {
 		AgentOpsReplayEnabled:            true,
 		AgentOpsReplayPrefix:             "kafsiem-agentops-replay",
 		AgentOpsRejectTopic:              "",
-		AgentOpsOutputPath:               "public/agentops-state.json",
+		AgentOpsOutputPath:               "public/agentops.db",
 		UIMode:                           "OSINT",
 		Profile:                          "osint-default",
 		UIPolicyPath:                     "/config/ui_policy.yaml",
@@ -423,6 +427,8 @@ func FromEnv() Config {
 	cfg.CORSAllowedOrigins = envCSV("CORS_ALLOWED_ORIGINS", cfg.CORSAllowedOrigins)
 	cfg.APIBearerToken = envString("API_BEARER_TOKEN", cfg.APIBearerToken)
 	cfg.ResetZoneBriefLLM = envBool("RESET_ZONE_BRIEF_LLM", cfg.ResetZoneBriefLLM)
+	cfg.ResetAgentOps = envBool("RESET_AGENTOPS", cfg.ResetAgentOps)
+	cfg.PacksDir = envString("KAFSIEM_PACKS_DIR", cfg.PacksDir)
 	cfg.KafkaEnabled = envBool("KAFKA_ENABLED", cfg.KafkaEnabled)
 	cfg.KafkaBrokers = envCSV("KAFKA_BROKERS", cfg.KafkaBrokers)
 	cfg.KafkaTopics = envCSV("KAFKA_TOPICS", cfg.KafkaTopics)

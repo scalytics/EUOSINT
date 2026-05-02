@@ -22,11 +22,11 @@ CODEQL_GO_OUT ?= $(CODEQL_DIR)/go.sarif
 BRANCH ?= main
 RELEASE_LEVEL ?= patch
 
-.PHONY: help check check-commit install clean lint typecheck test build ci \
+.PHONY: help check check-commit install clean lint typecheck test build ci api-lint pack-lint pack-docs \
 	npm-install-if-needed \
 	go-fmt go-fmt-check go-test go-race go-cover go-vet go-codeql commit-check \
 	docker-build docker-up docker-down docker-logs docker-shell \
-	dev-start dev-stop dev-stop-clean dev-restart dev-restart-clean dev-logs dev-ensure-env \
+	dev-start dev-start-collector dev-start-api dev-stop dev-stop-clean dev-restart dev-restart-clean dev-logs dev-ensure-env \
 	code-ql code-ql-summary \
 	release-patch release-minor release-major \
 	branch-protection
@@ -84,7 +84,18 @@ test: ## Run repository test suite
 build: ## Build the production bundle
 	npm run build
 
-ci: check lint test build ## Run the full local CI suite
+api-lint: ## Lint OpenAPI with Spectral
+	npx --yes @stoplight/spectral-cli lint --fail-severity=error api/openapi.yaml
+
+pack-lint: ## Validate bundled packs
+	@mkdir -p $(GOCACHE_DIR) $(GOMODCACHE_DIR)
+	GOCACHE=$(GOCACHE_DIR) GOMODCACHE=$(GOMODCACHE_DIR) go run ./cmd/kafsiem-api --validate-packs --packs ./packs
+
+pack-docs: ## Generate bundled pack reference docs
+	@mkdir -p $(GOCACHE_DIR) $(GOMODCACHE_DIR)
+	GOCACHE=$(GOCACHE_DIR) GOMODCACHE=$(GOMODCACHE_DIR) go run ./cmd/pack-docs --packs ./packs --out docs/packs
+
+ci: check lint typecheck test build go-test api-lint pack-lint ## Run the full local CI suite
 
 go-fmt: ## Auto-format Go code
 	@mkdir -p $(GOCACHE_DIR) $(GOMODCACHE_DIR)
@@ -146,10 +157,17 @@ dev-ensure-env: ## Ensure local .env contains API_BEARER_TOKEN for local API pro
 
 dev-start: registry/cities500.txt dev-collector-bin dev-ensure-env ## Start the local HTTP dev stack on localhost
 	docker build -f Dockerfile.collector.dev -t kafsiem-collector:dev .
-	$(DOCKER_COMPOSE) build kafsiem
+	$(DOCKER_COMPOSE) build kafsiem kafsiem-api
 	KAFSIEM_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
 	@echo "kafSIEM available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
-	@open "http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
+
+dev-start-collector: registry/cities500.txt dev-collector-bin dev-ensure-env ## Start only the collector-side services
+	docker build -f Dockerfile.collector.dev -t kafsiem-collector:dev .
+	KAFSIEM_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build browser collector
+
+dev-start-api: dev-ensure-env ## Start the API and web surfaces for debugging
+	$(DOCKER_COMPOSE) build kafsiem-api kafsiem
+	$(DOCKER_COMPOSE) up -d --no-build kafsiem-api kafsiem
 
 dev-stop: ## Stop the local dev stack, remove volumes, prune dangling images
 	$(DOCKER_COMPOSE) down --remove-orphans -v
@@ -163,20 +181,18 @@ dev-stop-clean: ## Stop stack, remove feed-data volume, and aggressively prune D
 dev-restart: registry/cities500.txt dev-collector-bin dev-ensure-env ## Restart the local dev stack (removes volumes, rebuilds)
 	$(DOCKER_COMPOSE) down --remove-orphans -v
 	docker build -f Dockerfile.collector.dev -t kafsiem-collector:dev .
-	$(DOCKER_COMPOSE) build kafsiem
+	$(DOCKER_COMPOSE) build kafsiem kafsiem-api
 	KAFSIEM_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
 	@echo "kafSIEM available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
-	@open "http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 
 dev-restart-clean: registry/cities500.txt dev-collector-bin dev-ensure-env ## Restart from scratch (removes volumes, prunes caches)
 	$(DOCKER_COMPOSE) down --remove-orphans -v
 	@docker image prune -af >/dev/null 2>&1 || true
 	@docker builder prune -af >/dev/null 2>&1 || true
 	docker build --no-cache -f Dockerfile.collector.dev -t kafsiem-collector:dev .
-	$(DOCKER_COMPOSE) build --no-cache kafsiem
+	$(DOCKER_COMPOSE) build --no-cache kafsiem kafsiem-api
 	KAFSIEM_COLLECTOR_IMAGE=kafsiem-collector:dev $(DOCKER_COMPOSE) up -d --no-build
 	@echo "kafSIEM available at http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
-	@open "http://localhost:$${KAFSIEM_HTTP_PORT:-8080}"
 
 dev-sync-registry: ## Merge source_registry.json into the running DB (adds new feeds)
 	$(DOCKER_COMPOSE) exec collector kafsiem-collector --source-db /data/sources.db --curated-seed /app/registry/source_registry.json --source-db-merge-registry

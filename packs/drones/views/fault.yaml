@@ -1,0 +1,11 @@
+entity_type: fault
+title: Fault
+fields:
+  - id: fault_mode_id
+    label: Fault Mode
+  - id: subsystem_id
+    label: Subsystem
+  - id: severity
+    label: Severity
+  - id: detected_at
+    label: Detected At

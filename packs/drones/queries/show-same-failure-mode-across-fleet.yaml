@@ -1,0 +1,13 @@
+id: show-same-failure-mode-across-fleet
+title: Show Same Failure Mode Across Fleet
+description: Rank shared fault modes by fleet spread and recency.
+params:
+  - name: fault_mode_id
+    type: string
+    label: Fault Mode
+    required: true
+sql: |
+  SELECT platform_id, variant_id, last_seen
+    FROM view_drone_fault_mode_spread
+   WHERE fault_mode_id = :fault_mode_id
+   ORDER BY last_seen DESC

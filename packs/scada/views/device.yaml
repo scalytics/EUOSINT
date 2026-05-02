@@ -1,0 +1,11 @@
+entity_type: device
+title: Device
+fields:
+  - id: asset_id
+    label: Asset ID
+  - id: vendor
+    label: Vendor
+  - id: firmware_version
+    label: Firmware
+  - id: zone
+    label: Zone

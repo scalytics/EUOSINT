@@ -1,0 +1,11 @@
+entity_type: process
+title: Process
+fields:
+  - id: process_name
+    label: Process
+  - id: zone_id
+    label: Zone
+  - id: owner
+    label: Owner
+  - id: state
+    label: State

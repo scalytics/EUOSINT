@@ -1,30 +1,74 @@
 # kafSIEM
 
-kafSIEM is the open-source edition of our OSINT pipeline, used across multiple installations and packaged for local and server deployment.
+kafSIEM is an open-source operations and fusion analysis surface. It turns
+Kafka-observed operational traffic and selected OSINT context into an
+auditable entity graph for analyst workflows.
 
-It now ships with two distinct operating surfaces:
+The product can run standalone for teams that need a local, Docker-first
+analysis stack. It can also complement existing enterprise intelligence
+platforms through typed APIs, pack-defined ontology, provenance-preserving
+records, and exportable graph context.
+
+It now ships with three operating modes:
 
 - `OSINT`: the existing globe-first external intelligence workflow
-- `AgentOps`: Kafka-backed flow tracking for KafClaw agent communication
-- `HYBRID`: AgentOps plus selective external OSINT context
+- `Operations`: Kafka-backed flow tracking and internal operational workflows
+- `Fusion`: operations plus selective external OSINT context
 
 This repository has been prepared for public use by removing non-public, internal, and protected source integrations while keeping the operational pipeline structure intact.
+
+## Screenshots
+
+<p align="center">
+  <a href="public/images/Scalytics-OSINT-Prediction.png">
+    <img src="public/images/Scalytics-OSINT-Prediction.png" alt="kafSIEM OSINT mode screenshot" width="32%" />
+  </a>
+  <a href="public/images/Scalytics-Ontology-Drones.png">
+    <img src="public/images/Scalytics-Ontology-Drones.png" alt="kafSIEM Operations ontology drones screenshot" width="32%" />
+  </a>
+  <a href="public/images/Scalytics-Ontology-SCADA.png">
+    <img src="public/images/Scalytics-Ontology-SCADA.png" alt="kafSIEM Operations ontology SCADA screenshot" width="32%" />
+  </a>
+</p>
+<p align="center">
+  <strong>OSINT</strong> | <strong>Operations / Drones</strong> | <strong>Operations / SCADA</strong>
+</p>
 
 ## Open-Source Scope
 
 - Public-ready OSINT pipeline architecture
-- AgentOps flow tracking over Kafka for KafClaw-style agent traffic
+- Operations flow tracking over Kafka for KafClaw-style agent traffic
+- Entity, edge, provenance, map, and timeline APIs backed by SQLite
+- Pack-defined ontology for unmanned systems and SCADA / critical infrastructure workflows
 - Docker-first deployment for reproducible installs
-- Web dashboard + Go collector runtime
+- Web dashboard, Go collector runtime, and standalone analyst API service
 - Configurable ingestion and refresh cadence
+
+## Target Deployments
+
+kafSIEM is designed for two initial operations profiles:
+
+- unmanned systems teams that need readiness, sortie, EW, software, and
+  signoff evidence connected across fleet activity
+- SCADA and critical infrastructure teams that need plant, device, change,
+  alarm, firmware, vulnerability, and session evidence connected across
+  operational telemetry
+
+These profiles are shipped as data packs under `packs/`. The active pack
+contract is documented in [docs/packs/drones.md](https://github.com/scalytics/kafSIEM/blob/main/docs/packs/drones.md)
+and [docs/packs/scada.md](https://github.com/scalytics/kafSIEM/blob/main/docs/packs/scada.md).
 
 ## Operating Modes
 
 The runtime mode is driven by environment and mounted policy files.
 
 - `UI_MODE=OSINT` keeps the existing OSINT product behavior.
-- `UI_MODE=AGENTOPS` switches the desktop UI to the AgentOps flow desk.
-- `UI_MODE=HYBRID` keeps AgentOps primary and adds selective external-intel context.
+- `UI_MODE=AGENTOPS` switches the desktop UI to the Operations desk.
+- `UI_MODE=HYBRID` switches the desktop UI to Fusion mode with selective external-intel context.
+
+Current runtime values remain `OSINT`, `AGENTOPS`, and `HYBRID` for
+compatibility. User-facing product naming is `OSINT`, `Operations`, and
+`Fusion`.
 
 AgentOps is a separate bounded domain in the codebase:
 
@@ -32,6 +76,8 @@ AgentOps is a separate bounded domain in the codebase:
 - frontend: `src/agentops/...`
 
 It is not implemented as a generic plugin tree.
+
+Architecture details live in [docs/architecture.md](https://github.com/scalytics/kafSIEM/blob/main/docs/architecture.md).
 
 ## Run With Docker
 
@@ -54,13 +100,19 @@ make dev-restart
 make dev-logs
 ```
 
-For a local AgentOps demo with mocked Kafka-derived traffic and the real dashboard:
+The old JSON-backed AgentOps demo UI has been removed. Operations and Fusion
+development uses the live runtime desk against `kafsiem-api` and the
+collector-written SQLite store. For UI-only demos without Kafka or SQLite,
+the same runtime desk can run against typed mock streams:
 
 ```bash
-npm run demo:agentops
+npm run demo:ontology
+npm run demo:fusion
 ```
 
-This opens the desktop UI directly in `AgentOps` mode via `/?demo=agentops`, serves demo state from `public/demo/*.json`, and mocks the replay endpoint locally.
+These open `/?demo=ontology` and `/?demo=fusion`, which keep OSINT untouched
+and feed the Operations/Fusion ontology dashboard through mocked typed API
+resources.
 
 ## Remote Install (wget bootstrap)
 
@@ -71,7 +123,7 @@ wget -qO- https://raw.githubusercontent.com/scalytics/kafSIEM/main/deploy/instal
 The installer will:
 - verify Docker + Compose availability
 - clone or update the repo on the host
-- ask for the operating profile (`OSINT`, `AGENTOPS`, or `HYBRID`)
+- ask for the operating profile (`OSINT`, `Operations`, or `Fusion`)
 - set GHCR runtime images (`ghcr.io/scalytics/kafsiem-web` + `ghcr.io/scalytics/kafsiem-collector`)
 - prompt for install mode (`preserve` or `fresh` volume reset)
 - prompt for the common site setting (`KAFSIEM_SITE_ADDRESS`)
@@ -79,9 +131,9 @@ The installer will:
 - prompt only for the profile-relevant runtime keys
 - optionally run `docker compose pull` and start with `--no-build`
 
-- The release pipeline builds two images: a web image and a Go collector image.
+- The release pipeline builds three images: a web image, a Go collector image, and a Go analyst API image.
 - The scheduled feed refresh workflow runs the Go collector.
-- The web image uses Caddy, with collector output mounted into the web container at runtime.
+- The web image uses Caddy, with collector output mounted into the web container at runtime and `/api/*` reverse-proxied to the standalone analyst API service.
 - In Docker dev mode, the collector initializes empty JSON outputs on a fresh volume and writes live output on the first successful run.
 
 ## Run Locally Without Docker
@@ -117,11 +169,11 @@ The installer is profile-driven and only asks for the settings that matter for t
   - prompts for `KAFSIEM_SITE_ADDRESS`
   - prompts for OSINT credentials and optional LLM toggles
   - writes `UI_MODE=OSINT` and `PROFILE=osint-default`
-- `AGENTOPS`
+- `Operations`
   - prompts for `KAFSIEM_SITE_ADDRESS`
   - prompts for AgentOps Kafka brokers, auth mode, group identifiers, topic mode, replay, and optional reject mirroring
   - writes `UI_MODE=AGENTOPS` and `PROFILE=agentops-default`
-- `HYBRID`
+- `Fusion`
   - prompts for both the OSINT and AgentOps settings above
   - writes `UI_MODE=HYBRID` and `PROFILE=hybrid-ops`
 
@@ -137,16 +189,18 @@ AgentOps-specific runtime knobs include:
 - `AGENTOPS_REPLAY_ENABLED`
 - `AGENTOPS_REJECT_TOPIC`
 - `AGENTOPS_OUTPUT_PATH`
+- `KAFSIEM_PACKS_DIR`
 - `UI_MODE`
 - `PROFILE`
 - `UI_POLICY_PATH`
 
-When AgentOps is enabled, the collector writes `agentops-state.json` into the runtime data volume and the web UI reads that state directly.
+When AgentOps is enabled, the collector writes `agentops.db` into the runtime data volume and the analyst API serves typed `/api/v1/...` resources from that SQLite store.
 
 Mount contract:
 
 - `/config`: policy and UI steering files
-- `/data`: generated AgentOps state and replay metadata
+- `/data`: generated AgentOps SQLite state (`agentops.db` plus WAL/SHM sidecars), alerts JSON, and replay metadata
+- `/packs`: active bundled or mounted pack directories
 
 Content behavior is explicit:
 
@@ -157,6 +211,9 @@ Content behavior is explicit:
 - replay always uses a dedicated consumer group and never mutates the live tracking group
 
 Operator reference and examples live in [docs/agentops-operator-guide.md](https://github.com/scalytics/kafSIEM/blob/main/docs/agentops-operator-guide.md).
+The analyst API contract lives in [api/openapi.yaml](https://github.com/scalytics/kafSIEM/blob/main/api/openapi.yaml);
+client guidance is in [docs/api-clients.md](https://github.com/scalytics/kafSIEM/blob/main/docs/api-clients.md)
+and problem details are registered in [docs/agentops-api-errors.md](https://github.com/scalytics/kafSIEM/blob/main/docs/agentops-api-errors.md).
 
 ## Operations
 

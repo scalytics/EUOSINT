@@ -1,0 +1,15 @@
+layers:
+  - id: plant-sites
+    name: Plant Sites
+    kind: overlay
+    geometry_source: entity_geometry
+    entity_types: [plant]
+    render: point
+    label_field: site_name
+  - id: safety-zones
+    name: Safety Zones
+    kind: overlay
+    geometry_source: entity_geometry
+    entity_types: [zone]
+    render: polygon
+    filter: criticality=high

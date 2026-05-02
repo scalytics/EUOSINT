@@ -1,47 +1,35 @@
 import { useEffect, useState } from "react";
-import { agentOpsStateURL } from "@/agentops/lib/demo";
+import { demoShellMode, isAgentOpsDemo } from "@/agentops/lib/demo";
 import { loadPersistedShell, normalizeState, persistShell } from "@/agentops/lib/state";
 import type { AgentOpsState } from "@/agentops/types";
 
-const POLL_MS = 15000;
-
 function fallbackState(): AgentOpsState {
+  const demoMode = demoShellMode();
+  if (demoMode) {
+    return normalizeState({
+      generated_at: new Date().toISOString(),
+      enabled: true,
+      ui_mode: demoMode,
+      profile: demoMode === "HYBRID" ? "hybrid-ops" : "agentops-default",
+      group_name: "kafsiem-ontology-demo",
+      topics: ["ops.drones.telemetry.v1", "ops.drones.ontology.edges.v1", "ot.scada.modbus.readings.v1", "ot.scada.ontology.edges.v1"],
+    });
+  }
   return normalizeState(loadPersistedShell());
 }
 
 export function useAgentOpsState() {
   const [state, setState] = useState<AgentOpsState>(() => fallbackState());
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const response = await fetch(`${agentOpsStateURL()}?t=${Date.now()}`, { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`agentops state fetch failed: ${response.status}`);
-        }
-        const data = normalizeState((await response.json()) as Partial<AgentOpsState>);
-        if (!cancelled) {
-          persistShell(data.ui_mode, data.profile);
-          setState(data);
-          setIsLoading(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setState((current) => normalizeState(current.generated_at ? current : fallbackState()));
-          setIsLoading(false);
-        }
-      }
+    const shell = fallbackState();
+    if (!isAgentOpsDemo()) {
+      persistShell(shell.ui_mode, shell.profile);
     }
-
-    load();
-    const id = window.setInterval(load, POLL_MS);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
+    setState(shell);
+    setIsLoading(false);
+    return undefined;
   }, []);
 
   return { state, isLoading };

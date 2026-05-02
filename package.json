@@ -14,7 +14,11 @@
   },
   "scripts": {
     "dev": "vite",
-    "demo:agentops": "vite --open '/?demo=agentops'",
+    "demo:ontology": "vite --open '/?demo=ontology'",
+    "demo:ontology:drones": "vite --open '/?demo=ontology&scenario=drones'",
+    "demo:ontology:scada": "vite --open '/?demo=ontology&scenario=scada'",
+    "demo:fusion": "vite --open '/?demo=fusion'",
+    "generate:api": "go generate ./api/...",
     "fetch:alerts": "go run ./cmd/kafsiem-collector",
     "fetch:alerts:watch": "go run ./cmd/kafsiem-collector --watch",
     "collector:run": "go run ./cmd/kafsiem-collector --watch",
@@ -29,6 +33,7 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "cytoscape": "^3.33.2",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
     "leaflet.markercluster": "^1.5.3",
