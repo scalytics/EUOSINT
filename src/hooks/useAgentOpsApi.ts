@@ -19,6 +19,7 @@ import type {
 } from "@/agentops/lib/api-client/types";
 
 const POLL_MS = 5000;
+const QUERY_DEP_UNDEFINED = "__kafsiem_query_dep_undefined__";
 
 type QueryState<T> = {
   data: T;
@@ -27,35 +28,52 @@ type QueryState<T> = {
   refresh: () => void;
 };
 
+function serializeQueryDeps(deps: readonly unknown[]): string {
+  return JSON.stringify(deps, (_key, value) => (value === undefined ? QUERY_DEP_UNDEFINED : value));
+}
+
 function usePolledQuery<T>(load: (signal: AbortSignal) => Promise<T>, initial: T, deps: readonly unknown[]): QueryState<T> {
   const [data, setData] = useState<T>(initial);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const loadRef = useRef<(() => void) | null>(null);
+  const queryKey = serializeQueryDeps(deps);
+  const refreshRef = useRef<(() => void) | null>(null);
+  const loadRef = useRef(load);
+  const errorRef = useRef<string | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
-    let cancelled = false;
+    loadRef.current = load;
+  }, [load]);
+
+  useEffect(() => {
+    errorRef.current = error;
+  }, [error]);
+
+  useEffect(() => {
     let controller: AbortController | null = null;
 
     const run = () => {
       controller?.abort();
       controller = new AbortController();
-      setIsLoading((current) => current && error === null);
-      void load(controller.signal)
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
+      setIsLoading((current) => current && errorRef.current === null);
+      void loadRef.current(controller.signal)
         .then((next) => {
-          if (cancelled) return;
+          if (requestIdRef.current !== requestId) return;
           setData(next);
           setError(null);
           setIsLoading(false);
         })
         .catch((err: unknown) => {
-          if (cancelled || (err instanceof DOMException && err.name === "AbortError")) return;
+          if (requestIdRef.current !== requestId || (err instanceof DOMException && err.name === "AbortError")) return;
           setError(err instanceof Error ? err.message : "request failed");
           setIsLoading(false);
         });
     };
 
-    loadRef.current = run;
+    refreshRef.current = run;
     run();
     const interval = window.setInterval(run, POLL_MS);
     const onFocus = () => run();
@@ -65,19 +83,20 @@ function usePolledQuery<T>(load: (signal: AbortSignal) => Promise<T>, initial: T
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
-      cancelled = true;
+      requestIdRef.current += 1;
+      refreshRef.current = null;
       controller?.abort();
       window.clearInterval(interval);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, deps);
+  }, [queryKey]);
 
   return {
     data,
     isLoading,
     error,
-    refresh: () => loadRef.current?.(),
+    refresh: () => refreshRef.current?.(),
   };
 }
 

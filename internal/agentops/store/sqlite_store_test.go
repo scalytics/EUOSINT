@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/base64"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"strings"
 	"testing"
 	"time"
@@ -363,6 +365,84 @@ func TestQueryCursorValidation(t *testing.T) {
 	}
 	if _, _, err := fs.ListMessagesForFlow(context.Background(), "corr-1", Pagination{After: Cursor("bad!")}); err == nil {
 		t.Fatal("expected bad message cursor to fail")
+	}
+}
+
+func TestSqliteStoreConcurrentSnapshotAndUpdate(t *testing.T) {
+	fs := seededQueryStore(t, sampleSnapshot("2026-04-20T08:00:00Z", "2026-04-20T10:00:00Z"))
+
+	const workers = 4
+	const iterations = 25
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, workers*2)
+	start := make(chan struct{})
+
+	for worker := 0; worker < workers; worker++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			<-start
+			for iter := 0; iter < iterations; iter++ {
+				if err := fs.Update(func(doc *Snapshot) {
+					doc.Health.AcceptedCount++
+					doc.FlowCount = len(doc.Flows)
+					doc.TraceCount = len(doc.Traces)
+					doc.TaskCount = len(doc.Tasks)
+					doc.MessageCount = len(doc.Messages)
+					doc.Health.RejectedByReason[fmt.Sprintf("writer-%d", workerID)] = iter
+					doc.Messages[0].Preview = fmt.Sprintf("writer-%d-%d", workerID, iter)
+				}); err != nil {
+					errCh <- fmt.Errorf("writer %d iteration %d: %w", workerID, iter, err)
+					return
+				}
+			}
+		}(worker)
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			for iter := 0; iter < iterations; iter++ {
+				doc := fs.Snapshot()
+				if doc.Health.RejectedByReason == nil {
+					errCh <- fmt.Errorf("snapshot missing rejected-by-reason map")
+					return
+				}
+				if doc.FlowCount != len(doc.Flows) {
+					errCh <- fmt.Errorf("flow count mismatch: %d vs %d", doc.FlowCount, len(doc.Flows))
+					return
+				}
+				if doc.TraceCount != len(doc.Traces) {
+					errCh <- fmt.Errorf("trace count mismatch: %d vs %d", doc.TraceCount, len(doc.Traces))
+					return
+				}
+				if doc.TaskCount != len(doc.Tasks) {
+					errCh <- fmt.Errorf("task count mismatch: %d vs %d", doc.TaskCount, len(doc.Tasks))
+					return
+				}
+				if doc.MessageCount != len(doc.Messages) {
+					errCh <- fmt.Errorf("message count mismatch: %d vs %d", doc.MessageCount, len(doc.Messages))
+					return
+				}
+			}
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	doc := fs.Snapshot()
+	expectedAccepted := sampleSnapshot("2026-04-20T08:00:00Z", "2026-04-20T10:00:00Z").Health.AcceptedCount + workers*iterations
+	if doc.Health.AcceptedCount != expectedAccepted {
+		t.Fatalf("accepted count = %d, want %d", doc.Health.AcceptedCount, expectedAccepted)
 	}
 }
 

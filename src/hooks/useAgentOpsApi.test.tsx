@@ -72,6 +72,30 @@ test("loads paged flow messages", async () => {
   expect(fetchMock).toHaveBeenCalled();
 });
 
+test("reloads search results when the query changes", async () => {
+  const fetchMock = vi.fn(async (input: string | URL) => {
+    const url = String(input);
+    if (url.includes("/api/v1/search?q=alpha")) {
+      return { ok: true, json: async () => ({ items: [{ kind: "entity", id: "platform:alpha", type: "platform", canonical_id: "alpha", score: 1 }], next: null }) };
+    }
+    if (url.includes("/api/v1/search?q=beta")) {
+      return { ok: true, json: async () => ({ items: [{ kind: "entity", id: "platform:beta", type: "platform", canonical_id: "beta", score: 1 }], next: null }) };
+    }
+    throw new Error(`unexpected fetch ${url}`);
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  const { result, rerender } = renderHook(({ query }) => useSearchEntities(query), {
+    initialProps: { query: "alpha" },
+  });
+
+  await waitFor(() => expect(result.current.results[0]?.id).toBe("platform:alpha"));
+
+  rerender({ query: "beta" });
+
+  await waitFor(() => expect(result.current.results[0]?.id).toBe("platform:beta"));
+});
+
 test("loads ontology packs and entity profiles", async () => {
   const fetchMock = vi.fn(async (input: string | URL) => {
     const url = String(input);
